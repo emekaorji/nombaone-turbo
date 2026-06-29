@@ -1,0 +1,49 @@
+---
+title: nombaone API
+description: A typed money-movement API for Nigeria. One secret key per organization, a double-entry ledger as the source of truth, and amounts in integer kobo.
+order: 0
+---
+
+nombaone gives you the primitives to move money: a per-organization secret key,
+a double-entry ledger that records every leg of every transaction, and a public
+reference that ties a resource, its ledger postings, and its webhooks together.
+You compose those primitives into your own product.
+
+These docs are intentionally small. They cover how to authenticate, how the
+test and live environments differ, and a single worked API reference — the
+**example** endpoint — that demonstrates the whole money path end to end.
+
+<Callout type="note" title="Money is integer kobo">
+  Every amount in the API is an integer in **kobo** (NGN). `1500` is ₦15.00.
+  There are no floats and no decimal strings — direction (debit or credit), not
+  sign, carries the meaning in the ledger.
+</Callout>
+
+## Start here
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" href="/getting-started/quickstart">
+    Get a test key and make your first call in a few minutes.
+  </Card>
+  <Card title="Authentication" href="/getting-started/authentication">
+    How the per-organization `nbo_test_` / `nbo_live_` secret key works.
+  </Card>
+  <Card title="Environments" href="/getting-started/environments">
+    Test vs live, and how a key pins every request to one environment.
+  </Card>
+</CardGroup>
+
+## The worked example
+
+<CardGroup cols={1}>
+  <Card title="Create an example" href="/reference/examples">
+    A deletable reference endpoint that threads the reference, the double-entry
+    ledger, idempotency, and events into one money movement.
+  </Card>
+</CardGroup>
+
+<Callout type="tip" title="Idempotency on every money POST">
+  Money-moving `POST`s accept an `Idempotency-Key`. Send the same key twice and
+  you get the same result twice — never a double charge. See the
+  [example reference](/reference/examples) for the exact header.
+</Callout>

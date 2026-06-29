@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@import "@nombaone/ui/globals.css";
+@import "tw-animate-css";
+
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";

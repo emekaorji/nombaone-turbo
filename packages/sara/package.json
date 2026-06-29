@@ -1,0 +1,54 @@
+{
+  "name": "@nombaone/sara",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./context": "./src/context.ts",
+    "./reference": "./src/reference.ts",
+    "./pagination": "./src/pagination.ts",
+    "./crypto": "./src/crypto.ts",
+    "./money": "./src/money/index.ts",
+    "./rails": "./src/rails/index.ts",
+    "./events": "./src/events/index.ts",
+    "./api-keys": "./src/api-keys/index.ts",
+    "./auth": "./src/auth/index.ts",
+    "./org": "./src/org/index.ts",
+    "./idempotency": "./src/idempotency/index.ts",
+    "./ledger": "./src/ledger/index.ts",
+    "./config": "./src/config/index.ts",
+    "./reconciliation": "./src/reconciliation/index.ts",
+    "./webhooks": "./src/webhooks/index.ts",
+    "./audit": "./src/audit/index.ts",
+    "./example": "./src/example/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nombaone/core-contracts": "workspace:*",
+    "@nombaone/core-db": "workspace:*",
+    "@nombaone/errors": "workspace:*",
+    "@nombaone/queue": "workspace:*",
+    "@nombaone/utils": "workspace:*",
+    "bcryptjs": "^3.0.2",
+    "drizzle-orm": "^0.45.1",
+    "otplib": "^12.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@nombaone/eslint-config": "workspace:*",
+    "@nombaone/typescript-config": "workspace:*",
+    "@testcontainers/postgresql": "^12.0.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "~22.15.0",
+    "ioredis": "^5.11.1",
+    "testcontainers": "^12.0.3",
+    "typescript": "^5.8.2",
+    "vitest": "^4.1.9"
+  }
+}

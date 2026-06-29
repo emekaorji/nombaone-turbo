@@ -1,0 +1,149 @@
+@import "tailwindcss";
+@import "@nombaone/ui/globals.css";
+
+/* Tailwind v4 needs explicit @source for files outside this app's tree.
+ * @nombaone/ui ships components (Dialog, Sheet, ScrollArea, …) consumed by the
+ * docs chrome; without this, classes used only inside that package would be
+ * tree-shaken out of the build. */
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
+/* ---------------------------------------------------------------------------
+ * Docs-specific tokens (layered on the Nombaone palette from @nombaone/ui).
+ * Only NEW surfaces the docs introduce live here; everything else inherits
+ * the canonical semantic tokens (--background, --foreground, --primary, the
+ * purple ramp, radii, fonts) from @nombaone/ui/globals.css.
+ *
+ *   --code-bg            the code-block surface
+ *   --code-titlebar-bg   the titled-block / tab-row header
+ *   --doc-shell-max      content column max width
+ * ------------------------------------------------------------------------- */
+:root {
+  --code-bg: var(--neutral-50);
+  --code-titlebar-bg: #ffffff;
+  --doc-shell-max: 52rem; /* ~832px reading measure */
+}
+
+.dark {
+  --code-bg: #16181c; /* between neutral-950 and neutral-900, sits on --background */
+  --code-titlebar-bg: var(--neutral-900);
+}
+
+@theme inline {
+  --color-code-bg: var(--code-bg);
+  --color-code-titlebar-bg: var(--code-titlebar-bg);
+}
+
+/* ---------------------------------------------------------------------------
+ * Shiki dual-theme gating. `rehype-pretty-code` emits two copies of each token
+ * span carrying `--shiki-light*` / `--shiki-dark*` CSS variables. We bind the
+ * active set to the var Shiki actually reads (`color`), flipping on `.dark`.
+ * ------------------------------------------------------------------------- */
+pre code[data-theme],
+pre code[data-theme] span {
+  color: var(--shiki-light);
+  background-color: transparent;
+}
+
+.dark pre code[data-theme],
+.dark pre code[data-theme] span {
+  color: var(--shiki-dark);
+}
+
+/* Line + word highlight bands (driven by the pipeline's onVisit hooks). */
+[data-rehype-pretty-code-figure] .line {
+  display: inline-block;
+  width: 100%;
+  padding-inline: 0.25rem;
+  border-left: 2px solid transparent;
+}
+
+[data-rehype-pretty-code-figure] .line--highlighted {
+  background-color: color-mix(in oklab, var(--purple-500) 12%, transparent);
+  border-left-color: var(--purple-400);
+}
+
+[data-rehype-pretty-code-figure] .word--highlighted {
+  border-radius: 4px;
+  padding: 0.1rem 0.25rem;
+  background-color: color-mix(in oklab, var(--purple-500) 16%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Heading anchors. `rehype-autolink-headings` (behavior: "wrap") wraps each
+ * h2/h3 in an `<a class="heading-anchor">`; reset its link styling and reveal a
+ * subtle ¶ marker on hover so headings are deep-linkable without looking like
+ * links at rest.
+ * ------------------------------------------------------------------------- */
+.heading-anchor {
+  color: inherit;
+  text-decoration: none;
+  position: relative;
+}
+
+.heading-anchor:hover::before {
+  content: "#";
+  position: absolute;
+  left: -1.1em;
+  color: var(--purple-400);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduced motion: collapse CSS transitions/animations + smooth scroll. The
+ * signature components also respect `prefers-reduced-motion` in their own JS,
+ * but Tailwind `transition-*` utilities compile to raw CSS that needs this
+ * media-query gate. WCAG 2.3.3.
+ * ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* `@nombaone/ui/globals.css` sets `html, body { height: 100% }`, which caps the body
+   box at one viewport and breaks `position: sticky` on the topbar (it scrolls away
+   past the first screen). The docs site is a normal long-scrolling document, so let
+   the body grow with content; `min-h-screen` keeps the 100vh floor. */
+html,
+body {
+  height: auto;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Code-block titles. `rehype-pretty-code` wraps a fenced block in an outer
+   `figure[data-rehype-pretty-code-figure]` and, when the fence has `title="…"`,
+   an unstyled `figcaption[data-rehype-pretty-code-title]` (which would render as a
+   large stray heading). Our <Pre> adds its own bordered figure + a language
+   caption inside. For a titled block that doubles up. Render the title as the one
+   cohesive header bar flush on top of the code box, and drop the redundant inner
+   language caption. */
+[data-rehype-pretty-code-figure] > [data-rehype-pretty-code-title] {
+  margin: 1.5rem 0 0;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  background: var(--code-titlebar-bg);
+  padding: 0.5rem 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+[data-rehype-pretty-code-figure]:has(> [data-rehype-pretty-code-title]) > figure {
+  margin-top: 0;
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+[data-rehype-pretty-code-figure]:has(> [data-rehype-pretty-code-title]) > figure > figcaption {
+  display: none;
+}

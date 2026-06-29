@@ -1,0 +1,25 @@
+{
+  "name": "@nombaone/queue",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config/index.ts",
+    "./queues": "./src/queues/index.ts",
+    "./example": "./src/queues/example.ts",
+    "./outbound-webhook": "./src/queues/outbound-webhook.ts",
+    "./inbound-webhook": "./src/queues/inbound-webhook.ts",
+    "./scheduler": "./src/queues/scheduler.ts"
+  },
+  "dependencies": {
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.8.2"
+  },
+  "devDependencies": {
+    "@nombaone/typescript-config": "workspace:*",
+    "@types/node": "^22.13.9",
+    "typescript": "^5.4.0"
+  }
+}

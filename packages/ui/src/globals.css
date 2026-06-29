@@ -1,0 +1,322 @@
+/*
+ * Nombaone design tokens — canonical source for admin / web / merchant.
+ *
+ * Mirrors the .pen file (apps/admin/design/admin-dashboard.pen) and
+ * apps/admin/design/DESIGN-SYSTEM.md §1.4. Never invent values; every
+ * token below traces back to one of those two sources.
+ *
+ * Consumer apps:
+ *   1. `@import "tailwindcss"` themselves (this file is theme-only)
+ *   2. `@import "@nombaone/ui/globals.css"` after the Tailwind import
+ *   3. supply `--font-geist-sans` / `--font-geist-mono` via next/font
+ *
+ * Dark mode is plumbed (`.dark` class strategy via @custom-variant) but
+ * inactive — phase B14 flips it on.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Brand · Nombaone Purple (primary ramp) */
+  --purple-50: #f0edf9;
+  --purple-100: #e1dbf3;
+  --purple-200: #c4b8e7;
+  --purple-300: #9685d5;
+  --purple-400: #7665c8;
+  --purple-500: #695ab0;
+  --purple-600: #5b4e98;
+  --purple-700: #4f4381;
+  --purple-800: #42396a;
+  --purple-900: #362e54;
+  --purple-950: #2a2440;
+
+  /* Brand · Nombaone Magenta (secondary ramp) */
+  --magenta-50: #fff6f8;
+  --magenta-100: #ffeef1;
+  --magenta-200: #fedce4;
+  --magenta-300: #fccbd7;
+  --magenta-400: #f9b0c3;
+  --magenta-500: #da9bab;
+  --magenta-600: #bc8694;
+  --magenta-700: #9f727d;
+  --magenta-800: #825e67;
+  --magenta-900: #674b52;
+  --magenta-950: #4d393e;
+
+  /* Brand · Nombaone Yellow (accent ramp) */
+  --yellow-50: #fff8e8;
+  --yellow-100: #fff1d1;
+  --yellow-200: #ffe4a3;
+  --yellow-300: #ffd775;
+  --yellow-400: #fbc416;
+  --yellow-500: #dcac1a;
+  --yellow-600: #be951b;
+  --yellow-700: #a17e1c;
+  --yellow-800: #84681b;
+  --yellow-900: #695319;
+  --yellow-950: #4f3e16;
+
+  /* Coral · reserved for progress indicators */
+  --coral-500: #f47b6a;
+
+  /* Neutral ramp */
+  --neutral-50: #f9fafb;
+  --neutral-100: #f5f6f7;
+  --neutral-200: #eaebed;
+  --neutral-300: #cbccd0;
+  --neutral-400: #a1a3a8;
+  --neutral-500: #696c74;
+  --neutral-600: #4a4c51;
+  --neutral-700: #34363c;
+  --neutral-800: #26272c;
+  --neutral-900: #1c1d22;
+  --neutral-950: #121518;
+
+  /* Status · success */
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-200: #bbf7d0;
+  --success-300: #86efac;
+  --success-400: #4ade80;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+  --success-800: #166534;
+  --success-900: #14532d;
+
+  /* Status · warning */
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-200: #fde68a;
+  --warning-300: #fcd34d;
+  --warning-400: #fbbf24;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+  --warning-800: #92400e;
+  --warning-900: #78350f;
+
+  /* Status · error */
+  --error-50: #fef2f2;
+  --error-100: #fee2e2;
+  --error-200: #fecaca;
+  --error-300: #fca5a5;
+  --error-400: #f87171;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  --error-700: #b91c1c;
+  --error-800: #991b1b;
+  --error-900: #7f1d1d;
+
+  /* Semantic · light theme */
+  --background: #ffffff;
+  --foreground: #26272c;
+  --card: #ffffff;
+  --card-foreground: #26272c;
+  --popover: #ffffff;
+  --popover-foreground: #26272c;
+  --primary: #695ab0;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f6f7;
+  --secondary-foreground: #26272c;
+  --muted: #f5f6f7;
+  --muted-foreground: #696c74;
+  --accent: #ffeef1;
+  --accent-foreground: #674b52;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --border: #eaebed;
+  --input: #f5f6f7;
+  --ring: #695ab0;
+  --overlay: rgb(0 0 0 / 0.5);
+
+  /* Radii (mirror DESIGN-SYSTEM.md §3.2) */
+  --radius-xs: 0.375rem; /* 6px  */
+  --radius-sm: 0.5rem; /* 8px  */
+  --radius-md: 0.75rem; /* 12px */
+  --radius-lg: 1rem; /* 16px */
+  --radius-xl: 1.5rem; /* 24px */
+  --radius-pill: 9999px;
+  --radius: var(--radius-md); /* shadcn legacy alias */
+}
+
+.dark {
+  /* Semantic · dark theme — dormant until phase B14 */
+  --background: #121518;
+  --foreground: #f3f4f6;
+  --card: #1c1d22;
+  --card-foreground: #f3f4f6;
+  --popover: #1c1d22;
+  --popover-foreground: #f3f4f6;
+  --primary: #7665c8;
+  --primary-foreground: #ffffff;
+  --secondary: #26272c;
+  --secondary-foreground: #f3f4f6;
+  --muted: #26272c;
+  --muted-foreground: #a1a3a8;
+  --accent: #674b52;
+  --accent-foreground: #ffeef1;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --border: #26272c;
+  --input: #26272c;
+  --ring: #9685d5;
+  --overlay: rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  /* Semantic colors → utility classes (bg-primary, text-foreground …) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+
+  /* Brand ramps */
+  --color-purple-50: var(--purple-50);
+  --color-purple-100: var(--purple-100);
+  --color-purple-200: var(--purple-200);
+  --color-purple-300: var(--purple-300);
+  --color-purple-400: var(--purple-400);
+  --color-purple-500: var(--purple-500);
+  --color-purple-600: var(--purple-600);
+  --color-purple-700: var(--purple-700);
+  --color-purple-800: var(--purple-800);
+  --color-purple-900: var(--purple-900);
+  --color-purple-950: var(--purple-950);
+
+  --color-magenta-50: var(--magenta-50);
+  --color-magenta-100: var(--magenta-100);
+  --color-magenta-200: var(--magenta-200);
+  --color-magenta-300: var(--magenta-300);
+  --color-magenta-400: var(--magenta-400);
+  --color-magenta-500: var(--magenta-500);
+  --color-magenta-600: var(--magenta-600);
+  --color-magenta-700: var(--magenta-700);
+  --color-magenta-800: var(--magenta-800);
+  --color-magenta-900: var(--magenta-900);
+  --color-magenta-950: var(--magenta-950);
+
+  --color-yellow-50: var(--yellow-50);
+  --color-yellow-100: var(--yellow-100);
+  --color-yellow-200: var(--yellow-200);
+  --color-yellow-300: var(--yellow-300);
+  --color-yellow-400: var(--yellow-400);
+  --color-yellow-500: var(--yellow-500);
+  --color-yellow-600: var(--yellow-600);
+  --color-yellow-700: var(--yellow-700);
+  --color-yellow-800: var(--yellow-800);
+  --color-yellow-900: var(--yellow-900);
+  --color-yellow-950: var(--yellow-950);
+
+  --color-coral-500: var(--coral-500);
+
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-neutral-900: var(--neutral-900);
+  --color-neutral-950: var(--neutral-950);
+
+  --color-success-50: var(--success-50);
+  --color-success-100: var(--success-100);
+  --color-success-200: var(--success-200);
+  --color-success-300: var(--success-300);
+  --color-success-400: var(--success-400);
+  --color-success-500: var(--success-500);
+  --color-success-600: var(--success-600);
+  --color-success-700: var(--success-700);
+  --color-success-800: var(--success-800);
+  --color-success-900: var(--success-900);
+
+  --color-warning-50: var(--warning-50);
+  --color-warning-100: var(--warning-100);
+  --color-warning-200: var(--warning-200);
+  --color-warning-300: var(--warning-300);
+  --color-warning-400: var(--warning-400);
+  --color-warning-500: var(--warning-500);
+  --color-warning-600: var(--warning-600);
+  --color-warning-700: var(--warning-700);
+  --color-warning-800: var(--warning-800);
+  --color-warning-900: var(--warning-900);
+
+  --color-error-50: var(--error-50);
+  --color-error-100: var(--error-100);
+  --color-error-200: var(--error-200);
+  --color-error-300: var(--error-300);
+  --color-error-400: var(--error-400);
+  --color-error-500: var(--error-500);
+  --color-error-600: var(--error-600);
+  --color-error-700: var(--error-700);
+  --color-error-800: var(--error-800);
+  --color-error-900: var(--error-900);
+
+  /* Radii */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  /* Fonts — admin layout supplies the real Geist values via next/font */
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Monaco, "Cascadia Mono",
+    "Roboto Mono", monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Opt-in tabular numerics for tables / ledger rows */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

@@ -1,21 +1,35 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "npm_package_version",
+    "NODE_ENV",
+    "INFRA_ENVIRONMENT",
+    "INFRA_DATABASE_URL",
+    "INFRA_PII_ENCRYPTION_KEY",
+    "DOCS_DATABASE_URL",
+    "REDIS_URL",
+    "AUTH_JWT_SECRET",
+    "CONSOLE_SESSION_COOKIE_SECRET",
+    "ADMIN_BASE_URL",
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_NOMBAONE_ENV",
+    "DISABLE_API_RATE_LIMIT"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
     },
-    "lint": {
-      "dependsOn": ["^lint"]
-    },
-    "check-types": {
-      "dependsOn": ["^check-types"]
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    }
+    "dev": { "cache": false, "persistent": true },
+    "lint": { "dependsOn": ["^lint"] },
+    "type-check": { "dependsOn": ["^build"] },
+    "test": { "dependsOn": ["^build"], "inputs": ["$TURBO_DEFAULT$"], "outputs": ["coverage/**"] },
+    "db:generate": { "cache": false },
+    "db:migrate": { "cache": false },
+    "db:check": { "cache": false },
+    "db:drop": { "cache": false },
+    "db:studio": { "cache": false, "persistent": true }
   }
 }

@@ -1,0 +1,13 @@
+{
+  "extends": "@nombaone/typescript-config/node",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["./src/shared/*"],
+      "@modules/*": ["./src/modules/*"]
+    }
+  },
+  "include": ["src", "test", "scripts"]
+}
