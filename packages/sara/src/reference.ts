@@ -25,6 +25,10 @@ export type ReferenceDomain =
   | 'PMT' // payment method
   | 'NWE' // nomba (inbound) webhook event
   | 'NMA' // org ↔ nomba account mapping
+  | 'SUB' // subscription
+  | 'SBI' // subscription item
+  | 'INV' // invoice
+  | 'ILI' // invoice line item
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {

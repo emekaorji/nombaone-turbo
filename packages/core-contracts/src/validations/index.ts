@@ -5,4 +5,6 @@ export * from './customer';
 export * from './plan';
 export * from './price';
 export * from './payment-method';
+export * from './subscription';
+export * from './invoice';
 export * from './example';
