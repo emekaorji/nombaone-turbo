@@ -29,6 +29,20 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value === 'true' || value === '1'),
+
+  /**
+   * Nomba provider credentials (contract C.8). Optional so the API can boot for
+   * the catalog/customer surfaces without them; the rail adapters + live charge
+   * path are only wired when present. Secrets live HERE (env / secret manager),
+   * never in source. The set must match the deployment's `INFRA_ENVIRONMENT`.
+   */
+  NOMBA_BASE_URL: z.string().url().optional(),
+  NOMBA_PARENT_ACCOUNT_ID: z.string().min(1).optional(),
+  NOMBA_SUBACCOUNT_ID: z.string().min(1).optional(),
+  NOMBA_CLIENT_ID: z.string().min(1).optional(),
+  NOMBA_CLIENT_SECRET: z.string().min(1).optional(),
+  NOMBA_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
+  NOMBA_TOKEN_REFRESH_MARGIN_SEC: z.coerce.number().int().positive().default(300),
 });
 
 export const env = envSchema.parse(process.env);
