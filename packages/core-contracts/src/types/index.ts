@@ -12,4 +12,7 @@ export * from './subscription';
 export * from './subscription-schedule';
 export * from './upcoming-invoice';
 export * from './invoice';
+export * from './coupon';
+export * from './discount';
+export * from './credit';
 export * from './example';

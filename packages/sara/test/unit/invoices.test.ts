@@ -28,6 +28,7 @@ describe('invoices/status — derived (no stored column)', () => {
     paidAt: null as Date | null,
     uncollectibleAt: null as Date | null,
     amountDue: 100000,
+    amountPaid: 0,
   };
   const ts = new Date('2026-01-01T00:00:00Z');
 
@@ -46,6 +47,9 @@ describe('invoices/status — derived (no stored column)', () => {
   it('void / uncollectible from their markers', () => {
     expect(deriveInvoiceStatus({ ...base, voidedAt: ts })).toBe('void');
     expect(deriveInvoiceStatus({ ...base, uncollectibleAt: ts })).toBe('uncollectible');
+  });
+  it('partially_paid when finalized + some collected but not full (05)', () => {
+    expect(deriveInvoiceStatus({ ...base, finalizedAt: ts, amountPaid: 40000 })).toBe('partially_paid');
   });
   it('void takes precedence over every other signal', () => {
     expect(

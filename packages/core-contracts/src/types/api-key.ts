@@ -15,6 +15,8 @@ export type ApiKeyScope =
   | 'subscriptions:write'
   | 'invoices:read'
   | 'invoices:write'
+  | 'coupons:read'
+  | 'coupons:write'
   | 'example:read'
   | 'example:write'
   | 'webhooks:read'

@@ -1,6 +1,12 @@
 import type { Environment } from './common';
 
-export type InvoiceStatus = 'draft' | 'open' | 'paid' | 'void' | 'uncollectible';
+export type InvoiceStatus =
+  | 'draft'
+  | 'open'
+  | 'partially_paid'
+  | 'paid'
+  | 'void'
+  | 'uncollectible';
 export type InvoiceBillingReason =
   | 'subscription_create'
   | 'subscription_cycle'
@@ -28,9 +34,11 @@ export interface InvoiceResponseData {
   billingReason: InvoiceBillingReason;
   subtotal: number;
   discountTotal: number;
+  creditTotal: number;
   total: number;
   amountDue: number;
   amountPaid: number;
+  amountRemaining: number;
   currency: 'NGN';
   periodStart: string | null;
   periodEnd: string | null;

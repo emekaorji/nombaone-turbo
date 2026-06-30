@@ -41,6 +41,9 @@ export const invoiceLineItemsTable = pgTable(
     quantity: integer('quantity').notNull().default(1),
     periodStart: timestamp('period_start', { withTimezone: true }),
     periodEnd: timestamp('period_end', { withTimezone: true }),
+    // Links a credit line → its credit_grants reference, a discount line → its
+    // discounts reference (the audit back-pointer for an adjustment line).
+    sourceReference: text('source_reference'),
     createdAt: createdAt(),
   },
   (table) => ({

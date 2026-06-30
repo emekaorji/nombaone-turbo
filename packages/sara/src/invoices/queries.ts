@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, isNotNull, lt, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, isNotNull, lt, or, type SQL } from 'drizzle-orm';
 
 import {
   customersTable,
@@ -94,12 +94,21 @@ function statusPredicate(status: InvoiceStatus): SQL | undefined {
       );
     case 'draft':
       return and(isNull(invoicesTable.finalizedAt), isNull(invoicesTable.voidedAt));
+    case 'partially_paid':
+      return and(
+        isNotNull(invoicesTable.finalizedAt),
+        isNull(invoicesTable.paidAt),
+        isNull(invoicesTable.voidedAt),
+        isNull(invoicesTable.uncollectibleAt),
+        gt(invoicesTable.amountPaid, 0)
+      );
     case 'open':
       return and(
         isNotNull(invoicesTable.finalizedAt),
         isNull(invoicesTable.paidAt),
         isNull(invoicesTable.voidedAt),
-        isNull(invoicesTable.uncollectibleAt)
+        isNull(invoicesTable.uncollectibleAt),
+        eq(invoicesTable.amountPaid, 0)
       );
     default:
       return undefined;

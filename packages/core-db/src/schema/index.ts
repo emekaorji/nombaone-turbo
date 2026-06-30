@@ -24,4 +24,8 @@ export * from './subscription-periods';
 export * from './subscription-schedules';
 export * from './invoices';
 export * from './invoice-line-items';
+export * from './coupons';
+export * from './discounts';
+export * from './credit-grants';
+export * from './org-billing-settings';
 export * from './examples';

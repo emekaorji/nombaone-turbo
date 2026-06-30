@@ -11,7 +11,7 @@ import type { InvoiceStatus } from './types';
 export function deriveInvoiceStatus(
   invoice: Pick<
     InvoiceRow,
-    'finalizedAt' | 'voidedAt' | 'paidAt' | 'uncollectibleAt' | 'amountDue'
+    'finalizedAt' | 'voidedAt' | 'paidAt' | 'uncollectibleAt' | 'amountDue' | 'amountPaid'
   >
 ): InvoiceStatus {
   if (invoice.voidedAt) return 'void';
@@ -19,5 +19,8 @@ export function deriveInvoiceStatus(
   if (invoice.paidAt) return 'paid';
   if (!invoice.finalizedAt) return 'draft';
   if (invoice.amountDue === 0) return 'paid';
+  // 05: a short collection (partial collection enabled) left some paid + a
+  // remainder owing — finalized, not fully paid, some amount collected.
+  if (invoice.amountPaid > 0) return 'partially_paid';
   return 'open';
 }

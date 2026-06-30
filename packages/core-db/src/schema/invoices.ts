@@ -55,6 +55,10 @@ export const invoicesTable = pgTable(
     total: bigint('total', { mode: 'number' }).notNull(),
     amountDue: bigint('amount_due', { mode: 'number' }).notNull(),
     amountPaid: bigint('amount_paid', { mode: 'number' }).notNull().default(0),
+    // 05: the partial-collection remainder + the denormalized credit total (the
+    // truth is the line items; these are fast-read mirrors).
+    amountRemaining: bigint('amount_remaining', { mode: 'number' }).notNull().default(0),
+    creditTotal: bigint('credit_total', { mode: 'number' }).notNull().default(0),
     attemptCount: integer('attempt_count').notNull().default(0),
     ledgerTransactionId: uuid('ledger_transaction_id'),
     dueDate: timestamp('due_date', { withTimezone: true }),
