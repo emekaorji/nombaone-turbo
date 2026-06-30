@@ -7,7 +7,6 @@ Cross-cutting Nomba One brand assets, served by the apps (favicons, app icons, l
   `android-chrome-512x512.png`, `maskable.png`.
 
 Each app copies the variant it needs into its own `public/` (Next serves `/favicon.ico` etc. from there);
-add a per-app `site.webmanifest` there if/when a PWA manifest is needed.
 
 The **design source** (Pencil `.pen`) — the canonical source of truth for every screen (workbench rule #2) —
 lives at the workbench root (e.g. `NOMBAONE.pen`) once it exists. Until then the apps build a clean interim

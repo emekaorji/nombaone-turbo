@@ -25,11 +25,23 @@ export interface ChangeSubscriptionInput {
 }
 
 /**
- * Change a subscription mid-cycle (price swap / interval switch / quantity) and run
- * proration (05) — distinct from 03's metadata-only `updateSubscription`. Computes
- * the old vs new effective period amount, applies proration (upgrade charges now,
- * downgrade banks a credit), then swaps the item's price/quantity and the
- * subscription's effective price under the optimistic version guard.
+ * Change a subscription mid-cycle (price swap / quantity) and run proration (05) —
+ * distinct from 03's metadata-only `updateSubscription`.
+ *
+ * Ordering is money-safety-critical. The change is CLAIMED atomically FIRST — the
+ * item swap and the optimistic version-guarded subscription update commit together
+ * in one transaction — and only THEN is proration applied (upgrade charges now,
+ * downgrade banks a credit). Money moving strictly after the claim means a
+ * concurrent modification (stale `version`) throws BEFORE any charge/credit, so a
+ * conflict can never leave a charged-but-not-swapped torn state, and an idempotent
+ * retry re-checks the version against fresh state instead of double-charging.
+ * (`postTransaction`/`emitEvent` require the pool handle, so proration runs after
+ * the claim commits, mirroring `createSubscription`'s charge-after-claim shape.)
+ *
+ * Interval switches are rejected: prorating a different cadence's amount over the
+ * current (old-cadence) window mis-charges, and correct interval-switch proration
+ * needs period-claim-spine re-anchoring not yet built — see
+ * `PRORATION_INTERVAL_SWITCH_UNSUPPORTED`.
  */
 export async function changeSubscription(
   txDb: InfraTxDb,
@@ -47,7 +59,8 @@ export async function changeSubscription(
   }
 
   const item = await loadPrimarySubscriptionItem(txDb, ctx, sub.id);
-  let newPrice = await loadPriceById(txDb, ctx, sub.priceId);
+  const oldPrice = await loadPriceById(txDb, ctx, sub.priceId);
+  let newPrice = oldPrice;
   if (input.priceRef) {
     const [price] = await txDb
       .select()
@@ -70,6 +83,25 @@ export async function changeSubscription(
     newPrice = price;
   }
 
+  // Interval-switch guard (C4): a target price whose cadence differs cannot be
+  // prorated over the current (old-cadence) window without mis-charging — the new
+  // per-interval amount would be billed against the old period's remaining time
+  // (e.g. a full year against the remaining days of a month). Reject rather than
+  // overcharge until interval-aware, period-re-anchoring proration lands.
+  const cadenceChanged =
+    newPrice.interval !== oldPrice.interval || newPrice.intervalCount !== oldPrice.intervalCount;
+  if (input.intervalSwitch === true || cadenceChanged) {
+    throw AppError.UnprocessableEntity(
+      'interval-switch proration is not yet supported; create a new subscription on the target interval instead',
+      {
+        reference,
+        from: { interval: oldPrice.interval, intervalCount: oldPrice.intervalCount },
+        to: { interval: newPrice.interval, intervalCount: newPrice.intervalCount },
+      },
+      NOMBAONE_ERROR_CODES.PRORATION_INTERVAL_SWITCH_UNSUPPORTED
+    );
+  }
+
   const newQty = input.quantity ?? item.quantity;
   const oldAmount = item.unitAmount * item.quantity;
   const newAmount = newPrice.unitAmount * newQty;
@@ -80,6 +112,38 @@ export async function changeSubscription(
     .where(eq(customersTable.id, sub.customerId))
     .limit(1);
 
+  // 1. CLAIM the change atomically — item swap + version-guarded subscription
+  //    update commit together; a stale version throws here, BEFORE any money moves.
+  await txDb.transaction(async (tx) => {
+    await tx
+      .update(subscriptionItemsTable)
+      .set({ priceId: newPrice.id, unitAmount: newPrice.unitAmount, quantity: newQty })
+      .where(
+        and(
+          eq(subscriptionItemsTable.organizationId, ctx.organizationId),
+          eq(subscriptionItemsTable.environment, ctx.environment),
+          eq(subscriptionItemsTable.subscriptionId, sub.id)
+        )
+      );
+    const [updated] = await tx
+      .update(subscriptionsTable)
+      .set({ priceId: newPrice.id, version: sub.version + 1 })
+      .where(and(eq(subscriptionsTable.id, sub.id), eq(subscriptionsTable.version, sub.version)))
+      .returning();
+    if (!updated) {
+      throw AppError.Conflict(
+        'subscription was modified concurrently; retry',
+        { reference },
+        NOMBAONE_ERROR_CODES.SUBSCRIPTION_VERSION_CONFLICT
+      );
+    }
+  });
+
+  // 2. The change is reserved; apply proration on the pool handle. `sub` is the
+  //    pre-swap row, used only for currentPeriodStart/End + ids (unchanged by the
+  //    swap); the old/new amounts are the ones captured above. A crash here
+  //    under-collects the one-time proration (recoverable) — far safer than the
+  //    pre-claim charge it replaces.
   await applyProration(txDb, ctx, {
     subscription: sub,
     customerRef: customer?.reference ?? '',
@@ -88,29 +152,6 @@ export async function changeSubscription(
     changeAt: new Date(),
     prorationBehavior: input.prorationBehavior,
   });
-
-  await txDb
-    .update(subscriptionItemsTable)
-    .set({ priceId: newPrice.id, unitAmount: newPrice.unitAmount, quantity: newQty })
-    .where(
-      and(
-        eq(subscriptionItemsTable.organizationId, ctx.organizationId),
-        eq(subscriptionItemsTable.environment, ctx.environment),
-        eq(subscriptionItemsTable.subscriptionId, sub.id)
-      )
-    );
-  const [updated] = await txDb
-    .update(subscriptionsTable)
-    .set({ priceId: newPrice.id, version: sub.version + 1 })
-    .where(and(eq(subscriptionsTable.id, sub.id), eq(subscriptionsTable.version, sub.version)))
-    .returning();
-  if (!updated) {
-    throw AppError.Conflict(
-      'subscription was modified concurrently; retry',
-      { reference },
-      NOMBAONE_ERROR_CODES.SUBSCRIPTION_VERSION_CONFLICT
-    );
-  }
 
   await emitEvent(txDb, {
     ...ctx,

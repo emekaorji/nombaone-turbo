@@ -651,6 +651,18 @@ describe('subscriptions + billing e2e', () => {
     expect(balance.body.data.grants[0].source).toBe('downgrade_proration');
   });
 
+  it('C4 — an interval switch (month→year) is rejected, never mis-charged', async () => {
+    const { subRef, planId } = await twoPricedSub(1_000_000);
+    const yearly = (
+      await createPrice(harness.db, ctxA, {
+        planRef: planId, unitAmount: 10_000_000, interval: 'year', intervalCount: 1, usageType: 'licensed', billingScheme: 'per_unit', trialPeriodDays: 0,
+      })
+    ).id;
+    const res = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', `iv-${uniq()}`).send({ priceId: yearly });
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('PRORATION_INTERVAL_SWITCH_UNSUPPORTED');
+  });
+
   it('credit grant → ledger-backed balance + oldest-first grant audit (C8)', async () => {
     const customer = await createCustomer(harness.db, ctxA, { email: `cr${uniq()}@acme.test`, name: 'C' });
     const ref = customer.id;
