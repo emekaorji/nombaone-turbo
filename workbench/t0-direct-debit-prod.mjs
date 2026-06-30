@@ -127,8 +127,9 @@ if (cmd === 'probe') {
     amount: 10000, // ₦100 cap, kobo
     frequency: 'MONTHLY',
     merchantReference: `nbo-ddtest-${Date.now()}`,
-    startDate: now.toISOString().slice(0, 10),
-    endDate: end.toISOString().slice(0, 10),
+    // Nomba expects java LocalDateTime (date+time, NO timezone): YYYY-MM-DDTHH:mm:ss
+    startDate: now.toISOString().slice(0, 19),
+    endDate: end.toISOString().slice(0, 19),
     customerEmail: need('DD_EMAIL'),
     startImmediately: false,
   };
