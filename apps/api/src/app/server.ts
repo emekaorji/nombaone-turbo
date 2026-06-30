@@ -6,7 +6,7 @@ import { env } from '../shared/config/env';
 import { pool } from '../shared/config/db';
 import { redis } from '../shared/config/redis';
 import { logger } from '../shared/observability/logger';
-import { startScheduler, stopScheduler } from '../super-modules/scheduler';
+import { initializeScheduler } from '../super-modules/scheduler';
 import { startWorkers, stopWorkers } from '../super-modules/worker';
 import { createSuperApp } from './super-app';
 
@@ -40,9 +40,11 @@ const start = (): void => {
     logger.info(`[api] running on ${env.PORT}`);
   });
 
-  // Start background processing in-process alongside the HTTP server.
+  // Start background processing in-process alongside the HTTP server. The worker
+  // supervisor owns every Worker (including the cron worker that drains the
+  // scheduler queue); the scheduler module only registers the repeatables.
   startWorkers();
-  void startScheduler();
+  void initializeScheduler();
 
   let shuttingDown = false;
 
@@ -63,9 +65,9 @@ const start = (): void => {
         server.close((error) => (error ? reject(error) : resolve()));
       });
 
-      // 2. Drain background work.
+      // 2. Drain background work (the cron worker that runs scheduled sweeps is
+      //    one of these workers, so this also stops the scheduler execution).
       await stopWorkers();
-      await stopScheduler();
 
       // 3. Close infra clients.
       await pool.end();

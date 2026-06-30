@@ -1,0 +1,57 @@
+import { Worker } from 'bullmq';
+
+import { SCHEDULER_QUEUE_NAME, connection } from '@nombaone/queue';
+
+import { logger } from '../../../../shared/observability/logger';
+import { BILLING_SWEEP_JOB, LIFECYCLE_SWEEP_JOB } from '../../../scheduler/constants';
+import { handleBillingSweep } from './jobs-handlers/billing-sweep';
+import { handleLifecycleSweep } from './jobs-handlers/lifecycle-sweep';
+
+import type { SchedulerJobData, SchedulerJobResult } from '@nombaone/queue';
+
+/**
+ * ── Cron worker — drains the scheduler queue and routes each tick ──────────
+ *
+ * The scheduler super-module only DECLARES schedules; this worker EXECUTES them.
+ * It dispatches by `task` to a handler in `jobs-handlers/`. Add a scheduled job
+ * by registering its schedule in `scheduler/index.ts` and a `case` here.
+ *
+ * Concurrency is 1: sweeps are heavy find-and-act passes and must not pile up. A
+ * tick that finds nothing due is a no-op, and because the find-and-act queries
+ * are idempotent, a replayed tick (BullMQ at-least-once) does not double-act.
+ */
+const CRON_CONCURRENCY = 1;
+
+export const createCronWorker = (): Worker<SchedulerJobData, SchedulerJobResult> => {
+  const worker = new Worker<SchedulerJobData, SchedulerJobResult>(
+    SCHEDULER_QUEUE_NAME,
+    async (job) => {
+      const { task } = job.data;
+      switch (task) {
+        case BILLING_SWEEP_JOB:
+          await handleBillingSweep();
+          break;
+        case LIFECYCLE_SWEEP_JOB:
+          await handleLifecycleSweep();
+          break;
+        default:
+          // A stale repeatable from a previous deploy should not poison the
+          // queue — log and ack rather than throw.
+          logger.warn('[cron] no handler for task; skipping', { task, jobId: job.id });
+      }
+      return { task, ranAt: new Date().toISOString() };
+    },
+    { connection, concurrency: CRON_CONCURRENCY }
+  );
+
+  worker.on('failed', (job, error) => {
+    logger.error('[cron] job failed', {
+      task: job?.data.task,
+      jobId: job?.id,
+      attempt: job?.attemptsMade,
+      error: error.message,
+    });
+  });
+
+  return worker;
+};

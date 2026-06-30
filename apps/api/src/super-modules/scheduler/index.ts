@@ -1,105 +1,34 @@
-import { Worker } from 'bullmq';
+import { upsertCron } from '@nombaone/queue';
 
-import { SCHEDULER_QUEUE_NAME, connection, enqueueBilling, upsertCron } from '@nombaone/queue';
-import { runBillingSweep, runLifecycleSweep } from '@nombaone/sara/billing';
-
-import { db } from '../../shared/config/db';
 import { env } from '../../shared/config/env';
 import { logger } from '../../shared/observability/logger';
-
-import type { SchedulerJobData, SchedulerJobResult } from '@nombaone/queue';
+import { BILLING_SWEEP_JOB, LIFECYCLE_SWEEP_JOB } from './constants';
 
 /**
- * ── The cron / scheduler skeleton (idempotent + replay-safe) ───────────────
+ * ── The scheduler super-module — REGISTRATION ONLY ─────────────────────────
  *
- * Two halves, both safe to run on EVERY boot:
+ * This module's single job is to DECLARE the repeatable schedules. It owns no
+ * BullMQ Worker: execution is routed to the worker super-module
+ * (`worker/workers/cron/`), which drains the scheduler queue and dispatches each
+ * tick to its handler. Keeping registration and execution apart means one place
+ * (the worker supervisor) owns every Worker's lifecycle, so a SIGTERM drains
+ * them all uniformly.
  *
- *   1. REGISTRATION — `startScheduler()` upserts the repeatable jobs. Each uses a
- *      STABLE id (the task name) via BullMQ's Job Scheduler, so re-registering on
- *      every deploy updates the schedule IN PLACE rather than spawning duplicates
- *      (jobId = resourceId).
- *
- *   2. EXECUTION — a Worker on the scheduler queue that, on each tick, FINDS DUE
- *      WORK AND ACTS. The handler switches on `task`; a tick that finds nothing
- *      due is a no-op, and because the find-and-act query is itself idempotent, a
- *      replayed tick (BullMQ at-least-once) does not double-act.
- *
- * THIS is where the billing scheduler goes — the recurring sweep that finds
- * subscriptions due for renewal / invoices due for dunning and acts on them.
- * Billing is OUT OF SCOPE for this boilerplate, so the seam is left as a
- * documented switch case with no registered cron yet; wiring it is a matter of
- * adding an `upsertCron('billing-sweep', '<cron>')` call and a case below.
+ * `upsertCron` uses BullMQ's Job Scheduler (jobId = the task id), so exactly one
+ * active entry exists per task — calling this on every boot, across instances,
+ * is idempotent and never double-schedules. Add a task = a constant
+ * (`scheduler/constants.ts`) + an `upsertCron(...)` here + a handler routed in
+ * `worker/workers/cron/index.ts`.
  */
-
-/** Cap concurrency: scheduled sweeps are heavy and must not pile up. */
-const SCHEDULER_CONCURRENCY = 1;
-
-let worker: Worker<SchedulerJobData, SchedulerJobResult> | null = null;
-
-/** Register every repeatable, idempotently. Add `upsertCron(...)` per task. */
-const registerRepeatables = async (): Promise<void> => {
-  // The billing sweep: find subscriptions due for renewal and fan out per-sub bill
-  // jobs. Runs ~01:05 daily, before the 02:00 deterministic boundary. `upsertCron`
-  // keeps exactly one scheduler per task id (jobId = task), so this is replay-safe.
-  await upsertCron('billing-sweep', env.BILLING_SWEEP_CRON);
-  // The lifecycle sweep: A6 incomplete-expiry + trial/PM-expiry notices. Hourly,
-  // kept separate so a slow renewal run can't delay notices.
-  await upsertCron('lifecycle-sweep', env.LIFECYCLE_SWEEP_CRON);
-};
-
-const createSchedulerWorker = (): Worker<SchedulerJobData, SchedulerJobResult> =>
-  new Worker<SchedulerJobData, SchedulerJobResult>(
-    SCHEDULER_QUEUE_NAME,
-    async (job) => {
-      const { task } = job.data;
-      switch (task) {
-        case 'billing-sweep': {
-          // The tick only ENQUEUES (O(batches), fast); the billing worker drains the
-          // fan-out and runs the claim-once charge per subscription (D.8).
-          const { enqueued } = await runBillingSweep({
-            db,
-            now: new Date(),
-            batchSize: env.BILLING_BATCH_SIZE,
-            enqueue: (data) => enqueueBilling(data),
-          });
-          logger.info('[scheduler] billing-sweep enqueued', { enqueued, jobId: job.id });
-          break;
-        }
-        case 'lifecycle-sweep': {
-          const result = await runLifecycleSweep({
-            db,
-            now: new Date(),
-            incompleteExpiryWindowMs: env.INCOMPLETE_EXPIRY_WINDOW_HOURS * 3_600_000,
-            trialNoticeWindowMs: env.TRIAL_NOTICE_WINDOW_HOURS * 3_600_000,
-            pmExpiryNoticeWindowDays: env.PM_EXPIRY_NOTICE_WINDOW_DAYS,
-            batchSize: env.BILLING_BATCH_SIZE,
-          });
-          logger.info('[scheduler] lifecycle-sweep ran', { ...result, jobId: job.id });
-          break;
-        }
-        default:
-          // An unrecognized task is logged, not thrown: a stale repeatable from a
-          // previous deploy should not poison the queue.
-          logger.warn('[scheduler] no handler for task; skipping', { task, jobId: job.id });
-      }
-      return { task, ranAt: new Date().toISOString() };
-    },
-    { connection, concurrency: SCHEDULER_CONCURRENCY }
-  );
-
-export const startScheduler = async (): Promise<void> => {
-  if (worker) {
-    logger.warn('[scheduler] startScheduler called while already running; ignoring');
-    return;
-  }
-  await registerRepeatables();
-  worker = createSchedulerWorker();
-  logger.info('[scheduler] started');
-};
-
-export const stopScheduler = async (): Promise<void> => {
-  if (!worker) return;
-  await worker.close();
-  worker = null;
-  logger.info('[scheduler] stopped');
-};
+export async function initializeScheduler(): Promise<void> {
+  // Billing sweep — ~01:05 daily, before the 02:00 deterministic boundary; the
+  // tick only enqueues fan-out jobs, the billing worker does the charging.
+  await upsertCron(BILLING_SWEEP_JOB, env.BILLING_SWEEP_CRON);
+  // Lifecycle sweep — hourly, kept separate so a slow renewal run can't delay
+  // the time-based notices.
+  await upsertCron(LIFECYCLE_SWEEP_JOB, env.LIFECYCLE_SWEEP_CRON);
+  logger.info('[scheduler] repeatables registered', {
+    [BILLING_SWEEP_JOB]: env.BILLING_SWEEP_CRON,
+    [LIFECYCLE_SWEEP_JOB]: env.LIFECYCLE_SWEEP_CRON,
+  });
+}

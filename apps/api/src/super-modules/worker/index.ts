@@ -1,5 +1,6 @@
 import { logger } from '../../shared/observability/logger';
 import { createBillingWorker } from './workers/billing';
+import { createCronWorker } from './workers/cron';
 import { createInboundWebhookWorker } from './workers/inbound-webhook';
 import { createOutboundWebhookWorker } from './workers/outbound-webhook';
 
@@ -25,7 +26,15 @@ export const startWorkers = (): void => {
     logger.warn('[worker] startWorkers called while workers already running; ignoring');
     return;
   }
-  workers = [createOutboundWebhookWorker(), createInboundWebhookWorker(), createBillingWorker()];
+  // The cron worker drains the scheduler queue (the schedules themselves are
+  // declared in the scheduler super-module); it lives here so the supervisor
+  // owns every Worker's lifecycle uniformly.
+  workers = [
+    createCronWorker(),
+    createOutboundWebhookWorker(),
+    createInboundWebhookWorker(),
+    createBillingWorker(),
+  ];
   logger.info(`[worker] started ${workers.length} workers`);
 };
 
