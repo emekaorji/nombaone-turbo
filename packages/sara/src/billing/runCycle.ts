@@ -1,7 +1,7 @@
 
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
-import { buildSubscriptionLine, createInvoice, finalizeInvoice } from '../invoices';
+import { buildSubscriptionLine, createInvoice, finalizeInvoiceWithAdjustments } from '../invoices';
 import { loadSubscriptionRow } from '../subscriptions';
 import { applyDuePhase } from '../subscription-schedules';
 import { claimPeriod } from './claim';
@@ -36,7 +36,8 @@ export interface RunCycleOptions {
 /**
  * Run ONE billing cycle for a subscription — the single orchestrator composed of
  * the primitives, and the exact unit 04's scheduler will call (no duplicated
- * billing logic). `createInvoice` → `finalizeInvoice` → `collectForInvoice`.
+ * billing logic). `createInvoice` → `finalizeInvoiceWithAdjustments` (discounts +
+ * credits, 05) → `collectForInvoice`.
  * **Idempotent on `(subscription_id, period_index)`** (K2/J6): re-running returns
  * the existing invoice, never a second charge. A zero-amount invoice settles in
  * finalize with no rail call (J8); a `send_invoice`/method-less sub is left `open`
@@ -133,9 +134,14 @@ export async function runCycle(
     return { invoice, outcome: 'paid' };
   }
 
-  const finalized = await finalizeInvoice(txDb, ctx, invoice.reference);
+  // 05: finalize WITH adjustments — apply the subscription's active discount
+  // (consuming a cycle) + oldest-first customer credit, resolving the fixed order
+  // (subtotal → discount → credit → amount_due) and the J8 zero path. A cycle with
+  // no discount/credit reduces to the plain finalize (amount_due === subtotal).
+  const { invoice: finalized } = await finalizeInvoiceWithAdjustments(txDb, ctx, invoice.reference);
   if (finalized.paidAt) {
-    // Zero-amount → paid in finalize (J8); reflect the subscription effects.
+    // Zero-amount (fully covered by discount/credit) → paid in finalize (J8);
+    // reflect the subscription effects.
     await reconcilePaidSubEffects(txDb, ctx, finalized);
     return { invoice: finalized, outcome: 'paid' };
   }
