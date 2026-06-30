@@ -43,12 +43,18 @@ export const NOMBA_ENDPOINTS = {
   tokenizedCardList: '/v1/checkout/tokenized-card-data',
   tokenizedCardDelete: '/v1/checkout/tokenized-card-data',
 
-  // Direct-debit mandates — docs-confirmed paths; ⚠ UNCONFIRMED on sandbox (the
-  // whole `/v1/direct-debits` surface 404s here — rail not enabled for this account).
-  mandateCreate: '/v1/direct-debits', // ⚠ UNCONFIRMED (sandbox 404; docs OK)
-  mandateDebit: '/v1/direct-debits/debit-mandate', // ⚠ UNCONFIRMED (sandbox 404; docs OK)
-  mandateStatus: '/v1/direct-debits/check-direct-debit-status', // ⚠ UNCONFIRMED
-  mandateUpdateStatus: '/v1/direct-debits/update-direct-debit-status', // ⚠ UNCONFIRMED
+  // Direct-debit mandates — PATHS CONFIRMED live against production (api.nomba.com,
+  // 2026-06-30, T0 prod probe): all exist + accept the documented bodies (sandbox
+  // 404s the whole surface — rail disabled there, confirmed by the Slack thread).
+  // The llms.txt doc-slugs (check-/update-direct-debit-status, list-…) are doc-page
+  // names, NOT routes — the probe proved the slugs hit the `/{mandateId}` catch-all.
+  // ⚠ the full create→consent→ACTIVE→debit FLOW still needs one live mandate run.
+  mandateCreate: '/v1/direct-debits', // POST — confirmed (422 on empty body)
+  mandateDebit: '/v1/direct-debits/debit-mandate', // POST {mandateId, amount, merchantReference}
+  mandateStatus: '/v1/direct-debits/status', // GET ?mandateId=<id> — reads the query param
+  mandateGet: '/v1/direct-debits', // GET /v1/direct-debits/{mandateId}
+  mandateList: '/v1/direct-debits/mandates', // GET — confirmed 200
+  mandateUpdateStatus: '/v1/direct-debits/update-status', // PUT {mandateId, status}
 
   // Virtual accounts (transfer/push rail) — confirmed live on sandbox.
   virtualAccountCreate: '/v1/accounts/virtual',

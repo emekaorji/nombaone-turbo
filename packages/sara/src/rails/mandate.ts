@@ -31,7 +31,9 @@ export function createMandateRail(client: NombaClient): RailAdapter {
         method: 'POST',
         endpoint: NOMBA_ENDPOINTS.mandateDebit,
         idempotencyRef: input.reference,
-        body: { mandateId, amount: input.amountKobo }, // kobo
+        // merchantReference = OUR invoice reference → Nomba-side idempotency (E3),
+        // the same join key as the card rail's orderReference.
+        body: { mandateId, amount: input.amountKobo, merchantReference: input.reference }, // kobo
       });
 
       if (!res.ok) {
