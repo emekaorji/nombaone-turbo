@@ -136,6 +136,9 @@ if (cmd === 'probe') {
     amount: 10000, // ₦100 per-debit cap, kobo
     frequency: 'MONTHLY',
     merchantReference: `nbo-ddtest-${Date.now()}`,
+    // NIBSS biller subscriber code — normally provisioned to the merchant account on
+    // Nomba's side; only set DD_SUBSCRIBER_CODE if Nomba says it's a request field.
+    ...(process.env.DD_SUBSCRIBER_CODE ? { subscriberCode: process.env.DD_SUBSCRIBER_CODE } : {}),
     // java LocalDateTime (date+time, NO timezone): YYYY-MM-DDTHH:mm:ss
     startDate: start.toISOString().slice(0, 19),
     endDate: end.toISOString().slice(0, 19),
