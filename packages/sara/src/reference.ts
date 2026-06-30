@@ -30,6 +30,9 @@ export type ReferenceDomain =
   | 'INV' // invoice
   | 'ILI' // invoice line item
   | 'SCH' // subscription schedule
+  | 'CPN' // coupon
+  | 'DSC' // discount
+  | 'CRG' // credit grant
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {
