@@ -15,6 +15,7 @@ const EDGES: ReadonlyArray<[SubscriptionStatus, SubscriptionStatus]> = [
   ['incomplete', 'active'],
   ['incomplete', 'canceled'],
   ['trialing', 'active'],
+  ['trialing', 'past_due'], // trial-end first charge failed → dunning
   ['trialing', 'canceled'],
   ['active', 'past_due'],
   ['active', 'paused'],

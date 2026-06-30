@@ -15,6 +15,7 @@
     "./events": "./src/events/index.ts",
     "./api-keys": "./src/api-keys/index.ts",
     "./auth": "./src/auth/index.ts",
+    "./billing": "./src/billing/index.ts",
     "./org": "./src/org/index.ts",
     "./idempotency": "./src/idempotency/index.ts",
     "./ledger": "./src/ledger/index.ts",
