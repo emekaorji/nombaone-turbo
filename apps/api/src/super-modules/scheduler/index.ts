@@ -1,7 +1,10 @@
 import { Worker } from 'bullmq';
 
-import { SCHEDULER_QUEUE_NAME, connection, upsertCron } from '@nombaone/queue';
+import { SCHEDULER_QUEUE_NAME, connection, enqueueBilling, upsertCron } from '@nombaone/queue';
+import { runBillingSweep } from '@nombaone/sara/billing';
 
+import { db } from '../../shared/config/db';
+import { env } from '../../shared/config/env';
 import { logger } from '../../shared/observability/logger';
 
 import type { SchedulerJobData, SchedulerJobResult } from '@nombaone/queue';
@@ -35,13 +38,10 @@ let worker: Worker<SchedulerJobData, SchedulerJobResult> | null = null;
 
 /** Register every repeatable, idempotently. Add `upsertCron(...)` per task. */
 const registerRepeatables = async (): Promise<void> => {
-  // No cron tasks are registered in the boilerplate — billing (the first real
-  // consumer) is out of scope. Register here, e.g.:
-  //   await upsertCron('reconcile-ledger', '*/15 * * * *');
-  //   await upsertCron('billing-sweep', '0 * * * *');
-  // `upsertCron` keeps exactly one scheduler per task id, so this is replay-safe.
-  void upsertCron; // keep the import live as the documented seam.
-  await Promise.resolve();
+  // The billing sweep: find subscriptions due for renewal and fan out per-sub bill
+  // jobs. Runs ~01:05 daily, before the 02:00 deterministic boundary. `upsertCron`
+  // keeps exactly one scheduler per task id (jobId = task), so this is replay-safe.
+  await upsertCron('billing-sweep', env.BILLING_SWEEP_CRON);
 };
 
 const createSchedulerWorker = (): Worker<SchedulerJobData, SchedulerJobResult> =>
@@ -50,9 +50,18 @@ const createSchedulerWorker = (): Worker<SchedulerJobData, SchedulerJobResult> =
     async (job) => {
       const { task } = job.data;
       switch (task) {
-        // case 'billing-sweep':
-        //   await runBillingSweep(); // find subscriptions/invoices due, act once.
-        //   break;
+        case 'billing-sweep': {
+          // The tick only ENQUEUES (O(batches), fast); the billing worker drains the
+          // fan-out and runs the claim-once charge per subscription (D.8).
+          const { enqueued } = await runBillingSweep({
+            db,
+            now: new Date(),
+            batchSize: env.BILLING_BATCH_SIZE,
+            enqueue: (data) => enqueueBilling(data),
+          });
+          logger.info('[scheduler] billing-sweep enqueued', { enqueued, jobId: job.id });
+          break;
+        }
         default:
           // An unrecognized task is logged, not thrown: a stale repeatable from a
           // previous deploy should not poison the queue.

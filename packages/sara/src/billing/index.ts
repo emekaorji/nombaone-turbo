@@ -8,4 +8,5 @@ export * from './queries';
 export * from './runCycle';
 export * from './scheduling';
 export * from './startSubscription';
+export * from './sweep';
 export * from './types';

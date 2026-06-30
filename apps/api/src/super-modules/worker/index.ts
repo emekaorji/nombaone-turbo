@@ -1,4 +1,5 @@
 import { logger } from '../../shared/observability/logger';
+import { createBillingWorker } from './workers/billing';
 import { createInboundWebhookWorker } from './workers/inbound-webhook';
 import { createOutboundWebhookWorker } from './workers/outbound-webhook';
 
@@ -24,7 +25,7 @@ export const startWorkers = (): void => {
     logger.warn('[worker] startWorkers called while workers already running; ignoring');
     return;
   }
-  workers = [createOutboundWebhookWorker(), createInboundWebhookWorker()];
+  workers = [createOutboundWebhookWorker(), createInboundWebhookWorker(), createBillingWorker()];
   logger.info(`[worker] started ${workers.length} workers`);
 };
 

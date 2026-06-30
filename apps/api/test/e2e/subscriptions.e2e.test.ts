@@ -5,10 +5,18 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   customersTable,
   domainEventsTable,
+  invoicesTable,
   ledgerTransactionsTable,
   paymentMethodsTable,
+  subscriptionPeriodsTable,
+  subscriptionsTable,
 } from '@nombaone/core-db/schema';
-import { confirmInvoiceFromWebhook, processInboundInvoiceEvent } from '@nombaone/sara/billing';
+import {
+  confirmInvoiceFromWebhook,
+  processInboundInvoiceEvent,
+  runBillingSweep,
+  runCycle,
+} from '@nombaone/sara/billing';
 import { createCustomer } from '@nombaone/sara/customers';
 import { createPlan } from '@nombaone/sara/plans';
 import { createPrice } from '@nombaone/sara/prices';
@@ -374,5 +382,72 @@ describe('subscriptions + billing e2e', () => {
     const final = await asA(request(harness.app).get(`/v1/subscriptions/${subRef}`));
     expect(final.body.data.status).toBe('canceled');
     expect(final.body.data.cancellationReason).toBe('involuntary');
+  });
+
+  // ── billing sweep (B7 due-selection + B6/B8/K3 concurrency) ────────────────
+  async function setDue(subRef: string): Promise<string> {
+    const row = await loadSubscriptionRow(harness.db, ctxA, subRef);
+    await harness.db
+      .update(subscriptionsTable)
+      .set({ nextBillingAt: new Date(Date.now() - 60_000) })
+      .where(eq(subscriptionsTable.id, row.id));
+    return row.id;
+  }
+  const rowCount = async (table: typeof invoicesTable | typeof subscriptionPeriodsTable, subId: string, periodIndex: number): Promise<number> =>
+    (
+      await harness.db
+        .select({ id: table.id })
+        .from(table)
+        .where(and(eq(table.subscriptionId, subId), eq(table.periodIndex, periodIndex)))
+    ).length;
+
+  it('B7 — runBillingSweep enqueues exactly the subscriptions with next_billing_at ≤ now', async () => {
+    cardOutcome = 'succeeded';
+    const a = await seedPrice(500000);
+    const subA = (await newSub({ customerId: a.customerRef, priceId: a.priceRef, paymentMethodId: await seedActiveCard(a.customerRef) })).body.data.id as string;
+    await setDue(subA); // due (past)
+    const b = await seedPrice(500000);
+    const subB = (await newSub({ customerId: b.customerRef, priceId: b.priceRef, paymentMethodId: await seedActiveCard(b.customerRef) })).body.data.id as string;
+    // subB's next_billing_at is the just-billed period end (~1 interval future) — not due.
+
+    const enqueued: string[] = [];
+    const { enqueued: count } = await runBillingSweep({
+      db: harness.db,
+      now: new Date(),
+      batchSize: 100,
+      enqueue: async (job) => {
+        enqueued.push(job.subscriptionReference);
+      },
+    });
+    expect(enqueued).toContain(subA);
+    expect(enqueued).not.toContain(subB);
+    expect(count).toBe(enqueued.length);
+  });
+
+  it('B6/B8/K3 — two concurrent renewal runs bill the period exactly once', async () => {
+    cardOutcome = 'succeeded';
+    const { customerRef, priceRef } = await seedPrice(300000);
+    const pm = await seedActiveCard(customerRef);
+    const subRef = (await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: pm })).body.data.id as string;
+    const subId = await setDue(subRef); // due for period 1 (index is 1 after the inline first charge)
+
+    const results = await Promise.allSettled([
+      runCycle(harness.db, ctxA, subRef),
+      runCycle(harness.db, ctxA, subRef),
+    ]);
+    expect(results.some((r) => r.status === 'fulfilled')).toBe(true);
+
+    // Exactly one invoice + one claim for period 1, and exactly one charge.
+    expect(await rowCount(invoicesTable, subId, 1)).toBe(1);
+    expect(await rowCount(subscriptionPeriodsTable, subId, 1)).toBe(1);
+    const [inv] = await harness.db
+      .select({ reference: invoicesTable.reference })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
+    expect(await countKind(inv!.reference, 'charge')).toBe(1);
+
+    // The optimistic version guard advanced the sub exactly once → index 2.
+    const finalRow = await loadSubscriptionRow(harness.db, ctxA, subRef);
+    expect(finalRow.currentPeriodIndex).toBe(2);
   });
 });

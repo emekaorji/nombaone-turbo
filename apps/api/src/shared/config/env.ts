@@ -43,6 +43,22 @@ const envSchema = z.object({
   NOMBA_CLIENT_SECRET: z.string().min(1).optional(),
   NOMBA_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
   NOMBA_TOKEN_REFRESH_MARGIN_SEC: z.coerce.number().int().positive().default(300),
+
+  /**
+   * Billing scheduler (04). A single fixed billing zone + deterministic hour make
+   * "due today" one unambiguous instant (B5). The billing sweep runs shortly before
+   * the boundary hour; the lifecycle sweep runs hourly (kept separate so a slow
+   * renewal run cannot delay notices).
+   */
+  BILLING_TIMEZONE: z.string().min(1).default('Africa/Lagos'),
+  BILLING_HOUR: z.coerce.number().int().min(0).max(23).default(2),
+  BILLING_SWEEP_CRON: z.string().min(1).default('5 1 * * *'),
+  BILLING_BATCH_SIZE: z.coerce.number().int().positive().default(500),
+  BILLING_MAX_CATCH_UP_PERIODS: z.coerce.number().int().positive().default(36),
+  LIFECYCLE_SWEEP_CRON: z.string().min(1).default('0 * * * *'),
+  INCOMPLETE_EXPIRY_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
+  TRIAL_NOTICE_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
+  PM_EXPIRY_NOTICE_WINDOW_DAYS: z.coerce.number().int().positive().default(14),
 });
 
 export const env = envSchema.parse(process.env);
