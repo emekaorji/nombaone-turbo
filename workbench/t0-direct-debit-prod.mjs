@@ -118,19 +118,27 @@ if (cmd === 'probe') {
   console.log('\nUse the EXISTS paths below for create/status/debit.');
 } else if (cmd === 'create') {
   const now = new Date();
-  const end = new Date(now.getTime() + 365 * 24 * 3600 * 1000);
+  // start tomorrow so it's unambiguously "present or future" against Nomba's WAT
+  // clock (a UTC `now` can read as past in UTC+1).
+  const start = new Date(now.getTime() + 24 * 3600 * 1000);
+  const end = new Date(start.getTime() + 365 * 24 * 3600 * 1000);
   const body = {
     customerAccountNumber: need('DD_ACCOUNT_NUMBER'),
     bankCode: need('DD_BANK_CODE'),
     customerName: need('DD_ACCOUNT_NAME'),
     customerAccountName: need('DD_ACCOUNT_NAME'),
-    amount: 10000, // ₦100 cap, kobo
+    customerEmail: need('DD_EMAIL'),
+    // docs mark these optional but the API REQUIRES them (T0 prod). Set DD_PHONE /
+    // DD_ADDRESS to your real values.
+    customerPhoneNumber: process.env.DD_PHONE ?? '08000000000',
+    customerAddress: process.env.DD_ADDRESS ?? 'Lagos, Nigeria',
+    narration: 'nombaone direct-debit mandate test',
+    amount: 10000, // ₦100 per-debit cap, kobo
     frequency: 'MONTHLY',
     merchantReference: `nbo-ddtest-${Date.now()}`,
-    // Nomba expects java LocalDateTime (date+time, NO timezone): YYYY-MM-DDTHH:mm:ss
-    startDate: now.toISOString().slice(0, 19),
+    // java LocalDateTime (date+time, NO timezone): YYYY-MM-DDTHH:mm:ss
+    startDate: start.toISOString().slice(0, 19),
     endDate: end.toISOString().slice(0, 19),
-    customerEmail: need('DD_EMAIL'),
     startImmediately: false,
   };
   const res = await call(tok, 'POST', '/v1/direct-debits', { body });
