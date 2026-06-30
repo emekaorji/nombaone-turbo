@@ -1,6 +1,7 @@
+import { eq } from 'drizzle-orm';
+
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 import { ledgerAccountsTable } from '@nombaone/core-db/schema';
-import { eq } from 'drizzle-orm';
 
 import type { InfraDb } from '../context';
 

@@ -1,14 +1,16 @@
+import { and, eq, sql } from 'drizzle-orm';
+
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 import {
   ledgerEntriesTable,
   ledgerTransactionsTable,
   ledgerAccountsTable,
 } from '@nombaone/core-db/schema';
-import { and, eq, sql } from 'drizzle-orm';
 
-import type { DomainContext, InfraTxDb } from '../context';
 import { mintReference } from '../reference';
 import { balanceDelta, type EntryInput, type PostedTransaction } from './post';
+
+import type { DomainContext, InfraTxDb } from '../context';
 
 /**
  * ── Correction-by-reversal paradigm ──

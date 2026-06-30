@@ -1,10 +1,10 @@
-import type { InvoiceRow } from '@nombaone/core-db/schema';
 
 import { ensureSystemAccounts } from '../config';
 import { claimInvoicePaid, linkInvoiceLedgerTransaction, loadInvoiceRow } from '../invoices';
 import { ensureAccount, postTransaction } from '../ledger';
 import { applyPaidSubEffects } from './effects';
 
+import type { InvoiceRow } from '@nombaone/core-db/schema';
 import type { DomainContext, InfraTxDb } from '../context';
 import type { InboundVerification } from './types';
 

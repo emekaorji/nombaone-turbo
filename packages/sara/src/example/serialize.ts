@@ -1,6 +1,6 @@
-import type { ExampleRow } from '@nombaone/core-db/schema';
-
 import { CURRENCY } from '../money';
+
+import type { ExampleRow } from '@nombaone/core-db/schema';
 import type { ExampleResponseData, ExampleStatus } from './types';
 
 /**

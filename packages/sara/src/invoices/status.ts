@@ -1,5 +1,4 @@
 import type { InvoiceRow } from '@nombaone/core-db/schema';
-
 import type { InvoiceStatus } from './types';
 
 /**

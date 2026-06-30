@@ -1,9 +1,11 @@
 import { Worker } from 'bullmq';
 
 import { INBOUND_WEBHOOK_QUEUE_NAME, connection } from '@nombaone/queue';
+import { processInboundInvoiceEvent } from '@nombaone/sara/billing';
 import { processInboundNombaEvent } from '@nombaone/sara/payment-methods';
 
 import { db } from '../../../shared/config/db';
+import { getNombaClient } from '../../../shared/config/nomba';
 import { logger } from '../../../shared/observability/logger';
 
 import type { InboundWebhookJobData, InboundWebhookJobResult } from '@nombaone/queue';
@@ -35,6 +37,25 @@ export const createInboundWebhookWorker = (): Worker<
       if (provider === 'nomba') {
         const requestId =
           typeof payload.requestId === 'string' ? payload.requestId : providerEventId;
+
+        // Invoice settlement first: if OUR reference resolves to an invoice, requery
+        // + confirm (E4). Otherwise fall through to the payment-method inbound path.
+        const invoice = await processInboundInvoiceEvent(db, getNombaClient(), {
+          requestId,
+          eventType,
+          payload,
+        });
+        if (invoice.matched) {
+          logger.info('[worker] nomba inbound settled invoice', {
+            jobId: job.id,
+            providerEventId,
+            eventType,
+            settled: invoice.settled,
+            firstSeen: invoice.firstSeen,
+          });
+          return { providerEventId, handled: invoice.handled };
+        }
+
         const result = await processInboundNombaEvent(db, { requestId, eventType, payload });
         logger.info('[worker] nomba inbound processed', {
           jobId: job.id,

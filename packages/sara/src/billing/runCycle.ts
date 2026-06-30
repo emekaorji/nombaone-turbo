@@ -1,4 +1,3 @@
-import type { InvoiceRow } from '@nombaone/core-db/schema';
 
 import { buildSubscriptionLine, createInvoice, finalizeInvoice } from '../invoices';
 import { loadSubscriptionRow } from '../subscriptions';
@@ -11,6 +10,7 @@ import {
 } from './effects';
 import { rollPeriod } from './period';
 
+import type { InvoiceRow } from '@nombaone/core-db/schema';
 import type { DomainContext, InfraTxDb } from '../context';
 import type { InvoiceBillingReason } from '../invoices';
 import type { CollectOutcome } from './types';

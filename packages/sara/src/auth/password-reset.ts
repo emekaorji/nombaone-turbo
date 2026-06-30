@@ -1,11 +1,12 @@
 import { createHash, randomBytes } from 'node:crypto';
-
 import { and, eq, gt, isNull } from 'drizzle-orm';
+
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 import { passwordResetTokensTable } from '@nombaone/core-db/schema';
 
-import type { InfraDb, InfraTxDb } from '../context';
 import { findUserByEmail, updateUserPassword } from './users';
+
+import type { InfraDb, InfraTxDb } from '../context';
 
 /**
  * PARADIGM — single-use, hashed, expiring reset tokens with NO user enumeration.

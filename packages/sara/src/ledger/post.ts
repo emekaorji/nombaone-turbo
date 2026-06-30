@@ -1,13 +1,15 @@
+import { eq, sql } from 'drizzle-orm';
+
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 import {
   ledgerEntriesTable,
   ledgerTransactionsTable,
   ledgerAccountsTable,
 } from '@nombaone/core-db/schema';
-import { eq, sql } from 'drizzle-orm';
+
+import { mintReference } from '../reference';
 
 import type { DomainContext, InfraTxDb } from '../context';
-import { mintReference } from '../reference';
 
 /**
  * ── The double-entry posting paradigm ──

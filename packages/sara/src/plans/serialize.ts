@@ -1,5 +1,4 @@
 import type { PlanRow } from '@nombaone/core-db/schema';
-
 import type { PlanResponseData } from './types';
 
 /** Bridge the internal `plans` row to the public DTO: id = the public reference

@@ -1,10 +1,12 @@
 import { eq } from 'drizzle-orm';
+
 import { orgUsersTable, type OrgUserRow } from '@nombaone/core-db/schema';
 
-import type { InfraReadScope, InfraTxScope } from '../context';
 import { mintReference } from '../reference';
 import { encryptPii } from '../crypto';
 import { hashPassword } from './password';
+
+import type { InfraReadScope, InfraTxScope } from '../context';
 import type { OrgUserRole } from './rbac';
 
 /**

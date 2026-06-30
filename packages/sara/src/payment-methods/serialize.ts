@@ -1,5 +1,4 @@
 import type { PaymentMethodRow } from '@nombaone/core-db/schema';
-
 import type { PaymentMethodResponseData } from './types';
 
 /**

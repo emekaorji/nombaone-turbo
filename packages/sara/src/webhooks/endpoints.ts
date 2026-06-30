@@ -7,8 +7,9 @@ import {
   type WebhookEndpointRow,
 } from '@nombaone/core-db/schema';
 
-import type { DomainContext, InfraDb, InfraTxDb } from '../context';
 import { mintReference } from '../reference';
+
+import type { DomainContext, InfraDb, InfraTxDb } from '../context';
 
 /**
  * PARADIGM — tenant-owned outbound endpoints with a hash-at-rest signing secret.

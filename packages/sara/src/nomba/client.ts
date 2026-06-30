@@ -1,9 +1,9 @@
-import type { Redis } from 'ioredis';
 
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { NOMBA_ENDPOINTS } from './endpoints';
 
+import type { Redis } from 'ioredis';
 import type { DomainContext } from '../context';
 import type { NombaConfig, NombaToken } from './types';
 

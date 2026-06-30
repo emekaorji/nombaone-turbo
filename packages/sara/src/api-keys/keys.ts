@@ -1,11 +1,12 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { and, desc, eq } from 'drizzle-orm';
 
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 import { apiKeysTable, type ApiKeyRow } from '@nombaone/core-db/schema';
-import { and, desc, eq } from 'drizzle-orm';
+
+import { mintReference } from '../reference';
 
 import type { DomainContext, Environment, InfraDb, InfraTxDb } from '../context';
-import { mintReference } from '../reference';
 
 /**
  * ── The per-org secret API key (public-API authentication) ─────────────────

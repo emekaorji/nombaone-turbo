@@ -1,5 +1,6 @@
-import type { DomainContext, InfraTxScope } from '../context';
 import { ensureAccount, type LedgerAccountKind } from '../ledger/accounts';
+
+import type { DomainContext, InfraTxScope } from '../context';
 
 /**
  * ── Well-known system accounts paradigm ──

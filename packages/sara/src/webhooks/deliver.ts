@@ -9,8 +9,9 @@ import {
   type DomainEventRow,
 } from '@nombaone/core-db/schema';
 
-import type { InfraDb } from '../context';
 import { signWebhookPayload } from './sign';
+
+import type { InfraDb } from '../context';
 
 /**
  * PARADIGM — the at-least-once delivery drain with exponential backoff and a

@@ -1,5 +1,4 @@
 import type { CustomerRow } from '@nombaone/core-db/schema';
-
 import type { CustomerResponseData } from './types';
 
 /**

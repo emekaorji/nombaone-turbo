@@ -1,5 +1,4 @@
 import type { PriceRow } from '@nombaone/core-db/schema';
-
 import type { PriceResponseData } from './types';
 
 /**
