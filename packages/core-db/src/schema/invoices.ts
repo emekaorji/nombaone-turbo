@@ -61,6 +61,7 @@ export const invoicesTable = pgTable(
     finalizedAt: timestamp('finalized_at', { withTimezone: true }),
     voidedAt: timestamp('voided_at', { withTimezone: true }),
     paidAt: timestamp('paid_at', { withTimezone: true }),
+    uncollectibleAt: timestamp('uncollectible_at', { withTimezone: true }),
     periodStart: timestamp('period_start', { withTimezone: true }),
     periodEnd: timestamp('period_end', { withTimezone: true }),
     metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),

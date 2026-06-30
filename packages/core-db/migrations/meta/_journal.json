@@ -36,6 +36,13 @@
       "when": 1782783930951,
       "tag": "0004_tiny_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782786850226,
+      "tag": "0005_little_marvel_boy",
+      "breakpoints": true
     }
   ]
 }

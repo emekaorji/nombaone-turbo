@@ -23,6 +23,7 @@
     "./webhooks": "./src/webhooks/index.ts",
     "./audit": "./src/audit/index.ts",
     "./customers": "./src/customers/index.ts",
+    "./invoices": "./src/invoices/index.ts",
     "./nomba": "./src/nomba/index.ts",
     "./payment-methods": "./src/payment-methods/index.ts",
     "./subscriptions": "./src/subscriptions/index.ts",
