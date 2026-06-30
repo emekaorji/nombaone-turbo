@@ -3,21 +3,22 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 /**
  * Inbound (Nomba → us) webhook signature verification.
  *
- * ⚠ UNCONFIRMED (T0): the signing scheme diverges between sources and must be
- * pinned against a live sandbox webhook before this ships live:
- *   • team doc      → HMAC-SHA256 over the RAW body, hex
- *   • public docs   → HMAC-SHA256 over a COLON-JOINED field string
- *                     (event_type:requestId:userId:walletId:transactionId:
- *                      transactionType:transactionTime:transactionResponseCode:timestamp),
- *                     Base64
- * We default to the team-doc scheme and expose both; T0 flips `NOMBA_SIGNATURE_SCHEME`
- * to whichever the sandbox's `nomba-signature` actually matches. This is distinct
- * from the OUTBOUND `webhooks/sign.ts` (our raw-body-hex deliveries to tenants).
+ * T0 (2026-06-30) confirmed the SCHEME FAMILY from the Nomba docs: HMAC-SHA256
+ * over a COLON-JOINED field string concatenated with a timestamp — i.e. the
+ * `field_string_base64` path, NOT the team-doc raw-body-hex. So that is the
+ * default now (defaulting to raw-body-hex would have failed every inbound
+ * signature in production — F1).
+ *   ⚠ STILL TO PIN from a recorded live sample (needs a funded sandbox txn → a
+ *   public callback to capture the headers): the EXACT field order, the digest
+ *   encoding (the docs mention both hex and base64), and the `nomba-signature`
+ *   companion header names. The field list below is the documented order.
+ * Distinct from the OUTBOUND `webhooks/sign.ts` (our raw-body-hex tenant deliveries).
  */
 export type NombaSignatureScheme = 'raw_body_hex' | 'field_string_base64';
 
-// ⚠ UNCONFIRMED — pin in T0 from a recorded sandbox sample.
-export const NOMBA_SIGNATURE_SCHEME: NombaSignatureScheme = 'raw_body_hex';
+// T0-confirmed family (colon-joined fields + timestamp, HMAC-SHA256). Exact field
+// order / encoding ⚠ still to byte-confirm from a recorded sample.
+export const NOMBA_SIGNATURE_SCHEME: NombaSignatureScheme = 'field_string_base64';
 
 /** The public-docs colon-joined field string, in the documented field order. */
 export function buildFieldSigningString(payload: Record<string, unknown>): string {
