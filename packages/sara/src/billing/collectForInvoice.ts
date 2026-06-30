@@ -4,7 +4,7 @@ import { invoicesTable, type InvoiceRow, type PaymentMethodRow } from '@nombaone
 
 import { ensureSystemAccounts } from '../config';
 import { emitEvent } from '../events';
-import { markInvoicePaid } from '../invoices';
+import { claimInvoicePaid, linkInvoiceLedgerTransaction } from '../invoices';
 import { ensureAccount, postTransaction } from '../ledger';
 import { getRail } from '../rails';
 import { enterPastDue } from '../subscriptions';
@@ -36,9 +36,9 @@ export async function collectForInvoice(
   method: PaymentMethodRow
 ): Promise<CollectResult> {
   if (invoice.amountDue === 0) {
-    const paid = await markInvoicePaid(txDb, ctx, invoice, null);
-    await applyPaidSubEffects(txDb, ctx, paid);
-    return { outcome: 'paid', invoice: paid };
+    const claim = await claimInvoicePaid(txDb, ctx, invoice);
+    if (claim.claimed) await applyPaidSubEffects(txDb, ctx, claim.invoice);
+    return { outcome: 'paid', invoice: claim.invoice };
   }
 
   await ensureSystemAccounts(txDb, ctx);
@@ -54,6 +54,13 @@ export async function collectForInvoice(
   });
 
   if (result.status === 'succeeded') {
+    // CLAIM before posting: only the winner of the atomic claim moves money, so a
+    // concurrent inbound confirm (or a racing collect) cannot double-post (J6). The
+    // rail itself dedups on our reference, so the external charge happened once.
+    const claim = await claimInvoicePaid(txDb, ctx, invoice);
+    if (!claim.claimed) {
+      return { outcome: 'paid', invoice: claim.invoice };
+    }
     const posted = await postTransaction(txDb, ctx, {
       kind: 'charge',
       memo: `charge ${invoice.reference}`,
@@ -62,9 +69,9 @@ export async function collectForInvoice(
         { accountId: platformRevenue.id, direction: 'credit', amount: invoice.amountDue },
       ],
     });
-    const paid = await markInvoicePaid(txDb, ctx, invoice, posted.transactionId);
-    await applyPaidSubEffects(txDb, ctx, paid);
-    return { outcome: 'paid', invoice: paid };
+    const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
+    await applyPaidSubEffects(txDb, ctx, linked);
+    return { outcome: 'paid', invoice: linked };
   }
 
   if (result.status === 'failed') {

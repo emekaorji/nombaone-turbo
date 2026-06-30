@@ -1,7 +1,7 @@
 import type { InvoiceRow } from '@nombaone/core-db/schema';
 
 import { ensureSystemAccounts } from '../config';
-import { loadInvoiceRow, markInvoicePaid } from '../invoices';
+import { claimInvoicePaid, linkInvoiceLedgerTransaction, loadInvoiceRow } from '../invoices';
 import { ensureAccount, postTransaction } from '../ledger';
 import { applyPaidSubEffects } from './effects';
 
@@ -26,13 +26,24 @@ export async function confirmInvoiceFromWebhook(
 ): Promise<{ settled: boolean; invoice: InvoiceRow }> {
   const invoice = await loadInvoiceRow(txDb, ctx, invoiceReference);
 
-  // Already settled — a redelivered/out-of-order webhook is a no-op (J6).
-  if (invoice.paidAt) return { settled: false, invoice };
+  // Terminal states never settle: already-paid (J6, redelivered/out-of-order
+  // webhook), or void/uncollectible (a genuine late transfer on such an invoice is
+  // an out-of-band credit, not an auto-settlement).
+  if (invoice.paidAt || invoice.voidedAt || invoice.uncollectibleAt) {
+    return { settled: false, invoice };
+  }
 
   // E4: never trust the webhook — only a provider-confirmed requery that matches
   // our amount due is allowed to move money.
   if (verification.status !== 'settled' || verification.settledAmountKobo !== invoice.amountDue) {
     return { settled: false, invoice };
+  }
+
+  // CLAIM before posting: two concurrent deliveries of the same settled webhook
+  // resolve to one winner; the loser settles nothing (J6).
+  const claim = await claimInvoicePaid(txDb, ctx, invoice);
+  if (!claim.claimed) {
+    return { settled: false, invoice: claim.invoice };
   }
 
   await ensureSystemAccounts(txDb, ctx);
@@ -51,7 +62,7 @@ export async function confirmInvoiceFromWebhook(
     ],
   });
 
-  const paid = await markInvoicePaid(txDb, ctx, invoice, posted.transactionId);
-  await applyPaidSubEffects(txDb, ctx, paid);
-  return { settled: true, invoice: paid };
+  const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
+  await applyPaidSubEffects(txDb, ctx, linked);
+  return { settled: true, invoice: linked };
 }

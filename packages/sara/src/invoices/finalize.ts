@@ -5,7 +5,7 @@ import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { emitEvent } from '../events';
 import { assertLineItemsSumToTotal } from './lineItems';
-import { markInvoicePaid } from './markPaid';
+import { claimInvoicePaid } from './markPaid';
 import { getInvoiceLineRows, loadInvoiceRow } from './queries';
 
 import type { DomainContext, InfraTxDb } from '../context';
@@ -44,7 +44,11 @@ export async function finalizeInvoice(
   await emitEvent(txDb, { ...ctx, type: 'invoice.finalized', payload: { reference } });
 
   if (finalized.amountDue === 0) {
-    return markInvoicePaid(txDb, ctx, finalized, null);
+    // J8 zero-amount → paid with no rail/charge. The caller (runCycle) sees paid_at
+    // and applies the subscription effects; there is no settlement race for a ₦0
+    // invoice (no rail, no webhook), so a plain claim suffices.
+    const claim = await claimInvoicePaid(txDb, ctx, finalized);
+    return claim.invoice;
   }
   return finalized;
 }

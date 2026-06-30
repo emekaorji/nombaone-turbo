@@ -41,24 +41,48 @@ export async function createInvoice(
   const total = subtotal;
   const reference = mintReference('INV');
 
-  const [row] = await txDb
-    .insert(invoicesTable)
-    .values({
-      reference,
-      organizationId: ctx.organizationId,
-      environment: ctx.environment,
-      customerId: input.customerId,
-      subscriptionId: input.subscriptionId ?? null,
-      periodIndex: input.periodIndex ?? null,
-      billingReason: input.billingReason,
-      subtotal,
-      total,
-      amountDue: total,
-      periodStart: input.periodStart ?? null,
-      periodEnd: input.periodEnd ?? null,
-      dueDate: input.dueDate ?? null,
-    })
-    .returning();
+  let row: InvoiceRow | undefined;
+  try {
+    const inserted = await txDb
+      .insert(invoicesTable)
+      .values({
+        reference,
+        organizationId: ctx.organizationId,
+        environment: ctx.environment,
+        customerId: input.customerId,
+        subscriptionId: input.subscriptionId ?? null,
+        periodIndex: input.periodIndex ?? null,
+        billingReason: input.billingReason,
+        subtotal,
+        total,
+        amountDue: total,
+        periodStart: input.periodStart ?? null,
+        periodEnd: input.periodEnd ?? null,
+        dueDate: input.dueDate ?? null,
+      })
+      .returning();
+    row = inserted[0];
+  } catch (err) {
+    // Lost a concurrent (subscription_id, period_index) race — the pre-check missed
+    // but the partial unique index blocked this second row. Honor the idempotent
+    // contract (K2): return the invoice the winning racer created, never a 500.
+    if (input.subscriptionId != null && input.periodIndex != null) {
+      const [existing] = await txDb
+        .select()
+        .from(invoicesTable)
+        .where(
+          and(
+            eq(invoicesTable.organizationId, ctx.organizationId),
+            eq(invoicesTable.environment, ctx.environment),
+            eq(invoicesTable.subscriptionId, input.subscriptionId),
+            eq(invoicesTable.periodIndex, input.periodIndex)
+          )
+        )
+        .limit(1);
+      if (existing) return existing;
+    }
+    throw err;
+  }
   if (!row) {
     throw AppError.InternalServerError(
       'failed to persist invoice',
