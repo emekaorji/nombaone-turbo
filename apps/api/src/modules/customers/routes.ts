@@ -3,6 +3,7 @@ import { Router } from 'express';
 import {
   applyDiscountBody,
   createCustomerBody,
+  grantCreditBody,
   listCustomerQuery,
   updateCustomerBody,
 } from '@nombaone/core-contracts/validations';
@@ -13,6 +14,8 @@ import {
   applyCustomerDiscountController,
   createCustomerController,
   getCustomerController,
+  getCustomerCreditController,
+  grantCustomerCreditController,
   listCustomerController,
   removeCustomerDiscountController,
   updateCustomerController,
@@ -88,4 +91,22 @@ customerRouter.delete(
   requireScope('customers:write'),
   idempotency,
   removeCustomerDiscountController
+);
+
+// ── Credit balance (grant / read) ────────────────────────────────────────────
+customerRouter.post(
+  '/customers/:reference/credit',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('customers:write'),
+  idempotency,
+  validate({ body: grantCreditBody }),
+  grantCustomerCreditController
+);
+customerRouter.get(
+  '/customers/:reference/credit',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('customers:read'),
+  getCustomerCreditController
 );

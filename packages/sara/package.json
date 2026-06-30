@@ -32,6 +32,7 @@
     "./proration": "./src/proration/index.ts",
     "./coupons": "./src/coupons/index.ts",
     "./discounts": "./src/discounts/index.ts",
+    "./credits": "./src/credits/index.ts",
     "./plans": "./src/plans/index.ts",
     "./prices": "./src/prices/index.ts",
     "./example": "./src/example/index.ts"

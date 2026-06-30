@@ -603,4 +603,18 @@ describe('subscriptions + billing e2e', () => {
     expect(d2.status).toBe(409);
     expect(d2.body.error.code).toBe('COUPON_ALREADY_APPLIED');
   });
+
+  it('credit grant → ledger-backed balance + oldest-first grant audit (C8)', async () => {
+    const customer = await createCustomer(harness.db, ctxA, { email: `cr${uniq()}@acme.test`, name: 'C' });
+    const ref = customer.id;
+    const g1 = await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amount: 100000, source: 'manual' });
+    expect(g1.status).toBe(201);
+    expect(g1.body.data).toMatchObject({ amount: 100000, remaining: 100000, source: 'manual' });
+    await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amount: 50000, source: 'goodwill' });
+
+    const balance = await asA(request(harness.app).get(`/v1/customers/${ref}/credit`));
+    expect(balance.body.data.balance).toBe(150000); // ledger account, O(1)
+    expect(balance.body.data.grants).toHaveLength(2);
+    expect(balance.body.data.grants[0].amount).toBe(100000); // oldest-first
+  });
 });
