@@ -16,6 +16,7 @@ import {
   processInboundInvoiceEvent,
   runBillingSweep,
   runCycle,
+  runLifecycleSweep,
 } from '@nombaone/sara/billing';
 import { createCustomer } from '@nombaone/sara/customers';
 import { createPlan } from '@nombaone/sara/plans';
@@ -517,5 +518,45 @@ describe('subscriptions + billing e2e', () => {
     // upcoming-invoice now reflects the (applied) new price.
     const upcoming = await asA(request(harness.app).get(`/v1/subscriptions/${sub.id}/upcoming-invoice`));
     expect(upcoming.body.data.total).toBe(300000);
+  });
+
+  // ── lifecycle sweep (A6 expiry + trial notice idempotency) ─────────────────
+  const lifecycleDeps = () => ({
+    db: harness.db,
+    now: new Date(),
+    incompleteExpiryWindowMs: 24 * 3600 * 1000,
+    trialNoticeWindowMs: 72 * 3600 * 1000,
+    pmExpiryNoticeWindowDays: 14,
+    batchSize: 100,
+  });
+
+  it('A6 — lifecycle sweep expires a never-paid incomplete subscription past its window', async () => {
+    cardOutcome = 'pending'; // first charge pending → stays incomplete
+    const { customerRef, priceRef } = await seedPrice(500000);
+    const res = await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: await seedActiveCard(customerRef) });
+    const subRef = res.body.data.id as string;
+    expect(res.body.data.status).toBe('incomplete');
+
+    // backdate created_at past the 24h expiry window
+    await harness.db
+      .update(subscriptionsTable)
+      .set({ createdAt: new Date(Date.now() - 48 * 3600 * 1000) })
+      .where(eq(subscriptionsTable.reference, subRef));
+
+    await runLifecycleSweep(lifecycleDeps());
+    const after = await asA(request(harness.app).get(`/v1/subscriptions/${subRef}`));
+    expect(after.body.data.status).toBe('incomplete_expired');
+  });
+
+  it('lifecycle sweep emits subscription.trial_will_end exactly once across two ticks (stamp idempotency)', async () => {
+    const { customerRef, priceRef } = await seedPrice(500000, 2); // 2-day trial, within the 72h notice window
+    const res = await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: await seedActiveCard(customerRef) });
+    const subRef = res.body.data.id as string;
+    expect(res.body.data.status).toBe('trialing');
+
+    await runLifecycleSweep(lifecycleDeps());
+    await runLifecycleSweep(lifecycleDeps()); // replay
+    const types = await eventTypesFor(subRef);
+    expect(types.filter((t) => t === 'subscription.trial_will_end').length).toBe(1);
   });
 });

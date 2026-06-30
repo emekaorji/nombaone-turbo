@@ -3,8 +3,10 @@ import { Worker } from 'bullmq';
 import { BILLING_QUEUE_NAME, connection } from '@nombaone/queue';
 import { runCycle } from '@nombaone/sara/billing';
 import { getSubscriptionByReference } from '@nombaone/sara/subscriptions';
+import { NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { db } from '../../../shared/config/db';
+import { env } from '../../../shared/config/env';
 import { logger } from '../../../shared/observability/logger';
 
 import type { BillingJobData, BillingJobResult } from '@nombaone/queue';
@@ -42,14 +44,30 @@ export const createBillingWorker = (): Worker<BillingJobData, BillingJobResult> 
         return { subscriptionId, outcome: 'skipped' };
       }
 
-      const result = await runCycle(db, ctx, subscriptionReference);
-      logger.info('[worker] billing cycle ran', {
-        jobId: job.id,
-        subscriptionReference,
-        periodIndex,
-        outcome: result.outcome,
-      });
-      return { subscriptionId, outcome: result.outcome };
+      try {
+        const result = await runCycle(db, ctx, subscriptionReference, {
+          maxCatchUpPeriods: env.BILLING_MAX_CATCH_UP_PERIODS,
+        });
+        logger.info('[worker] billing cycle ran', {
+          jobId: job.id,
+          subscriptionReference,
+          periodIndex,
+          outcome: result.outcome,
+        });
+        return { subscriptionId, outcome: result.outcome };
+      } catch (error) {
+        // A pathologically stale subscription: alert for manual review instead of
+        // crashing the worker / retrying forever.
+        if ((error as { code?: string }).code === NOMBAONE_ERROR_CODES.BILLING_CATCH_UP_LIMIT_EXCEEDED) {
+          logger.error('[worker] billing catch-up limit exceeded; manual review required', {
+            jobId: job.id,
+            subscriptionReference,
+            periodIndex,
+          });
+          return { subscriptionId, outcome: 'catch_up_limit_exceeded' };
+        }
+        throw error;
+      }
     },
     { connection, concurrency: BILLING_CONCURRENCY }
   );

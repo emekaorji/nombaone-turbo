@@ -1,4 +1,6 @@
 
+import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
+
 import { buildSubscriptionLine, createInvoice, finalizeInvoice } from '../invoices';
 import { loadSubscriptionRow } from '../subscriptions';
 import { applyDuePhase } from '../subscription-schedules';
@@ -13,6 +15,7 @@ import {
 import { advancePeriod } from './period';
 import { computeAnchor, periodBounds } from './scheduling';
 
+
 import type { InvoiceRow } from '@nombaone/core-db/schema';
 import type { DomainContext, InfraTxDb } from '../context';
 import type { InvoiceBillingReason } from '../invoices';
@@ -21,6 +24,13 @@ import type { CollectOutcome } from './types';
 export interface RunCycleResult {
   invoice: InvoiceRow;
   outcome: CollectOutcome | 'open';
+}
+
+export interface RunCycleOptions {
+  /** Cap on how many periods a subscription may be behind before the cycle refuses
+   *  to bill and raises `BILLING_CATCH_UP_LIMIT_EXCEEDED` (a pathologically stale
+   *  row → operator alert, not an unbounded drain). Omit for no cap. */
+  maxCatchUpPeriods?: number;
 }
 
 /**
@@ -35,7 +45,8 @@ export interface RunCycleResult {
 export async function runCycle(
   txDb: InfraTxDb,
   ctx: DomainContext,
-  subscriptionRef: string
+  subscriptionRef: string,
+  options: RunCycleOptions = {}
 ): Promise<RunCycleResult> {
   const loaded = await loadSubscriptionRow(txDb, ctx, subscriptionRef);
   // B10: apply any schedule phase due at THIS boundary BEFORE pricing, so the
@@ -59,6 +70,29 @@ export async function runCycle(
   );
   const billingReason: InvoiceBillingReason =
     sub.currentPeriodIndex === 0 ? 'subscription_create' : 'subscription_cycle';
+
+  // Catch-up guard (B9 safety): refuse to bill a pathologically stale row — count
+  // how many whole periods are overdue and alert instead of slowly draining.
+  if (options.maxCatchUpPeriods != null) {
+    const now = Date.now();
+    let behind = 0;
+    while (behind <= options.maxCatchUpPeriods) {
+      const bounds = periodBounds(
+        anchor,
+        { interval: price.interval, intervalCount: price.intervalCount },
+        sub.currentPeriodIndex + behind
+      );
+      if (bounds.end.getTime() > now) break;
+      behind += 1;
+    }
+    if (behind > options.maxCatchUpPeriods) {
+      throw AppError.UnprocessableEntity(
+        'subscription is too far behind to catch up automatically; manual review required',
+        { reference: sub.reference, periodsBehind: behind, max: options.maxCatchUpPeriods },
+        NOMBAONE_ERROR_CODES.BILLING_CATCH_UP_LIMIT_EXCEEDED
+      );
+    }
+  }
 
   const line = buildSubscriptionLine({
     description: `${price.reference} × ${item.quantity}`,

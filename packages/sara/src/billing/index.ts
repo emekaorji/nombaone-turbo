@@ -2,6 +2,7 @@ export * from './claim';
 export * from './collectForInvoice';
 export * from './confirmInvoiceFromWebhook';
 export * from './effects';
+export * from './lifecycle-sweep';
 export * from './period';
 export * from './processInboundInvoiceEvent';
 export * from './queries';

@@ -1,6 +1,11 @@
-import { and, asc, eq, gt, inArray, isNotNull, lte, or } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm';
 
-import { subscriptionsTable, type SubscriptionRow } from '@nombaone/core-db/schema';
+import {
+  paymentMethodsTable,
+  subscriptionsTable,
+  type PaymentMethodRow,
+  type SubscriptionRow,
+} from '@nombaone/core-db/schema';
 
 import type { InfraDb } from '../context';
 
@@ -59,4 +64,60 @@ export async function findDueSubscriptions(
       : null;
 
   return { rows: page, nextCursor };
+}
+
+// ── Lifecycle-sweep selections (cross-tenant operational reads, D.10) ─────────
+// Each is a simple LIMIT batch — the transition/stamp excludes processed rows on
+// the next tick, so a single batch per tick converges without a cursor.
+
+/** `incomplete` subscriptions past their expiry window (A6). */
+export async function selectExpiredIncomplete(
+  db: InfraDb,
+  input: { cutoff: Date; limit: number }
+): Promise<SubscriptionRow[]> {
+  return db
+    .select()
+    .from(subscriptionsTable)
+    .where(and(eq(subscriptionsTable.status, 'incomplete'), lt(subscriptionsTable.createdAt, input.cutoff)))
+    .limit(input.limit);
+}
+
+/** `trialing` subscriptions whose trial ends within the notice window, not yet notified. */
+export async function selectTrialEndingSoon(
+  db: InfraDb,
+  input: { before: Date; limit: number }
+): Promise<SubscriptionRow[]> {
+  return db
+    .select()
+    .from(subscriptionsTable)
+    .where(
+      and(
+        eq(subscriptionsTable.status, 'trialing'),
+        isNotNull(subscriptionsTable.trialEnd),
+        lte(subscriptionsTable.trialEnd, input.before),
+        isNull(subscriptionsTable.trialWillEndNotifiedAt)
+      )
+    )
+    .limit(input.limit);
+}
+
+/** Active card methods expiring at/before `targetYearMonth` (yyyy*100+mm), not yet notified. */
+export async function selectExpiringPaymentMethods(
+  db: InfraDb,
+  input: { targetYearMonth: number; limit: number }
+): Promise<PaymentMethodRow[]> {
+  return db
+    .select()
+    .from(paymentMethodsTable)
+    .where(
+      and(
+        eq(paymentMethodsTable.kind, 'card'),
+        eq(paymentMethodsTable.status, 'active'),
+        isNotNull(paymentMethodsTable.expYear),
+        isNotNull(paymentMethodsTable.expMonth),
+        isNull(paymentMethodsTable.expiringNotifiedAt),
+        sql`(${paymentMethodsTable.expYear} * 100 + ${paymentMethodsTable.expMonth}) <= ${input.targetYearMonth}`
+      )
+    )
+    .limit(input.limit);
 }

@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 
 import { SCHEDULER_QUEUE_NAME, connection, enqueueBilling, upsertCron } from '@nombaone/queue';
-import { runBillingSweep } from '@nombaone/sara/billing';
+import { runBillingSweep, runLifecycleSweep } from '@nombaone/sara/billing';
 
 import { db } from '../../shared/config/db';
 import { env } from '../../shared/config/env';
@@ -42,6 +42,9 @@ const registerRepeatables = async (): Promise<void> => {
   // jobs. Runs ~01:05 daily, before the 02:00 deterministic boundary. `upsertCron`
   // keeps exactly one scheduler per task id (jobId = task), so this is replay-safe.
   await upsertCron('billing-sweep', env.BILLING_SWEEP_CRON);
+  // The lifecycle sweep: A6 incomplete-expiry + trial/PM-expiry notices. Hourly,
+  // kept separate so a slow renewal run can't delay notices.
+  await upsertCron('lifecycle-sweep', env.LIFECYCLE_SWEEP_CRON);
 };
 
 const createSchedulerWorker = (): Worker<SchedulerJobData, SchedulerJobResult> =>
@@ -60,6 +63,18 @@ const createSchedulerWorker = (): Worker<SchedulerJobData, SchedulerJobResult> =
             enqueue: (data) => enqueueBilling(data),
           });
           logger.info('[scheduler] billing-sweep enqueued', { enqueued, jobId: job.id });
+          break;
+        }
+        case 'lifecycle-sweep': {
+          const result = await runLifecycleSweep({
+            db,
+            now: new Date(),
+            incompleteExpiryWindowMs: env.INCOMPLETE_EXPIRY_WINDOW_HOURS * 3_600_000,
+            trialNoticeWindowMs: env.TRIAL_NOTICE_WINDOW_HOURS * 3_600_000,
+            pmExpiryNoticeWindowDays: env.PM_EXPIRY_NOTICE_WINDOW_DAYS,
+            batchSize: env.BILLING_BATCH_SIZE,
+          });
+          logger.info('[scheduler] lifecycle-sweep ran', { ...result, jobId: job.id });
           break;
         }
         default:
