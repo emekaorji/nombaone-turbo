@@ -1,5 +1,6 @@
 export * from './attach';
 export * from './capture';
+export * from './process';
 export * from './queries';
 export * from './remove';
 export * from './settle';

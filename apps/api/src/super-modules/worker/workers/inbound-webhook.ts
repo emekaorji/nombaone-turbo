@@ -1,7 +1,9 @@
 import { Worker } from 'bullmq';
 
 import { INBOUND_WEBHOOK_QUEUE_NAME, connection } from '@nombaone/queue';
+import { processInboundNombaEvent } from '@nombaone/sara/payment-methods';
 
+import { db } from '../../../shared/config/db';
 import { logger } from '../../../shared/observability/logger';
 
 import type { InboundWebhookJobData, InboundWebhookJobResult } from '@nombaone/queue';
@@ -10,22 +12,15 @@ import type { InboundWebhookJobData, InboundWebhookJobResult } from '@nombaone/q
  * ── Inbound webhook processing worker (provider → us, deferred) ────────────
  *
  * The webhook edge fast-acks and enqueues; THIS worker does the durable,
- * retryable processing the edge deliberately deferred. The discipline is
- * VERIFY-AGAIN-THEN-ACT: a valid signature only proved authenticity, so before
- * recording money the worker re-verifies against the provider (the provider's
- * "get transaction" API) and only then settles.
+ * retryable processing. For Nomba it resolves the owning tenant from OUR
+ * reference in the payload, then settles (idempotently) and durably records the
+ * event (`processInboundNombaEvent`): a redelivered/out-of-order event has
+ * exactly one effect (capture is a no-op on an already-active method; the
+ * `unique(provider, request_id)` row guarantees one event row). jobId = the
+ * provider event id, so redeliveries also collapse onto one job.
  *
- * The settlement seam is the documented stub below. A real build resolves OUR
- * reference from the provider payload and calls sara's
- * `confirmExampleFromWebhook(txDb, ctx, …)` (or the equivalent for your domain),
- * which re-verifies and posts the ledger settlement inside one transaction. The
- * jobId is the provider event id, so a redelivered event is processed once.
- *
- * Concurrency is capped: inbound processing hits the DB + provider API per job,
- * so we bound it to protect both.
+ * Concurrency is capped: inbound processing hits the DB (+ provider API) per job.
  */
-
-/** DB + provider-API bound per job; keep the cap modest. */
 const INBOUND_CONCURRENCY = 5;
 
 export const createInboundWebhookWorker = (): Worker<
@@ -35,27 +30,28 @@ export const createInboundWebhookWorker = (): Worker<
   const worker = new Worker<InboundWebhookJobData, InboundWebhookJobResult>(
     INBOUND_WEBHOOK_QUEUE_NAME,
     async (job) => {
-      const { provider, providerEventId, eventType } = job.data;
+      const { provider, providerEventId, eventType, payload } = job.data;
 
-      // ── SEAM: domain settlement goes here ───────────────────────────────
-      // Re-verify against the provider, then act. For the example money path:
-      //
-      //   const ctx = resolveCtxFromPayload(job.data.payload);
-      //   const reference = job.data.payload.reference as string;
-      //   await confirmExampleFromWebhook(db, ctx, {
-      //     reference,
-      //     providerReference: providerEventId,
-      //   });
-      //
-      // The boilerplate logs + acks so the queue plumbing is provably wired
-      // before any real provider is connected.
-      logger.info('[worker] inbound-webhook received', {
+      if (provider === 'nomba') {
+        const requestId =
+          typeof payload.requestId === 'string' ? payload.requestId : providerEventId;
+        const result = await processInboundNombaEvent(db, { requestId, eventType, payload });
+        logger.info('[worker] nomba inbound processed', {
+          jobId: job.id,
+          providerEventId,
+          eventType,
+          outcome: result.outcome,
+          firstSeen: result.firstSeen,
+        });
+        return { providerEventId, handled: result.handled };
+      }
+
+      logger.info('[worker] inbound-webhook received (unhandled provider)', {
         jobId: job.id,
         provider,
         providerEventId,
         eventType,
       });
-
       return { providerEventId, handled: true };
     },
     { connection, concurrency: INBOUND_CONCURRENCY }

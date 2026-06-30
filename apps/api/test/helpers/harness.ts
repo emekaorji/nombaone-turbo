@@ -4,6 +4,8 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
 
 import type { Express } from 'express';
+import type { InfraTxDb } from '@nombaone/sara/context';
+import type { NombaClient } from '@nombaone/sara/nomba';
 
 // This harness deliberately writes process.env at runtime to point the app's
 // singletons at throwaway containers — it never READS undeclared env, so the
@@ -43,6 +45,11 @@ export interface Harness {
   ) => Promise<{ secret: string; reference: string }>;
   /** Flip the platform maintenance kill-switch on/off. */
   setKillSwitch: (enabled: boolean, message?: string) => Promise<void>;
+  /** The pooled DB handle — lets specs drive sara functions directly (e.g. the
+   *  inbound-webhook settle path the BullMQ worker runs). */
+  db: InfraTxDb;
+  /** Inject a fake Nomba client (no network) for the rail/capture flows. */
+  setNombaClient: (client: NombaClient) => void;
   /** Tear down containers + clients. */
   stop: () => Promise<void>;
 }
@@ -72,6 +79,8 @@ export const startHarness = async (): Promise<Harness> => {
   process.env.INFRA_PII_ENCRYPTION_KEY =
     process.env.INFRA_PII_ENCRYPTION_KEY ?? '0'.repeat(64);
   process.env.INFRA_WEBHOOK_SECRET = process.env.INFRA_WEBHOOK_SECRET ?? 'test_webhook_secret';
+  process.env.NOMBA_WEBHOOK_SIGNATURE_KEY =
+    process.env.NOMBA_WEBHOOK_SIGNATURE_KEY ?? 'test_nomba_signature_key';
   // Keep the limiter on by default so its tests are meaningful; specs can flip it.
   delete process.env.DISABLE_API_RATE_LIMIT;
 
@@ -93,6 +102,7 @@ export const startHarness = async (): Promise<Harness> => {
   const { signupOrganization } = await import('@nombaone/sara/auth');
   const { createApiKey } = await import('@nombaone/sara/api-keys');
   const { platformConfigTable } = await import('@nombaone/core-db/schema');
+  const { __setNombaClient } = await import('../../src/shared/config/nomba');
 
   const app = createSuperApp();
 
@@ -128,12 +138,15 @@ export const startHarness = async (): Promise<Harness> => {
     await new Promise((r) => setTimeout(r, 5_100));
   };
 
+  const setNombaClient: Harness['setNombaClient'] = (client) => __setNombaClient(client);
+
   const stop: Harness['stop'] = async () => {
+    __setNombaClient(null);
     await pool.end();
     redis.disconnect();
     await postgres.stop();
     await redisContainer.stop();
   };
 
-  return { app, seedOrg, mintApiKey, setKillSwitch, stop };
+  return { app, seedOrg, mintApiKey, setKillSwitch, db, setNombaClient, stop };
 };
