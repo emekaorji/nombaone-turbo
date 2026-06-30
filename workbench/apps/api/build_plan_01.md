@@ -367,6 +367,13 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
 
 ## Verification checklist (rubric → how demonstrated)
 
+> **✅ PHASE 01 DONE (2026-06-30, commit 79d3c84 on `build/apps-api`).** Every box below is **demonstrated**:
+> A(versioning), H1, H2, K1, K2, L1–L6, N4, O1 — via 5 catalog e2e + 3 sara unit tests (21 api e2e + 31 sara
+> unit + 9/9 workspace type-check all green; migration `0002` applies on a fresh testcontainer DB). One small
+> addition beyond the plan's letter: a `POST /v1/prices/:reference/deactivate` action endpoint — the
+> versioning workflow needs a way to retire the old price after creating its replacement; it's a sellability
+> state change (the only mutation a price allows), not a money edit, so it stays consistent with immutability.
+
 - [ ] **A (versioning, catalog half)** — a price row is never edited; "raising a price" creates a new `prices`
       row and deactivates the old one, proven by the immutability e2e (P1's `unit_amount` unchanged after P2)
       and by the absence of any `updatePrice` domain function / `PATCH /v1/prices` route. (Subscription pin →
