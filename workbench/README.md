@@ -2,24 +2,22 @@
 
 This is where Nomba One's design, build plans, and decisions live as plain markdown. The code is what the
 project *does*; the workbench is what it *should* do, and why. Every fresh session — human or AI agent —
-starts here. The two source-of-intent documents at the repo root, [`../PRODUCT-OVERVIEW.md`](../PRODUCT-OVERVIEW.md)
-(what the product is) and [`../REPLICABLE_PARADIGMS.md`](../REPLICABLE_PARADIGMS.md) (the patterns the
-boilerplate ships), are the canonical inputs; the plans here are *derived from* them.
+starts here. The source-of-intent document at the repo root, [`../PRODUCT-OVERVIEW.md`](../PRODUCT-OVERVIEW.md)
+(what the product is), is the canonical input; the plans here are *derived from* it.
 
 The workbench works because each file has one job. Don't merge them.
 
 ## Layout
 
-Planning docs are organised per app under `apps/<app>/`, mirroring the repo's own `apps/` tree:
+Planning docs are organised per app under `apps/<app>/`, mirroring the repo's own `apps/` tree. Each app
+carries the same three template docs (start them empty; fill as you build):
 
-- **`apps/api/`** — the tenant-facing REST API (the product surface). `SPEC.md` (design: what + why),
-  `INTEGRATION.md` (build: how + order), `API.md` (the public `/v1` reference seed).
-- **`apps/console/`** — the tenant dashboard (`console.nombaone.xyz`). `CONSOLE-SCOPE.md` (area map + gap
-  register), `INTEGRATION.md` (the locked phase plan), the phased build plans (`00-OVERVIEW` → `04-PHASES`),
-  and `PROGRESS.md`.
-- **`apps/admin/`** — the internal operator panel. `build_plan.md`, `design_system.md`, `ideate.md`.
-- **`apps/docs/`** — the developer docs site. `DOCS-SCOPE.md`.
-- **`apps/checkout/`** — the end-subscriber surface. `CHECKOUT-SCOPE.md`.
+- **`build_plan.md`** — the phased build (what gets built, in what order; each phase notes its dependencies).
+- **`design_system.md`** — the UI bar (tokens, chrome, components, patterns; inherits `@nombaone/ui`).
+- **`ideate.md`** — open brainstorm; nothing here is committed.
+
+Apps: `apps/api/` (the REST product surface) · `apps/console/` (tenant dashboard) · `apps/admin/` (operator
+panel) · `apps/docs/` (developer docs) · `apps/checkout/` (end-subscriber surface).
 
 Cross-cutting, non-app assets live at the top level (`assets/` — brand logos, favicons, webmanifest) and the
 **design source** (a Pencil `.pen` file) is dropped here when it exists.
