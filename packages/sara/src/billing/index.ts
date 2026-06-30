@@ -4,5 +4,6 @@ export * from './effects';
 export * from './period';
 export * from './processInboundInvoiceEvent';
 export * from './runCycle';
+export * from './scheduling';
 export * from './startSubscription';
 export * from './types';
