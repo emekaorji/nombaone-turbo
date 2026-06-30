@@ -29,6 +29,7 @@ export type ReferenceDomain =
   | 'SBI' // subscription item
   | 'INV' // invoice
   | 'ILI' // invoice line item
+  | 'SCH' // subscription schedule
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {

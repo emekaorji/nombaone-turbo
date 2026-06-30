@@ -1,5 +1,16 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
 import { customersTable } from './customers';
@@ -51,6 +62,8 @@ export const paymentMethodsTable = pgTable(
     mandateId: text('mandate_id'),
     // Transfer rail (virtual account).
     accountRef: text('account_ref'),
+    // 04 lifecycle sweep: the payment-method-expiring notice idempotency stamp.
+    expiringNotifiedAt: timestamp('expiring_notified_at', { withTimezone: true }),
     isDefault: boolean('is_default').notNull().default(false),
     metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
     createdAt: createdAt(),

@@ -43,6 +43,13 @@
       "when": 1782786850226,
       "tag": "0005_little_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782798040042,
+      "tag": "0006_warm_selene",
+      "breakpoints": true
     }
   ]
 }

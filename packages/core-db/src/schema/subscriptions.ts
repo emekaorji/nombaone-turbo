@@ -66,6 +66,10 @@ export const subscriptionsTable = pgTable(
     currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
     currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
     billingCycleAnchor: timestamp('billing_cycle_anchor', { withTimezone: true }),
+    // 04 scheduler: the due-selection cursor (mirrors current_period_end) + the
+    // lifecycle sweep's trial-notice idempotency stamp.
+    nextBillingAt: timestamp('next_billing_at', { withTimezone: true }),
+    trialWillEndNotifiedAt: timestamp('trial_will_end_notified_at', { withTimezone: true }),
     trialStart: timestamp('trial_start', { withTimezone: true }),
     trialEnd: timestamp('trial_end', { withTimezone: true }),
     cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
@@ -96,6 +100,13 @@ export const subscriptionsTable = pgTable(
       table.organizationId,
       table.environment,
       table.status
+    ),
+    // The 04 due-selection cursor index (B7/B11): find subscriptions whose
+    // next_billing_at ≤ now without a seq scan.
+    dueIdx: index('subscriptions_due_idx').on(
+      table.organizationId,
+      table.environment,
+      table.nextBillingAt
     ),
   })
 );
