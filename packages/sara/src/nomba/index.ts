@@ -1,5 +1,6 @@
 export * from './client';
 export * from './endpoints';
+export * from './ingest';
 export * from './events';
 export * from './failure-taxonomy';
 export * from './verify';

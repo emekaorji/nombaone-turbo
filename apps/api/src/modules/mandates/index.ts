@@ -1,0 +1,1 @@
+export { mandatesRouter } from './routes';
