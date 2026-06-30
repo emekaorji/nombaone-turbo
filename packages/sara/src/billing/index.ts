@@ -3,4 +3,5 @@ export * from './confirmInvoiceFromWebhook';
 export * from './effects';
 export * from './period';
 export * from './runCycle';
+export * from './startSubscription';
 export * from './types';

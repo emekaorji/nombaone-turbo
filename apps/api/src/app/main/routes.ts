@@ -3,10 +3,12 @@ import { Router } from 'express';
 import { customerRouter } from '../../modules/customers';
 import { exampleRouter } from '../../modules/example';
 import { healthRouter } from '../../modules/health';
+import { invoicesRouter } from '../../modules/invoices';
 import { mandatesRouter } from '../../modules/mandates';
 import { paymentMethodsRouter } from '../../modules/payment-methods';
 import { plansRouter } from '../../modules/plans';
 import { pricesRouter } from '../../modules/prices';
+import { subscriptionsRouter } from '../../modules/subscriptions';
 
 /**
  * The single versioned router. The `/v1` prefix is applied at EXACTLY ONE mount
@@ -22,4 +24,6 @@ v1Router.use(plansRouter);
 v1Router.use(pricesRouter);
 v1Router.use(paymentMethodsRouter);
 v1Router.use(mandatesRouter);
+v1Router.use(subscriptionsRouter);
+v1Router.use(invoicesRouter);
 v1Router.use(exampleRouter);
