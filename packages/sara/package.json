@@ -24,6 +24,7 @@
     "./audit": "./src/audit/index.ts",
     "./customers": "./src/customers/index.ts",
     "./nomba": "./src/nomba/index.ts",
+    "./payment-methods": "./src/payment-methods/index.ts",
     "./plans": "./src/plans/index.ts",
     "./prices": "./src/prices/index.ts",
     "./example": "./src/example/index.ts"

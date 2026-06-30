@@ -6,4 +6,6 @@ export * from './webhook';
 export * from './customer';
 export * from './plan';
 export * from './price';
+export * from './payment-method';
+export * from './nomba';
 export * from './example';
