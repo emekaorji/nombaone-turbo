@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-const apiKeyScope = z.enum(['example:read', 'example:write', 'webhooks:read', 'webhooks:write']);
+const apiKeyScope = z.enum([
+  'customers:read',
+  'customers:write',
+  'example:read',
+  'example:write',
+  'webhooks:read',
+  'webhooks:write',
+]);
 
 export const createApiKeyBody = z.object({
   name: z.string().min(1).max(120),

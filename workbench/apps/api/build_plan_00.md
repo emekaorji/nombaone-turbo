@@ -342,10 +342,18 @@ Every `build_plan_{n}.md` follows this skeleton:
 
 ## Part E — Phase 00 work (Foundations)
 
-**Objective.** Remove the `example` slice, lock the contract above into the repo, and prove the entire
-substrate (middleware chain, envelope, idempotency, pagination, events, ledger, migrations, testcontainer
-harness) on the **first real product resource — `customers`** — so every later phase starts from a clean,
-real vertical slice. Depends on: nothing. Unblocks: 01, 02.
+**Objective.** Lock the contract above into the repo and prove the entire substrate (middleware chain,
+envelope, idempotency, pagination, events, migrations, testcontainer harness) on the **first real product
+resource — `customers`** — so every later phase starts from a clean, real vertical slice. Depends on:
+nothing. Unblocks: 01, 02.
+
+> **⚠ Scope adjustment (2026-06-30, EM call).** The `example` slice is wired through **all four frontends**
+> (admin/console/checkout/docs) — checkout's only current page *is* the example flow. Deleting it from the
+> shared packages would break those out-of-scope apps, which the user wants left untouched until they're
+> built (Q2). So **the example-deletion tasks below are DEFERRED** to a dedicated cleanup performed when the
+> frontends are built; the engine is built **alongside** the (harmless) example, keeping the whole workspace
+> green at every checkpoint. The grep gate for `example`/`EXA` is correspondingly deferred. Build the
+> **customers + scaffolding** tasks now; treat every "delete the example…" line as DEFERRED, not done.
 
 ### Rubric coverage
 Baseline for **K** (Idempotency-Key honored, unique-constraint discipline), **L** (envelope/codes/cursor

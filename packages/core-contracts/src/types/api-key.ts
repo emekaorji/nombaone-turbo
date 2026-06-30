@@ -2,6 +2,8 @@ import type { Environment } from './common';
 
 /** Fine-grained scopes gate each endpoint via requireScope(). Extend per domain. */
 export type ApiKeyScope =
+  | 'customers:read'
+  | 'customers:write'
   | 'example:read'
   | 'example:write'
   | 'webhooks:read'

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { customerRouter } from '../../modules/customers';
 import { exampleRouter } from '../../modules/example';
 import { healthRouter } from '../../modules/health';
 
@@ -12,4 +13,5 @@ import { healthRouter } from '../../modules/health';
 export const v1Router: Router = Router();
 
 v1Router.use(healthRouter);
+v1Router.use(customerRouter);
 v1Router.use(exampleRouter);

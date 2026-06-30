@@ -19,6 +19,7 @@ export type ReferenceDomain =
   | 'WHD' // webhook delivery
   | 'LTX' // ledger transaction
   | 'LAC' // ledger account
+  | 'CUS' // customer (subscriber)
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {

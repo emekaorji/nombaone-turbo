@@ -22,6 +22,7 @@
     "./reconciliation": "./src/reconciliation/index.ts",
     "./webhooks": "./src/webhooks/index.ts",
     "./audit": "./src/audit/index.ts",
+    "./customers": "./src/customers/index.ts",
     "./example": "./src/example/index.ts"
   },
   "scripts": {
