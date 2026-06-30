@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import {
+  applyDiscountBody,
   createCustomerBody,
   listCustomerQuery,
   updateCustomerBody,
@@ -9,9 +10,11 @@ import {
 import { validate } from '../../shared/http';
 import { apiKeyAuth, idempotency, rateLimit, requireScope } from '../../shared/middlewares';
 import {
+  applyCustomerDiscountController,
   createCustomerController,
   getCustomerController,
   listCustomerController,
+  removeCustomerDiscountController,
   updateCustomerController,
 } from './controllers';
 
@@ -66,4 +69,23 @@ customerRouter.patch(
   idempotency,
   validate({ body: updateCustomerBody }),
   updateCustomerController
+);
+
+// ── Discounts (apply / remove a coupon on the customer) ──────────────────────
+customerRouter.post(
+  '/customers/:reference/discount',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('customers:write'),
+  idempotency,
+  validate({ body: applyDiscountBody }),
+  applyCustomerDiscountController
+);
+customerRouter.delete(
+  '/customers/:reference/discount',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('customers:write'),
+  idempotency,
+  removeCustomerDiscountController
 );

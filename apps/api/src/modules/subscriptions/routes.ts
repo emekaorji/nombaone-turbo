@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import {
+  applyDiscountBody,
   cancelSubscriptionBody,
   createSubscriptionBody,
   listSubscriptionQuery,
@@ -14,6 +15,7 @@ import {
 import { validate } from '../../shared/http';
 import { apiKeyAuth, idempotency, rateLimit, requireScope } from '../../shared/middlewares';
 import {
+  applySubscriptionDiscountController,
   cancelScheduleController,
   cancelSubscriptionController,
   createScheduleController,
@@ -23,6 +25,7 @@ import {
   getUpcomingInvoiceController,
   listSubscriptionsController,
   pauseSubscriptionController,
+  removeSubscriptionDiscountController,
   resubscribeSubscriptionController,
   resumeSubscriptionController,
   updateSubscriptionController,
@@ -145,4 +148,23 @@ subscriptionsRouter.delete(
   requireScope('subscriptions:write'),
   idempotency,
   cancelScheduleController
+);
+
+// ── Discounts ────────────────────────────────────────────────────────────────
+subscriptionsRouter.post(
+  '/subscriptions/:reference/discount',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('subscriptions:write'),
+  idempotency,
+  validate({ body: applyDiscountBody }),
+  applySubscriptionDiscountController
+);
+subscriptionsRouter.delete(
+  '/subscriptions/:reference/discount',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('subscriptions:write'),
+  idempotency,
+  removeSubscriptionDiscountController
 );

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { couponsRouter } from '../../modules/coupons';
 import { customerRouter } from '../../modules/customers';
 import { exampleRouter } from '../../modules/example';
 import { healthRouter } from '../../modules/health';
@@ -26,4 +27,5 @@ v1Router.use(paymentMethodsRouter);
 v1Router.use(mandatesRouter);
 v1Router.use(subscriptionsRouter);
 v1Router.use(invoicesRouter);
+v1Router.use(couponsRouter);
 v1Router.use(exampleRouter);

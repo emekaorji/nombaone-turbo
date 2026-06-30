@@ -52,6 +52,8 @@ describe('subscriptions + billing e2e', () => {
     'subscriptions:write',
     'invoices:read',
     'invoices:write',
+    'coupons:read',
+    'coupons:write',
   ];
 
   const fakeNomba: NombaClient = {
@@ -558,5 +560,47 @@ describe('subscriptions + billing e2e', () => {
     await runLifecycleSweep(lifecycleDeps()); // replay
     const types = await eventTypesFor(subRef);
     expect(types.filter((t) => t === 'subscription.trial_will_end').length).toBe(1);
+  });
+
+  // ── coupons + discounts (05c) ──────────────────────────────────────────────
+  const newCoupon = (body: Record<string, unknown>): request.Test =>
+    asA(request(harness.app).post('/v1/coupons')).set('Idempotency-Key', `cpn-${uniq()}`).send(body);
+  async function freshActiveSub(): Promise<string> {
+    cardOutcome = 'succeeded';
+    const { customerRef, priceRef } = await seedPrice(500000);
+    const pm = await seedActiveCard(customerRef);
+    return (await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: pm })).body.data.id as string;
+  }
+
+  it('coupon CRUD + K2 over-redemption is structurally blocked', async () => {
+    const code = `SAVE${uniq()}`;
+    const created = await newCoupon({ code, percentOff: 25, duration: 'once' });
+    expect(created.status).toBe(201);
+    expect(created.body.data.percentOff).toBe(25);
+    const fetched = await asA(request(harness.app).get(`/v1/coupons/${created.body.data.id}`));
+    expect(fetched.body.data.code).toBe(code);
+
+    const limited = await newCoupon({ code: `ONE${uniq()}`, amountOff: 50000, duration: 'once', maxRedemptions: 1 });
+    const limitedRef = limited.body.data.id as string;
+    const s1 = await freshActiveSub();
+    const s2 = await freshActiveSub();
+    const a1 = await asA(request(harness.app).post(`/v1/subscriptions/${s1}/discount`)).set('Idempotency-Key', `d-${uniq()}`).send({ coupon: limitedRef });
+    expect(a1.status).toBe(201);
+    const a2 = await asA(request(harness.app).post(`/v1/subscriptions/${s2}/discount`)).set('Idempotency-Key', `d-${uniq()}`).send({ coupon: limitedRef });
+    expect(a2.status).toBe(422);
+    expect(a2.body.error.code).toBe('COUPON_MAX_REDEMPTIONS_REACHED');
+  });
+
+  it('discount applies to a subscription; a duplicate is rejected', async () => {
+    const created = await newCoupon({ code: `DUP${uniq()}`, percentOff: 10, duration: 'forever' });
+    const cpnRef = created.body.data.id as string;
+    const sub = await freshActiveSub();
+    const d1 = await asA(request(harness.app).post(`/v1/subscriptions/${sub}/discount`)).set('Idempotency-Key', `d-${uniq()}`).send({ coupon: cpnRef });
+    expect(d1.status).toBe(201);
+    expect(d1.body.data.status).toBe('active');
+    expect(d1.body.data.couponId).toBe(cpnRef);
+    const d2 = await asA(request(harness.app).post(`/v1/subscriptions/${sub}/discount`)).set('Idempotency-Key', `d-${uniq()}`).send({ coupon: cpnRef });
+    expect(d2.status).toBe(409);
+    expect(d2.body.error.code).toBe('COUPON_ALREADY_APPLIED');
   });
 });
