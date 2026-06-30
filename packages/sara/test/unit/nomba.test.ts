@@ -21,16 +21,25 @@ describe('nomba/failure-taxonomy', () => {
   });
 });
 
-describe('nomba/verify', () => {
+describe('nomba/verify (field-string scheme, T0-confirmed)', () => {
   const key = 'test_signature_key';
-  const body = JSON.stringify({ event_type: 'payment_success', requestId: 'r-1', data: {} });
+  // The signature covers the colon-joined PAYLOAD FIELDS (+ timestamp), not the raw
+  // body, so verification keys off the parsed fields the inbound route passes.
+  const payload = {
+    event_type: 'payment_success',
+    requestId: 'r-1',
+    transactionId: 'tx-1',
+    timestamp: '1700000000',
+  };
+  const raw = JSON.stringify(payload);
 
-  it('verifies a correctly-signed body and rejects tampering', () => {
-    const sig = computeNombaSignature(key, body);
-    expect(verifyNombaSignature(key, sig, body)).toBe(true);
-    expect(verifyNombaSignature(key, sig, `${body} `)).toBe(false); // tampered body
-    expect(verifyNombaSignature(key, 'deadbeef', body)).toBe(false); // wrong signature
-    expect(verifyNombaSignature(key, '', body)).toBe(false); // missing signature
+  it('verifies a correctly-signed payload and rejects tampering', () => {
+    const sig = computeNombaSignature(key, raw, payload);
+    expect(verifyNombaSignature(key, sig, raw, payload)).toBe(true);
+    // tampering a SIGNED field breaks the signature
+    expect(verifyNombaSignature(key, sig, raw, { ...payload, transactionId: 'tx-2' })).toBe(false);
+    expect(verifyNombaSignature(key, 'not-the-sig', raw, payload)).toBe(false); // wrong signature
+    expect(verifyNombaSignature(key, '', raw, payload)).toBe(false); // missing signature
   });
 });
 
