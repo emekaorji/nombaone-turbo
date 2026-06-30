@@ -9,6 +9,7 @@ import {
 } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
+import { computeAnchor } from '../billing/scheduling';
 import { emitEvent } from '../events';
 import { mintReference } from '../reference';
 import { getSubscriptionByReference } from './queries';
@@ -112,6 +113,12 @@ export async function createSubscription(
       ? 'active'
       : 'incomplete';
 
+  // The billing anchor (normalized to the billing hour): period 0 starts at the
+  // trial end for a trial, else at activation. `next_billing_at` is the sweep's
+  // due cursor — a trial bills at trial end; a non-trial is due now (charged inline
+  // by startSubscription for charge_automatically, or by the next sweep otherwise).
+  const anchor = computeAnchor(trialing ? (trialEnd ?? now) : now);
+
   const reference = mintReference('SUB');
 
   await txDb.transaction(async (tx) => {
@@ -128,8 +135,9 @@ export async function createSubscription(
         collectionMethod: input.collectionMethod,
         currentPeriodIndex: 0,
         currentPeriodStart: now,
-        currentPeriodEnd: trialEnd, // non-trial period end is set by the 03d/04 cycle
-        billingCycleAnchor: now,
+        currentPeriodEnd: trialEnd, // non-trial period end is set by the 04 cycle
+        billingCycleAnchor: anchor,
+        nextBillingAt: anchor,
         trialStart,
         trialEnd,
         metadata: input.metadata ?? {},

@@ -1,6 +1,7 @@
 
 import { buildSubscriptionLine, createInvoice, finalizeInvoice } from '../invoices';
 import { loadSubscriptionRow } from '../subscriptions';
+import { claimPeriod } from './claim';
 import { collectForInvoice } from './collectForInvoice';
 import {
   applyPaidSubEffects,
@@ -8,7 +9,7 @@ import {
   loadPrimarySubscriptionItem,
   resolveCollectionMethod,
 } from './effects';
-import { rollPeriod } from './period';
+import { computeAnchor, periodBounds } from './scheduling';
 
 import type { InvoiceRow } from '@nombaone/core-db/schema';
 import type { DomainContext, InfraTxDb } from '../context';
@@ -38,11 +39,14 @@ export async function runCycle(
   const price = await loadPriceById(txDb, ctx, sub.priceId);
   const item = await loadPrimarySubscriptionItem(txDb, ctx, sub.id);
 
-  // Period window for the index being billed (simple roll; 04 owns anchor math).
-  const anchor = sub.currentPeriodStart ?? sub.billingCycleAnchor ?? new Date();
-  const periodStart =
-    sub.currentPeriodIndex === 0 ? (sub.trialEnd ?? anchor) : (sub.currentPeriodEnd ?? anchor);
-  const periodEnd = rollPeriod(periodStart, price.interval, price.intervalCount);
+  // Period window for the index being billed — anchor-based precise math (04a):
+  // boundaries are `anchor + n·interval` with EOM snap-back / leap handling.
+  const anchor = sub.billingCycleAnchor ?? computeAnchor(sub.currentPeriodStart ?? new Date());
+  const { start: periodStart, end: periodEnd } = periodBounds(
+    anchor,
+    { interval: price.interval, intervalCount: price.intervalCount },
+    sub.currentPeriodIndex
+  );
   const billingReason: InvoiceBillingReason =
     sub.currentPeriodIndex === 0 ? 'subscription_create' : 'subscription_cycle';
 
@@ -63,6 +67,15 @@ export async function runCycle(
     periodStart,
     periodEnd,
     lines: [line],
+  });
+  // Record the period claim (the 04 idempotency spine, B6/B8) linked to the
+  // invoice — ON CONFLICT DO NOTHING, so a replay is a no-op.
+  await claimPeriod(txDb, ctx, {
+    subscriptionId: sub.id,
+    periodIndex: sub.currentPeriodIndex,
+    start: periodStart,
+    end: periodEnd,
+    invoiceId: invoice.id,
   });
   // Idempotent replay — an already-paid invoice for this period is returned as-is.
   if (invoice.paidAt) return { invoice, outcome: 'paid' };

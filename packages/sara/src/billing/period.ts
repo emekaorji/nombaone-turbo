@@ -50,6 +50,9 @@ export async function advancePeriod(
       currentPeriodStart: paidStart,
       currentPeriodEnd: paidEnd,
       currentPeriodIndex: sub.currentPeriodIndex + 1,
+      // The due-selection cursor: the next renewal fires when the just-paid period
+      // ends (04 sweep reads next_billing_at ≤ now).
+      nextBillingAt: paidEnd,
       version: sub.version + 1,
     })
     .where(and(eq(subscriptionsTable.id, sub.id), eq(subscriptionsTable.version, sub.version)))
