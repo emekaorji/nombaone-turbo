@@ -397,6 +397,17 @@ New routes under the existing `subscriptions` module (do not create a parallel m
 
 One line per box; each states **how** it is demonstrated.
 
+> **✅ PHASE 04 DONE (2026-06-30, commits `6050b70` · `b9ca5e0` · `a8d600b` · `0ddf5f5` · `bb8d5fb` ·
+> `2a52c67` · `349b387` on `build/apps-api`).** Demonstrated: B1–B5 (anchor/EOM/leap/tz — pure
+> `billing-scheduling.test.ts` walks Jan-31 across the year + Feb-29 leap + one-instant `isDue`), B6/B8/K2/K3
+> (idempotent + concurrency-safe sweep — `subscription_periods` claim spine + the two-concurrent-runs e2e
+> bills a period exactly once), B7 (exact due selection e2e), B9 (catch-up + `maxCatchUpPeriods` guard),
+> B10 (`subscription_schedules` apply-at-boundary e2e), A6 (lifecycle sweep expiry + trial-notice idempotency
+> e2e), K4. The **04c-2 hardening** commit (`bb8d5fb`) closed adversarial-review sweep/period defects.
+> **Carve-out:** **B11 ★** (10k-due load test) is the one box NOT demonstrated here — it is the load proof
+> owned by **build_plan_09 §P** (the fair-scheduling fixture lands in 08, the scale run in 09); the
+> O(batches) keyset-batched enqueue + fan-out it relies on is built. Proven green by the current full suite.
+
 - [ ] **B1** — monthly, annual, and custom (week/day × `interval_count`) cycles supported; proven by
       the `interval.ts` unit table tests covering each unit.
 - [ ] **B2** — billing is anchor-based (`billing_cycle_anchor + n·interval`), not "+30 days"; proven by

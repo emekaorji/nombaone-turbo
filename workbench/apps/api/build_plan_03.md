@@ -405,6 +405,16 @@ idempotent: re-issuing the same transition is a no-op that returns current state
 
 ## Verification checklist (rubric — one line per box, each says HOW it's demonstrated)
 
+> **✅ PHASE 03 DONE (2026-06-30, commits `f0c101b` · `854867b` · `a17a441` · `a1c2da3` · `ab768ab` ·
+> `4237e6f` · `82cc05e` on `build/apps-api`).** Every box below is **demonstrated**: A1–A14 (FSM —
+> `subscriptions/fsm.test.ts` table-driven legal/illegal + the lifecycle e2e), J1–J9 (kobo/immutability/
+> derived-status/no-double-charge/zero-path/void — `invoices/{lineItems,status}.test.ts` + the
+> subscriptions e2e), E2/E3/E4/E8 (recurring charge via stored method, unique orderReference, requery-
+> before-settle, NGN), K2 (`unique(subscription_id, period_index)`). The **03d hardening** commit
+> (`ab768ab`) closed an adversarial-review CRITICAL (atomic settle / no double-charge). Proven green by the
+> current full suite (96 sara unit + 51 api e2e). The single-cycle `runCycle` primitive + the `past_due`
+> entry/exit hooks are handed to 04/06.
+
 - [ ] **A1** — all seven states reachable: each materialized by a create/transition in the e2e suite
       (incomplete, trialing, active, past_due, paused, canceled) + `incomplete_expired` via `expireIncomplete`.
 - [ ] **A2 ⚠** — `canceled` is terminal (FSM declares no outgoing edge); `resubscribe` creates a **new** `SUB`

@@ -164,6 +164,23 @@ amount_due    = afterDiscount − creditApplied    (≥ 0, never negative)
 
 ## Verification checklist (rubric → how demonstrated)
 
+> **🚧 PHASE 05 IN PROGRESS (as of 2026-06-30, `build/apps-api`).** Done & green:
+> **05a** pure proration math (`7b35cfa` — `prorate`/`distributeKobo` largest-remainder, exact-kobo, no
+> float; C3/J1), **05b** adjustment tables + contracts (`8974bc4` — coupons/discounts/credit_grants/
+> org_billing_settings, migration 0008, `partially_paid` + amount_remaining/credit_total), **05c** coupons +
+> discounts modules/endpoints (`0160b66` — atomic over-redemption guard K2, clamped discount lines),
+> **05d-1** credits oldest-first ledger-backed (`33bfaf1` — C8 ★ `consumeGrants` + O(1) balance),
+> **05d-2** adjustment-aware finalize + proration + change (`7bade6f` — fixed-order subtotal→discount→
+> credit→amount_due, `assertInvoiceBalanced` J4, J8 zero-path; C1 upgrade / C2 downgrade e2e). The money
+> path then went through an **adversarial review** that found 4 real defects, all fixed: `abcf703`
+> (changeSubscription claim-first — no torn state / double-charge; interval-switch rejected not mis-charged)
+> + `81bc53f` (atomic credit grant-decrement + ledger debit via a `postTransaction` savepoint).
+> **Remaining for 05e:** wire `finalizeInvoiceWithAdjustments` into the 04 renewal sweep (discounts+credits
+> at each cycle) + the full C/J e2e set (C5 seat/quantity, J8 100%-off-no-rail, partial-collection on/off,
+> K1 replay) + this checklist. **Deferred (honest carve-out):** **C4 interval-switch** proration — currently
+> rejected with `PRORATION_INTERVAL_SWITCH_UNSUPPORTED` rather than mis-charged; correct interval-aware
+> proration needs period-claim re-anchoring, scheduled as its own reviewed build.
+
 - [ ] **C1** — mid-cycle upgrade charges the prorated difference immediately: e2e creates an upgrade and asserts an immediate finalized invoice with net-positive proration lines and a ledger charge in the same tx.
 - [ ] **C2** — downgrade applies a credit toward next cycle per the **documented** default (`proration_credit_policy = credit_next_cycle`): e2e asserts a `credit_grants` row and no rail charge; policy comment + setting present.
 - [ ] **C3 ⚠** — proration math is exact integer kobo, sum-of-parts = cycle total to the kobo, no float: `distributeKobo` property test (incl. indivisible totals) + `assertDistributionExact`; grep proves no float on the proration path. *(verify twice: read + run)*
