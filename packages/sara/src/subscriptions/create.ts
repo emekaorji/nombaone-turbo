@@ -9,7 +9,7 @@ import {
 } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
-import { computeAnchor } from '../billing/scheduling';
+import { computeAnchor, computeAnchorAtOrAfter } from '../billing/scheduling';
 import { emitEvent } from '../events';
 import { mintReference } from '../reference';
 import { getSubscriptionByReference } from './queries';
@@ -117,7 +117,9 @@ export async function createSubscription(
   // trial end for a trial, else at activation. `next_billing_at` is the sweep's
   // due cursor — a trial bills at trial end; a non-trial is due now (charged inline
   // by startSubscription for charge_automatically, or by the next sweep otherwise).
-  const anchor = computeAnchor(trialing ? (trialEnd ?? now) : now);
+  // The TRIAL anchor is clamped at-or-AFTER the trial end so normalizing to the
+  // billing hour can never pull the first charge into the trial window (A8).
+  const anchor = trialing ? computeAnchorAtOrAfter(trialEnd ?? now) : computeAnchor(now);
 
   const reference = mintReference('SUB');
 

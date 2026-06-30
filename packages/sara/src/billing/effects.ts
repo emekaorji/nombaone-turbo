@@ -100,12 +100,17 @@ export async function loadPrimarySubscriptionItem(
   return row;
 }
 
-/** The subscription's charge method: its pinned default, else the customer's default. */
+/**
+ * The subscription's charge method: its pinned default, else the customer's
+ * default. A `send_invoice` subscription is NEVER auto-pulled — it is always left
+ * `open` to await an inbound transfer, regardless of any pinned/default method.
+ */
 export async function resolveCollectionMethod(
   txDb: InfraTxDb,
   ctx: DomainContext,
   sub: SubscriptionRow
 ): Promise<PaymentMethodRow | null> {
+  if (sub.collectionMethod === 'send_invoice') return null;
   if (sub.defaultPaymentMethodId) {
     const [row] = await txDb
       .select()
@@ -127,8 +132,11 @@ export async function resolveCollectionMethod(
  * The paid-side FSM effects shared by `collectForInvoice` (PULL succeeded) and
  * `confirmInvoiceFromWebhook` (inbound settled): activate the subscription
  * (`incomplete`/`trialing → active`, A7) or recover it (`past_due → active`), then
- * advance the period to the just-paid window. Idempotent — re-running on an
- * already-active sub is a no-op transition.
+ * advance the period to the just-paid window. **Fully idempotent** — re-running on
+ * an already-active sub is a no-op transition, and the period advance fires ONLY
+ * while the sub is still at the invoice's period (`currentPeriodIndex ===
+ * invoice.periodIndex`), so re-driving after a crash/version-conflict completes the
+ * advance exactly once and never double-advances (the self-heal path).
  */
 export async function applyPaidSubEffects(
   txDb: InfraTxDb,
@@ -142,7 +150,28 @@ export async function applyPaidSubEffects(
   } else if (sub.status === 'past_due') {
     sub = await recoverFromPastDue(txDb, ctx, sub);
   }
-  if (invoice.periodStart && invoice.periodEnd) {
+  if (invoice.periodStart && invoice.periodEnd && sub.currentPeriodIndex === invoice.periodIndex) {
     await advancePeriod(txDb, ctx, sub, invoice.periodStart, invoice.periodEnd);
+  }
+}
+
+/**
+ * Best-effort self-heal of a paid-but-not-advanced subscription, for the
+ * already-paid replay paths (runCycle's `paidAt` early-return, confirm's terminal
+ * return). Swallows a `SUBSCRIPTION_VERSION_CONFLICT`: a conflict means a CONCURRENT
+ * flow is already advancing the subscription, so the heal is redundant — not an
+ * error. Any other failure propagates.
+ */
+export async function reconcilePaidSubEffects(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  invoice: InvoiceRow
+): Promise<void> {
+  try {
+    await applyPaidSubEffects(txDb, ctx, invoice);
+  } catch (error) {
+    if ((error as { code?: string }).code !== NOMBAONE_ERROR_CODES.SUBSCRIPTION_VERSION_CONFLICT) {
+      throw error;
+    }
   }
 }

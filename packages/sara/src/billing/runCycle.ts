@@ -4,11 +4,12 @@ import { loadSubscriptionRow } from '../subscriptions';
 import { claimPeriod } from './claim';
 import { collectForInvoice } from './collectForInvoice';
 import {
-  applyPaidSubEffects,
   loadPriceById,
   loadPrimarySubscriptionItem,
+  reconcilePaidSubEffects,
   resolveCollectionMethod,
 } from './effects';
+import { advancePeriod } from './period';
 import { computeAnchor, periodBounds } from './scheduling';
 
 import type { InvoiceRow } from '@nombaone/core-db/schema';
@@ -78,18 +79,30 @@ export async function runCycle(
     invoiceId: invoice.id,
   });
   // Idempotent replay — an already-paid invoice for this period is returned as-is.
-  if (invoice.paidAt) return { invoice, outcome: 'paid' };
+  if (invoice.paidAt) {
+    // Self-heal: if a prior run paid this invoice but the period advance did not
+    // land (a version-conflict race or crash after the paid CAS), re-drive the
+    // idempotent paid-side effects so the subscription advances. No-op if already
+    // advanced (sub has moved past this invoice's period).
+    if (invoice.subscriptionId && sub.currentPeriodIndex === invoice.periodIndex) {
+      await reconcilePaidSubEffects(txDb, ctx, invoice);
+    }
+    return { invoice, outcome: 'paid' };
+  }
 
   const finalized = await finalizeInvoice(txDb, ctx, invoice.reference);
   if (finalized.paidAt) {
     // Zero-amount → paid in finalize (J8); reflect the subscription effects.
-    await applyPaidSubEffects(txDb, ctx, finalized);
+    await reconcilePaidSubEffects(txDb, ctx, finalized);
     return { invoice: finalized, outcome: 'paid' };
   }
 
   const method = await resolveCollectionMethod(txDb, ctx, sub);
   if (!method) {
-    // send_invoice or a method-less subscription: leave open, await an inbound transfer.
+    // send_invoice / method-less: the invoice is ISSUED for this period (an
+    // accrual). Advance the period so the sub is not re-swept every tick; an
+    // inbound transfer settles the open invoice out of band.
+    await advancePeriod(txDb, ctx, sub, periodStart, periodEnd);
     return { invoice: finalized, outcome: 'open' };
   }
 

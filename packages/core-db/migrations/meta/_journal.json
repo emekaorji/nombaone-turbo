@@ -50,6 +50,13 @@
       "when": 1782798040042,
       "tag": "0006_warm_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782800556166,
+      "tag": "0007_fast_longshot",
+      "breakpoints": true
     }
   ]
 }

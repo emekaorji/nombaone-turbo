@@ -1,0 +1,1 @@
+CREATE INDEX "subscriptions_due_sweep_idx" ON "subscriptions" USING btree ("next_billing_at","id") WHERE "subscriptions"."status" in ('active', 'trialing') and "subscriptions"."next_billing_at" is not null;

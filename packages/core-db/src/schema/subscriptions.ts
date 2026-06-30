@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   index,
@@ -108,6 +109,12 @@ export const subscriptionsTable = pgTable(
       table.environment,
       table.nextBillingAt
     ),
+    // The CROSS-TENANT sweep due query (findDueSubscriptions) does not pin org/env,
+    // so it cannot use dueIdx. This partial index on (next_billing_at, id) matches
+    // it exactly — keyset range-scan + order with no seq scan at scale (B11).
+    dueSweepIdx: index('subscriptions_due_sweep_idx')
+      .on(table.nextBillingAt, table.id)
+      .where(sql`${table.status} in ('active', 'trialing') and ${table.nextBillingAt} is not null`),
   })
 );
 

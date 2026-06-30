@@ -384,6 +384,34 @@ describe('subscriptions + billing e2e', () => {
     expect(final.body.data.cancellationReason).toBe('involuntary');
   });
 
+  // ── trial never bills early (A8) + send_invoice never auto-pulls ──────────
+  it('A8 — a trial subscription is never due before its trial end (anchor clamped)', async () => {
+    cardOutcome = 'succeeded';
+    const { customerRef, priceRef } = await seedPrice(500000, 7);
+    const res = await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: await seedActiveCard(customerRef) });
+    expect(res.body.data.status).toBe('trialing');
+    const row = await loadSubscriptionRow(harness.db, ctxA, res.body.data.id as string);
+    expect(row.nextBillingAt).toBeTruthy();
+    expect(row.trialEnd).toBeTruthy();
+    expect(row.nextBillingAt!.getTime()).toBeGreaterThanOrEqual(row.trialEnd!.getTime());
+  });
+
+  it('send_invoice subscription is never auto-pulled — the cycle is left open (invoice issued, no charge)', async () => {
+    const { customerRef, priceRef } = await seedPrice(450000);
+    const pm = await seedActiveCard(customerRef);
+    const res = await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: pm, collectionMethod: 'send_invoice' });
+    const subRef = res.body.data.id as string;
+    expect(res.body.data.status).toBe('active');
+
+    const before = await loadSubscriptionRow(harness.db, ctxA, subRef);
+    const result = await runCycle(harness.db, ctxA, subRef);
+    expect(result.outcome).toBe('open');
+    expect(await countKind(result.invoice.reference, 'charge')).toBe(0);
+    expect(await countKind(result.invoice.reference, 'settlement')).toBe(0);
+    const after = await loadSubscriptionRow(harness.db, ctxA, subRef);
+    expect(after.currentPeriodIndex).toBe(before.currentPeriodIndex + 1);
+  });
+
   // ── billing sweep (B7 due-selection + B6/B8/K3 concurrency) ────────────────
   async function setDue(subRef: string): Promise<string> {
     const row = await loadSubscriptionRow(harness.db, ctxA, subRef);

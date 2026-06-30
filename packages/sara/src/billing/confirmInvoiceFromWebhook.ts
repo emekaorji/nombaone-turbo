@@ -2,7 +2,7 @@
 import { ensureSystemAccounts } from '../config';
 import { claimInvoicePaid, linkInvoiceLedgerTransaction, loadInvoiceRow } from '../invoices';
 import { ensureAccount, postTransaction } from '../ledger';
-import { applyPaidSubEffects } from './effects';
+import { reconcilePaidSubEffects } from './effects';
 
 import type { InvoiceRow } from '@nombaone/core-db/schema';
 import type { DomainContext, InfraTxDb } from '../context';
@@ -26,10 +26,17 @@ export async function confirmInvoiceFromWebhook(
 ): Promise<{ settled: boolean; invoice: InvoiceRow }> {
   const invoice = await loadInvoiceRow(txDb, ctx, invoiceReference);
 
-  // Terminal states never settle: already-paid (J6, redelivered/out-of-order
-  // webhook), or void/uncollectible (a genuine late transfer on such an invoice is
-  // an out-of-band credit, not an auto-settlement).
-  if (invoice.paidAt || invoice.voidedAt || invoice.uncollectibleAt) {
+  // Already paid (J6, redelivered/out-of-order webhook): no second settlement — but
+  // self-heal a paid-but-not-advanced subscription (a prior settle's period advance
+  // lost a version race or crashed). applyPaidSubEffects is idempotent and only
+  // advances while the sub is still at this invoice's period.
+  if (invoice.paidAt) {
+    await reconcilePaidSubEffects(txDb, ctx, invoice);
+    return { settled: false, invoice };
+  }
+  // Void/uncollectible: a genuine late transfer is an out-of-band credit, not a
+  // settlement of the terminal invoice.
+  if (invoice.voidedAt || invoice.uncollectibleAt) {
     return { settled: false, invoice };
   }
 
@@ -63,6 +70,6 @@ export async function confirmInvoiceFromWebhook(
   });
 
   const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
-  await applyPaidSubEffects(txDb, ctx, linked);
+  await reconcilePaidSubEffects(txDb, ctx, linked);
   return { settled: true, invoice: linked };
 }

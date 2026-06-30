@@ -8,7 +8,7 @@ import { claimInvoicePaid, linkInvoiceLedgerTransaction } from '../invoices';
 import { ensureAccount, postTransaction } from '../ledger';
 import { getRail } from '../rails';
 import { enterPastDue } from '../subscriptions';
-import { applyPaidSubEffects, loadSubscriptionRowById, railKeyForMethod } from './effects';
+import { loadSubscriptionRowById, railKeyForMethod, reconcilePaidSubEffects } from './effects';
 
 import type { DomainContext, InfraTxDb } from '../context';
 import type { CollectResult } from './types';
@@ -37,7 +37,7 @@ export async function collectForInvoice(
 ): Promise<CollectResult> {
   if (invoice.amountDue === 0) {
     const claim = await claimInvoicePaid(txDb, ctx, invoice);
-    if (claim.claimed) await applyPaidSubEffects(txDb, ctx, claim.invoice);
+    if (claim.claimed) await reconcilePaidSubEffects(txDb, ctx, claim.invoice);
     return { outcome: 'paid', invoice: claim.invoice };
   }
 
@@ -70,7 +70,7 @@ export async function collectForInvoice(
       ],
     });
     const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
-    await applyPaidSubEffects(txDb, ctx, linked);
+    await reconcilePaidSubEffects(txDb, ctx, linked);
     return { outcome: 'paid', invoice: linked };
   }
 

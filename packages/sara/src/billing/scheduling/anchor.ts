@@ -20,6 +20,20 @@ export function computeAnchor(activationInstant: Date): Date {
 }
 
 /**
+ * Like `computeAnchor`, but never returns an instant BEFORE `instant` — if the
+ * billing hour has already passed on `instant`'s date, it rolls to the next day's
+ * billing hour. Used for the TRIAL anchor so normalizing the trial end to the
+ * billing hour can never pull the first charge into the trial window (A8).
+ */
+export function computeAnchorAtOrAfter(instant: Date): Date {
+  const at = computeAnchor(instant);
+  if (at.getTime() >= instant.getTime()) return at;
+  const parts = billingDateParts(instant);
+  const nextDay = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
+  return billingInstant(billingDateParts(nextDay));
+}
+
+/**
  * Period `periodIndex`'s half-open `[start, end)` as UTC instants at the billing
  * hour. Both ends are computed directly from the anchor (× `intervalCount`), so EOM
  * snap-back and leap handling are non-destructive (B2/B3/B4).
