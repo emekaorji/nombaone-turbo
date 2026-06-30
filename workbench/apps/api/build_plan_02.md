@@ -368,3 +368,13 @@ verifies→dedups→fast-acks→re-verifies→settles idempotently and out-of-or
 `PaymentFailureReason` taxonomy maps `gatewayMessage` for 06 to consume; every E/F/N box above is green
 (⚠ boxes twice); and the whole workspace passes type-check, build, and test. The repo now has real money
 rails for **03** to drive.
+
+> **✅ PHASE 02 DONE (2026-06-30, commits 55d3428 · eb78af9 · edd628a · 5aaf459 · 100c643 on `build/apps-api`).**
+> Built against a **fake Nomba client** (no network): 3 tables (migration `0003`), the OAuth client + 3 real
+> rail adapters behind the registry, `payment_methods` + capture flows, the inbound pipeline
+> (verifyNombaSignature → durable `unique(provider,request_id)` dedup → settle/capture, idempotent +
+> out-of-order tolerant), and the `PaymentFailureReason` taxonomy. **26 api e2e + 41 sara unit + 9/9 workspace
+> type-check green** (E1/N1/F1/F2/F3/F5 by e2e; E3/E8/E9 by unit; E5 taxonomy). **Two carve-outs:** (1) **T0
+> sandbox confirmation** of the `⚠ UNCONFIRMED` constants in `nomba/{endpoints,events,verify}.ts` is **pending
+> live creds** — they gate going live, not the build; (2) **E6 `swapCardToken`** (atomic card-update) lands in
+> **06** with the dunning card-update flow.
