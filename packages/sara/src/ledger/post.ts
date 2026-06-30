@@ -9,7 +9,7 @@ import {
 
 import { mintReference } from '../reference';
 
-import type { DomainContext, InfraTxDb } from '../context';
+import type { DomainContext, InfraTxScope } from '../context';
 
 /**
  * ── The double-entry posting paradigm ──
@@ -114,7 +114,10 @@ export const balanceDelta = (entry: EntryInput): number =>
  * reference.
  */
 export async function postTransaction(
-  txDb: InfraTxDb,
+  // `InfraTxScope`: given the pool handle it opens a top-level transaction; given
+  // an already-open `tx` it nests as a SAVEPOINT, so a caller can make this ledger
+  // post atomic with surrounding writes (e.g. credit-grant decrements).
+  txDb: InfraTxScope,
   ctx: DomainContext,
   input: PostTransactionInput
 ): Promise<PostedTransaction> {

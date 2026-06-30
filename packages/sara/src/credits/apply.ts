@@ -44,26 +44,33 @@ export async function applyCreditsOldestFirst(
   const consumptions = consumeGrants(grants, input.amountDue);
   if (consumptions.length === 0) return { lines: [], totalApplied: 0 };
 
-  for (const c of consumptions) {
-    await txDb
-      .update(creditGrantsTable)
-      .set({ remaining: sql`${creditGrantsTable.remaining} - ${c.applied}` })
-      .where(eq(creditGrantsTable.id, c.grantId));
-  }
-
   const totalApplied = consumptions.reduce((s, c) => s + c.applied, 0);
-  const creditAccount = await ensureAccount(txDb, ctx, {
-    key: customerCreditAccountKey(input.customerRef),
-    kind: 'liability',
-  });
-  const revenue = await ensureAccount(txDb, ctx, { key: 'platform_revenue', kind: 'revenue' });
-  await postTransaction(txDb, ctx, {
-    kind: 'adjustment',
-    memo: `apply credit ${input.customerRef}`,
-    entries: [
-      { accountId: creditAccount.id, direction: 'debit', amount: totalApplied },
-      { accountId: revenue.id, direction: 'credit', amount: totalApplied },
-    ],
+
+  // Atomic: the per-grant `remaining` decrements AND the balanced ledger debit
+  // commit-or-roll-back together (postTransaction nests as a savepoint on the
+  // open `tx`), so `credit_grants.remaining` can never drift from the
+  // `customer_credit` materialized balance — a crash between them rolls back both.
+  await txDb.transaction(async (tx) => {
+    for (const c of consumptions) {
+      await tx
+        .update(creditGrantsTable)
+        .set({ remaining: sql`${creditGrantsTable.remaining} - ${c.applied}` })
+        .where(eq(creditGrantsTable.id, c.grantId));
+    }
+
+    const creditAccount = await ensureAccount(tx, ctx, {
+      key: customerCreditAccountKey(input.customerRef),
+      kind: 'liability',
+    });
+    const revenue = await ensureAccount(tx, ctx, { key: 'platform_revenue', kind: 'revenue' });
+    await postTransaction(tx, ctx, {
+      kind: 'adjustment',
+      memo: `apply credit ${input.customerRef}`,
+      entries: [
+        { accountId: creditAccount.id, direction: 'debit', amount: totalApplied },
+        { accountId: revenue.id, direction: 'credit', amount: totalApplied },
+      ],
+    });
   });
 
   const lines: CreditLine[] = consumptions.map((c) => ({
