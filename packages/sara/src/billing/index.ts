@@ -1,3 +1,5 @@
+export * from './applyProration';
+export * from './changeSubscription';
 export * from './claim';
 export * from './collectForInvoice';
 export * from './confirmInvoiceFromWebhook';

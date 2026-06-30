@@ -604,6 +604,53 @@ describe('subscriptions + billing e2e', () => {
     expect(d2.body.error.code).toBe('COUPON_ALREADY_APPLIED');
   });
 
+  // ── proration (C1 upgrade / C2 downgrade) ──────────────────────────────────
+  async function twoPricedSub(oldUnit: number): Promise<{ subRef: string; subId: string; customerRef: string; planId: string }> {
+    cardOutcome = 'succeeded';
+    const u = uniq();
+    const customer = await createCustomer(harness.db, ctxA, { email: `pr${u}@acme.test`, name: 'C' });
+    const plan = await createPlan(harness.db, ctxA, { name: `Plan ${u}` });
+    const price = await createPrice(harness.db, ctxA, {
+      planRef: plan.id, unitAmount: oldUnit, interval: 'month', intervalCount: 1, usageType: 'licensed', billingScheme: 'per_unit', trialPeriodDays: 0,
+    });
+    const pm = await seedActiveCard(customer.id);
+    const subRef = (await newSub({ customerId: customer.id, priceId: price.id, paymentMethodId: pm })).body.data.id as string;
+    const subId = (await loadSubscriptionRow(harness.db, ctxA, subRef)).id;
+    return { subRef, subId, customerRef: customer.id, planId: plan.id };
+  }
+  const priceOn = async (planId: string, unitAmount: number): Promise<string> =>
+    (await createPrice(harness.db, ctxA, { planRef: planId, unitAmount, interval: 'month', intervalCount: 1, usageType: 'licensed', billingScheme: 'per_unit', trialPeriodDays: 0 })).id;
+
+  it('C1 — mid-cycle upgrade charges the prorated difference immediately', async () => {
+    const { subRef, subId, planId } = await twoPricedSub(1_000_000);
+    const dear = await priceOn(planId, 2_000_000);
+    const changed = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', `ch-${uniq()}`).send({ priceId: dear });
+    expect(changed.status).toBe(200);
+    expect(changed.body.data.priceId).toBe(dear);
+
+    const [proration] = await harness.db
+      .select({ amountDue: invoicesTable.amountDue, paidAt: invoicesTable.paidAt })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.billingReason, 'subscription_update')));
+    expect(proration!.amountDue).toBeGreaterThan(0); // net-positive proration
+    expect(proration!.paidAt).toBeTruthy(); // charged now (C1)
+  });
+
+  it('C2 — mid-cycle downgrade banks a credit grant, no rail charge', async () => {
+    const { subRef, subId, customerRef, planId } = await twoPricedSub(2_000_000);
+    const cheap = await priceOn(planId, 1_000_000);
+    const changed = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', `ch-${uniq()}`).send({ priceId: cheap });
+    expect(changed.status).toBe(200);
+
+    // no immediate proration invoice (downgrade is credited, not charged)
+    const invoices = await harness.db.select({ id: invoicesTable.id }).from(invoicesTable).where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.billingReason, 'subscription_update')));
+    expect(invoices).toHaveLength(0);
+
+    const balance = await asA(request(harness.app).get(`/v1/customers/${customerRef}/credit`));
+    expect(balance.body.data.balance).toBeGreaterThan(0); // banked (C2)
+    expect(balance.body.data.grants[0].source).toBe('downgrade_proration');
+  });
+
   it('credit grant → ledger-backed balance + oldest-first grant audit (C8)', async () => {
     const customer = await createCustomer(harness.db, ctxA, { email: `cr${uniq()}@acme.test`, name: 'C' });
     const ref = customer.id;

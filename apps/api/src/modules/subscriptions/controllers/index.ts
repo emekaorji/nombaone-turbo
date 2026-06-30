@@ -1,6 +1,7 @@
 export * from './apply-subscription-discount';
 export * from './cancel-schedule';
 export * from './cancel-subscription';
+export * from './change-subscription';
 export * from './create-schedule';
 export * from './create-subscription';
 export * from './remove-subscription-discount';

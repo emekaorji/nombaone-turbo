@@ -3,6 +3,7 @@ import { Router } from 'express';
 import {
   applyDiscountBody,
   cancelSubscriptionBody,
+  changeSubscriptionBody,
   createSubscriptionBody,
   listSubscriptionQuery,
   pauseSubscriptionBody,
@@ -18,6 +19,7 @@ import {
   applySubscriptionDiscountController,
   cancelScheduleController,
   cancelSubscriptionController,
+  changeSubscriptionController,
   createScheduleController,
   createSubscriptionController,
   getScheduleController,
@@ -115,6 +117,16 @@ subscriptionsRouter.post(
   idempotency,
   validate({ body: resubscribeBody }),
   resubscribeSubscriptionController
+);
+// Proration-triggering change (price swap / interval / quantity) — distinct from PATCH.
+subscriptionsRouter.post(
+  '/subscriptions/:reference/change',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('subscriptions:write'),
+  idempotency,
+  validate({ body: changeSubscriptionBody }),
+  changeSubscriptionController
 );
 
 // ── Billing schedules & upcoming invoice ─────────────────────────────────────
