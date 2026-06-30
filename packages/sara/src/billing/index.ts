@@ -10,3 +10,4 @@ export * from './scheduling';
 export * from './startSubscription';
 export * from './sweep';
 export * from './types';
+export * from './upcoming';

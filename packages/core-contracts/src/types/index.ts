@@ -9,5 +9,7 @@ export * from './price';
 export * from './payment-method';
 export * from './nomba';
 export * from './subscription';
+export * from './subscription-schedule';
+export * from './upcoming-invoice';
 export * from './invoice';
 export * from './example';

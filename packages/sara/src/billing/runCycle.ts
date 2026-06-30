@@ -1,6 +1,7 @@
 
 import { buildSubscriptionLine, createInvoice, finalizeInvoice } from '../invoices';
 import { loadSubscriptionRow } from '../subscriptions';
+import { applyDuePhase } from '../subscription-schedules';
 import { claimPeriod } from './claim';
 import { collectForInvoice } from './collectForInvoice';
 import {
@@ -36,7 +37,15 @@ export async function runCycle(
   ctx: DomainContext,
   subscriptionRef: string
 ): Promise<RunCycleResult> {
-  const sub = await loadSubscriptionRow(txDb, ctx, subscriptionRef);
+  const loaded = await loadSubscriptionRow(txDb, ctx, subscriptionRef);
+  // B10: apply any schedule phase due at THIS boundary BEFORE pricing, so the
+  // change lands on the period about to bill (not at API-call time). Re-load the
+  // subscription if a phase swapped its effective price.
+  const applied = await applyDuePhase(txDb, ctx, {
+    subscriptionId: loaded.id,
+    periodIndex: loaded.currentPeriodIndex,
+  });
+  const sub = applied ? await loadSubscriptionRow(txDb, ctx, subscriptionRef) : loaded;
   const price = await loadPriceById(txDb, ctx, sub.priceId);
   const item = await loadPrimarySubscriptionItem(txDb, ctx, sub.id);
 

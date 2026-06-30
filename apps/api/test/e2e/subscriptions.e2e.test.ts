@@ -478,4 +478,44 @@ describe('subscriptions + billing e2e', () => {
     const finalRow = await loadSubscriptionRow(harness.db, ctxA, subRef);
     expect(finalRow.currentPeriodIndex).toBe(2);
   });
+
+  // ── B10 schedule: a price change applies AT the next boundary, not now ──────
+  it('B10 — a scheduled price change applies at the next cycle boundary, not immediately', async () => {
+    cardOutcome = 'succeeded';
+    const u = uniq();
+    const customer = await createCustomer(harness.db, ctxA, { email: `b10${u}@acme.test`, name: 'C' });
+    const plan = await createPlan(harness.db, ctxA, { name: `Plan ${u}` });
+    const priceA = await createPrice(harness.db, ctxA, {
+      planRef: plan.id, unitAmount: 500000, interval: 'month', intervalCount: 1, usageType: 'licensed', billingScheme: 'per_unit', trialPeriodDays: 0,
+    });
+    const priceB = await createPrice(harness.db, ctxA, {
+      planRef: plan.id, unitAmount: 300000, interval: 'month', intervalCount: 1, usageType: 'licensed', billingScheme: 'per_unit', trialPeriodDays: 0,
+    });
+    const pm = await seedActiveCard(customer.id);
+    const sub = (await newSub({ customerId: customer.id, priceId: priceA.id, paymentMethodId: pm })).body.data;
+    expect(sub.currentPeriodIndex).toBe(1); // billed period 0
+
+    // schedule price B "next cycle" → it lands at period index 2.
+    const sched = await asA(request(harness.app).post(`/v1/subscriptions/${sub.id}/schedule`))
+      .set('Idempotency-Key', `sch-${uniq()}`)
+      .send({ priceId: priceB.id });
+    expect(sched.status).toBe(201);
+    expect(sched.body.data.phases[0].startIndex).toBe(2);
+    expect(sched.body.data.phases[0].priceId).toBe(priceB.id);
+
+    const subId = (await loadSubscriptionRow(harness.db, ctxA, sub.id as string)).id;
+    await setDue(sub.id as string);
+    await runCycle(harness.db, ctxA, sub.id as string); // bills period 1 → price A
+    await setDue(sub.id as string);
+    await runCycle(harness.db, ctxA, sub.id as string); // bills period 2 → applyDuePhase swaps to price B
+
+    const [inv1] = await harness.db.select({ total: invoicesTable.total }).from(invoicesTable).where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
+    const [inv2] = await harness.db.select({ total: invoicesTable.total }).from(invoicesTable).where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 2)));
+    expect(inv1!.total).toBe(500000); // current period unchanged
+    expect(inv2!.total).toBe(300000); // next period uses the new price (B10)
+
+    // upcoming-invoice now reflects the (applied) new price.
+    const upcoming = await asA(request(harness.app).get(`/v1/subscriptions/${sub.id}/upcoming-invoice`));
+    expect(upcoming.body.data.total).toBe(300000);
+  });
 });

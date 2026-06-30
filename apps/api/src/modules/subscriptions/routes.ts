@@ -7,15 +7,20 @@ import {
   pauseSubscriptionBody,
   resubscribeBody,
   resumeSubscriptionBody,
+  scheduleChangeBody,
   updateSubscriptionBody,
 } from '@nombaone/core-contracts/validations';
 
 import { validate } from '../../shared/http';
 import { apiKeyAuth, idempotency, rateLimit, requireScope } from '../../shared/middlewares';
 import {
+  cancelScheduleController,
   cancelSubscriptionController,
+  createScheduleController,
   createSubscriptionController,
+  getScheduleController,
   getSubscriptionController,
+  getUpcomingInvoiceController,
   listSubscriptionsController,
   pauseSubscriptionController,
   resubscribeSubscriptionController,
@@ -107,4 +112,37 @@ subscriptionsRouter.post(
   idempotency,
   validate({ body: resubscribeBody }),
   resubscribeSubscriptionController
+);
+
+// ── Billing schedules & upcoming invoice ─────────────────────────────────────
+subscriptionsRouter.get(
+  '/subscriptions/:reference/upcoming-invoice',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('subscriptions:read'),
+  getUpcomingInvoiceController
+);
+subscriptionsRouter.post(
+  '/subscriptions/:reference/schedule',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('subscriptions:write'),
+  idempotency,
+  validate({ body: scheduleChangeBody }),
+  createScheduleController
+);
+subscriptionsRouter.get(
+  '/subscriptions/:reference/schedule',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('subscriptions:read'),
+  getScheduleController
+);
+subscriptionsRouter.delete(
+  '/subscriptions/:reference/schedule',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('subscriptions:write'),
+  idempotency,
+  cancelScheduleController
 );
