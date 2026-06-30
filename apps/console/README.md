@@ -42,7 +42,7 @@ INFRA_DATABASE_URL='postgres://postgres:postgres@localhost:5432/nombaone?sslmode
 
 # 3. cp .env.example .env (fill in), then seed demo data + run
 pnpm -F @nombaone/console seed:local     # idempotent: org + API key + example rows
-pnpm -F @nombaone/console dev            # http://localhost:9060
+pnpm -F @nombaone/console dev            # http://localhost:8010
 ```
 
 ## Environment variables

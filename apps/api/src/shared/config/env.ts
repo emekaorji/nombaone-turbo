@@ -11,7 +11,7 @@ loadDotenv();
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().default(9040),
+  PORT: z.coerce.number().default(8000),
   INFRA_ENVIRONMENT: z.enum(['test', 'live']),
   INFRA_DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().url(),

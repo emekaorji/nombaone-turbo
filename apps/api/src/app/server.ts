@@ -1,8 +1,10 @@
+// eslint-disable-next-line import/order -- env must load before any @acute/* import so transitive process.env reads (e.g. @acute/queue redis url) see the loaded .env
+import { env } from '../shared/config/env';
+
 import { createServer as createHttpServer, type Server } from 'node:http';
 
 import { connection as queueConnection } from '@nombaone/queue';
 
-import { env } from '../shared/config/env';
 import { pool } from '../shared/config/db';
 import { redis } from '../shared/config/redis';
 import { logger } from '../shared/observability/logger';

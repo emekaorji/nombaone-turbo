@@ -34,11 +34,11 @@ A **bare, paradigm-embodying boilerplate** for **Nomba One** — a managed, mult
 
 | App | Domain | Stack | Port |
 |---|---|---|---|
-| `apps/api` | api.nombaone.xyz | Express | 9040 |
-| `apps/console` | console.nombaone.xyz | Next.js | 9060 |
-| `apps/admin` | admin.nombaone.xyz | Next.js | 9020 |
-| `apps/docs` | docs.nombaone.xyz | Next.js + MDX | 9070 |
-| `apps/checkout` | checkout.nombaone.xyz | Next.js | 9080 |
+| `apps/api` | api.nombaone.xyz | Express | 8000 |
+| `apps/console` | console.nombaone.xyz | Next.js | 8010 |
+| `apps/admin` | admin.nombaone.xyz | Next.js | 8020 |
+| `apps/docs` | docs.nombaone.xyz | Next.js + MDX | 8030 |
+| `apps/checkout` | checkout.nombaone.xyz | Next.js | 8040 |
 
 Packages: `core-contracts` (DTOs + zod + envelope) · `core-db` (Drizzle schema + handles + migrations) ·
 `sara` (the domain) · `errors` · `queue` (BullMQ) · `utils` · `docs-db` · `ui` (shadcn) · `toolings/*`.
