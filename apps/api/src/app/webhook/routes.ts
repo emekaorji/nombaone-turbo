@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { Router } from 'express';
 
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { verifyNombaSignature } from '@nombaone/sara/nomba';
+import { nombaSignatureCandidates, verifyNombaSignature } from '@nombaone/sara/nomba';
 import { verifyWebhookSignature } from '@nombaone/sara/webhooks';
 import { enqueueInboundWebhook } from '@nombaone/queue';
 
@@ -63,7 +63,28 @@ webhookRouter.post(
       }
       const parsed = (req.body ?? {}) as Record<string, unknown>;
       const signature = headerValue(req.headers['nomba-signature']);
-      if (!signature || !verifyNombaSignature(key as string, signature, rawBody.toString('utf8'), parsed)) {
+
+      if (env.NOMBA_WEBHOOK_DEBUG) {
+        // T0 byte-confirm: log the REAL headers + raw body + every candidate signature
+        // so the exact scheme can be pinned, and DO NOT reject on mismatch while the
+        // scheme is still being confirmed. (env guard forbids this in the live ring.)
+        logger.warn(`[webhook][T0] nomba headers=${JSON.stringify(req.headers)}`);
+        logger.warn(`[webhook][T0] nomba rawBody(b64)=${rawBody.toString('base64')}`);
+        logger.warn(`[webhook][T0] nomba-signature(header)=${signature ?? '(none)'}`);
+        logger.warn(
+          `[webhook][T0] candidates=${JSON.stringify(
+            nombaSignatureCandidates(
+              key as string,
+              rawBody.toString('utf8'),
+              parsed,
+              headerValue(req.headers['nomba-timestamp']) ?? undefined
+            )
+          )}`
+        );
+      } else if (
+        !signature ||
+        !verifyNombaSignature(key as string, signature, rawBody.toString('utf8'), parsed)
+      ) {
         rejectSignature(provider);
       }
 

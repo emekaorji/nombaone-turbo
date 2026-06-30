@@ -43,6 +43,14 @@ const envSchema = z.object({
   NOMBA_CLIENT_SECRET: z.string().min(1).optional(),
   NOMBA_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
   NOMBA_TOKEN_REFRESH_MARGIN_SEC: z.coerce.number().int().positive().default(300),
+  // T0 byte-confirm: when true, the inbound nomba route LOGS the real headers + raw
+  // body + candidate signatures and processes the event WITHOUT rejecting on a
+  // signature mismatch — so the first real webhook through a tunnel pins the exact
+  // scheme. NEVER true in the live ring (it bypasses signature rejection).
+  NOMBA_WEBHOOK_DEBUG: z
+    .union([z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === 'true'),
 
   /**
    * Billing scheduler (04). A single fixed billing zone + deterministic hour make
