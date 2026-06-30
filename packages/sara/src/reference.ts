@@ -22,6 +22,9 @@ export type ReferenceDomain =
   | 'CUS' // customer (subscriber)
   | 'PLN' // plan
   | 'PRC' // price
+  | 'PMT' // payment method
+  | 'NWE' // nomba (inbound) webhook event
+  | 'NMA' // org ↔ nomba account mapping
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {
