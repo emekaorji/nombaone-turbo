@@ -4,6 +4,10 @@ import type { Environment } from './common';
 export type ApiKeyScope =
   | 'customers:read'
   | 'customers:write'
+  | 'plans:read'
+  | 'plans:write'
+  | 'prices:read'
+  | 'prices:write'
   | 'example:read'
   | 'example:write'
   | 'webhooks:read'

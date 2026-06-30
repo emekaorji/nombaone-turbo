@@ -3,6 +3,8 @@ import { Router } from 'express';
 import { customerRouter } from '../../modules/customers';
 import { exampleRouter } from '../../modules/example';
 import { healthRouter } from '../../modules/health';
+import { plansRouter } from '../../modules/plans';
+import { pricesRouter } from '../../modules/prices';
 
 /**
  * The single versioned router. The `/v1` prefix is applied at EXACTLY ONE mount
@@ -14,4 +16,6 @@ export const v1Router: Router = Router();
 
 v1Router.use(healthRouter);
 v1Router.use(customerRouter);
+v1Router.use(plansRouter);
+v1Router.use(pricesRouter);
 v1Router.use(exampleRouter);

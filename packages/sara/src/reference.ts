@@ -20,6 +20,8 @@ export type ReferenceDomain =
   | 'LTX' // ledger transaction
   | 'LAC' // ledger account
   | 'CUS' // customer (subscriber)
+  | 'PLN' // plan
+  | 'PRC' // price
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {

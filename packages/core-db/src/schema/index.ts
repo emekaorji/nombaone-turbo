@@ -13,4 +13,6 @@ export * from './webhook-endpoints';
 export * from './webhook-deliveries';
 export * from './platform-config';
 export * from './customers';
+export * from './plans';
+export * from './prices';
 export * from './examples';

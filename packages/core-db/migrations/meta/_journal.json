@@ -15,6 +15,13 @@
       "when": 1782779114177,
       "tag": "0001_neat_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782780148847,
+      "tag": "0002_cultured_james_howlett",
+      "breakpoints": true
     }
   ]
 }

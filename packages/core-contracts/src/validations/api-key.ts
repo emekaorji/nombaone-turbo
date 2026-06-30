@@ -3,6 +3,10 @@ import { z } from 'zod';
 const apiKeyScope = z.enum([
   'customers:read',
   'customers:write',
+  'plans:read',
+  'plans:write',
+  'prices:read',
+  'prices:write',
   'example:read',
   'example:write',
   'webhooks:read',
