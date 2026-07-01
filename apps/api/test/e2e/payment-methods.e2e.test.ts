@@ -131,8 +131,11 @@ describe('payment methods + inbound pipeline e2e', () => {
   });
 
   it('inbound webhook route verifies the Nomba signature (F1) and fast-acks (F3)', async () => {
-    const body = JSON.stringify({ event_type: 'payment_success', requestId: 'req-sig-1', data: {} });
-    const sig = computeNombaSignature(NOMBA_SIG_KEY, body);
+    // Field-string scheme (T0-confirmed): the signature covers the parsed payload
+    // fields, so sign the same object the route parses from the body.
+    const payload = { event_type: 'payment_success', requestId: 'req-sig-1', data: {} };
+    const body = JSON.stringify(payload);
+    const sig = computeNombaSignature(NOMBA_SIG_KEY, body, payload);
 
     const good = await request(harness.app)
       .post('/webhooks/inbound/nomba')
@@ -158,8 +161,12 @@ describe('payment methods + inbound pipeline e2e', () => {
       customerAccountNumber: '0123456789',
       bankCode: '044',
       customerName: 'Ada Payer',
+      customerAccountName: 'Ada Payer',
+      customerPhoneNumber: '08012345678',
+      customerAddress: 'Lagos, Nigeria',
+      narration: 'nombaone mandate',
       maxAmount: 5000000,
-      frequency: 'monthly',
+      frequency: 'MONTHLY',
     });
     expect(created.status).toBe(201);
     expect(created.body.data.status).toBe('consent_pending');

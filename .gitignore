@@ -38,3 +38,4 @@ Thumbs.db
 # misc
 _local*
 .vercel
+.credentials

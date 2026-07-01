@@ -1,0 +1,8 @@
+tunnel: nombaone
+credentials-file: ../../.credentials/cloudflared/25c43483-8a77-4f20-bf38-cc2e262dff59.json
+origincert: ../../.credentials/cloudflared/cert.pem
+
+ingress:
+  - hostname: tunnel.nombaone.xyz
+    service: http://localhost:8000
+  - service: http_status:404

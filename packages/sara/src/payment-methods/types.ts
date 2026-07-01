@@ -17,8 +17,14 @@ export interface CreateMandateInput {
   customerAccountNumber: string;
   bankCode: string;
   customerName: string;
+  /** T0 prod: API-required (docs mark them optional but the mandate create rejects). */
+  customerAccountName: string;
+  customerPhoneNumber: string;
+  customerAddress: string;
+  narration: string;
   maxAmount: number; // kobo
-  frequency: string;
+  frequency: string; // Nomba NIBSS vocabulary (UPPERCASE), e.g. MONTHLY
+  /** LocalDateTime (no zone). Defaulted to [tomorrow, +1yr] when omitted. */
   startDate?: string;
   endDate?: string;
 }

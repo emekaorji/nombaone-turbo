@@ -20,12 +20,29 @@ export type SetupCardBody = z.infer<typeof setupCardBody>;
 export const createMandateBody = z.object({
   customerRef: z.string(),
   customerAccountNumber: z.string().min(1),
-  bankCode: z.string().min(1),
+  bankCode: z.string().min(1), // CBN 3-digit code (058 GTB · 044 Access · 033 UBA…)
   customerName: z.string().min(1).max(255),
+  // T0 prod: the docs mark these "optional" but the mandate create REJECTS without them.
+  customerAccountName: z.string().min(1).max(255),
+  customerPhoneNumber: z.string().min(1),
+  customerAddress: z.string().min(1).max(500),
+  narration: z.string().min(1).max(255),
   maxAmount: z.coerce.number().int().positive(), // kobo — hard per-debit ceiling
+  // Nomba NIBSS frequency vocabulary (UPPERCASE — the lowercase set was rejected).
   frequency: z
-    .enum(['weekly', 'monthly', 'quarterly', 'yearly', 'variable'])
-    .default('monthly'),
+    .enum([
+      'VARIABLE',
+      'WEEKLY',
+      'EVERY_TWO_WEEKS',
+      'MONTHLY',
+      'EVERY_TWO_MONTHS',
+      'EVERY_THREE_MONTHS',
+      'EVERY_FOUR_MONTHS',
+      'EVERY_SIX_MONTHS',
+      'EVERY_TWELVE_MONTHS',
+    ])
+    .default('MONTHLY'),
+  // LocalDateTime (no zone), present/future; sara normalizes + defaults [tomorrow,+1yr].
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });

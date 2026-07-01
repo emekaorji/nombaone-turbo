@@ -5,6 +5,7 @@
   "main": "dist/server.mjs",
   "scripts": {
     "dev": "tsx watch src/app/server.ts",
+    "tunnel": "cloudflared tunnel --config cloudflared.config.yml run nombaone",
     "build": "tsup",
     "start": "node dist/server.mjs",
     "lint": "eslint . --max-warnings 0",

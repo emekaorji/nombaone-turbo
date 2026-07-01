@@ -94,6 +94,18 @@ export async function createMandate(
   const customer = await resolveCustomer(txDb, ctx, input.customerRef);
   const reference = mintReference('PMT');
 
+  // Nomba wants java LocalDateTime (date+time, NO zone) in the present/future — a
+  // UTC `now` can read as past against Nomba's WAT clock, so default the start to
+  // tomorrow. Normalize any caller-supplied date to the same shape.
+  const DAY = 24 * 3600 * 1000;
+  const toLocalDateTime = (iso: string): string => new Date(iso).toISOString().slice(0, 19);
+  const startDate = input.startDate
+    ? toLocalDateTime(input.startDate)
+    : new Date(Date.now() + DAY).toISOString().slice(0, 19);
+  const endDate = input.endDate
+    ? toLocalDateTime(input.endDate)
+    : new Date(Date.parse(startDate) + 365 * DAY).toISOString().slice(0, 19);
+
   const res = await client.request({
     method: 'POST',
     endpoint: NOMBA_ENDPOINTS.mandateCreate,
@@ -102,12 +114,20 @@ export async function createMandate(
       customerAccountNumber: input.customerAccountNumber,
       bankCode: input.bankCode,
       customerName: input.customerName,
+      // T0 prod: all four API-required (docs said optional).
+      customerAccountName: input.customerAccountName,
       customerEmail: customer.email,
+      customerPhoneNumber: input.customerPhoneNumber,
+      customerAddress: input.customerAddress,
+      narration: input.narration,
       amount: input.maxAmount, // kobo
-      frequency: input.frequency,
-      startDate: input.startDate,
-      endDate: input.endDate,
+      frequency: input.frequency, // NIBSS uppercase vocabulary
+      startDate,
+      endDate,
       merchantReference: reference,
+      // NOTE: `subscriberCode` (NIBSS biller code) is provisioned to the merchant
+      // account on Nomba's side — not sent here. Create fails with "Invalid
+      // parameter entered for SubscriberCode" until the account is provisioned.
     },
   });
   requireOk(res.ok, 'nomba mandate create failed');
