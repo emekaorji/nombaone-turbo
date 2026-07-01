@@ -1,7 +1,9 @@
 import { Router } from 'express';
 
+import { billingSettingsRouter } from '@modules/billing-settings';
 import { couponsRouter } from '@modules/coupons';
 import { customerRouter } from '@modules/customers';
+import { dunningRouter } from '@modules/dunning';
 import { exampleRouter } from '@modules/example';
 import { healthRouter } from '@modules/health';
 import { invoicesRouter } from '@modules/invoices';
@@ -27,6 +29,8 @@ v1Router.use(pricesRouter);
 v1Router.use(paymentMethodsRouter);
 v1Router.use(mandatesRouter);
 v1Router.use(subscriptionsRouter);
+v1Router.use(dunningRouter);
 v1Router.use(invoicesRouter);
 v1Router.use(couponsRouter);
+v1Router.use(billingSettingsRouter);
 v1Router.use(exampleRouter);

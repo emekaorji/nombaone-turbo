@@ -10,6 +10,7 @@ import {
   linkInvoiceLedgerTransaction,
 } from '../invoices';
 import { ensureAccount, postTransaction } from '../ledger';
+import { coerceFailureReason } from '../nomba/failure-taxonomy';
 import { getOrgBillingSettings } from '../org';
 import { resolvePartialCollection } from '../proration';
 import { getRail } from '../rails';
@@ -110,6 +111,12 @@ export async function collectForInvoice(
         ],
       });
       const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
+      // Persist the failure signal (a short collection = insufficient funds) so the
+      // dunning sweep pursues the remainder on the right branch.
+      await txDb
+        .update(invoicesTable)
+        .set({ lastFailureReason: 'insufficient_funds', lastGatewayMessage: 'partial_collection' })
+        .where(eq(invoicesTable.id, invoice.id));
       // A remainder is owed → the sub is past_due (06 retries the remainder). No
       // attempt_count bump / payment_failed here: money DID arrive; the
       // `payment_partially_collected` event + `amount_remaining` carry the state.
@@ -155,7 +162,11 @@ async function failCollection(
 ): Promise<InvoiceRow> {
   const [bumped] = await txDb
     .update(invoicesTable)
-    .set({ attemptCount: invoice.attemptCount + 1 })
+    .set({
+      attemptCount: invoice.attemptCount + 1,
+      lastFailureReason: coerceFailureReason(reason),
+      lastGatewayMessage: reason ?? null,
+    })
     .where(eq(invoicesTable.id, invoice.id))
     .returning();
 

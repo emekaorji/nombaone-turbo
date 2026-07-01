@@ -49,3 +49,26 @@ export const CARD_UPDATE_REASONS: ReadonlySet<PaymentFailureReason> = new Set([
   'expired_card',
   'token_expired',
 ]);
+
+const ALL_FAILURE_REASONS: ReadonlySet<string> = new Set<PaymentFailureReason>([
+  'insufficient_funds',
+  'expired_card',
+  'token_expired',
+  'hard_decline',
+  'do_not_honor',
+  'mandate_suspended',
+  'processor_unavailable',
+  'unknown',
+]);
+
+/**
+ * Coerce a raw rail/failure string to a `PaymentFailureReason`: pass through an
+ * already-classified bucket, otherwise map it as a `gatewayMessage`, otherwise
+ * `unknown`. Lets the collect path persist a stable bucket for the dunning sweep to
+ * branch on later.
+ */
+export function coerceFailureReason(raw?: string | null): PaymentFailureReason {
+  if (!raw) return 'unknown';
+  if (ALL_FAILURE_REASONS.has(raw)) return raw as PaymentFailureReason;
+  return mapGatewayMessage(raw);
+}

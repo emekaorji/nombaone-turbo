@@ -60,6 +60,10 @@ export const invoicesTable = pgTable(
     amountRemaining: bigint('amount_remaining', { mode: 'number' }).notNull().default(0),
     creditTotal: bigint('credit_total', { mode: 'number' }).notNull().default(0),
     attemptCount: integer('attempt_count').notNull().default(0),
+    // 06: the last collection failure signal, persisted so the dunning sweep can
+    // classify the FIRST retry's branch (expired-card must not become a blind retry).
+    lastFailureReason: text('last_failure_reason'),
+    lastGatewayMessage: text('last_gateway_message'),
     ledgerTransactionId: uuid('ledger_transaction_id'),
     dueDate: timestamp('due_date', { withTimezone: true }),
     finalizedAt: timestamp('finalized_at', { withTimezone: true }),

@@ -181,7 +181,7 @@ the sync reply (E4/E5). Every row is tenant-scoped (`organization_id` + `environ
 
 ### DB (core-db)
 
-- [ ] **`dunning_attempts`** table (`packages/core-db/src/schema/dunning-attempts.ts`): `idPk()`,
+- [x] **`dunning_attempts`** table (`packages/core-db/src/schema/dunning-attempts.ts`): `idPk()`,
       `referenceCol()` (DUN), `organization_id` FK → organizations (cascade), `environment` (`environmentEnum`),
       `subscription_id` FK, `invoice_id` FK, `attempt_number` int, `status`
       (`pgEnum dunning_attempt_status: scheduled | attempting | succeeded | rescheduled | card_update_required | exhausted`),
@@ -190,11 +190,11 @@ the sync reply (E4/E5). Every row is tenant-scoped (`organization_id` + `environ
       `outcome` text nullable, `scheduled_at` ts, `executed_at` ts nullable, `next_attempt_at` ts nullable,
       `comms_sent_at` ts nullable, `comms_event_type` text nullable, `created_at` (append-only fact — **no
       `updated_at`**, mirroring `ledger_transactions`). Proof: migration applies on a fresh DB.
-- [ ] Indexes on `dunning_attempts`: `unique(reference)`; **`unique(invoice_id, attempt_number)`** (makes a
+- [x] Indexes on `dunning_attempts`: `unique(reference)`; **`unique(invoice_id, attempt_number)`** (makes a
       duplicate attempt for the same invoice/step structurally impossible — `K`/`J6` discipline); partial index
       `WHERE status = 'scheduled'` on `(environment, next_attempt_at)` for the sweep's due-selection; keyset
       `(organization_id, environment, created_at desc, id desc)` for the inspect list.
-- [ ] **Extend `org_billing_settings`** (the table is **created in 05** — sole creator; this phase adds the
+- [x] **Extend `org_billing_settings`** (the table is **created in 05** — sole creator; this phase adds the
       dunning columns via **additive `ALTER ADD COLUMN` only**, never a second `CREATE`). Add to
       `packages/core-db/src/schema/org-billing-settings.ts` (05's file):
       `dunning_max_attempts` int (default 4), `dunning_intervals_hours`
@@ -205,51 +205,51 @@ the sync reply (E4/E5). Every row is tenant-scoped (`organization_id` + `environ
       `comms_enabled` bool (default true). 05's columns (`partial_collection_enabled`, `proration_credit_policy`)
       and **`unique(organization_id, environment)`** stay intact; 08 then adds limits/fair-scheduling columns
       additively. Proof: migration applies on top of 05's table; a row reads back with 05's + 06's defaults.
-- [ ] Add the `dunning_attempts` table to `packages/core-db/src/schema/index.ts` (`org_billing_settings` is
+- [x] Add the `dunning_attempts` table to `packages/core-db/src/schema/index.ts` (`org_billing_settings` is
       already registered by 05).
-- [ ] `pnpm db:generate` then `pnpm db:migrate` — one clean migration; verify on a fresh DB. **Never `push`.**
+- [x] `pnpm db:generate` then `pnpm db:migrate` — one clean migration; verify on a fresh DB. **Never `push`.**
 
 ### Contracts (core-contracts)
 
-- [ ] `packages/core-contracts/src/types/dunning.ts`: `DunningAttemptResponseData` (reference, attemptNumber,
+- [x] `packages/core-contracts/src/types/dunning.ts`: `DunningAttemptResponseData` (reference, attemptNumber,
       status, branch, railKey, failureReason, gatewayMessage, outcome, scheduledAt, executedAt, nextAttemptAt,
       createdAt — ISO-8601 UTC strings, no PII), `DunningStateResponseData` (subscription ref, invoice ref,
       dunning status, attemptsUsed, maxAttempts, nextAttemptAt, graceAccessUntil, attempts[]).
-- [ ] `packages/core-contracts/src/types/billing-settings.ts`: `BillingSettingsResponseData` (all
+- [x] `packages/core-contracts/src/types/billing-settings.ts`: `BillingSettingsResponseData` (all
       `org_billing_settings` fields, camelCased).
-- [ ] `packages/core-contracts/src/validations/billing-settings.ts`:
+- [x] `packages/core-contracts/src/validations/billing-settings.ts`:
       `updateBillingSettingsBody` (all dunning/grace/payday/collection/comms fields **optional** for partial
       update; `dunning_intervals_hours` = `z.array(z.coerce.number().int().positive()).min(1)`; `payday_days` =
       `z.array(z.coerce.number().int().min(1).max(31))`; `dunning_max_attempts` 1–10; `grace_period_hours` ≥ 0;
       refine `dunning_max_window_hours ≥ max(intervals)`). DTO via `z.infer`.
-- [ ] `packages/core-contracts/src/validations/dunning.ts`: `updateSubscriptionCardBody`
+- [x] `packages/core-contracts/src/validations/dunning.ts`: `updateSubscriptionCardBody`
       (`{ paymentMethodReference: z.string() }` OR a `checkoutToken` XOR refinement to drive re-tokenize),
       `listDunningAttemptsQuery` (cursor + limit, per `listExampleQuery` shape).
-- [ ] Export all from the contracts barrels (`types/index.ts`, `validations/index.ts`).
+- [x] Export all from the contracts barrels (`types/index.ts`, `validations/index.ts`).
 
 ### Domain (sara) — `packages/sara/src/dunning/`
 
 All functions follow the `(db, ctx, input)` idiom; `ctx: DomainContext` is always caller-supplied. Pure
 classifiers/date-math are I/O-free and unit-tested alone.
 
-- [ ] `reference.ts`: add `DUN` (dunning attempt) to `ReferenceDomain` (already reserved in contract C.4;
+- [x] `reference.ts`: add `DUN` (dunning attempt) to `ReferenceDomain` (already reserved in contract C.4;
       this phase activates it).
-- [ ] `errors`: add the **`DUNNING_*`** group to `packages/errors/src/codes.ts`:
+- [x] `errors`: add the **`DUNNING_*`** group to `packages/errors/src/codes.ts`:
       `DUNNING_SETTINGS_INVALID`, `DUNNING_NO_OPEN_INVOICE`, `DUNNING_ALREADY_TERMINAL`,
       `DUNNING_ATTEMPT_NOT_FOUND`, `DUNNING_CARD_UPDATE_REQUIRED`, `DUNNING_NOT_IN_PROGRESS`. Add the
       client-safe ones (`DUNNING_NO_OPEN_INVOICE`, `DUNNING_ATTEMPT_NOT_FOUND`,
       `DUNNING_CARD_UPDATE_REQUIRED`, `DUNNING_ALREADY_TERMINAL`) to `PUBLIC_ERROR_CODES`.
-- [ ] `policy.ts` — **per-tenant policy resolution** (pure + one read):
+- [x] `policy.ts` — **per-tenant policy resolution** (pure + one read):
       - `resolveBillingSettings(db, ctx): Promise<ResolvedDunningPolicy>` — reads `org_billing_settings` for
         `(org, env)`; falls back to the hard-coded `PLATFORM_DEFAULT_DUNNING_POLICY` when absent (so a tenant
         that never configured dunning still dunns sanely). **D2.**
       - `PLATFORM_DEFAULT_DUNNING_POLICY` `as const` (the column defaults, mirrored).
-- [ ] `classify.ts` — **the branch decision** (pure, I/O-free):
+- [x] `classify.ts` — **the branch decision** (pure, I/O-free):
       - `classifyDunningBranch(reason: FailureReason): DunningBranch` implementing the reason→branch table
         above. `expired_card`/`token_expired` → `'card_update_required'`; `hard_decline` → `'short_path'`;
         everything else → `'reschedule'`. **D3 / D4 / D5.** Imports `FailureReason` from
         `@nombaone/sara/rails` (02), never reads a provider string.
-- [ ] `schedule.ts` — **payday-biased cadence** (pure, deterministic, no float):
+- [x] `schedule.ts` — **payday-biased cadence** (pure, deterministic, no float):
       - `nextPaydayBiasedAttemptAt(baseAt, attemptIndex, policy): Date` — interval from
         `policy.dunningIntervalsHours[attemptIndex]` (clamped to last), then payday nudge when enabled and the
         candidate is within `paydayPullForwardDays` of a `paydayDays` day in the fixed billing TZ (04 helpers).
@@ -257,7 +257,7 @@ classifiers/date-math are I/O-free and unit-tested alone.
       - `isDunningExhausted(attempts, firstFailedAt, now, policy): boolean` — `attempts ≥ maxAttempts` OR
         `now ≥ firstFailedAt + maxWindowHours`. **D6.**
       - `hasGraceAccess(firstFailedAt, now, policy): boolean` — `now < firstFailedAt + gracePeriodHours`. **D7.**
-- [ ] `attempt.ts` — **the attempt lifecycle** (writes, transactional where it mutates state):
+- [x] `attempt.ts` — **the attempt lifecycle** (writes, transactional where it mutates state):
       - `scheduleFirstAttempt(db, ctx, { subscriptionId, invoiceId, failureReason, gatewayMessage })` — called
         by 03 on the `active → past_due` transition (or by the sweep on detect): classify branch, insert the
         first `dunning_attempts` row (`status` per branch: `scheduled` for reschedule, `card_update_required`
@@ -282,19 +282,19 @@ classifiers/date-math are I/O-free and unit-tested alone.
       - `triggerReattemptNow(txDb, ctx, { subscriptionId })` — after a card update mid-dunning: find the open
         `card_update_required` attempt, re-classify to `reschedule`, set `next_attempt_at = now`, enqueue an
         immediate sweep tick. **D10.**
-- [ ] `card-update.ts` — **atomic token swap** (`E6 ★`):
+- [x] `card-update.ts` — **atomic token swap** (`E6 ★`):
       - `updateCardOnSubscription(txDb, ctx, input)` — re-tokenize via the 02 card adapter → in ONE
         `txDb.transaction`: attach new `payment_methods` row, flip `default_payment_method_id`, mark old
         `replaced`; emit `payment_method.updated`. Old token stays valid until commit (no zero-token window).
         Revoke old token out of band after commit. Then call `triggerReattemptNow` if mid-dunning. **E6 / D10.**
-- [ ] `queries.ts`: `getDunningStateBySubscriptionRef(db, ctx, ref)`, `listDunningAttempts(db, ctx, ref,
+- [x] `queries.ts`: `getDunningStateBySubscriptionRef(db, ctx, ref)`, `listDunningAttempts(db, ctx, ref,
       page)` (cursor), `selectDueDunningAttempts(db, env, now, limit)` (the sweep's find-query, uses the
       partial index). `serialize.ts`: `serializeDunningAttempt`, `serializeDunningState`,
       `serializeBillingSettings`. `types.ts`, `index.ts` (barrel). Export `./dunning` from
       `packages/sara/src/dunning` via `sara/package.json` `./dunning`.
-- [ ] `packages/sara/src/billing-settings/`: `getBillingSettings`, `upsertBillingSettings(db, ctx, input)`
+- [x] `packages/sara/src/billing-settings/`: `getBillingSettings`, `upsertBillingSettings(db, ctx, input)`
       (idempotent upsert on `(org, env)`), `serialize`. Export `./billing-settings`.
-- [ ] **Events**: register the dunning event types in `sara/events` so the outbox fans them out:
+- [x] **Events**: register the dunning event types in `sara/events` so the outbox fans them out:
       `invoice.payment_failed`, `invoice.payment_recovered`, `payment_method.updated`,
       `payment_method.expiring` (the reactive "card expired — please re-add" prompt on the
       `card_update_required` branch; Phase 04 emits the *proactive* pre-expiry one), `subscription.churned`
@@ -307,68 +307,68 @@ Thin controllers (`jsonHandler` / `paginatedHandler`), fixed middleware order
 New scopes: `subscriptions:write` (reuse from 03), `billing_settings:read` / `billing_settings:write` (add to
 the API-key scope set + contracts).
 
-- [ ] `modules/dunning/routes.ts` + controllers:
+- [x] `modules/dunning/routes.ts` + controllers:
       - `GET /v1/subscriptions/:ref/dunning` → `requireScope('subscriptions:read')` — inspect the dunning state
         + attempt log (`getDunningStateBySubscriptionRef`). **D11 inspect / M2.**
       - `GET /v1/subscriptions/:ref/dunning/attempts` → `subscriptions:read`, paginated — full attempt history.
       - `POST /v1/subscriptions/:ref/payment-method` → `subscriptions:write`, `idempotency`,
         `validate({ body: updateSubscriptionCardBody })` → `updateCardOnSubscription` → prompt re-attempt.
         **D10 / E6.**
-- [ ] `modules/billing-settings/routes.ts` + controllers:
+- [x] `modules/billing-settings/routes.ts` + controllers:
       - `GET /v1/billing-settings` → `requireScope('billing_settings:read')` — current tenant dunning policy.
       - `PUT /v1/billing-settings` → `billing_settings:write`, `idempotency`,
         `validate({ body: updateBillingSettingsBody })` → `upsertBillingSettings`. **D2 / D7 config.**
-- [ ] Mount both routers under `/v1` in `app/main/routes.ts`. Add `billing_settings:*` to the scope set.
+- [x] Mount both routers under `/v1` in `app/main/routes.ts`. Add `billing_settings:*` to the scope set.
 
 ### Wiring
 
-- [ ] **Register the dunning-sweep cron** on the 04 scheduler
+- [x] **Register the dunning-sweep cron** on the 04 scheduler
       (`apps/api/src/super-modules/scheduler/index.ts`): `await upsertCron('dunning-sweep', '*/15 * * * *')`
       in `registerRepeatables`, and add a `case 'dunning-sweep'` to the worker switch that calls
       `runDunningSweep()`. (Cron cadence is policy; the sweep itself is idempotent so the exact minute is not
       load-bearing.) **K4.**
-- [ ] `runDunningSweep()` (sara, called by the worker): `selectDueDunningAttempts` → for each, open a tx and
+- [x] `runDunningSweep()` (sara, called by the worker): `selectDueDunningAttempts` → for each, open a tx and
       `executeDueAttempt`; concurrency-safe via the status-guarded claim + `unique(invoice_id, attempt_number)`
       (04's locking discipline). A tick that finds nothing due is a no-op; a replayed tick double-acts on
       nothing (`K4`/`J6`).
-- [ ] `triggerReattemptNow` enqueues an immediate `dunning-sweep` tick (or a one-shot `re_attempt_now` job)
+- [x] `triggerReattemptNow` enqueues an immediate `dunning-sweep` tick (or a one-shot `re_attempt_now` job)
       so card-update recovery does not wait for the cron. **D10.**
-- [ ] Hook 03's `active → past_due` transition to call `scheduleFirstAttempt` (the seam 03 leaves;
+- [x] Hook 03's `active → past_due` transition to call `scheduleFirstAttempt` (the seam 03 leaves;
       this phase fills it). No direct field writes — the transition stays 03's named operation.
 
 ### Tests
 
 **Unit (sara, pure logic — colocated):**
-- [ ] `classify.test.ts` — every 02 taxonomy bucket maps to the correct branch; `expired_card`/`token_expired`
+- [x] `classify.test.ts` — every 02 taxonomy bucket maps to the correct branch; `expired_card`/`token_expired`
       → `card_update_required` (assert it never returns `reschedule`); `hard_decline` → `short_path`. **D3/D4/D5.**
-- [ ] `schedule.test.ts` — `nextPaydayBiasedAttemptAt` nudges onto payday windows across month-end / EOM /
+- [x] `schedule.test.ts` — `nextPaydayBiasedAttemptAt` nudges onto payday windows across month-end / EOM /
       leap-day; bias disabled for `hard_decline`; deterministic; no float drift. `isDunningExhausted` /
       `hasGraceAccess` boundary cases (exactly at max attempts, exactly at window edge, grace edge). **D12/D6/D7.**
-- [ ] `policy.test.ts` — absent settings → platform default; configured settings override; intervals/window
+- [x] `policy.test.ts` — absent settings → platform default; configured settings override; intervals/window
       refinement. **D2.**
 
 **E2e (apps/api, testcontainers Postgres + Redis, real migrations, fake rail adapter):**
-- [ ] **Dunning simulation** (the `★`/`P` proof, partial — full sim is 09): scripted failure reasons drive
+- [x] **Dunning simulation** (the `★`/`P` proof, partial — full sim is 09): scripted failure reasons drive
       the expected path. `insufficient_funds` → `past_due` → reschedule → next attempt succeeds → `active` +
       invoice `paid` + `invoice.payment_recovered` emitted. **D1/D8.**
-- [ ] `expired_card` → `card_update_required`, **assert zero charge re-attempts** were made (fake rail
+- [x] `expired_card` → `card_update_required`, **assert zero charge re-attempts** were made (fake rail
       `collect` call count == initial only), card-update prompt event emitted. **D4 ★ / D5.**
-- [ ] `hard_decline` → short path → exhaustion → `subscription.churned` emitted (distinct from
+- [x] `hard_decline` → short path → exhaustion → `subscription.churned` emitted (distinct from
       `subscription.canceled`); subscription terminal `canceled` with `cancellation_reason =
       dunning_exhausted`. **D6 / D13 ★.**
-- [ ] **Card-update mid-dunning**: `POST …/payment-method` swaps `tokenKey`; assert (a) at no point is
+- [x] **Card-update mid-dunning**: `POST …/payment-method` swaps `tokenKey`; assert (a) at no point is
       `default_payment_method_id` pointing at a row with no valid token (atomic swap — query the tx boundary),
       (b) an immediate re-attempt fires without waiting for `next_attempt_at`. **E6 ★ / D10.**
-- [ ] **Idempotent comms**: run the sweep twice over the same due attempt; assert exactly ONE
+- [x] **Idempotent comms**: run the sweep twice over the same due attempt; assert exactly ONE
       `invoice.payment_failed` event row (`comms_sent_at` guard) and no second `dunning_attempts` row for the
       same `(invoice_id, attempt_number)`. **D9 ⚠ / K4 / J6.**
-- [ ] **Grace access**: within `grace_period_hours`, `hasGraceAccess` true while `past_due`; after the window,
+- [x] **Grace access**: within `grace_period_hours`, `hasGraceAccess` true while `past_due`; after the window,
       false — access not cut on first failure. **D7.**
-- [ ] **Config**: `PUT /v1/billing-settings` changes attempt count/intervals/grace and a subsequent dunning
+- [x] **Config**: `PUT /v1/billing-settings` changes attempt count/intervals/grace and a subsequent dunning
       run honors the new schedule. **D2.**
-- [ ] **Every attempt logged**: after a multi-attempt run, `GET …/dunning/attempts` returns one row per
+- [x] **Every attempt logged**: after a multi-attempt run, `GET …/dunning/attempts` returns one row per
       attempt, each with `failure_reason` + `outcome`. **D11.**
-- [ ] Auth/isolation smoke: dunning + billing-settings routes reject missing key / wrong scope; Tenant A
+- [x] Auth/isolation smoke: dunning + billing-settings routes reject missing key / wrong scope; Tenant A
       cannot read Tenant B's dunning state. **N4.**
 
 ---
@@ -378,46 +378,62 @@ the API-key scope set + contracts).
 One line per box; each states HOW it is demonstrated. `⚠` boxes verified twice (read + run); `★` are the
 explicit goals of this phase.
 
-- [ ] **D1** — failed renewal → `past_due`: 03 transition wired to `scheduleFirstAttempt`; the simulation e2e
+> **★ PHASE 06 COMPLETE (2026-07-01, `build/apps-api`).** The dunning engine runs end to end: reason-branched
+> (classify → reschedule / card_update_required / short_path), payday-biased cadence, per-tenant configurable
+> policy + platform default, atomic mid-dunning card swap (E6 ★), involuntary churn with a distinct event
+> (D13 ★), idempotent comms + attempts (D9/K4), a registered `dunning-sweep` cron. Wiring choice: **sweep-on-
+> detect** (fully decoupled from the collect path — the failure reason is persisted on the invoice at collect
+> time; zero regression to the phase-05 suite). Adversarially reviewed before commit (single-claim-winner
+> charges; atomic paid-CAS ledger post; `unique(invoice_id, attempt_number)` guards duplicate attempts/comms).
+> Green: type-check 9/9, build 5/5, **106 sara unit (+12 dunning) + 66 api e2e (+8 dunning)**. Migrations 0009
+> (dunning_attempts + settings) + 0010 (invoice failure columns).
+> **Honest carve-outs (deferred, documented):** (1) the engine records a **synchronous** charge outcome
+> (fake-rail-driven, as all prior phases test); the real card rail returns `pending` and the async webhook →
+> `recordOutcome` bridge is the production continuation. (2) An attempt stuck in `attempting` on a mid-attempt
+> crash is a 09 reconciliation item (never a double-charge — safe direction). (3) The rail-charge-before-claim
+> external double-charge needs the Nomba `Idempotency-Key=reference` live wiring (the same 04 deferral;
+> unreachable in normal dunning since only *definitive* failures are dunned).
+
+- [x] **D1** — failed renewal → `past_due`: 03 transition wired to `scheduleFirstAttempt`; the simulation e2e
       asserts the sub is `past_due` and a `dunning_attempts` row exists after a scripted failure.
-- [ ] **D2** — schedule configurable: `org_billing_settings` columns + `PUT /v1/billing-settings`; `policy.test`
+- [x] **D2** — schedule configurable: `org_billing_settings` columns + `PUT /v1/billing-settings`; `policy.test`
       (default vs override) + the config e2e (new schedule honored on the next run).
-- [ ] **D3 ⚠** — branches on reason: `classify.ts` reason→branch table; `classify.test` covers every bucket
+- [x] **D3 ⚠** — branches on reason: `classify.ts` reason→branch table; `classify.test` covers every bucket
       AND the e2e runs three distinct reasons down three distinct paths (read: the table; run: the three e2es).
-- [ ] **D4 ★** — expired/token → card-update not blind retry: `classifyDunningBranch` returns
+- [x] **D4 ★** — expired/token → card-update not blind retry: `classifyDunningBranch` returns
       `card_update_required`; the `expired_card` e2e asserts the fake rail's `collect` was **not** called again.
-- [ ] **D5** — token expiry first-class branch + prompt: `token_expired` bucket maps to `card_update_required`
+- [x] **D5** — token expiry first-class branch + prompt: `token_expired` bucket maps to `card_update_required`
       and emits the card-update prompt comms; covered in `classify.test` + the expired e2e.
-- [ ] **D6** — max window/attempts → canceled + event: `isDunningExhausted`; the hard_decline e2e reaches
+- [x] **D6** — max window/attempts → canceled + event: `isDunningExhausted`; the hard_decline e2e reaches
       exhaustion → `subscription.churned` + terminal `canceled`.
-- [ ] **D7** — grace keeps access: `hasGraceAccess` predicate; grace e2e asserts access within the window and
+- [x] **D7** — grace keeps access: `hasGraceAccess` predicate; grace e2e asserts access within the window and
       revocation after, while `past_due`.
-- [ ] **D8** — recovery → active + invoice paid: `recoverSubscription`; the recovery e2e asserts `active` +
+- [x] **D8** — recovery → active + invoice paid: `recoverSubscription`; the recovery e2e asserts `active` +
       invoice `paid` + `invoice.payment_recovered`.
-- [ ] **D9 ⚠** — idempotent comms: `comms_sent_at` + `unique(invoice_id, attempt_number)`; the double-sweep
+- [x] **D9 ⚠** — idempotent comms: `comms_sent_at` + `unique(invoice_id, attempt_number)`; the double-sweep
       e2e asserts exactly one comms event and no duplicate attempt row (read: the guards; run: the double sweep).
-- [ ] **D10** — card update → prompt re-attempt: `triggerReattemptNow`; the card-update e2e asserts an
+- [x] **D10** — card update → prompt re-attempt: `triggerReattemptNow`; the card-update e2e asserts an
       immediate attempt fires without waiting for `next_attempt_at`.
-- [ ] **D11** — every attempt logged: `dunning_attempts` row per attempt with `failure_reason` + `outcome`;
+- [x] **D11** — every attempt logged: `dunning_attempts` row per attempt with `failure_reason` + `outcome`;
       `GET …/dunning/attempts` e2e asserts one row per attempt.
-- [ ] **D12 ★** — payday-biased timing: `nextPaydayBiasedAttemptAt`; `schedule.test` asserts retries nudge
+- [x] **D12 ★** — payday-biased timing: `nextPaydayBiasedAttemptAt`; `schedule.test` asserts retries nudge
       onto payday windows across month-end/EOM/leap and that the bias is off for hard declines.
-- [ ] **D13 ★** — voluntary vs involuntary distinct: `churnSubscription` emits `subscription.churned`
+- [x] **D13 ★** — voluntary vs involuntary distinct: `churnSubscription` emits `subscription.churned`
       (separate from 03's `subscription.canceled`); the hard_decline e2e asserts the churned event + reason.
-- [ ] **E5** — gatewayMessage → taxonomy drives branching: `classifyDunningBranch` consumes 02's
+- [x] **E5** — gatewayMessage → taxonomy drives branching: `classifyDunningBranch` consumes 02's
       `FailureReason`; the three-reason e2e proves the taxonomy actually steers the branch.
-- [ ] **E6 ★** — atomic token swap: `updateCardOnSubscription` single-tx swap; the card-update e2e asserts no
+- [x] **E6 ★** — atomic token swap: `updateCardOnSubscription` single-tx swap; the card-update e2e asserts no
       zero-valid-token-but-billable window (query at the tx boundary) and the old token is revoked post-commit.
-- [ ] **M2 ★ (partial)** — recovery-rate / funnel fields defined: the dunning events
+- [x] **M2 ★ (partial)** — recovery-rate / funnel fields defined: the dunning events
       (`invoice.payment_failed` / `payment_recovered` / `subscription.churned`) + `dunning_attempts.status`
       give 09 the funnel + voluntary/involuntary churn split; asserted by the events emitted in the e2es.
-- [ ] **K4** — dunning idempotent: the double-sweep e2e replays a tick with zero duplicate charges/rows.
-- [ ] **J6 ⚠** — no double-charge on replay: per-attempt unique `merchantTxRef`/`orderReference` +
+- [x] **K4** — dunning idempotent: the double-sweep e2e replays a tick with zero duplicate charges/rows.
+- [x] **J6 ⚠** — no double-charge on replay: per-attempt unique `merchantTxRef`/`orderReference` +
       `unique(invoice_id, attempt_number)`; the double-sweep e2e asserts exactly one charge (read: the
       constraints; run: the replay).
-- [ ] **N4** — every dunning/billing-settings route authed + scoped: auth/isolation e2e rejects missing key /
+- [x] **N4** — every dunning/billing-settings route authed + scoped: auth/isolation e2e rejects missing key /
       wrong scope / cross-tenant read.
-- [ ] `pnpm type-check`, `pnpm build`, `pnpm test` all green across the workspace.
+- [x] `pnpm type-check`, `pnpm build`, `pnpm test` all green across the workspace.
 
 ---
 

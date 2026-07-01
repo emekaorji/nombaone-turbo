@@ -2,3 +2,8 @@ export * from './types';
 export * from './classify';
 export * from './schedule';
 export * from './policy';
+export * from './attempt';
+export * from './card-update';
+export * from './queries';
+export * from './serialize';
+export * from './sweep';
