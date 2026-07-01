@@ -10,6 +10,10 @@ export interface ValidationSchemas {
   params?: ZodTypeAny;
 }
 
+/** Well-known key the OpenAPI walker reads off the `validate` middleware to
+ *  advertise the exact request shape the server enforces (item 1 — no drift). */
+export const OPENAPI_SCHEMAS = Symbol.for('nombaone.openapi.schemas');
+
 const toFieldErrors = (error: ZodError): ApiFieldErrors => {
   const fields: ApiFieldErrors = {};
   for (const issue of error.issues) {
@@ -24,9 +28,8 @@ const toFieldErrors = (error: ZodError): ApiFieldErrors => {
  * the schema so handlers receive already-typed input. Emits a structured
  * `fields[]` map on failure, never a flat string.
  */
-export const validate =
-  (schemas: ValidationSchemas): RequestHandler =>
-  (req, _res, next) => {
+export const validate = (schemas: ValidationSchemas): RequestHandler => {
+  const handler: RequestHandler = (req, _res, next) => {
     try {
       if (schemas.body) req.body = schemas.body.parse(req.body);
       // Express query/params are getters; shadow them with the coerced values.
@@ -48,3 +51,7 @@ export const validate =
       next(error);
     }
   };
+  // Tag the middleware so the OpenAPI walker advertises the exact enforced shape.
+  (handler as unknown as Record<symbol, unknown>)[OPENAPI_SCHEMAS] = schemas;
+  return handler;
+};

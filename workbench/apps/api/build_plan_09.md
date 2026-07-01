@@ -200,9 +200,15 @@ per the existing health-route comment.
 - [ ] Add `types/reconciliation.ts` — `ReconciliationDiscrepancyData` (class, our reference,
       nomba reference, our amount, nomba amount, status) for the admin listing; reuse the
       existing `ReconciliationReport` from `sara/reconciliation` for the zero-sum half.
-- [ ] Register **every** existing `validations/*` and `types/*` schema with the
-      zod-to-openapi registry (a `.openapi(...)` annotation pass) so `buildOpenApiDocument`
-      can resolve refs. *Proof:* the generator runs with zero unresolved-schema warnings.
+- [x] Request + response bodies in the spec (item 1). **Requests (drift-proof):** the
+      `validate` middleware is tagged with the exact `{body,query,params}` schemas it enforces
+      (`OPENAPI_SCHEMAS`); the router walker reads them and converts the body → `requestBody`
+      and the query → `parameters` via `zod-to-json-schema`, so the advertised request shape IS
+      the one the server accepts. **Responses:** every route advertises a typed success envelope
+      (`{success,statusCode,data,meta}`); `data` `$ref`s a hand-mirrored resource schema for the
+      full tenant resource set (`shared/openapi/responses.ts`), array-wrapped for list routes.
+      *Proof:* conformance e2e round-trips a LIVE create response against the advertised
+      `Customer` schema — no undocumented field on the wire, every required field present.
 - [ ] Extend the API-key scope enum (`types/api-key.ts` + `validations/api-key.ts`) with
       `metrics:read`. Admin endpoints are gated by the existing operator/admin auth, not a
       tenant scope.

@@ -124,6 +124,48 @@ describe('observability + docs e2e (L/M)', () => {
     expect(doc.components.schemas.ApiError.properties.error.properties.code.enum).toContain(err.body.error.code);
   });
 
+  // ── L ⚠ request + response bodies (item 1) ──────────────────────────────────────
+  it('L ⚠ — the spec advertises the EXACT enforced request body + typed response data', async () => {
+    const doc = (await request(harness.app).get('/v1/openapi.json')).body;
+
+    // (a) request body = the exact validated schema (drift-proof): POST /v1/customers.
+    const createBody = doc.paths['/v1/customers'].post.requestBody.content['application/json'].schema;
+    expect(createBody.required).toEqual(expect.arrayContaining(['email', 'name']));
+    expect(createBody.properties.email).toMatchObject({ type: 'string', format: 'email' });
+    expect(createBody.properties.name).toMatchObject({ type: 'string', maxLength: 255 });
+
+    // (b) query params are advertised: GET /v1/customers has `email`, `limit`, `cursor`.
+    const listParams = doc.paths['/v1/customers'].get.parameters.map((p: { name: string }) => p.name);
+    expect(listParams).toEqual(expect.arrayContaining(['email', 'limit', 'cursor']));
+
+    // (c) a single-resource response `data` $refs the typed schema; the schema is present.
+    const getData = doc.paths['/v1/customers/{reference}'].get.responses['200'].content['application/json']
+      .schema.properties.data;
+    expect(getData.$ref).toBe('#/components/schemas/Customer');
+    expect(Object.keys(doc.components.schemas.Customer.properties)).toEqual(
+      expect.arrayContaining(['id', 'email', 'name', 'phone', 'metadata', 'environment', 'createdAt'])
+    );
+
+    // (d) a LIST response `data` is a typed array of the resource.
+    const listData = doc.paths['/v1/customers'].get.responses['200'].content['application/json']
+      .schema.properties.data;
+    expect(listData).toMatchObject({ type: 'array', items: { $ref: '#/components/schemas/Customer' } });
+
+    // (e) round-trip: a LIVE create response's data conforms to the advertised Customer schema.
+    const created = await auth(request(harness.app).post('/v1/customers'))
+      .set('Idempotency-Key', `oa-${uniq()}`)
+      .send({ email: `oa${uniq()}@acme.test`, name: 'OA' });
+    expect(created.status).toBe(201);
+    const advertised = new Set(Object.keys(doc.components.schemas.Customer.properties));
+    for (const key of Object.keys(created.body.data)) {
+      expect(advertised.has(key)).toBe(true); // no undocumented field on the wire
+    }
+    // every REQUIRED advertised field is present on the live payload.
+    for (const key of doc.components.schemas.Customer.required) {
+      expect(created.body.data).toHaveProperty(key);
+    }
+  });
+
   // ── M per-subscription audit trail ─────────────────────────────────────────────
   it('M — GET /v1/subscriptions/:ref/events replays the subscription audit trail', async () => {
     const subRef = await seedSub(500000);
