@@ -14,3 +14,6 @@ export const LIFECYCLE_SWEEP_JOB = 'lifecycle-sweep';
 
 /** Dunning: start dunning for new past_due invoices + run every due retry (06). */
 export const DUNNING_SWEEP_JOB = 'dunning-sweep';
+
+/** Outbound webhooks: drain due deliveries + auto-replay recovered dead-letters (07). */
+export const WEBHOOK_MAINTENANCE_JOB = 'webhook-maintenance';

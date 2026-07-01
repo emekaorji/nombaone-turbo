@@ -15,8 +15,28 @@ export interface WebhookDeliveryResponseData {
   id: string;
   eventType: string;
   endpointId: string;
+  eventId: string;
   status: WebhookDeliveryStatus;
   attempts: number;
+  nextAttemptAt: string | null;
   lastAttemptAt: string | null;
+  responseStatus: number | null;
+  replayedAt: string | null;
+  replayCount: number;
   createdAt: string;
+}
+
+/** A domain event as listed by `GET /v1/events`. */
+export interface DomainEventResponseData {
+  id: string; // EVT reference — the dedupe key
+  type: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** The one-time signing secret returned by create + rotate (never on read). */
+export interface RotatedWebhookSecretResponseData {
+  id: string;
+  signingSecret: string;
+  signingSecretPrefix: string;
 }

@@ -65,6 +65,7 @@ const envSchema = z.object({
   BILLING_MAX_CATCH_UP_PERIODS: z.coerce.number().int().positive().default(36),
   LIFECYCLE_SWEEP_CRON: z.string().min(1).default('0 * * * *'),
   DUNNING_SWEEP_CRON: z.string().min(1).default('*/15 * * * *'),
+  WEBHOOK_MAINTENANCE_CRON: z.string().min(1).default('*/15 * * * *'),
   INCOMPLETE_EXPIRY_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
   TRIAL_NOTICE_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
   PM_EXPIRY_NOTICE_WINDOW_DAYS: z.coerce.number().int().positive().default(14),

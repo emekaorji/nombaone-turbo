@@ -4,6 +4,7 @@ import { billingSettingsRouter } from '@modules/billing-settings';
 import { couponsRouter } from '@modules/coupons';
 import { customerRouter } from '@modules/customers';
 import { dunningRouter } from '@modules/dunning';
+import { eventsRouter } from '@modules/events';
 import { exampleRouter } from '@modules/example';
 import { healthRouter } from '@modules/health';
 import { invoicesRouter } from '@modules/invoices';
@@ -12,6 +13,8 @@ import { paymentMethodsRouter } from '@modules/payment-methods';
 import { plansRouter } from '@modules/plans';
 import { pricesRouter } from '@modules/prices';
 import { subscriptionsRouter } from '@modules/subscriptions';
+import { webhookDeliveriesRouter } from '@modules/webhook-deliveries';
+import { webhookEndpointsRouter } from '@modules/webhook-endpoints';
 
 /**
  * The single versioned router. The `/v1` prefix is applied at EXACTLY ONE mount
@@ -33,4 +36,7 @@ v1Router.use(dunningRouter);
 v1Router.use(invoicesRouter);
 v1Router.use(couponsRouter);
 v1Router.use(billingSettingsRouter);
+v1Router.use(webhookEndpointsRouter);
+v1Router.use(eventsRouter);
+v1Router.use(webhookDeliveriesRouter);
 v1Router.use(exampleRouter);

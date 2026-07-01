@@ -3,7 +3,12 @@ import { upsertCron } from '@nombaone/queue';
 import { env } from '@shared/config/env';
 import { logger } from '@shared/observability/logger';
 
-import { BILLING_SWEEP_JOB, DUNNING_SWEEP_JOB, LIFECYCLE_SWEEP_JOB } from './constants';
+import {
+  BILLING_SWEEP_JOB,
+  DUNNING_SWEEP_JOB,
+  LIFECYCLE_SWEEP_JOB,
+  WEBHOOK_MAINTENANCE_JOB,
+} from './constants';
 
 /**
  * ── The scheduler super-module — REGISTRATION ONLY ─────────────────────────
@@ -30,9 +35,12 @@ export async function initializeScheduler(): Promise<void> {
   await upsertCron(LIFECYCLE_SWEEP_JOB, env.LIFECYCLE_SWEEP_CRON);
   // Dunning sweep — every 15m; idempotent so the exact minute is not load-bearing.
   await upsertCron(DUNNING_SWEEP_JOB, env.DUNNING_SWEEP_CRON);
+  // Webhook maintenance — drain due deliveries + auto-replay recovered dead-letters.
+  await upsertCron(WEBHOOK_MAINTENANCE_JOB, env.WEBHOOK_MAINTENANCE_CRON);
   logger.info('[scheduler] repeatables registered', {
     [BILLING_SWEEP_JOB]: env.BILLING_SWEEP_CRON,
     [LIFECYCLE_SWEEP_JOB]: env.LIFECYCLE_SWEEP_CRON,
     [DUNNING_SWEEP_JOB]: env.DUNNING_SWEEP_CRON,
+    [WEBHOOK_MAINTENANCE_JOB]: env.WEBHOOK_MAINTENANCE_CRON,
   });
 }

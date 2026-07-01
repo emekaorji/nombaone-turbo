@@ -63,6 +63,89 @@ export const createWebhookEndpoint = async (
   return { reference, signingSecret, signingSecretPrefix };
 };
 
+/** Load one endpoint by reference within scope; NotFound (never a cross-tenant leak). */
+export const getWebhookEndpoint = async (
+  db: InfraDb,
+  ctx: DomainContext,
+  reference: string
+): Promise<WebhookEndpointRow> => {
+  const [row] = await db
+    .select()
+    .from(webhookEndpointsTable)
+    .where(
+      and(
+        eq(webhookEndpointsTable.reference, reference),
+        eq(webhookEndpointsTable.organizationId, ctx.organizationId),
+        eq(webhookEndpointsTable.environment, ctx.environment)
+      )
+    )
+    .limit(1);
+  if (!row) {
+    throw AppError.NotFound(
+      'Webhook endpoint not found',
+      { reference },
+      NOMBAONE_ERROR_CODES.WEBHOOK_ENDPOINT_NOT_FOUND
+    );
+  }
+  return row;
+};
+
+/**
+ * Patch an endpoint's `url` / `enabledEvents` / enabled-state (07). Scope-guarded
+ * existence check first (NotFound on foreign/unknown). `disabled: true` stamps
+ * `disabledAt`; `disabled: false` re-enables (clears it).
+ */
+export const updateWebhookEndpoint = async (
+  db: InfraDb,
+  ctx: DomainContext,
+  reference: string,
+  input: { url?: string; enabledEvents?: string[]; disabled?: boolean }
+): Promise<WebhookEndpointRow> => {
+  const existing = await getWebhookEndpoint(db, ctx, reference);
+  const patch: Partial<typeof webhookEndpointsTable.$inferInsert> = {};
+  if (input.url !== undefined) patch.url = input.url;
+  if (input.enabledEvents !== undefined) patch.enabledEvents = input.enabledEvents;
+  if (input.disabled !== undefined) patch.disabledAt = input.disabled ? new Date() : null;
+
+  await db
+    .update(webhookEndpointsTable)
+    .set(patch)
+    .where(
+      and(
+        eq(webhookEndpointsTable.id, existing.id),
+        eq(webhookEndpointsTable.organizationId, ctx.organizationId),
+        eq(webhookEndpointsTable.environment, ctx.environment)
+      )
+    );
+  return getWebhookEndpoint(db, ctx, reference);
+};
+
+/**
+ * Rotate an endpoint's signing secret (07): mint a new plaintext, overwrite the
+ * hash + prefix, and return the plaintext ONCE (same discipline as create).
+ * In-flight deliveries re-sign with the new key on their next drain.
+ */
+export const rotateWebhookSecret = async (
+  db: InfraDb,
+  ctx: DomainContext,
+  reference: string
+): Promise<{ reference: string; signingSecret: string; signingSecretPrefix: string }> => {
+  const existing = await getWebhookEndpoint(db, ctx, reference);
+  const signingSecret = generateSigningSecret();
+  const signingSecretPrefix = signingSecret.slice(0, SIGNING_SECRET_PREFIX_LEN);
+  await db
+    .update(webhookEndpointsTable)
+    .set({ signingSecretHash: sha256Hex(signingSecret), signingSecretPrefix })
+    .where(
+      and(
+        eq(webhookEndpointsTable.id, existing.id),
+        eq(webhookEndpointsTable.organizationId, ctx.organizationId),
+        eq(webhookEndpointsTable.environment, ctx.environment)
+      )
+    );
+  return { reference, signingSecret, signingSecretPrefix };
+};
+
 export const listWebhookEndpoints = (
   db: InfraDb,
   ctx: DomainContext

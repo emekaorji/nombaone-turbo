@@ -78,6 +78,13 @@
       "when": 1782874316173,
       "tag": "0010_fat_wraith",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782875260968,
+      "tag": "0011_mushy_malice",
+      "breakpoints": true
     }
   ]
 }
