@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import { buildOpenApiDocument } from '@shared/openapi/build';
+
 import { billingSettingsRouter } from '@modules/billing-settings';
 import { couponsRouter } from '@modules/coupons';
 import { customerRouter } from '@modules/customers';
@@ -46,3 +48,12 @@ v1Router.use(settlementsRouter);
 v1Router.use(settingsRouter);
 v1Router.use(metricsRouter);
 v1Router.use(exampleRouter);
+
+// The generated OpenAPI 3.1 document (L ⚠) — public (codegen tools fetch it),
+// served RAW (not the platform envelope), paths walked from THIS mounted router so
+// the spec cannot drift from what is served. Lazily built + cached on first hit.
+let cachedOpenApiDoc: Record<string, unknown> | null = null;
+v1Router.get('/openapi.json', (_req, res) => {
+  cachedOpenApiDoc ??= buildOpenApiDocument(v1Router);
+  res.json(cachedOpenApiDoc);
+});

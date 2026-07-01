@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { reconcileSettlements } from '@nombaone/sara/settlement';
+import { diffAgainstNomba } from '@nombaone/sara/reconciliation';
 import { withTenantLog } from '@nombaone/sara/observability';
 
 describe('settlement/reconcile — J7 ★ settlement-leg diff', () => {
@@ -20,6 +21,26 @@ describe('settlement/reconcile — J7 ★ settlement-leg diff', () => {
     expect(r.amountDrift).toEqual([{ merchantTxRef: 'nbo2inv', localKobo: 50000, nombaKobo: 49999 }]);
     expect(r.missingOnNomba).toEqual(['nbo3inv']);
     expect(r.orphansOnNomba).toEqual(['nbo9inv']);
+  });
+});
+
+describe('reconciliation/nomba — J7 ★ charge-leg diff (O partial-failure)', () => {
+  it('classifies settled-at-Nomba-missing-locally / local-missing / amount mismatch', () => {
+    const local = [
+      { reference: 'nboAinv', amountKobo: 100000 }, // matched
+      { reference: 'nboBinv', amountKobo: 50000 }, // amount mismatch
+      { reference: 'nboCinv', amountKobo: 30000 }, // local, not at Nomba
+    ];
+    const nomba = [
+      { reference: 'nboAinv', amountKobo: 100000 },
+      { reference: 'nboBinv', amountKobo: 49999 },
+      { reference: 'nboDinv', amountKobo: 7000 }, // at Nomba, not local → self-heal candidate
+    ];
+    const d = diffAgainstNomba(local, nomba);
+    expect(d.find((x) => x.class === 'amount_mismatch')?.reference).toBe('nboBinv');
+    expect(d.find((x) => x.class === 'local_paid_missing_at_nomba')?.reference).toBe('nboCinv');
+    expect(d.find((x) => x.class === 'settled_at_nomba_missing_locally')?.reference).toBe('nboDinv');
+    expect(d).toHaveLength(3); // A matched → no discrepancy
   });
 });
 

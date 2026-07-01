@@ -95,6 +95,30 @@ describe('observability + docs e2e (L/M)', () => {
     expect(m.body.data.windowFrom).toBeTruthy();
   });
 
+  // ── L ⚠ OpenAPI conformance ───────────────────────────────────────────────────
+  it('L ⚠ — GET /v1/openapi.json serves a valid spec matching mounted behavior', async () => {
+    const spec = await request(harness.app).get('/v1/openapi.json'); // public
+    expect(spec.status).toBe(200);
+    const doc = spec.body;
+    expect(doc.openapi).toMatch(/^3\./);
+    // auth scheme documented
+    expect(doc.components.securitySchemes.ApiKeyAuth).toMatchObject({ type: 'http', scheme: 'bearer' });
+    // the ApiError envelope + PUBLIC_ERROR_CODES enum are declared
+    expect(doc.components.schemas.ApiError.properties.error.properties.code.enum).toContain('SUBSCRIPTION_NOT_FOUND');
+    // paths were WALKED from the real router (no drift) — a known mounted path is present
+    expect(Object.keys(doc.paths)).toContain('/v1/subscriptions/{reference}');
+    expect(Object.keys(doc.paths)).toContain('/v1/settlements');
+    // a mutating op documents the Idempotency-Key header
+    const createSub = doc.paths['/v1/subscriptions']?.post;
+    expect(createSub.parameters.some((p: { name: string }) => p.name === 'Idempotency-Key')).toBe(true);
+
+    // a REAL error response matches the documented ApiError envelope + a public code.
+    const err = await auth(request(harness.app).get('/v1/subscriptions/nbo000000000000sub'));
+    expect(err.status).toBe(404);
+    expect(err.body.error.code).toBe('SUBSCRIPTION_NOT_FOUND');
+    expect(doc.components.schemas.ApiError.properties.error.properties.code.enum).toContain(err.body.error.code);
+  });
+
   // ── M per-subscription audit trail ─────────────────────────────────────────────
   it('M — GET /v1/subscriptions/:ref/events replays the subscription audit trail', async () => {
     const subRef = await seedSub(500000);

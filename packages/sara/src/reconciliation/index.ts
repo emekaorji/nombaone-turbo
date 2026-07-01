@@ -11,3 +11,4 @@ export {
   assertZeroSum,
   type ReconciliationReport,
 } from './reconcile';
+export * from './nomba';
