@@ -2,6 +2,7 @@ import { Worker } from 'bullmq';
 
 import { INBOUND_WEBHOOK_QUEUE_NAME, connection } from '@nombaone/queue';
 import { processInboundInvoiceEvent } from '@nombaone/sara/billing';
+import { processInboundDunningEvent } from '@nombaone/sara/dunning';
 import { processInboundNombaEvent } from '@nombaone/sara/payment-methods';
 
 import { db } from '@shared/config/db';
@@ -54,6 +55,24 @@ export const createInboundWebhookWorker = (): Worker<
             firstSeen: invoice.firstSeen,
           });
           return { providerEventId, handled: invoice.handled };
+        }
+
+        // A dunning RETRY charge is keyed on the attempt's DUN reference, so its
+        // async result carries that ref (not an invoice ref). Route it to the
+        // dunning bridge before the payment-method fallthrough (item 9).
+        const dunning = await processInboundDunningEvent(db, getNombaClient(), {
+          requestId,
+          eventType,
+          payload,
+        });
+        if (dunning.matched) {
+          logger.info('[worker] nomba inbound resolved dunning attempt', {
+            jobId: job.id,
+            providerEventId,
+            eventType,
+            settled: dunning.settled,
+          });
+          return { providerEventId, handled: dunning.handled };
         }
 
         const result = await processInboundNombaEvent(db, { requestId, eventType, payload });

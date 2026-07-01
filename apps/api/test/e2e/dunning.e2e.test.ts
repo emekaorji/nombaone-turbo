@@ -12,7 +12,7 @@ import {
 } from '@nombaone/core-db/schema';
 import { runCycle } from '@nombaone/sara/billing';
 import { createCustomer } from '@nombaone/sara/customers';
-import { runDunningSweep } from '@nombaone/sara/dunning';
+import { processInboundDunningEvent, runDunningSweep } from '@nombaone/sara/dunning';
 import { createPlan } from '@nombaone/sara/plans';
 import { createPrice } from '@nombaone/sara/prices';
 import { registerRail } from '@nombaone/sara/rails';
@@ -25,7 +25,7 @@ import type { PaymentFailureReason } from '@nombaone/sara/nomba';
 import type { NombaClient } from '@nombaone/sara/nomba';
 
 // Scriptable rail: drive the scripted outcome + failure reason + count charges.
-let railStatus: 'succeeded' | 'failed' = 'succeeded';
+let railStatus: 'succeeded' | 'failed' | 'pending' = 'succeeded';
 let railReason: PaymentFailureReason = 'insufficient_funds';
 let railCallCount = 0;
 
@@ -59,9 +59,9 @@ describe('dunning & recovery e2e (★ D/E)', () => {
       direction: 'pull',
       collect: async () => {
         railCallCount += 1;
-        return railStatus === 'failed'
-          ? { status: 'failed', failureReason: railReason }
-          : { status: 'succeeded' };
+        if (railStatus === 'failed') return { status: 'failed', failureReason: railReason };
+        if (railStatus === 'pending') return { status: 'pending', providerReference: 'nomba_px' };
+        return { status: 'succeeded' };
       },
     });
     registerRail({ key: 'mandate', direction: 'pull', collect: async () => ({ status: railStatus }) });
@@ -309,5 +309,61 @@ describe('dunning & recovery e2e (★ D/E)', () => {
       .set('Idempotency-Key', `bs-${uniq()}`)
       .send({ dunningMaxAttempts: 3 });
     expect(forbidden.status).toBe(403);
+  });
+
+  // ── item 9: async card-charge → dunning bridge ──────────────────────────────
+  async function pendingRetry(): Promise<{ subRef: string; subId: string; attemptRef: string; invRef: string; amountDue: number }> {
+    // Reset the tenant's dunning policy to defaults (an earlier test lowered maxAttempts).
+    await asA(request(harness.app).put('/v1/billing-settings')).set('Idempotency-Key', `rst-${uniq()}`)
+      .send({ dunningMaxAttempts: 4, dunningMaxWindowHours: 336, dunningIntervalsHours: [24, 72, 120, 168] });
+    const { subRef, subId } = await seedActiveCardSub();
+    await failRenewal(subRef, 'insufficient_funds'); // → past_due
+    await sweep(); // schedule attempt #1
+    railStatus = 'pending'; // the retry is accepted, awaiting the async result
+    await makeAttemptsDue(subId);
+    await sweep(); // execute #1 → pending → re-armed
+    const [a1] = await attemptsFor(subId);
+    expect(a1!.status).toBe('scheduled');
+    expect(a1!.outcome).toBe('pending');
+    const [inv] = await harness.db.select({ reference: invoicesTable.reference, amountDue: invoicesTable.amountDue }).from(invoicesTable).where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
+    return { subRef, subId, attemptRef: a1!.reference, invRef: inv!.reference, amountDue: inv!.amountDue };
+  }
+
+  const clientRequerying = (r: { succeeded: boolean; amount?: number; status?: string; gatewayMessage?: string }): NombaClient => ({
+    getToken: async () => 'tok',
+    async request<T = unknown>() { return { status: 200, ok: true, data: {} as T }; },
+    requeryTransaction: async () => ({ found: true, ...r }),
+  });
+
+  it('item 9 — an async dunning retry that SUCCEEDS at Nomba is settled + recovered via the DUN-ref webhook', async () => {
+    const { subRef, subId, attemptRef, invRef, amountDue } = await pendingRetry();
+
+    // The real payment_success webhook carries the DUN attempt reference (not an invoice ref).
+    const res = await processInboundDunningEvent(harness.db, clientRequerying({ succeeded: true, amount: amountDue }), {
+      requestId: 'dun-ok-1', eventType: 'payment_success', payload: { data: { orderReference: attemptRef } },
+    });
+    expect(res.matched).toBe(true);
+    expect(res.settled).toBe(true);
+
+    expect((await loadSubscriptionRow(harness.db, ctxA, subRef)).status).toBe('active');
+    const [after] = await harness.db.select({ paidAt: invoicesTable.paidAt }).from(invoicesTable).where(eq(invoicesTable.reference, invRef));
+    expect(after!.paidAt).toBeTruthy();
+    expect((await attemptsFor(subId))[0]!.status).toBe('succeeded');
+    expect(await eventTypesFor(invRef)).toContain('invoice.payment_recovered');
+  });
+
+  it('item 9 — an async dunning retry that FAILS at Nomba drives the dunning branch (reschedule)', async () => {
+    const { subRef, subId, attemptRef } = await pendingRetry();
+
+    const res = await processInboundDunningEvent(harness.db, clientRequerying({ succeeded: false, status: 'failed', gatewayMessage: 'insufficient funds' }), {
+      requestId: 'dun-fail-1', eventType: 'payment_failed', payload: { data: { orderReference: attemptRef } },
+    });
+    expect(res.matched).toBe(true);
+    expect(res.settled).toBe(false);
+
+    const attempts = await attemptsFor(subId);
+    expect(attempts.find((a) => a.attemptNumber === 1)!.outcome).toBe('rescheduled');
+    expect(attempts.length).toBeGreaterThanOrEqual(2); // a next attempt was scheduled
+    expect((await loadSubscriptionRow(harness.db, ctxA, subRef)).status).toBe('past_due');
   });
 });
