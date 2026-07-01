@@ -3,6 +3,7 @@ import { runDunningSweep } from '@nombaone/sara/dunning';
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
 import { logger } from '@shared/observability/logger';
+import { markSweepCompleted } from '@shared/observability/prometheus';
 
 /**
  * The dunning-sweep tick (06): start dunning for newly-detected past_due invoices
@@ -16,5 +17,6 @@ export async function handleDunningSweep(): Promise<void> {
     now: new Date(),
     batchSize: env.BILLING_BATCH_SIZE,
   });
+  await markSweepCompleted('dunning-sweep');
   logger.info('[cron] dunning-sweep ran', { ...result });
 }

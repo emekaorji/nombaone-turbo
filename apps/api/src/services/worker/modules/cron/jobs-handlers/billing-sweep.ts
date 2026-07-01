@@ -4,6 +4,7 @@ import { runBillingSweep } from '@nombaone/sara/billing';
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
 import { logger } from '@shared/observability/logger';
+import { markSweepCompleted } from '@shared/observability/prometheus';
 
 /**
  * The billing-sweep tick: find subscriptions due for renewal and ENQUEUE one
@@ -22,6 +23,7 @@ export async function handleBillingSweep(): Promise<{ enqueued: number }> {
     // starve a small one; 04's catch-up drains the rest across ticks.
     fair: { environment: env.INFRA_ENVIRONMENT },
   });
+  await markSweepCompleted('billing-sweep');
   logger.info('[cron] billing-sweep enqueued', { enqueued });
   return { enqueued };
 }

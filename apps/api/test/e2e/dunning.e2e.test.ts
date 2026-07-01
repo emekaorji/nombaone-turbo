@@ -21,8 +21,7 @@ import { loadSubscriptionRow } from '@nombaone/sara/subscriptions';
 
 import { startHarness, type Harness } from '../helpers/harness';
 
-import type { PaymentFailureReason } from '@nombaone/sara/nomba';
-import type { NombaClient } from '@nombaone/sara/nomba';
+import type { PaymentFailureReason , NombaClient } from '@nombaone/sara/nomba';
 
 // Scriptable rail: drive the scripted outcome + failure reason + count charges.
 let railStatus: 'succeeded' | 'failed' | 'pending' = 'succeeded';

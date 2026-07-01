@@ -2,6 +2,7 @@ import { Worker } from 'bullmq';
 
 import { SCHEDULER_QUEUE_NAME, connection } from '@nombaone/queue';
 
+import { runWithCorrelation } from '@shared/observability/correlation';
 import { logger } from '@shared/observability/logger';
 import {
   BILLING_SWEEP_JOB,
@@ -35,25 +36,27 @@ export const createCronWorker = (): Worker<SchedulerJobData, SchedulerJobResult>
     SCHEDULER_QUEUE_NAME,
     async (job) => {
       const { task } = job.data;
-      switch (task) {
-        case BILLING_SWEEP_JOB:
-          await handleBillingSweep();
-          break;
-        case LIFECYCLE_SWEEP_JOB:
-          await handleLifecycleSweep();
-          break;
-        case DUNNING_SWEEP_JOB:
-          await handleDunningSweep();
-          break;
-        case WEBHOOK_MAINTENANCE_JOB:
-          await handleWebhookMaintenance();
-          break;
-        default:
-          // A stale repeatable from a previous deploy should not poison the
-          // queue — log and ack rather than throw.
-          logger.warn('[cron] no handler for task; skipping', { task, jobId: job.id });
-      }
-      return { task, ranAt: new Date().toISOString() };
+      return runWithCorrelation({ correlationId: job.id ?? task, task }, async () => {
+        switch (task) {
+          case BILLING_SWEEP_JOB:
+            await handleBillingSweep();
+            break;
+          case LIFECYCLE_SWEEP_JOB:
+            await handleLifecycleSweep();
+            break;
+          case DUNNING_SWEEP_JOB:
+            await handleDunningSweep();
+            break;
+          case WEBHOOK_MAINTENANCE_JOB:
+            await handleWebhookMaintenance();
+            break;
+          default:
+            // A stale repeatable from a previous deploy should not poison the
+            // queue — log and ack rather than throw.
+            logger.warn('[cron] no handler for task; skipping', { task, jobId: job.id });
+        }
+        return { task, ranAt: new Date().toISOString() };
+      });
     },
     { connection, concurrency: CRON_CONCURRENCY }
   );

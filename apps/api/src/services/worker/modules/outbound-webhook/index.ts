@@ -4,6 +4,7 @@ import { OUTBOUND_WEBHOOK_QUEUE_NAME, connection } from '@nombaone/queue';
 import { deliverPending } from '@nombaone/sara/webhooks';
 
 import { db } from '@shared/config/db';
+import { runWithCorrelation } from '@shared/observability/correlation';
 import { logger } from '@shared/observability/logger';
 
 import type { OutboundWebhookJobData, OutboundWebhookJobResult } from '@nombaone/queue';
@@ -33,18 +34,22 @@ export const createOutboundWebhookWorker = (): Worker<
 > => {
   const worker = new Worker<OutboundWebhookJobData, OutboundWebhookJobResult>(
     OUTBOUND_WEBHOOK_QUEUE_NAME,
-    async (job) => {
-      const result = await deliverPending(db, { limit: DRAIN_BATCH });
-      logger.info('[worker] outbound-webhook drain', {
-        jobId: job.id,
-        ...result,
-      });
-      return {
-        deliveryReference: job.data.deliveryReference,
-        statusCode: result.failed === 0 ? 200 : 207,
-        deliveredAt: new Date().toISOString(),
-      };
-    },
+    async (job) =>
+      runWithCorrelation(
+        { correlationId: job.id ?? job.data.deliveryReference, task: 'outbound-webhook' },
+        async () => {
+          const result = await deliverPending(db, { limit: DRAIN_BATCH });
+          logger.info('[worker] outbound-webhook drain', {
+            jobId: job.id,
+            ...result,
+          });
+          return {
+            deliveryReference: job.data.deliveryReference,
+            statusCode: result.failed === 0 ? 200 : 207,
+            deliveredAt: new Date().toISOString(),
+          };
+        }
+      ),
     { connection, concurrency: OUTBOUND_CONCURRENCY }
   );
 

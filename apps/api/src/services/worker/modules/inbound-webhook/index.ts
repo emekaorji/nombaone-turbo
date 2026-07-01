@@ -7,6 +7,7 @@ import { processInboundNombaEvent } from '@nombaone/sara/payment-methods';
 
 import { db } from '@shared/config/db';
 import { getNombaClient } from '@shared/config/nomba';
+import { runWithCorrelation } from '@shared/observability/correlation';
 import { logger } from '@shared/observability/logger';
 
 import type { InboundWebhookJobData, InboundWebhookJobResult } from '@nombaone/queue';
@@ -35,64 +36,69 @@ export const createInboundWebhookWorker = (): Worker<
     async (job) => {
       const { provider, providerEventId, eventType, payload } = job.data;
 
-      if (provider === 'nomba') {
-        const requestId =
-          typeof payload.requestId === 'string' ? payload.requestId : providerEventId;
+      return runWithCorrelation(
+        { correlationId: job.id ?? providerEventId, task: 'inbound-webhook' },
+        async () => {
+          if (provider === 'nomba') {
+            const requestId =
+              typeof payload.requestId === 'string' ? payload.requestId : providerEventId;
 
-        // Invoice settlement first: if OUR reference resolves to an invoice, requery
-        // + confirm (E4). Otherwise fall through to the payment-method inbound path.
-        const invoice = await processInboundInvoiceEvent(db, getNombaClient(), {
-          requestId,
-          eventType,
-          payload,
-        });
-        if (invoice.matched) {
-          logger.info('[worker] nomba inbound settled invoice', {
+            // Invoice settlement first: if OUR reference resolves to an invoice, requery
+            // + confirm (E4). Otherwise fall through to the payment-method inbound path.
+            const invoice = await processInboundInvoiceEvent(db, getNombaClient(), {
+              requestId,
+              eventType,
+              payload,
+            });
+            if (invoice.matched) {
+              logger.info('[worker] nomba inbound settled invoice', {
+                jobId: job.id,
+                providerEventId,
+                eventType,
+                settled: invoice.settled,
+                firstSeen: invoice.firstSeen,
+              });
+              return { providerEventId, handled: invoice.handled };
+            }
+
+            // A dunning RETRY charge is keyed on the attempt's DUN reference, so its
+            // async result carries that ref (not an invoice ref). Route it to the
+            // dunning bridge before the payment-method fallthrough (item 9).
+            const dunning = await processInboundDunningEvent(db, getNombaClient(), {
+              requestId,
+              eventType,
+              payload,
+            });
+            if (dunning.matched) {
+              logger.info('[worker] nomba inbound resolved dunning attempt', {
+                jobId: job.id,
+                providerEventId,
+                eventType,
+                settled: dunning.settled,
+              });
+              return { providerEventId, handled: dunning.handled };
+            }
+
+            const result = await processInboundNombaEvent(db, { requestId, eventType, payload });
+            logger.info('[worker] nomba inbound processed', {
+              jobId: job.id,
+              providerEventId,
+              eventType,
+              outcome: result.outcome,
+              firstSeen: result.firstSeen,
+            });
+            return { providerEventId, handled: result.handled };
+          }
+
+          logger.info('[worker] inbound-webhook received (unhandled provider)', {
             jobId: job.id,
+            provider,
             providerEventId,
             eventType,
-            settled: invoice.settled,
-            firstSeen: invoice.firstSeen,
           });
-          return { providerEventId, handled: invoice.handled };
+          return { providerEventId, handled: true };
         }
-
-        // A dunning RETRY charge is keyed on the attempt's DUN reference, so its
-        // async result carries that ref (not an invoice ref). Route it to the
-        // dunning bridge before the payment-method fallthrough (item 9).
-        const dunning = await processInboundDunningEvent(db, getNombaClient(), {
-          requestId,
-          eventType,
-          payload,
-        });
-        if (dunning.matched) {
-          logger.info('[worker] nomba inbound resolved dunning attempt', {
-            jobId: job.id,
-            providerEventId,
-            eventType,
-            settled: dunning.settled,
-          });
-          return { providerEventId, handled: dunning.handled };
-        }
-
-        const result = await processInboundNombaEvent(db, { requestId, eventType, payload });
-        logger.info('[worker] nomba inbound processed', {
-          jobId: job.id,
-          providerEventId,
-          eventType,
-          outcome: result.outcome,
-          firstSeen: result.firstSeen,
-        });
-        return { providerEventId, handled: result.handled };
-      }
-
-      logger.info('[worker] inbound-webhook received (unhandled provider)', {
-        jobId: job.id,
-        provider,
-        providerEventId,
-        eventType,
-      });
-      return { providerEventId, handled: true };
+      );
     },
     { connection, concurrency: INBOUND_CONCURRENCY }
   );

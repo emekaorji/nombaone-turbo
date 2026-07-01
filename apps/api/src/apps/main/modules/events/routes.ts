@@ -1,6 +1,6 @@
-import { WEBHOOK_EVENT_CATALOG } from '@nombaone/core-contracts/types';
 import { Router } from 'express';
 
+import { WEBHOOK_EVENT_CATALOG } from '@nombaone/core-contracts/types';
 import { listEventQuery } from '@nombaone/core-contracts/validations';
 
 import { jsonHandler, validate } from '@shared/http';

@@ -3,6 +3,7 @@ import { verifyApiKey } from '@nombaone/sara/api-keys';
 
 import { db } from '../config/db';
 import { env } from '../config/env';
+import { setCorrelationFields } from '../observability/correlation';
 
 import type { RequestHandler } from 'express';
 
@@ -74,6 +75,13 @@ export const apiKeyAuth: RequestHandler = async (req, _res, next) => {
       environment: verified.environment,
       scopes: verified.scopes,
     };
+
+    // Fill the tenant into the ambient correlation context so every downstream
+    // log line (request + any work it drives) is filterable by tenant.
+    setCorrelationFields({
+      organizationId: verified.organizationId,
+      environment: verified.environment,
+    });
 
     next();
   } catch (error) {

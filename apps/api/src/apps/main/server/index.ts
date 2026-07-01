@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import { env } from '@shared/config/env';
 import { errorHandler, notFoundHandler, requestId } from '@shared/http';
 import { platformGate } from '@shared/middlewares';
+import { httpMetrics, metricsHandler } from '@shared/observability/prometheus';
 
 import { v1Router } from './routes';
 
@@ -40,11 +41,18 @@ export const createMainApp = (): Express => {
   app.use(cookieParser());
   app.use(json());
 
+  // Prometheus request histogram — measures every request (incl. /v1 and errors).
+  app.use(httpMetrics);
+
   // HTTP access log, tagged for the platform; silent under test to keep output
   // clean and deterministic.
   if (env.NODE_ENV !== 'test') {
     app.use(morgan('[api] :method :url :status :response-time ms'));
   }
+
+  // Process-scoped metrics exposition — outside /v1, no auth, no platformGate
+  // (it is telemetry about THIS process, never tenant data).
+  app.get('/metrics', metricsHandler);
 
   app.use(requestId);
   app.use(platformGate);

@@ -3,6 +3,7 @@ import { runLifecycleSweep } from '@nombaone/sara/billing';
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
 import { logger } from '@shared/observability/logger';
+import { markSweepCompleted } from '@shared/observability/prometheus';
 
 /**
  * The lifecycle-sweep tick (A6 + the proactive notices): expire never-paid
@@ -19,5 +20,6 @@ export async function handleLifecycleSweep(): Promise<void> {
     pmExpiryNoticeWindowDays: env.PM_EXPIRY_NOTICE_WINDOW_DAYS,
     batchSize: env.BILLING_BATCH_SIZE,
   });
+  await markSweepCompleted('lifecycle-sweep');
   logger.info('[cron] lifecycle-sweep ran', { ...result });
 }

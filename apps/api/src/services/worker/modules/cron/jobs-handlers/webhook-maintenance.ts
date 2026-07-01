@@ -3,6 +3,7 @@ import { autoReplayDeadLetters, deliverPending } from '@nombaone/sara/webhooks';
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
 import { logger } from '@shared/observability/logger';
+import { markSweepCompleted } from '@shared/observability/prometheus';
 
 /**
  * The webhook-maintenance tick (07): drain due deliveries (pending/failed/re-armed
@@ -13,5 +14,6 @@ import { logger } from '@shared/observability/logger';
 export async function handleWebhookMaintenance(): Promise<void> {
   const drained = await deliverPending(db, { limit: env.BILLING_BATCH_SIZE });
   const replayed = await autoReplayDeadLetters(db, { limit: env.BILLING_BATCH_SIZE });
+  await markSweepCompleted('webhook-maintenance');
   logger.info('[cron] webhook-maintenance ran', { ...drained, rearmed: replayed.rearmed });
 }

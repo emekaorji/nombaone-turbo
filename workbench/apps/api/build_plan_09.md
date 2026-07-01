@@ -246,9 +246,11 @@ per the existing health-route comment.
       (`withContext`), and add `correlation.ts` (mint + `runWithCorrelation` boundary helper).
       Update `error-handler.ts` and the request logger to read tenant from the resolved auth
       context, not just `req.requestId`. Add `metrics.ts` (Prometheus registry) for `/metrics`.
-- [ ] **`apps/api/src/modules/health/`** (extend) — add `controllers/ready.ts` and the
-      `GET /v1/ready` route: deep-check DB + Redis + Nomba; `200`/`503` + per-dep status map.
-      Keep `GET /v1/health` as-is (liveness). Both unauthenticated.
+- [x] **`apps/api/src/modules/health/`** (extend) — `GET /v1/ready` now deep-checks DB + Redis
+      + **Nomba** (item 5: cheap cached-`getToken()` check; reported `skipped` and non-blocking
+      when Nomba is unconfigured). `200`/`503` + per-dep status map. `GET /v1/health` stays
+      cheap liveness. Both unauthenticated. (Kept inline in `health/routes.ts` rather than a
+      separate `controllers/ready.ts` — same substance, matches the existing module shape.)
 - [x] **`apps/api/src/modules/metrics/`** — `routes.ts` + `controllers/{get-billing-metrics}`;
       `GET /v1/metrics/billing` (chain: `apiKeyAuth → rateLimit → requireScope('metrics:read')
       → validate({query})`); plus the process-scoped `GET /metrics` mounted on the ops path
@@ -278,10 +280,17 @@ per the existing health-route comment.
       expose lag = `now − lastSweepCompletedAt`. Alerting (D.2) fires when lag exceeds the
       configured cron interval × N. *(Alert delivery is an ops-config concern; this phase
       exposes the signal + a documented threshold, not a pager integration.)*
-- [ ] **Charge-failure-spike signal:** a `/metrics` counter incremented on
-      `invoice.payment_failed` emission (read from the metric, alert rule documented).
-- [ ] **Correlation boundary:** wrap the scheduler worker handler and the inbound/outbound
-      webhook workers in `runWithCorrelation(...)` so job logs carry a correlation id.
+- [x] **Charge-failure-spike signal:** `nombaone_charge_failures_total{reason}` on the
+      Prometheus registry, incremented in the billing worker when a cycle ends `past_due`
+      (the `invoice.payment_failed` transition). e2e reads the counter before/after and
+      asserts +1. (item 5; `shared/observability/prometheus.ts`.)
+- [x] **Correlation boundary:** an `AsyncLocalStorage` context (`shared/observability/correlation.ts`)
+      opened in the request-id middleware (`correlationId` = the `req_…` id; `apiKeyAuth` then
+      fills `{organizationId, environment}`) AND at every job boundary — all four workers
+      (billing, cron, inbound-webhook, outbound-webhook) wrap their processor in
+      `runWithCorrelation({ correlationId, task, … })`. The winston logger mixes the ambient
+      fields onto every line. e2e asserts an HTTP 4xx line carries `{correlationId=req-id,
+      organizationId, environment}` and a job-context line carries `{correlationId, task}`.
 - [x] **Event-catalog JSON:** emit a static `docs/events.json` (or `GET /v1/events/catalog`)
       from the C.6 catalog so the webhook event reference is **machine-readable + public**
       (rubric L "webhook reference is part of public docs"). Generated from one source of
@@ -407,16 +416,19 @@ verified twice (read the code path + run the scenario); `★` boxes are explicit
       C.6 catalog (names, payload shapes, when each fires), generated from `sara/events`.
 
 **M — Observability & operations**
-- [ ] **M** structured logs w/ correlation + tenant ids — e2e asserts an HTTP request and a
+- [x] **M** structured logs w/ correlation + tenant ids — e2e asserts an HTTP request and a
       scheduler job both log `{ correlationId, organizationId, environment }` (filterable by tenant).
+      (item 5: ALS context + winston mixin; HTTP 4xx line + job-context line both captured & asserted.)
 - [x] **M ★** business metrics — `GET /v1/metrics/billing` returns MRR, active count, churn
       split (voluntary vs involuntary), failed-charge rate, dunning-recovery rate, dunning
       funnel for a seeded fixture; values reconcile to the ledger/events, not a drifting counter.
 - [x] **M** per-subscription audit trail queryable — `GET /v1/subscriptions/:reference/events`
       replays the subscription's full `domain_events` history (ties to A's event-sourcing).
-- [ ] **M** alerting on charge-failure spikes + scheduler lag — `/metrics` exposes the
-      charge-failure counter and the per-cron lag gauge; the alert thresholds are documented;
-      e2e asserts lag rises when a sweep is skipped.
+- [x] **M** alerting on charge-failure spikes + scheduler lag — `GET /metrics` (process-scoped,
+      outside `/v1`, no auth) exposes `nombaone_charge_failures_total` and the per-sweep
+      `nombaone_scheduler_lag_seconds` gauge (read lazily from Redis completion markers each
+      sweep writes); e2e asserts lag rises to ~60s when a sweep goes stale and resets on
+      completion. (item 5. Alert delivery/thresholds are an ops-config concern.)
 - [x] **M** health checks (DB, Nomba) — `GET /v1/ready` deep-checks DB + Redis + Nomba and
       flips to `503` on a simulated dependency outage; `GET /v1/health` stays cheap liveness.
 - [ ] **M** admin/ops inspection — `GET /v1/admin/subscriptions/:reference` returns state +

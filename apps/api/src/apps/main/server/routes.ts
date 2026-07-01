@@ -1,7 +1,6 @@
 import { Router } from 'express';
 
 import { buildOpenApiDocument } from '@shared/openapi/build';
-
 import { billingSettingsRouter } from '@modules/billing-settings';
 import { couponsRouter } from '@modules/coupons';
 import { customerRouter } from '@modules/customers';

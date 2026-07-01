@@ -1,8 +1,6 @@
 import { createHash, createHmac } from 'node:crypto';
 import http from 'node:http';
-import type { AddressInfo } from 'node:net';
-
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -11,6 +9,8 @@ import { emitEvent } from '@nombaone/sara/events';
 import { deliverPending } from '@nombaone/sara/webhooks';
 
 import { startHarness, type Harness } from '../helpers/harness';
+
+import type { AddressInfo } from 'node:net';
 
 interface Received {
   headers: http.IncomingHttpHeaders;
