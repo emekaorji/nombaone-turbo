@@ -3,6 +3,7 @@ import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { emitEvent } from '../events';
 import { NOMBA_ENDPOINTS } from '../nomba/endpoints';
+import { koboToNombaAmount } from '../nomba/money';
 import { mintReference } from '../reference';
 import { nombaData, resolveCustomer } from './internal';
 
@@ -48,7 +49,7 @@ export async function setupCard(
       tokenizeCard: true,
       order: {
         orderReference: reference,
-        amount: input.amount, // kobo
+        amount: koboToNombaAmount(input.amount), // kobo → naira decimal string (D.1)
         currency: 'NGN',
         callbackUrl: input.callbackUrl,
         customerId: input.customerRef,
@@ -120,7 +121,7 @@ export async function createMandate(
       customerPhoneNumber: input.customerPhoneNumber,
       customerAddress: input.customerAddress,
       narration: input.narration,
-      amount: input.maxAmount, // kobo
+      amount: koboToNombaAmount(input.maxAmount), // maxAmount kobo → naira decimal string (D.1)
       frequency: input.frequency, // NIBSS uppercase vocabulary
       startDate,
       endDate,
@@ -181,7 +182,8 @@ export async function issueVirtualAccount(
     body: {
       accountRef,
       accountName: customer.name,
-      expectedAmount: input.expectedAmount, // kobo (hint)
+      // kobo → naira decimal string (D.1); omit when no expected amount (open VA).
+      expectedAmount: input.expectedAmount != null ? koboToNombaAmount(input.expectedAmount) : undefined,
       expiryDate: input.expiryDate,
     },
   });

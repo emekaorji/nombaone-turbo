@@ -1,4 +1,5 @@
 import { NOMBA_ENDPOINTS } from '../nomba/endpoints';
+import { koboToNombaAmount } from '../nomba/money';
 
 import type { NombaClient } from '../nomba/client';
 import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
@@ -26,7 +27,7 @@ export function createTransferRail(client: NombaClient): RailAdapter {
         body: {
           accountRef,
           accountName: (meta.accountName as string | undefined) ?? `nombaone ${accountRef}`,
-          expectedAmount: input.amountKobo, // kobo hint
+          expectedAmount: koboToNombaAmount(input.amountKobo), // kobo → naira decimal string (D.1)
         },
       });
 

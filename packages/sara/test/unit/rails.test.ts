@@ -29,7 +29,7 @@ const input = (over: Partial<RailCollectInput>): RailCollectInput => ({
 });
 
 describe('rails/card', () => {
-  it('accepted charge → pending; orderReference is OUR reference (E3); kobo passthrough', async () => {
+  it('accepted charge → pending; orderReference is OUR reference (E3); kobo→naira on the wire (D.1)', async () => {
     let seen: NombaRequest | undefined;
     const rail = createCardRail(
       fakeClient((req) => {
@@ -40,9 +40,10 @@ describe('rails/card', () => {
     const res = await rail.collect(input({ metadata: { tokenKey: 'tok_1', customerEmail: 'a@b.c' } }));
     expect(res.status).toBe('pending');
     expect(res.providerReference).toBe('nbo000000000001exa');
-    const body = seen?.body as { order: { orderReference: string; amount: number } };
+    const body = seen?.body as { order: { orderReference: string; amount: string } };
     expect(body.order.orderReference).toBe('nbo000000000001exa');
-    expect(body.order.amount).toBe(250000);
+    // 250000 kobo (₦2,500) → the naira decimal STRING Nomba expects — NOT 250000 (would be ₦250k, 100×).
+    expect(body.order.amount).toBe('2500.00');
   });
 
   it('missing token → failed (no charge possible)', async () => {
@@ -53,10 +54,17 @@ describe('rails/card', () => {
 
 describe('rails/mandate', () => {
   it('SUCCESS → succeeded; failure maps the taxonomy; over-ceiling → failed', async () => {
-    const ok = createMandateRail(fakeClient(() => ({ data: { data: { status: 'SUCCESS' } } })));
+    let seenM: NombaRequest | undefined;
+    const ok = createMandateRail(
+      fakeClient((req) => {
+        seenM = req;
+        return { data: { data: { status: 'SUCCESS' } } };
+      })
+    );
     expect((await ok.collect(input({ amountKobo: 1000, metadata: { mandateId: 'm1' } }))).status).toBe(
       'succeeded'
     );
+    expect((seenM?.body as { amount: string }).amount).toBe('10.00'); // 1000 kobo → ₦10.00 (D.1)
 
     const fail = createMandateRail(
       fakeClient(() => ({ data: { data: { status: 'FAILED', message: 'Insufficient funds' } } }))
@@ -75,14 +83,20 @@ describe('rails/mandate', () => {
 });
 
 describe('rails/transfer', () => {
-  it('push → pending + payInstructions', async () => {
+  it('push → pending + payInstructions; expectedAmount kobo→naira (D.1)', async () => {
+    let seenT: NombaRequest | undefined;
     const rail = createTransferRail(
-      fakeClient(() => ({
-        data: { bankName: 'Wema', bankAccountNumber: '0000000000', bankAccountName: 'NombaOne' },
-      }))
+      fakeClient((req) => {
+        seenT = req;
+        return {
+          data: { bankName: 'Wema', bankAccountNumber: '0000000000', bankAccountName: 'NombaOne' },
+        };
+      })
     );
     const res = await rail.collect(input({ reference: 'nbo000000000002prc', amountKobo: 500000, metadata: {} }));
     expect(res.status).toBe('pending');
+    // the wire carries naira; our own payInstructions.amountKobo stays kobo.
+    expect((seenT?.body as { expectedAmount: string }).expectedAmount).toBe('5000.00');
     expect(res.payInstructions).toMatchObject({
       accountNumber: '0000000000',
       amountKobo: 500000,

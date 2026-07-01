@@ -2,6 +2,7 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { NOMBA_ENDPOINTS } from './endpoints';
+import { nombaAmountToKobo } from './money';
 
 import type { Redis } from 'ioredis';
 import type { DomainContext } from '../context';
@@ -40,7 +41,7 @@ export interface NombaResponse<T = unknown> {
 export interface RequeryResult {
   found: boolean;
   status?: string;
-  /** Amount in kobo, as Nomba returns it. */
+  /** Amount in integer KOBO — converted from Nomba's naira decimal at the boundary (D.1). */
   amount?: number;
   succeeded: boolean;
   gatewayMessage?: string;
@@ -192,13 +193,27 @@ export function createNombaClient(deps: NombaClientDeps): NombaClient {
     const txn = (data.transaction ?? data) as Record<string, unknown>;
     const status = String(txn.status ?? data.status ?? '').toUpperCase();
     const succeeded = res.ok && (status.includes('SUCCESS') || status === '00');
+    // Nomba reports the amount as a NAIRA decimal (live: field `amount`, e.g. "100.0";
+    // older shapes used `transactionAmount`). Convert to our integer kobo (D.1).
+    const rawAmount = txn.amount ?? txn.transactionAmount ?? data.amount;
     return {
       found: res.ok,
       status,
-      amount: typeof txn.transactionAmount === 'number' ? txn.transactionAmount : undefined,
+      amount: rawAmount != null ? nombaAmountToKobo(rawAmount as string | number) : undefined,
       succeeded,
-      gatewayMessage: typeof data.gatewayMessage === 'string' ? data.gatewayMessage : undefined,
-      providerReference: typeof txn.transactionId === 'string' ? txn.transactionId : undefined,
+      gatewayMessage:
+        typeof txn.gatewayMessage === 'string'
+          ? txn.gatewayMessage
+          : typeof data.gatewayMessage === 'string'
+            ? data.gatewayMessage
+            : undefined,
+      // The Nomba transaction id (live field `id`, e.g. "API-VACT_TRA-…"; older `transactionId`).
+      providerReference:
+        typeof txn.id === 'string'
+          ? txn.id
+          : typeof txn.transactionId === 'string'
+            ? txn.transactionId
+            : undefined,
     };
   };
 

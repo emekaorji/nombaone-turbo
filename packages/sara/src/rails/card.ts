@@ -1,4 +1,5 @@
 import { NOMBA_ENDPOINTS } from '../nomba/endpoints';
+import { koboToNombaAmount } from '../nomba/money';
 
 import type { NombaClient } from '../nomba/client';
 import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
@@ -12,7 +13,8 @@ import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
  *    outcome comes from the `payment_success`/`payment_failed` webhook (settled by
  *    the inbound pipeline) and/or a `requeryTransaction` — so `collect` returns
  *    `pending` on acceptance, never a trusted `succeeded`.
- *  • E9: currency is always NGN; the amount is integer kobo straight through.
+ *  • E9: currency is always NGN; the amount is converted from our integer kobo to the
+ *    naira decimal string Nomba expects (`koboToNombaAmount` — D.1, else 100× overcharge).
  *
  * The token + customer fields ride in `input.metadata` (the billing core passes
  * the resolved payment method through, staying rail-agnostic).
@@ -36,7 +38,7 @@ export function createCardRail(client: NombaClient): RailAdapter {
         body: {
           tokenKey,
           order: {
-            amount: input.amountKobo, // kobo, no conversion (D.1)
+            amount: koboToNombaAmount(input.amountKobo), // kobo → naira decimal string (D.1)
             currency: 'NGN',
             customerId: meta.customerId,
             customerEmail: meta.customerEmail,

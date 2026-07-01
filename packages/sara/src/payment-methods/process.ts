@@ -7,7 +7,11 @@ import { settleInboundEvent } from './settle';
 
 import type { DomainContext, Environment, InfraDb, InfraTxDb } from '../context';
 
-/** Pull OUR stable reference out of a Nomba inbound payload (order ref / VA alias). */
+/** Pull OUR stable reference out of a Nomba inbound payload (order ref / VA alias).
+ *  Live prod (2026-07-01) confirmed the join field: our reference comes back as
+ *  `orderReference` (checkout callback) and, on the transaction record, as
+ *  `onlineCheckoutOrderReference`; Nomba's own id is `orderId`/`onlineCheckoutOrderId`.
+ *  We check every known carrier so whatever shape the webhook uses, we resolve. */
 export function extractOurReference(payload: Record<string, unknown>): string | null {
   const data = (payload.data ?? payload) as Record<string, unknown>;
   const order = (data.order ?? {}) as Record<string, unknown>;
@@ -15,7 +19,14 @@ export function extractOurReference(payload: Record<string, unknown>): string | 
   const candidates = [
     data.orderReference,
     order.orderReference,
+    // card/checkout transaction record (live-confirmed field)
+    txn.onlineCheckoutOrderReference,
+    data.onlineCheckoutOrderReference,
     data.merchantTxRef,
+    txn.merchantTxRef,
+    txn.merchantReference,
+    data.merchantReference,
+    // transfer / virtual-account funding
     txn.aliasAccountReference,
     data.aliasAccountReference,
   ];

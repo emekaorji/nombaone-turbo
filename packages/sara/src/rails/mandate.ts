@@ -1,5 +1,6 @@
 import { mapGatewayMessage } from '../nomba/failure-taxonomy';
 import { NOMBA_ENDPOINTS } from '../nomba/endpoints';
+import { koboToNombaAmount } from '../nomba/money';
 
 import type { NombaClient } from '../nomba/client';
 import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
@@ -32,8 +33,13 @@ export function createMandateRail(client: NombaClient): RailAdapter {
         endpoint: NOMBA_ENDPOINTS.mandateDebit,
         idempotencyRef: input.reference,
         // merchantReference = OUR invoice reference → Nomba-side idempotency (E3),
-        // the same join key as the card rail's orderReference.
-        body: { mandateId, amount: input.amountKobo, merchantReference: input.reference }, // kobo
+        // the same join key as the card rail's orderReference. Amount kobo → naira (D.1);
+        // the `maxAmount` ceiling check above stays in kobo (both sides ours).
+        body: {
+          mandateId,
+          amount: koboToNombaAmount(input.amountKobo),
+          merchantReference: input.reference,
+        },
       });
 
       if (!res.ok) {
