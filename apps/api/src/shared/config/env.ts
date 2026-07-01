@@ -66,6 +66,10 @@ const envSchema = z.object({
   LIFECYCLE_SWEEP_CRON: z.string().min(1).default('0 * * * *'),
   DUNNING_SWEEP_CRON: z.string().min(1).default('*/15 * * * *'),
   WEBHOOK_MAINTENANCE_CRON: z.string().min(1).default('*/15 * * * *'),
+  // Nightly local↔Nomba reconcile (item 6) — 02:00 daily by default; the window
+  // looks back a little over a day so consecutive runs overlap and nothing is missed.
+  RECONCILE_NOMBA_CRON: z.string().min(1).default('0 2 * * *'),
+  RECONCILE_NOMBA_WINDOW_HOURS: z.coerce.number().int().positive().default(26),
   INCOMPLETE_EXPIRY_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
   TRIAL_NOTICE_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
   PM_EXPIRY_NOTICE_WINDOW_DAYS: z.coerce.number().int().positive().default(14),

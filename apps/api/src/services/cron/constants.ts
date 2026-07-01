@@ -17,3 +17,6 @@ export const DUNNING_SWEEP_JOB = 'dunning-sweep';
 
 /** Outbound webhooks: drain due deliveries + auto-replay recovered dead-letters (07). */
 export const WEBHOOK_MAINTENANCE_JOB = 'webhook-maintenance';
+
+/** Nightly local↔Nomba reconcile: requery recent invoices, flag + self-heal drift (item 6). */
+export const RECONCILE_NOMBA_JOB = 'reconcile-nomba';

@@ -336,9 +336,12 @@ per the existing health-route comment.
       **one** ledger entry.
 - [ ] **Month-boundary + leap-day:** Jan-31 anchor → Feb-28/29 → snaps back to 31; Feb-29
       anchor + proration — explicit tests, not assumed (reuses 04's date engine).
-- [ ] **Partial failure self-heals:** charge succeeded at Nomba but local write failed →
-      `reconcileAgainstNomba` requery re-drives the settle idempotently; no lost/phantom
-      payment.
+- [x] **Partial failure self-heals:** charge succeeded at Nomba but local write failed →
+      the nightly `handleReconcileNomba` cron (item 6) requeries the invoice, classifies it
+      `settled_at_nomba_missing_locally`, and re-drives `confirmInvoiceFromWebhook`
+      idempotently (settles only when Nomba's amount == amount_due, no-op if already paid);
+      no lost/phantom payment. reconcile-nomba e2e: an unpaid invoice Nomba reports succeeded
+      is self-healed to paid; a second run heals nothing.
 
 **L / M conformance:**
 - [x] **OpenAPI conformance (e2e) ⚠:** for a sampled set of endpoints, the live response
@@ -450,8 +453,12 @@ verified twice (read the code path + run the scenario); `★` boxes are explicit
 - [x] **O** duplicate webhook + scheduler retry → one charge/one entry — e2e asserts single
       charge + single ledger entry.
 - [x] **O** month-boundary + leap tests — explicit unit tests for Jan-31 snap-back and Feb-29.
-- [ ] **O** partial failure self-heals on requery — e2e: Nomba-succeeded/local-failed →
-      `reconcileAgainstNomba` re-drives idempotently; no lost/phantom payment.
+- [x] **O** partial failure self-heals on requery — e2e (reconcile-nomba): the nightly
+      `handleReconcileNomba` cron (item 6) requeries recent invoices, and a Nomba-succeeded/
+      local-unpaid one is re-driven through `confirmInvoiceFromWebhook` idempotently → settled;
+      no lost/phantom payment. `nombaone_reconcile_discrepancies_total{class}` +
+      `nombaone_reconcile_healed_total` expose the signal. Registered as a nightly repeatable
+      (`RECONCILE_NOMBA_CRON`, default `0 2 * * *`).
 
 **P — Testing & verification (the proof)**
 - [x] **P** unit proration math (upgrade/downgrade/interval-switch/EOM) — green.

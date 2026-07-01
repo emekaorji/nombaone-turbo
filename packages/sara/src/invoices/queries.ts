@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNull, isNotNull, lt, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNull, isNotNull, lt, or, type SQL } from 'drizzle-orm';
 
 import {
   customersTable,
@@ -144,6 +144,54 @@ export async function getInvoiceByReference(
   }
   const linesMap = await loadLines(db, ctx, [found.inv.id]);
   return serializeInvoice(found.inv, found.customerRef, found.subRef ?? null, linesMap.get(found.inv.id) ?? []);
+}
+
+/** A finalized invoice recently active in one environment — the input to the nightly
+ *  Nomba reconcile (item 6). `paidLocally` distinguishes the locally-settled set (which
+ *  we verify against Nomba) from the still-unpaid set (which Nomba may have silently
+ *  settled — a missed-webhook self-heal candidate). `organizationId` lets the cron
+ *  derive the active tenants from the work itself, so idle tenants cost nothing. */
+export interface ReconcilableInvoice {
+  organizationId: string;
+  reference: string;
+  amountDueKobo: number;
+  paidLocally: boolean;
+}
+
+/**
+ * Finalized, non-void, non-uncollectible invoices in `environment` whose `updated_at`
+ * is within the reconcile window (`>= since`) — covers both recently-settled invoices
+ * and still-open/past_due ones whose last charge attempt bumped `updated_at`. Scoped
+ * by environment, NOT by org, so the cron can reconcile every active tenant in one pass.
+ */
+export async function getReconcilableInvoicesSince(
+  db: InfraReadScope,
+  environment: DomainContext['environment'],
+  since: Date
+): Promise<ReconcilableInvoice[]> {
+  const rows = await db
+    .select({
+      organizationId: invoicesTable.organizationId,
+      reference: invoicesTable.reference,
+      amountDueKobo: invoicesTable.amountDue,
+      paidAt: invoicesTable.paidAt,
+    })
+    .from(invoicesTable)
+    .where(
+      and(
+        eq(invoicesTable.environment, environment),
+        isNotNull(invoicesTable.finalizedAt),
+        isNull(invoicesTable.voidedAt),
+        isNull(invoicesTable.uncollectibleAt),
+        gte(invoicesTable.updatedAt, since)
+      )
+    );
+  return rows.map((r) => ({
+    organizationId: r.organizationId,
+    reference: r.reference,
+    amountDueKobo: r.amountDueKobo,
+    paidLocally: r.paidAt != null,
+  }));
 }
 
 export async function listInvoices(

@@ -8,12 +8,14 @@ import {
   BILLING_SWEEP_JOB,
   DUNNING_SWEEP_JOB,
   LIFECYCLE_SWEEP_JOB,
+  RECONCILE_NOMBA_JOB,
   WEBHOOK_MAINTENANCE_JOB,
 } from '@/services/cron/constants';
 
 import { handleBillingSweep } from './jobs-handlers/billing-sweep';
 import { handleDunningSweep } from './jobs-handlers/dunning-sweep';
 import { handleLifecycleSweep } from './jobs-handlers/lifecycle-sweep';
+import { handleReconcileNomba } from './jobs-handlers/reconcile-nomba';
 import { handleWebhookMaintenance } from './jobs-handlers/webhook-maintenance';
 
 import type { SchedulerJobData, SchedulerJobResult } from '@nombaone/queue';
@@ -49,6 +51,9 @@ export const createCronWorker = (): Worker<SchedulerJobData, SchedulerJobResult>
             break;
           case WEBHOOK_MAINTENANCE_JOB:
             await handleWebhookMaintenance();
+            break;
+          case RECONCILE_NOMBA_JOB:
+            await handleReconcileNomba();
             break;
           default:
             // A stale repeatable from a previous deploy should not poison the

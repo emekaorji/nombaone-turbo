@@ -8,7 +8,6 @@ import {
   type WebhookEndpointRow,
   type DomainEventRow,
 } from '@nombaone/core-db/schema';
-
 import {
   WEBHOOK_DELIVERY_GUARANTEE,
   WEBHOOK_DELIVERY_GUARANTEE_HEADER,

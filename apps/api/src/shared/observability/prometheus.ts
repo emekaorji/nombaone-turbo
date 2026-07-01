@@ -46,6 +46,29 @@ export const recordChargeFailure = (reason = 'past_due'): void => {
   chargeFailuresTotal.inc({ reason });
 };
 
+/** Nomba reconcile discrepancies, by class (item 6). A rising count is the signal
+ *  that local state and Nomba are drifting — alert on it. */
+export const reconcileDiscrepanciesTotal = new client.Counter({
+  name: 'nombaone_reconcile_discrepancies_total',
+  help: 'Count of local↔Nomba reconcile discrepancies, by class',
+  labelNames: ['class'] as const,
+  registers: [registry],
+});
+
+/** Self-heals performed by the nightly reconcile (settled-at-Nomba invoices re-driven). */
+export const reconcileHealedTotal = new client.Counter({
+  name: 'nombaone_reconcile_healed_total',
+  help: 'Count of invoices self-healed by the nightly Nomba reconcile',
+  registers: [registry],
+});
+
+export const recordReconcileDiscrepancy = (klass: string): void => {
+  reconcileDiscrepanciesTotal.inc({ class: klass });
+};
+export const recordReconcileHealed = (): void => {
+  reconcileHealedTotal.inc();
+};
+
 // ── Scheduler lag ────────────────────────────────────────────────────────────
 
 /** The sweeps whose freshness we track. Keep in sync with the cron handlers. */
