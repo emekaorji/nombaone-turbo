@@ -138,7 +138,7 @@ describe('payment methods + inbound pipeline e2e', () => {
     const sig = computeNombaSignature(NOMBA_SIG_KEY, body, payload);
 
     const good = await request(harness.app)
-      .post('/webhooks/inbound/nomba')
+      .post('/webhooks/v1/nomba')
       .set('Content-Type', 'application/json')
       .set('nomba-signature', sig)
       .send(body);
@@ -146,7 +146,7 @@ describe('payment methods + inbound pipeline e2e', () => {
     expect(good.body.data.received).toBe(true);
 
     const bad = await request(harness.app)
-      .post('/webhooks/inbound/nomba')
+      .post('/webhooks/v1/nomba')
       .set('Content-Type', 'application/json')
       .set('nomba-signature', 'not-a-valid-signature')
       .send(body);

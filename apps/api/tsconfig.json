@@ -5,8 +5,9 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./src/*"],
       "@shared/*": ["./src/shared/*"],
-      "@modules/*": ["./src/modules/*"]
+      "@modules/*": ["./src/apps/main/modules/*"]
     }
   },
   "include": ["src", "test", "scripts"]

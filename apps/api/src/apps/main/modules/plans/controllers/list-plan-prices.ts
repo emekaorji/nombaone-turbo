@@ -1,0 +1,32 @@
+import { AppError } from '@nombaone/errors';
+import { listPricesForPlan } from '@nombaone/sara/prices';
+
+import { db } from '@shared/config/db';
+import { paginatedHandler } from '@shared/http';
+
+import type { PriceResponseData } from '@nombaone/core-contracts/types';
+import type { ListPriceQuery } from '@nombaone/core-contracts/validations';
+import type { DomainContext } from '@nombaone/sara/context';
+import type { RequestHandler } from 'express';
+
+/** GET /v1/plans/:reference/prices — keyset-paginated prices under one plan. */
+export const listPlanPricesController: RequestHandler = paginatedHandler<PriceResponseData>(
+  async (req) => {
+    if (!req.apiKey) {
+      throw AppError.Unauthorized('API key required');
+    }
+    const ctx: DomainContext = {
+      organizationId: req.apiKey.organizationId,
+      environment: req.apiKey.environment,
+    };
+    const query = req.query as unknown as ListPriceQuery;
+
+    const page = await listPricesForPlan(db, ctx, req.params.reference ?? '', {
+      active: query.active,
+      limit: query.limit,
+      cursor: query.cursor,
+    });
+
+    return { data: page.data, nextCursor: page.nextCursor, hasMore: page.hasMore, limit: query.limit };
+  }
+);

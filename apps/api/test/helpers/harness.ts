@@ -96,7 +96,12 @@ export const startHarness = async (): Promise<Harness> => {
   }
 
   // 4. NOW import the app + the sara/db handles (they bind to the env above).
-  const { createSuperApp } = await import('../../src/app/super-app');
+  //    Compose the two import-safe app factories here (mirrors src/server.ts's
+  //    createSuperApp) rather than importing server.ts, whose module top-level
+  //    boots the listener + workers.
+  const express = (await import('express')).default;
+  const { createMainApp } = await import('../../src/apps/main/server');
+  const { createWebhookApp } = await import('../../src/apps/webhook/server');
   const { db, pool } = await import('../../src/shared/config/db');
   const { redis } = await import('../../src/shared/config/redis');
   const { signupOrganization } = await import('@nombaone/sara/auth');
@@ -104,7 +109,10 @@ export const startHarness = async (): Promise<Harness> => {
   const { platformConfigTable } = await import('@nombaone/core-db/schema');
   const { __setNombaClient } = await import('../../src/shared/config/nomba');
 
-  const app = createSuperApp();
+  const app = express();
+  app.disable('x-powered-by');
+  app.use('/webhooks', createWebhookApp());
+  app.use(createMainApp());
 
   const seedOrg: Harness['seedOrg'] = async (name = 'Test Org') => {
     const suffix = Math.random().toString(36).slice(2, 10);
