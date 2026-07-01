@@ -10,9 +10,11 @@ import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { emitEvent } from '../events';
 import { getSubscriptionByReference, loadSubscriptionRow } from '../subscriptions';
-import { applyProration } from './applyProration';
+import { applyIntervalSwitch, applyProration } from './applyProration';
 import { loadPriceById, loadPrimarySubscriptionItem } from './effects';
+import { reanchorForIntervalSwitch } from './scheduling';
 
+import type { SubscriptionInsert } from '@nombaone/core-db/schema';
 import type { DomainContext, InfraTxDb } from '../context';
 import type { ProrationBehavior } from '../proration';
 import type { SubscriptionResponseData } from '../subscriptions';
@@ -38,10 +40,12 @@ export interface ChangeSubscriptionInput {
  * (`postTransaction`/`emitEvent` require the pool handle, so proration runs after
  * the claim commits, mirroring `createSubscription`'s charge-after-claim shape.)
  *
- * Interval switches are rejected: prorating a different cadence's amount over the
- * current (old-cadence) window mis-charges, and correct interval-switch proration
- * needs period-claim-spine re-anchoring not yet built — see
- * `PRORATION_INTERVAL_SWITCH_UNSUPPORTED`.
+ * INTERVAL SWITCH (monthly↔yearly, C4): when the cadence changes, we do NOT prorate
+ * the new price over the old window (that mis-charges a year against a month). We
+ * credit the unused old-cadence remainder, charge a FULL fresh new-cadence period,
+ * and RE-ANCHOR the cycle — keeping `current_period_index` monotonic (the anchor is
+ * back-dated) so the invoice `unique(subscription_id, period_index)` guard never
+ * collides. The re-anchor commits atomically inside the same claim transaction.
  */
 export async function changeSubscription(
   txDb: InfraTxDb,
@@ -83,28 +87,28 @@ export async function changeSubscription(
     newPrice = price;
   }
 
-  // Interval-switch guard (C4): a target price whose cadence differs cannot be
-  // prorated over the current (old-cadence) window without mis-charging — the new
-  // per-interval amount would be billed against the old period's remaining time
-  // (e.g. a full year against the remaining days of a month). Reject rather than
-  // overcharge until interval-aware, period-re-anchoring proration lands.
+  // Interval switch (C4): the cadence differs → credit unused old + charge full new
+  // + re-anchor (below), instead of mis-prorating the new price over the old window.
   const cadenceChanged =
     newPrice.interval !== oldPrice.interval || newPrice.intervalCount !== oldPrice.intervalCount;
-  if (input.intervalSwitch === true || cadenceChanged) {
-    throw AppError.UnprocessableEntity(
-      'interval-switch proration is not yet supported; create a new subscription on the target interval instead',
-      {
-        reference,
-        from: { interval: oldPrice.interval, intervalCount: oldPrice.intervalCount },
-        to: { interval: newPrice.interval, intervalCount: newPrice.intervalCount },
-      },
-      NOMBAONE_ERROR_CODES.PRORATION_INTERVAL_SWITCH_UNSUPPORTED
-    );
-  }
+  const isIntervalSwitch = cadenceChanged || input.intervalSwitch === true;
 
   const newQty = input.quantity ?? item.quantity;
   const oldAmount = item.unitAmount * item.quantity;
   const newAmount = newPrice.unitAmount * newQty;
+  const changeAt = new Date();
+
+  // For an interval switch, compute the new anchor + period window (index unchanged,
+  // anchor back-dated so no invoice period_index collision). NOT for a trialing sub —
+  // re-anchoring would move its trial-end/first-charge date; a trial switch just swaps
+  // the price (no money, no re-anchor) and falls through to applyProration's trial no-op.
+  const reanchor =
+    isIntervalSwitch && sub.status !== 'trialing'
+      ? reanchorForIntervalSwitch(changeAt, sub.currentPeriodIndex, {
+          interval: newPrice.interval,
+          intervalCount: newPrice.intervalCount,
+        })
+      : null;
 
   const [customer] = await txDb
     .select({ reference: customersTable.reference })
@@ -113,7 +117,8 @@ export async function changeSubscription(
     .limit(1);
 
   // 1. CLAIM the change atomically — item swap + version-guarded subscription
-  //    update commit together; a stale version throws here, BEFORE any money moves.
+  //    update (incl. the interval-switch re-anchor) commit together; a stale version
+  //    throws here, BEFORE any money moves.
   await txDb.transaction(async (tx) => {
     await tx
       .update(subscriptionItemsTable)
@@ -125,9 +130,16 @@ export async function changeSubscription(
           eq(subscriptionItemsTable.subscriptionId, sub.id)
         )
       );
+    const subUpdate: Partial<SubscriptionInsert> = { priceId: newPrice.id, version: sub.version + 1 };
+    if (reanchor) {
+      subUpdate.billingCycleAnchor = reanchor.anchor;
+      subUpdate.currentPeriodStart = reanchor.currentPeriodStart;
+      subUpdate.currentPeriodEnd = reanchor.currentPeriodEnd;
+      subUpdate.nextBillingAt = reanchor.nextBillingAt;
+    }
     const [updated] = await tx
       .update(subscriptionsTable)
-      .set({ priceId: newPrice.id, version: sub.version + 1 })
+      .set(subUpdate)
       .where(and(eq(subscriptionsTable.id, sub.id), eq(subscriptionsTable.version, sub.version)))
       .returning();
     if (!updated) {
@@ -139,19 +151,30 @@ export async function changeSubscription(
     }
   });
 
-  // 2. The change is reserved; apply proration on the pool handle. `sub` is the
-  //    pre-swap row, used only for currentPeriodStart/End + ids (unchanged by the
-  //    swap); the old/new amounts are the ones captured above. A crash here
-  //    under-collects the one-time proration (recoverable) — far safer than the
-  //    pre-claim charge it replaces.
-  await applyProration(txDb, ctx, {
-    subscription: sub,
-    customerRef: customer?.reference ?? '',
-    oldAmountKobo: oldAmount,
-    newAmountKobo: newAmount,
-    changeAt: new Date(),
-    prorationBehavior: input.prorationBehavior,
-  });
+  // 2. The change is reserved; apply the money on the pool handle. `sub` is the
+  //    pre-swap row (its current period is the OLD-cadence window used for the credit).
+  //    A crash here under-collects the one-time proration (recoverable) — far safer
+  //    than the pre-claim charge it replaces.
+  if (reanchor) {
+    await applyIntervalSwitch(txDb, ctx, {
+      subscription: sub,
+      customerRef: customer?.reference ?? '',
+      oldAmountKobo: oldAmount,
+      newAmountKobo: newAmount,
+      newPeriodEnd: reanchor.currentPeriodEnd,
+      changeAt,
+      prorationBehavior: input.prorationBehavior,
+    });
+  } else {
+    await applyProration(txDb, ctx, {
+      subscription: sub,
+      customerRef: customer?.reference ?? '',
+      oldAmountKobo: oldAmount,
+      newAmountKobo: newAmount,
+      changeAt,
+      prorationBehavior: input.prorationBehavior,
+    });
+  }
 
   await emitEvent(txDb, {
     ...ctx,

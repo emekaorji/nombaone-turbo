@@ -669,16 +669,70 @@ describe('subscriptions + billing e2e', () => {
     expect(balance.body.data.grants[0].source).toBe('downgrade_proration');
   });
 
-  it('C4 — an interval switch (month→year) is rejected, never mis-charged', async () => {
-    const { subRef, planId } = await twoPricedSub(1_000_000);
+  it('C4 — a mid-cycle interval switch (month→year) prorates + re-anchors to the new cadence', async () => {
+    const { subRef, subId, planId } = await twoPricedSub(1_000_000); // monthly, unit ₦10k
     const yearly = (
       await createPrice(harness.db, ctxA, {
         planRef: planId, unitAmount: 10_000_000, interval: 'year', intervalCount: 1, usageType: 'licensed', billingScheme: 'per_unit', trialPeriodDays: 0,
       })
     ).id;
+    const before = await loadSubscriptionRow(harness.db, ctxA, subRef);
+
     const res = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', `iv-${uniq()}`).send({ priceId: yearly });
-    expect(res.status).toBe(422);
-    expect(res.body.error.code).toBe('PRORATION_INTERVAL_SWITCH_UNSUPPORTED');
+    expect(res.status).toBe(200);
+    expect(res.body.data.priceId).toBe(yearly);
+
+    // Immediate proration invoice: credit the unused month + charge the FULL year → net-positive, charged now.
+    const [proration] = await harness.db
+      .select({ id: invoicesTable.id, amountDue: invoicesTable.amountDue, paidAt: invoicesTable.paidAt })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.billingReason, 'subscription_update')));
+    expect(proration!.amountDue).toBeGreaterThan(8_000_000); // ~₦100k year − <₦10k unused month
+    expect(proration!.paidAt).toBeTruthy();
+    const lines = await harness.db.select({ amount: invoiceLineItemsTable.amount }).from(invoiceLineItemsTable).where(eq(invoiceLineItemsTable.invoiceId, proration!.id));
+    expect(lines.some((l) => l.amount < 0)).toBe(true); // unused-old credit
+    expect(lines.some((l) => l.amount === 10_000_000)).toBe(true); // a FULL new-cadence year (not prorated over a month)
+
+    // Re-anchored onto the new cadence: the next bill is now ~a year out (was ~a month).
+    // (The anchor INSTANT can coincide with the old one on a same-day create+switch — both
+    //  normalize to today's billing hour — so next_billing_at is the reliable re-anchor signal.)
+    const after = await loadSubscriptionRow(harness.db, ctxA, subRef);
+    expect(before.nextBillingAt!.getTime()).toBeLessThan(Date.now() + 60 * 24 * 3600 * 1000); // was ~a month
+    expect(after.nextBillingAt!.getTime()).toBeGreaterThan(Date.now() + 300 * 24 * 3600 * 1000); // now ~a year
+
+    // The next renewal bills a FULL year on the new cadence at a FRESH period index
+    // (proves the re-anchor kept period_index collision-free — no unique-constraint error).
+    await harness.db.update(subscriptionsTable).set({ nextBillingAt: new Date(Date.now() - 60_000) }).where(eq(subscriptionsTable.id, subId));
+    const renewed = await runCycle(harness.db, ctxA, subRef);
+    expect(renewed.outcome).toBe('paid');
+    const [renewInv] = await harness.db
+      .select({ total: invoicesTable.total, billingReason: invoicesTable.billingReason })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.billingReason, 'subscription_cycle')));
+    expect(renewInv!.total).toBe(10_000_000); // a full new-cadence year, cleanly billed
+  });
+
+  it('C4b — a yearly→monthly interval switch banks a credit (net negative), no immediate charge', async () => {
+    cardOutcome = 'succeeded';
+    const u = uniq();
+    const customer = await createCustomer(harness.db, ctxA, { email: `iv2${u}@acme.test`, name: 'C' });
+    const plan = await createPlan(harness.db, ctxA, { name: `Plan ${u}` });
+    const yearly = await createPrice(harness.db, ctxA, { planRef: plan.id, unitAmount: 12_000_000, interval: 'year', intervalCount: 1, usageType: 'licensed', billingScheme: 'per_unit', trialPeriodDays: 0 });
+    const monthly = await createPrice(harness.db, ctxA, { planRef: plan.id, unitAmount: 1_000_000, interval: 'month', intervalCount: 1, usageType: 'licensed', billingScheme: 'per_unit', trialPeriodDays: 0 });
+    const pm = await seedActiveCard(customer.id);
+    const subRef = (await newSub({ customerId: customer.id, priceId: yearly.id, paymentMethodId: pm })).body.data.id as string;
+    const subId = (await loadSubscriptionRow(harness.db, ctxA, subRef)).id;
+
+    const res = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', `iv2-${uniq()}`).send({ priceId: monthly.id });
+    expect(res.status).toBe(200);
+    // Net negative (a nearly-full year of unused credit − one month) → no immediate invoice; credit banked.
+    const invoices = await harness.db.select({ id: invoicesTable.id }).from(invoicesTable).where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.billingReason, 'subscription_update')));
+    expect(invoices).toHaveLength(0);
+    const balance = await asA(request(harness.app).get(`/v1/customers/${customer.id}/credit`));
+    expect(balance.body.data.balance).toBeGreaterThan(0);
+    // now billing monthly: next bill is ~a month out, not a year.
+    const after = await loadSubscriptionRow(harness.db, ctxA, subRef);
+    expect(after.nextBillingAt!.getTime()).toBeLessThan(Date.now() + 60 * 24 * 3600 * 1000);
   });
 
   it('credit grant → ledger-backed balance + oldest-first grant audit (C8)', async () => {
