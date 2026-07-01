@@ -5,3 +5,4 @@ export * from './grant';
 export * from './queries';
 export * from './serialize';
 export * from './types';
+export * from './void';

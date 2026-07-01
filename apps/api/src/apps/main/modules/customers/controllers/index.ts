@@ -6,3 +6,4 @@ export { grantCustomerCreditController } from './grant-customer-credit';
 export { listCustomerController } from './list';
 export { removeCustomerDiscountController } from './remove-customer-discount';
 export { updateCustomerController } from './update';
+export * from './void-customer-credit';

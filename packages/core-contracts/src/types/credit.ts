@@ -10,6 +10,7 @@ export interface CreditGrantResponseData {
   source: CreditGrantSource;
   sourceReference: string | null;
   environment: Environment;
+  voidedAt: string | null;
   createdAt: string;
 }
 

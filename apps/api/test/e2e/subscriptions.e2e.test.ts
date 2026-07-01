@@ -20,6 +20,7 @@ import {
   runCycle,
   runLifecycleSweep,
 } from '@nombaone/sara/billing';
+import { applyCreditsOldestFirst } from '@nombaone/sara/credits';
 import { createCustomer } from '@nombaone/sara/customers';
 import { upsertOrgBillingSettings } from '@nombaone/sara/org';
 import { createPlan } from '@nombaone/sara/plans';
@@ -747,6 +748,35 @@ describe('subscriptions + billing e2e', () => {
     expect(balance.body.data.balance).toBe(150000); // ledger account, O(1)
     expect(balance.body.data.grants).toHaveLength(2);
     expect(balance.body.data.grants[0].amount).toBe(100000); // oldest-first
+  });
+
+  // ── credit-void (item 8): reverses only the UNCONSUMED remainder ────────────
+  it('void a partially-consumed credit grant reverses only the remainder; double-void is a no-op', async () => {
+    const customer = await createCustomer(harness.db, ctxA, { email: `vd${uniq()}@acme.test`, name: 'C' });
+    const ref = customer.id;
+    const [c] = await harness.db.select({ id: customersTable.id }).from(customersTable).where(and(eq(customersTable.organizationId, ctxA.organizationId), eq(customersTable.reference, ref))).limit(1);
+
+    const g = await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amount: 100000, source: 'manual' });
+    const grantRef = g.body.data.id as string;
+
+    // Consume ₦300 of the ₦1,000 grant (leaves ₦700 unconsumed).
+    await applyCreditsOldestFirst(harness.db, ctxA, { customerId: c!.id, customerRef: ref, amountDue: 30000 });
+    let bal = await asA(request(harness.app).get(`/v1/customers/${ref}/credit`));
+    expect(bal.body.data.balance).toBe(70000);
+
+    // Void → reverses ONLY the ₦700 remainder (NOT the full ₦1,000 → no over-reversal). Balance → 0.
+    const voided = await asA(request(harness.app).delete(`/v1/customers/${ref}/credit/${grantRef}`)).set('Idempotency-Key', `vd-${uniq()}`);
+    expect(voided.status).toBe(200);
+    expect(voided.body.data.remaining).toBe(0);
+    expect(voided.body.data.voidedAt).toBeTruthy();
+    bal = await asA(request(harness.app).get(`/v1/customers/${ref}/credit`));
+    expect(bal.body.data.balance).toBe(0); // consumed 30k + voided remainder 70k = the full 100k, exactly
+
+    // Double-void is an idempotent no-op (no second reversal → balance stays 0).
+    const again = await asA(request(harness.app).delete(`/v1/customers/${ref}/credit/${grantRef}`)).set('Idempotency-Key', `vd-${uniq()}`);
+    expect(again.status).toBe(200);
+    bal = await asA(request(harness.app).get(`/v1/customers/${ref}/credit`));
+    expect(bal.body.data.balance).toBe(0);
   });
 
   // ── C5 seat/quantity proration ─────────────────────────────────────────────

@@ -1,0 +1,1 @@
+ALTER TABLE "credit_grants" ADD COLUMN "voided_at" timestamp with time zone;

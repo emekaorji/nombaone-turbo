@@ -12,5 +12,6 @@ export const serializeCreditGrant = (
   source: row.source,
   sourceReference: row.sourceReference,
   environment: row.environment,
+  voidedAt: row.voidedAt ? new Date(row.voidedAt).toISOString() : null,
   createdAt: new Date(row.createdAt).toISOString(),
 });

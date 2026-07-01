@@ -7,6 +7,7 @@ import {
   pgEnum,
   pgTable,
   text,
+  timestamp,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -46,6 +47,9 @@ export const creditGrantsTable = pgTable(
     source: creditGrantSourceEnum('source').notNull(),
     sourceReference: text('source_reference'),
     ledgerTransactionId: uuid('ledger_transaction_id'),
+    // Item 8: a voided grant — the unconsumed `remaining` was reversed in the ledger
+    // and `remaining` set to 0. Distinguishes a voided grant from a fully-consumed one.
+    voidedAt: timestamp('voided_at', { withTimezone: true }),
     metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

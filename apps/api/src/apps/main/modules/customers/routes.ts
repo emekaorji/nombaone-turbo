@@ -20,6 +20,7 @@ import {
   listCustomerController,
   removeCustomerDiscountController,
   updateCustomerController,
+  voidCustomerCreditController,
 } from './controllers';
 
 /**
@@ -110,4 +111,12 @@ customerRouter.get(
   rateLimit,
   requireScope('customers:read'),
   getCustomerCreditController
+);
+customerRouter.delete(
+  '/customers/:reference/credit/:grantReference',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('customers:write'),
+  idempotency,
+  voidCustomerCreditController
 );
