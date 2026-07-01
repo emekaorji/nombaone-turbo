@@ -162,7 +162,7 @@ idempotent: re-issuing the same transition is a no-op that returns current state
 
 ### DB (core-db)
 
-- [ ] **`packages/core-db/src/schema/subscriptions.ts`** — `subscriptionsTable`:
+- [x] **`packages/core-db/src/schema/subscriptions.ts`** — `subscriptionsTable`:
       `idPk`, `referenceCol` (SUB), `organization_id` FK (cascade), `environment`, `customer_id` FK
       (→ `customers`, 00), `price_id` FK (→ `prices`, 01), `default_payment_method_id` FK
       (→ `payment_methods`, 02, nullable), `status` (`subscription_status` pgEnum:
@@ -176,14 +176,14 @@ idempotent: re-issuing the same transition is a no-op that returns current state
       `version` (integer default 0, optimistic lock), `metadata` jsonb, `createdAt`, `updatedAt`.
       Indexes: `unique(reference)`; keyset `(org, env, created_at desc, id desc)`; lookup
       `(org, env, customer_id)`; `(org, env, status)` for due/list filters.
-- [ ] **`packages/core-db/src/schema/subscription-items.ts`** — `subscriptionItemsTable`:
+- [x] **`packages/core-db/src/schema/subscription-items.ts`** — `subscriptionItemsTable`:
       `idPk`, `referenceCol` (SBI), `organization_id` FK, `environment`, `subscription_id` FK (cascade),
       `price_id` FK (→ `prices`, 01), `quantity` (integer default 1, >0),
       `unit_amount` (bigint kobo — the per-seat unit captured from the price at attach; 05's proration reads it),
       `metadata` jsonb, `createdAt`,
       `updatedAt`. Indexes: `unique(reference)`; `(org, env, subscription_id)`. (Seat/quantity *proration*
       is 05; the row shape is final here.)
-- [ ] **`packages/core-db/src/schema/invoices.ts`** — `invoicesTable`:
+- [x] **`packages/core-db/src/schema/invoices.ts`** — `invoicesTable`:
       `idPk`, `referenceCol` (INV), `organization_id` FK, `environment`, `customer_id` FK,
       `subscription_id` FK (nullable for one-off, but set for sub invoices), `period_index` (integer),
       `billing_reason` (`billing_reason` pgEnum: `subscription_create · subscription_cycle ·
@@ -197,7 +197,7 @@ idempotent: re-issuing the same transition is a no-op that returns current state
       (K2/J6)** — partial `where subscription_id is not null`; keyset `(org, env, created_at desc, id desc)`;
       `(org, env, customer_id)`. **No money-status column** (derived). `total`/`amount_due` are immutable
       after `finalized_at` (enforced in domain — J2).
-- [ ] **`packages/core-db/src/schema/invoice-line-items.ts`** — `invoiceLineItemsTable`:
+- [x] **`packages/core-db/src/schema/invoice-line-items.ts`** — `invoiceLineItemsTable`:
       `idPk`, `referenceCol` (ILI), `organization_id` FK, `environment`, `invoice_id` FK (cascade),
       `subscription_item_id` FK (nullable), `kind` (`invoice_line_kind` pgEnum:
       `subscription · proration · discount · credit · adjustment`), `description` (text),
@@ -206,25 +206,25 @@ idempotent: re-issuing the same transition is a no-op that returns current state
       `period_start` / `period_end` (timestamptz, nullable), `createdAt`.
       Indexes: `unique(reference)`; `(org, env, invoice_id)`. (Only `subscription` lines are produced this
       phase; `proration`/`discount`/`credit` are 05.)
-- [ ] Register all four in `packages/core-db/src/schema/index.ts`; export `$inferSelect`/`$inferInsert`
+- [x] Register all four in `packages/core-db/src/schema/index.ts`; export `$inferSelect`/`$inferInsert`
       row types (`SubscriptionRow`, `SubscriptionItemRow`, `InvoiceRow`, `InvoiceLineItemRow`).
-- [ ] **`pnpm db:generate` then `pnpm db:migrate`** — one clean migration; verify it applies on a fresh DB
+- [x] **`pnpm db:generate` then `pnpm db:migrate`** — one clean migration; verify it applies on a fresh DB
       (the testcontainer harness boots it). **Never `push`.** *Proof:* migration file in
       `packages/core-db/drizzle/`, applied green in the e2e boot.
 
 ### Contracts (core-contracts)
 
-- [ ] **`packages/core-contracts/src/types/subscription.ts`** — `SubscriptionResponseData`
+- [x] **`packages/core-contracts/src/types/subscription.ts`** — `SubscriptionResponseData`
       (`id`, `customer`, `price`, `status`, `collectionMethod`, `currentPeriodStart/End`,
       `trialStart/End`, `cancelAtPeriodEnd`, `canceledAt`, `endedAt`, `cancellationReason`, `items[]`,
       `latestInvoice` (ref), `currency: 'NGN'`, `environment`, `createdAt`), `SubscriptionStatus`,
       `SubscriptionItemData`.
-- [ ] **`packages/core-contracts/src/types/invoice.ts`** — `InvoiceResponseData`
+- [x] **`packages/core-contracts/src/types/invoice.ts`** — `InvoiceResponseData`
       (`id`, `customer`, `subscription`, `status` (`draft|open|paid|void|uncollectible`), `billingReason`,
       `subtotal`, `discountTotal`, `total`, `amountDue`, `amountPaid`, `currency`, `periodStart/End`,
       `dueDate`, `lineItems[]`, `finalizedAt`, `paidAt`, `voidedAt`, `createdAt`), `InvoiceStatus`,
       `InvoiceLineItemData`.
-- [ ] **`packages/core-contracts/src/validations/subscription.ts`** — zod `{ body?, query?, params? }`:
+- [x] **`packages/core-contracts/src/validations/subscription.ts`** — zod `{ body?, query?, params? }`:
       - `createSubscriptionBody`: `customerId` (ref), `priceId` (ref), optional `paymentMethodId`,
         `collectionMethod` (default `charge_automatically`), `trialDays` (int ≥0, optional override),
         `quantity` (int ≥1, default 1), `metadata`. Refinement: `charge_automatically` **requires** a
@@ -235,7 +235,7 @@ idempotent: re-issuing the same transition is a no-op that returns current state
       - `pauseSubscriptionBody`: `{ maxDays?: int }`; `resumeSubscriptionBody`: `{}`.
       - `resubscribeBody`: `{ priceId?: ref, paymentMethodId?: ref }` (defaults reuse the source sub).
       - `listSubscriptionQuery`: `cursor?`, `limit?` (`.coerce`), `customerId?`, `status?`.
-- [ ] **`packages/core-contracts/src/validations/invoice.ts`** — `listInvoiceQuery`
+- [x] **`packages/core-contracts/src/validations/invoice.ts`** — `listInvoiceQuery`
       (`cursor?`, `limit?`, `customerId?`, `subscriptionId?`, `status?`); `voidInvoiceBody` (`{ comment? }`).
       DTO types are `z.infer<…>`. Add both files to the type + validation barrels.
 
@@ -249,17 +249,17 @@ idempotent: re-issuing the same transition is a no-op that returns current state
 > in `packages/sara/package.json`.
 
 #### `subscriptions/`
-- [ ] **`fsm.ts`** — `LEGAL_TRANSITIONS` (the `(from, to)` set per C.2) `as const`;
+- [x] **`fsm.ts`** — `LEGAL_TRANSITIONS` (the `(from, to)` set per C.2) `as const`;
       `assertLegalTransition(from, to)` (pure; throws `SUBSCRIPTION_ILLEGAL_TRANSITION` with `{from,to}`);
       `EVENT_FOR_TRANSITION` map (`to` → outbound event name, incl. voluntary/involuntary fork). **Pure,
       I/O-free — unit-tested exhaustively (every legal edge passes, every illegal edge throws).**
-- [ ] **`create.ts`** — `createSubscription(txDb, ctx, input)`:
+- [x] **`create.ts`** — `createSubscription(txDb, ctx, input)`:
       resolve customer (00) + price (01) + payment method (02) within `ctx`; decide initial state
       (`trialing` if trial; else `incomplete` for `charge_automatically` until first charge; `active` for a
       ₦0/zero edge); mint `SUB`; insert `subscriptions` + one `subscription_items` row; set period 0
       window; `emitEvent('subscription.created')`; if not trialing and not zero, kick the first cycle via
       `runCycle` (D.2). Returns `SubscriptionResponseData`. **Idempotent on `Idempotency-Key`** (00 store).
-- [ ] **`transition.ts`** — private `transition(tx, ctx, sub, to, reason)`: assert legal (fsm), update
+- [x] **`transition.ts`** — private `transition(tx, ctx, sub, to, reason)`: assert legal (fsm), update
       `status` + `version+1` under optimistic guard (stale `version` → `SUBSCRIPTION_VERSION_CONFLICT`),
       `emitEvent`. The **single** writer of `status` (A3). Plus the named public ops, each idempotent (A14):
       - `cancelNow(txDb, ctx, subRef, reason)` → `canceled`, `endedAt`, `cancellationReason:'voluntary'`,
@@ -273,38 +273,38 @@ idempotent: re-issuing the same transition is a no-op that returns current state
         `churnFromPastDue` (`past_due → canceled`, `cancellationReason:'involuntary'`, emits
         `subscription.churned`; **06 exit hook**).
       - `expireIncomplete(txDb, ctx, sub)` (`incomplete → incomplete_expired`; the **window timer** is 04).
-- [ ] **`resubscribe.ts`** — `resubscribe(txDb, ctx, sourceSubRef, input)`: assert source is `canceled`
+- [x] **`resubscribe.ts`** — `resubscribe(txDb, ctx, sourceSubRef, input)`: assert source is `canceled`
       (else `SUBSCRIPTION_NOT_TERMINAL`), then call `createSubscription` with a **new** `SUB` reference;
       **never touch the source row** (A2/⚠). Returns the new subscription.
-- [ ] **`queries.ts`** — `getSubscriptionByReference`, `listSubscriptions` (cursor, `ctx`-scoped, filters),
+- [x] **`queries.ts`** — `getSubscriptionByReference`, `listSubscriptions` (cursor, `ctx`-scoped, filters),
       `getSubscriptionItems`. All `ctx`-scoped (cross-tenant impossible).
-- [ ] **`serialize.ts`** — `serializeSubscription(row, items, latestInvoice, derivedConsistencyOk)`:
+- [x] **`serialize.ts`** — `serializeSubscription(row, items, latestInvoice, derivedConsistencyOk)`:
       public `id` = `reference`; asserts FSM-status ↔ ledger consistency (A12); `currency:'NGN'`; ISO-8601 UTC.
-- [ ] **`types.ts`**, **`index.ts`** (barrel). Export `./subscriptions`.
+- [x] **`types.ts`**, **`index.ts`** (barrel). Export `./subscriptions`.
 
 #### `invoices/`
-- [ ] **`create.ts`** — `createInvoice(txDb, ctx, input)`: mint `INV`; insert draft `invoices` row keyed
+- [x] **`create.ts`** — `createInvoice(txDb, ctx, input)`: mint `INV`; insert draft `invoices` row keyed
       `(subscription_id, period_index)` — on unique violation **return the existing invoice** (idempotent,
       no second row — K2); insert `invoice_line_items` (one `subscription` line this phase);
       `emitEvent('invoice.created')`.
-- [ ] **`finalize.ts`** — `finalizeInvoice(txDb, ctx, invoiceRef)`:
+- [x] **`finalize.ts`** — `finalizeInvoice(txDb, ctx, invoiceRef)`:
       `assertLineItemsSumToTotal(lines, invoice.total)` (**pure invariant, J4/⚠** — throws
       `INVOICE_LINE_ITEMS_UNBALANCED`); set `finalized_at`; from now the invoice is **immutable** (J2 —
       `total`/`amount_due` writes are rejected by `assertNotFinalized`); if `amount_due === 0` →
       `markPaid` directly with **no charge** (D.5/J8); emit `invoice.finalized`.
-- [ ] **`markPaid.ts`** — `markInvoicePaid(tx, ctx, invoice, ledgerTxId)`: guard already-`paid`
+- [x] **`markPaid.ts`** — `markInvoicePaid(tx, ctx, invoice, ledgerTxId)`: guard already-`paid`
       (idempotent, no second settlement — J6); set `paid_at`, `amount_paid = total`, link
       `ledger_transaction_id`; emit `invoice.paid`.
-- [ ] **`void.ts`** — `voidInvoice(txDb, ctx, invoiceRef, comment)`: only legal from `draft`/`open` (a
+- [x] **`void.ts`** — `voidInvoice(txDb, ctx, invoiceRef, comment)`: only legal from `draft`/`open` (a
       `paid` invoice is corrected by a **reversal** via `ledger/reverse.ts`, not a void — J2/J9); set
       `voided_at`; emit `invoice.voided`. Defines the **void path + correct ledger entries** (J9).
-- [ ] **`status.ts`** — `deriveInvoiceStatus(db, invoice)` → `draft|open|paid|void|uncollectible` from
+- [x] **`status.ts`** — `deriveInvoiceStatus(db, invoice)` → `draft|open|paid|void|uncollectible` from
       `(finalized_at, voided_at, paid_at, amount_due, AR balance)` (J3, A12). Pure-ish (one balance read).
-- [ ] **`lineItems.ts`** — `assertLineItemsSumToTotal(lines, total)` (pure, J4); `buildSubscriptionLine(...)`.
-- [ ] **`queries.ts`**, **`serialize.ts`**, **`types.ts`**, **`index.ts`**. Export `./invoices`.
+- [x] **`lineItems.ts`** — `assertLineItemsSumToTotal(lines, total)` (pure, J4); `buildSubscriptionLine(...)`.
+- [x] **`queries.ts`**, **`serialize.ts`**, **`types.ts`**, **`index.ts`**. Export `./invoices`.
 
 #### `billing/`
-- [ ] **`collectForInvoice.ts`** — `collectForInvoice(txDb, ctx, invoice, paymentMethod)` — the real-domain
+- [x] **`collectForInvoice.ts`** — `collectForInvoice(txDb, ctx, invoice, paymentMethod)` — the real-domain
       money path (D.2). If `amount_due === 0` short-circuit to paid (J8). Else: `ensureSystemAccounts` +
       `ensureAccount` (`cash`/`accounts_receivable`/`platform_revenue`); `getRail(method.railKey).collect({
       reference: invoice.reference, amountKobo: invoice.amount_due, metadata })` (E2/E3); on **PULL
@@ -312,21 +312,21 @@ idempotent: re-issuing the same transition is a no-op that returns current state
       **PULL failed** → `enterPastDue` + bump `attempt_count` + `emitEvent('invoice.payment_failed')`
       (06 takes over); on **pending / PUSH** → leave `open`, await the inbound confirm. **Never trust a
       client success** (E4).
-- [ ] **`confirmInvoiceFromWebhook.ts`** — twin of `example/confirm.ts`: resolve **our** invoice by **our**
+- [x] **`confirmInvoiceFromWebhook.ts`** — twin of `example/confirm.ts`: resolve **our** invoice by **our**
       reference within `ctx`; **re-verify with Nomba (requery via the 02 adapter)** — confirm amount ==
       `amount_due` and provider status settled — before recording (E4/⚠); guard already-`paid` (J6);
       `postTransaction(kind:'settlement')` → `markInvoicePaid` → `advancePeriod` (if cycle invoice) →
       `recoverFromPastDue` if the sub was `past_due`. Out-of-order safe (a `payment_success` after a requery
       does not corrupt state).
-- [ ] **`runCycle.ts`** — `runCycle(txDb, ctx, subscriptionRef)` — the **single-cycle** orchestrator
+- [x] **`runCycle.ts`** — `runCycle(txDb, ctx, subscriptionRef)` — the **single-cycle** orchestrator
       composed of the primitives above: `createInvoice` (billing_reason from period_index) → `finalizeInvoice`
       → `collectForInvoice`. Idempotent on `(subscription_id, period_index)` (re-run returns the existing
       invoice, J6). **This is the unit 04's scheduler will call**; here it is invoked directly in tests.
-- [ ] **`advancePeriod.ts`** — `advancePeriod(tx, ctx, sub)`: increment `current_period_index`, roll the
+- [x] **`advancePeriod.ts`** — `advancePeriod(tx, ctx, sub)`: increment `current_period_index`, roll the
       window forward by the price interval (simple roll only — **anchor/EOM/leap math is 04**), and, if
       `cancel_at_period_end`, trip `tripPeriodEndCancel` instead of rolling. `trialing → active` on the
       first paid cycle (A7).
-- [ ] **`index.ts`** (barrel). Export `./billing`.
+- [x] **`index.ts`** (barrel). Export `./billing`.
 
 ### API (apps/api)
 
@@ -336,7 +336,7 @@ idempotent: re-issuing the same transition is a no-op that returns current state
 > `subscriptions:read` / `subscriptions:write` / `invoices:read` / `invoices:write` added to the API-key
 > scope set + contracts.
 
-- [ ] **`apps/api/src/modules/subscriptions/`** — `routes.ts` + `controllers/`:
+- [x] **`apps/api/src/modules/subscriptions/`** — `routes.ts` + `controllers/`:
       - `POST /v1/subscriptions` → `create-subscription.ts` (`subscriptions:write`, idempotent).
       - `GET /v1/subscriptions/:reference` → `get-subscription.ts` (`subscriptions:read`).
       - `GET /v1/subscriptions` → `list-subscriptions.ts` (`paginatedHandler`, `subscriptions:read`).
@@ -347,38 +347,38 @@ idempotent: re-issuing the same transition is a no-op that returns current state
         A9).
       - `POST /v1/subscriptions/:reference/resubscribe` → `resubscribe-subscription.ts`.
       Each controller calls exactly one `sara/subscriptions` (or `billing`) fn and shapes the envelope.
-- [ ] **`apps/api/src/modules/invoices/`** — `routes.ts` + `controllers/`:
+- [x] **`apps/api/src/modules/invoices/`** — `routes.ts` + `controllers/`:
       - `GET /v1/invoices/:reference` → `get-invoice.ts` (`invoices:read`).
       - `GET /v1/invoices` → `list-invoices.ts` (`paginatedHandler`, `invoices:read`).
       - `POST /v1/invoices/:reference/void` → `void-invoice.ts` (`invoices:write`, J9). **No create/update
         invoice endpoint** — invoices are issued by the billing loop, not by the tenant (J2 immutability).
-- [ ] Mount both under `/v1` in `apps/api/src/app/main/routes.ts`; add the four scopes to the scope set +
+- [x] Mount both under `/v1` in `apps/api/src/app/main/routes.ts`; add the four scopes to the scope set +
       contracts.
 
 ### Wiring
 
-- [ ] **Inbound confirm seam** — extend `apps/api/src/super-modules/worker/workers/inbound-webhook.ts`
+- [x] **Inbound confirm seam** — extend `apps/api/src/super-modules/worker/workers/inbound-webhook.ts`
       (the 02 seam): on a `payment_success` whose `orderReference` resolves to an `INV` reference, route to
       `confirmInvoiceFromWebhook` (verify-again-then-act). Idempotent on `requestId` (02 dedup) **and** on
       already-`paid` invoice (J6).
-- [ ] **`runCycle` entry point** — export `runCycle` from `@nombaone/sara/billing` so 04's scheduler imports
+- [x] **`runCycle` entry point** — export `runCycle` from `@nombaone/sara/billing` so 04's scheduler imports
       the *same* primitive the create-path uses (no duplicated billing logic). No cron added here (04).
-- [ ] **Event registration** — ensure the new event names (`subscription.created/updated/activated/paused/
+- [x] **Event registration** — ensure the new event names (`subscription.created/updated/activated/paused/
       resumed/canceled/churned`, `invoice.created/finalized/paid/payment_failed/voided`) are in the catalog
       the outbox matches against (C.6); delivery transport is 07.
 
 ### Tests
 
-- [ ] **unit — FSM (P, A4/⚠):** `subscriptions/fsm.test.ts` — table-driven over `LEGAL_TRANSITIONS`:
+- [x] **unit — FSM (P, A4/⚠):** `subscriptions/fsm.test.ts` — table-driven over `LEGAL_TRANSITIONS`:
       assert **every legal edge passes** and **every illegal edge** (`canceled → active`,
       `incomplete → past_due`, `canceled → anything`, `paused → past_due`, …) throws
       `SUBSCRIPTION_ILLEGAL_TRANSITION`. One assertion per illegal edge (A4 "a test proving each").
-- [ ] **unit — invariants (J4/J1):** `invoices/lineItems.test.ts` — `assertLineItemsSumToTotal` passes when
+- [x] **unit — invariants (J4/J1):** `invoices/lineItems.test.ts` — `assertLineItemsSumToTotal` passes when
       Σ = total, throws `INVOICE_LINE_ITEMS_UNBALANCED` otherwise; signed line sums (negative discount/credit)
       sum correctly; all integer kobo, no float.
-- [ ] **unit — status derivation (J3, A12):** `invoices/status.test.ts` — each
+- [x] **unit — status derivation (J3, A12):** `invoices/status.test.ts` — each
       `(finalized/voided/paid/amount_due)` combo maps to the right `draft|open|paid|void|uncollectible`.
-- [ ] **e2e (testcontainers Postgres+Redis, real migrations, fake rail adapter — B.10):**
+- [x] **e2e (testcontainers Postgres+Redis, real migrations, fake rail adapter — B.10):**
       - **Happy path (E2/E3/E4/J5/A7):** create sub (trial) → trial end → first charge via fake PULL
         succeeds → `payment_success` webhook **requeried** → invoice `paid`, ledger `charge` posted,
         `trialing → active`, period advanced.
@@ -415,62 +415,62 @@ idempotent: re-issuing the same transition is a no-op that returns current state
 > current full suite (96 sara unit + 51 api e2e). The single-cycle `runCycle` primitive + the `past_due`
 > entry/exit hooks are handed to 04/06.
 
-- [ ] **A1** — all seven states reachable: each materialized by a create/transition in the e2e suite
+- [x] **A1** — all seven states reachable: each materialized by a create/transition in the e2e suite
       (incomplete, trialing, active, past_due, paused, canceled) + `incomplete_expired` via `expireIncomplete`.
-- [ ] **A2 ⚠** — `canceled` is terminal (FSM declares no outgoing edge); `resubscribe` creates a **new** `SUB`
+- [x] **A2 ⚠** — `canceled` is terminal (FSM declares no outgoing edge); `resubscribe` creates a **new** `SUB`
       row, source untouched — proven by the resubscribe e2e (read FSM table + run the test).
-- [ ] **A3** — `status` has exactly one writer (`transition`); no op writes it directly — proven by grep +
+- [x] **A3** — `status` has exactly one writer (`transition`); no op writes it directly — proven by grep +
       the FSM routing test.
-- [ ] **A4 ⚠** — every illegal transition throws `SUBSCRIPTION_ILLEGAL_TRANSITION`; one assertion per
+- [x] **A4 ⚠** — every illegal transition throws `SUBSCRIPTION_ILLEGAL_TRANSITION`; one assertion per
       illegal edge in `fsm.test.ts` (read the table + run the table-driven test).
-- [ ] **A5** — `incomplete` is set only for a never-succeeded first `charge_automatically`; it never
+- [x] **A5** — `incomplete` is set only for a never-succeeded first `charge_automatically`; it never
       serializes as `active` — asserted in the create-without-trial e2e.
-- [ ] **A7** — `trialing → active` on the first successful charge at trial end — happy-path e2e asserts the
+- [x] **A7** — `trialing → active` on the first successful charge at trial end — happy-path e2e asserts the
       status flip + the ledger `charge`.
-- [ ] **A8** — `trialing → canceled` attempts **no charge** — trial-cancel e2e asserts zero charge ledger
+- [x] **A8** — `trialing → canceled` attempts **no charge** — trial-cancel e2e asserts zero charge ledger
       posts.
-- [ ] **A9 ⚠** — cancel-now (immediate revoke + `subscription.canceled`) and cancel-at-period-end (stays
+- [x] **A9 ⚠** — cancel-now (immediate revoke + `subscription.canceled`) and cancel-at-period-end (stays
       `active`, flag set, boundary trip) are distinct ops — proven by the two-mode e2e (read + run).
-- [ ] **A10** — pause→resume recomputes the next billing date, no skip/double — pause/resume e2e asserts the
+- [x] **A10** — pause→resume recomputes the next billing date, no skip/double — pause/resume e2e asserts the
       recomputed window.
-- [ ] **A11** — pause policy (`pause_max_days`, default indefinite-hold) documented (D.1) and enforced at
+- [x] **A11** — pause policy (`pause_max_days`, default indefinite-hold) documented (D.1) and enforced at
       resume — asserted by an over-limit resume test.
-- [ ] **A12 ★** — subscription status is consistent with the ledger/derived invoice status; the serializer
+- [x] **A12 ★** — subscription status is consistent with the ledger/derived invoice status; the serializer
       asserts agreement — proven by `status.test.ts` + the happy-path consistency assertion.
-- [ ] **A13 ★** — every transition emits an immutable `domain_events` row; a subscription's history is
+- [x] **A13 ★** — every transition emits an immutable `domain_events` row; a subscription's history is
       replayable — the churn e2e reads back the full event sequence.
-- [ ] **A14** — replaying a transition is a no-op returning current state — idempotency assertion on a
+- [x] **A14** — replaying a transition is a no-op returning current state — idempotency assertion on a
       repeated cancel/pause.
-- [ ] **J1 ⚠** — all amounts integer kobo, no floats — enforced by `assertPositiveKobo`/`assertBalanced`;
+- [x] **J1 ⚠** — all amounts integer kobo, no floats — enforced by `assertPositiveKobo`/`assertBalanced`;
       grep proves no float arithmetic on the money path (read + run unit tests).
-- [ ] **J2** — finalized invoices are immutable; corrections are new entries — `INVOICE_ALREADY_FINALIZED`
+- [x] **J2** — finalized invoices are immutable; corrections are new entries — `INVOICE_ALREADY_FINALIZED`
       e2e + the reversal path for paid corrections.
-- [ ] **J3** — invoice lifecycle `draft → open → paid` + `void`/`uncollectible` enforced via
+- [x] **J3** — invoice lifecycle `draft → open → paid` + `void`/`uncollectible` enforced via
       `deriveInvoiceStatus` — `status.test.ts`.
-- [ ] **J4 ⚠** — Σ line items = total enforced by `assertLineItemsSumToTotal` at finalize — `lineItems.test.ts`
+- [x] **J4 ⚠** — Σ line items = total enforced by `assertLineItemsSumToTotal` at finalize — `lineItems.test.ts`
       (read the invariant + run the unbalanced-throws case).
-- [ ] **J5** — every money-affecting change posts a ledger entry — `collectForInvoice` posts a `charge`,
+- [x] **J5** — every money-affecting change posts a ledger entry — `collectForInvoice` posts a `charge`,
       confirm posts a `settlement`; asserted in the happy-path e2e.
-- [ ] **J6 ⚠** — no double-charge: replay scheduler + webhook + concurrent confirm → exactly one debit and
+- [x] **J6 ⚠** — no double-charge: replay scheduler + webhook + concurrent confirm → exactly one debit and
       one invoice per period — the no-double-charge e2e + `(subscription_id, period_index)` unique (read +
       run).
-- [ ] **J8** — zero-amount invoice → `paid` with no ₦0 charge — zero-amount e2e asserts no rail call, no
+- [x] **J8** — zero-amount invoice → `paid` with no ₦0 charge — zero-amount e2e asserts no rail call, no
       charge post.
-- [ ] **J9** — void path defined with correct ledger entries — `void-invoice` e2e (void from open) + the
+- [x] **J9** — void path defined with correct ledger entries — `void-invoice` e2e (void from open) + the
       paid-correction reversal.
-- [ ] **E2** — recurring charges use the stored payment method/`tokenKey` from 02, no re-collection — the
+- [x] **E2** — recurring charges use the stored payment method/`tokenKey` from 02, no re-collection — the
       cycle e2e charges via the persisted method.
-- [ ] **E3 ⚠** — each charge carries a unique `orderReference` = the invoice `reference`; replay is
+- [x] **E3 ⚠** — each charge carries a unique `orderReference` = the invoice `reference`; replay is
       idempotent on Nomba's side — asserted by the fake adapter recording one reference across replays
       (read the wiring + run the replay).
-- [ ] **E4 ⚠** — charge outcomes verified server-side via webhook + requery; never a client success —
+- [x] **E4 ⚠** — charge outcomes verified server-side via webhook + requery; never a client success —
       `confirmInvoiceFromWebhook` requeries before posting (read the confirm path + run the out-of-order test).
-- [ ] **E8** — NGN consistent across order/charge/invoice/ledger — asserted on every serialized money field.
-- [ ] **K2** — DB unique constraints make duplicate period charges structurally impossible —
+- [x] **E8** — NGN consistent across order/charge/invoice/ledger — asserted on every serialized money field.
+- [x] **K2** — DB unique constraints make duplicate period charges structurally impossible —
       `(subscription_id, period_index)` unique proven by the rejected duplicate insert.
-- [ ] Grep gate: zero `example`/`EXA` references introduced; new modules import narrow `sara` slices, never
+- [x] Grep gate: zero `example`/`EXA` references introduced; new modules import narrow `sara` slices, never
       the root barrel.
-- [ ] `pnpm type-check`, `pnpm build`, `pnpm test` all green across the workspace.
+- [x] `pnpm type-check`, `pnpm build`, `pnpm test` all green across the workspace.
 
 ## Done when
 

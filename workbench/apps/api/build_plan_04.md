@@ -210,78 +210,78 @@ for the two time-based events catalogued in contract C.6.)
 
 ### DB (core-db)
 
-- [ ] **`subscription_periods`** (new, the idempotency claim spine) — `packages/core-db/src/schema/subscription-periods.ts`:
+- [x] **`subscription_periods`** (new, the idempotency claim spine) — `packages/core-db/src/schema/subscription-periods.ts`:
       `idPk()`, `organization_id` FK, `environment`, `subscription_id` FK,
       `period_index` integer (≥0), `period_start`/`period_end` `timestamptz`, `invoice_id` FK (nullable
       until finalized), `claimed_at` `timestamptz` default now, `createdAt()`.
       **`unique(subscription_id, period_index)`** — the structural double-bill guard (K2/B6/B8).
       Index `(organization_id, environment, period_end)`.
       *Proof:* migration applies on a fresh DB; a second insert of the same `(subscription_id, period_index)` raises a unique violation in a test.
-- [ ] **`subscription_schedules`** (contract C.1) — `packages/core-db/src/schema/subscription-schedules.ts`:
+- [x] **`subscription_schedules`** (contract C.1) — `packages/core-db/src/schema/subscription-schedules.ts`:
       `idPk()`, `referenceCol()` (SCH), `organization_id` FK, `environment`, `subscription_id` FK,
       `status` enum (`pgEnum`: `active`/`released`/`canceled`), `phases` jsonb (ordered:
       `{ startIndex, priceId, quantity? }[]`), `createdAt()`, `updatedAt()`.
       `unique(reference)`; keyset index `(organization_id, environment, created_at desc, id desc)`.
       *Proof:* migration applies; a row round-trips with phases preserved in order.
-- [ ] **Extend `subscriptions`** (03 table) — 03 already ships `billing_cycle_anchor` and
+- [x] **Extend `subscriptions`** (03 table) — 03 already ships `billing_cycle_anchor` and
       `current_period_index`; this phase adds only `next_billing_at` `timestamptz` (mirrors
       `current_period_end`, the due-selection cursor) and `trial_will_end_notified_at` `timestamptz` nullable
       (the lifecycle sweep's trial-notice idempotency stamp). Add index
       `(organization_id, environment, next_billing_at)` for the due query (B7/B11).
       *Proof:* `EXPLAIN` on the due query uses the index (not a seq scan) in the e2e harness.
-- [ ] **`invoices`** — **no change here.** 03 already ships `subscription_id`, `period_index`, and
+- [x] **`invoices`** — **no change here.** 03 already ships `subscription_id`, `period_index`, and
       **`unique(subscription_id, period_index)`**; this phase **relies on** that constraint as the
       one-period-⇒-one-invoice guard (K2) and re-asserts it in the e2e (a second finalize for the same period
       raises the unique violation). (No duplicate `add` — avoids a migration collision with 03.)
-- [ ] **Extend `payment_methods`** (02 table) — add `expiring_notified_at` `timestamptz` nullable (the
+- [x] **Extend `payment_methods`** (02 table) — add `expiring_notified_at` `timestamptz` nullable (the
       lifecycle sweep's payment-method-expiring idempotency stamp). Additive only.
-- [ ] Use shared helpers throughout (`idPk`, `referenceCol`, `environmentEnum`, `createdAt`,
+- [x] Use shared helpers throughout (`idPk`, `referenceCol`, `environmentEnum`, `createdAt`,
       `updatedAt` from `packages/core-db/src/schema/shared.ts`); register both new tables in
       `schema/index.ts`.
-- [ ] `pnpm db:generate` then `pnpm db:migrate` — **one clean migration**, applied on a fresh DB
+- [x] `pnpm db:generate` then `pnpm db:migrate` — **one clean migration**, applied on a fresh DB
       (never `push`). *Proof:* migration file committed; harness boots it green.
 
 ### Contracts (core-contracts)
 
-- [ ] `packages/core-contracts/src/types/subscription-schedule.ts` — `SubscriptionScheduleResponseData`
+- [x] `packages/core-contracts/src/types/subscription-schedule.ts` — `SubscriptionScheduleResponseData`
       (reference, subscriptionId-ref, status, phases, timestamps ISO-8601 UTC).
-- [ ] `packages/core-contracts/src/types/upcoming-invoice.ts` — `UpcomingInvoiceResponseData`
+- [x] `packages/core-contracts/src/types/upcoming-invoice.ts` — `UpcomingInvoiceResponseData`
       (period start/end ISO, `periodIndex`, `amountDue` kobo integer, line previews, `billingReason`).
-- [ ] `packages/core-contracts/src/validations/subscription-schedule.ts` —
+- [x] `packages/core-contracts/src/validations/subscription-schedule.ts` —
       `scheduleChangeBody` (`{ priceId: string; quantity?: number; effectiveAt: 'next_cycle' }`,
       zod with refinement; `effectiveAt` is an `as const` enum so future modes are additive),
       `params` (`:ref`). Reuse the `validate({...})` middleware shape from
       `validations/example.ts`. DTO types are `z.infer<…>`.
-- [ ] Export both from the respective barrels (`types/index.ts`, `validations/index.ts`).
+- [x] Export both from the respective barrels (`types/index.ts`, `validations/index.ts`).
 
 ### Domain (sara)
 
 New submodule **`packages/sara/src/billing/`** (export `./billing` in `sara/package.json`), with a
 pure `scheduling/` core and an impure `sweep`/queries layer.
 
-- [ ] **`billing/scheduling/anchor.ts`** (pure) — `computeAnchor(activationInstant, price): Date` and
+- [x] **`billing/scheduling/anchor.ts`** (pure) — `computeAnchor(activationInstant, price): Date` and
       `periodBounds(anchor, price, periodIndex): { start: Date; end: Date }`. No I/O. Uses the fixed
       billing zone + hour. *Proof:* unit table-test of bounds for index 0..13.
-- [ ] **`billing/scheduling/interval.ts`** (pure) — `addInterval(date, unit, count): Date` with
+- [x] **`billing/scheduling/interval.ts`** (pure) — `addInterval(date, unit, count): Date` with
       **EOM snap-back** preserving the anchor day-of-month; `unit ∈ {day,week,month,year}`.
       *Proof:* unit tests — Jan-31 monthly across all 12 months snaps back to 31; `addInterval`
       never destroys the anchor DOM.
-- [ ] **`billing/scheduling/leap.ts`** (pure helpers used by interval) — Feb-29 annual anchor lands
+- [x] **`billing/scheduling/leap.ts`** (pure helpers used by interval) — Feb-29 annual anchor lands
       28/29 by year; *Proof:* unit test across a leap and non-leap year, both directions.
-- [ ] **`billing/scheduling/timezone.ts`** (pure) — `billingInstant(date): Date` = `BILLING_HOUR`
+- [x] **`billing/scheduling/timezone.ts`** (pure) — `billingInstant(date): Date` = `BILLING_HOUR`
       local in `BILLING_TIMEZONE` → UTC; `isDue(periodEnd, now): boolean`. *Proof:* unit test that
       "due today" is one exact instant and a subscription one second before the boundary is not due.
-- [ ] **`billing/queries.ts`** — `findDueSubscriptions(db, { now, cursor, limit })`: keyset-batched
+- [x] **`billing/queries.ts`** — `findDueSubscriptions(db, { now, cursor, limit })`: keyset-batched
       due-selection (`next_billing_at ≤ now`, billable states), returns a batch + next cursor.
       Signature `(db, ctx?, input)` — this is a **cross-tenant operational** read (the sweep runs
       platform-wide), so it is the documented exception that does not pin a single `ctx`; it still
       stamps every downstream write with each row's own (org, env). *Proof:* boundary fixture test
       (B7) — subscriptions straddling `now` selected exactly.
-- [ ] **`billing/claim.ts`** — `claimPeriod(tx, ctx, { subscriptionId, periodIndex, start, end })`:
+- [x] **`billing/claim.ts`** — `claimPeriod(tx, ctx, { subscriptionId, periodIndex, start, end })`:
       `INSERT … ON CONFLICT (subscription_id, period_index) DO NOTHING RETURNING` inside the caller's
       tx; returns `{ claimed: boolean; periodId? }`. Pure-ish (single statement). *Proof:* unit/e2e —
       concurrent double-claim → exactly one `claimed: true`.
-- [ ] **`billing/sweep.ts`** — `runBillingSweep(deps)`: the orchestrator (D.4). For each due
+- [x] **`billing/sweep.ts`** — `runBillingSweep(deps)`: the orchestrator (D.4). For each due
       subscription it opens an interactive tx on `InfraTxDb`, takes
       `pg_advisory_xact_lock(...)`, calls `claimPeriod`, and on a won claim: applies any due schedule
       phase (`subscription-schedules/apply.ts`), finalizes the period invoice (03 primitive),
@@ -290,7 +290,7 @@ pure `scheduling/` core and an impure `sweep`/queries layer.
       via `emitEvent` in-tx. Catch-up loop advances one period at a time (D.6) with
       `maxCatchUpPeriods` guard. *Proof:* replay test (B6) — run, kill before COMMIT, re-run → one
       invoice, one charge.
-- [ ] **`packages/sara/src/subscription-schedules/`** (`create.ts`, `apply.ts`, `queries.ts`,
+- [x] **`packages/sara/src/subscription-schedules/`** (`create.ts`, `apply.ts`, `queries.ts`,
       `serialize.ts`, `types.ts`, `index.ts`; export `./subscription-schedules`):
       - `createSchedule(db, ctx, { subscriptionRef, priceId, quantity?, effectiveAt })` — resolves
         `effectiveAt:'next_cycle'` to `current_period_index + 1`, mints `SCH`, emits
@@ -300,20 +300,20 @@ pure `scheduling/` core and an impure `sweep`/queries layer.
         *Proof:* e2e (B10) — change scheduled "next cycle" does **not** alter the current period's
         invoice but **does** alter the next period's.
       - `getSchedule` / `cancelSchedule` (release the active schedule). *Proof:* e2e round-trip.
-- [ ] **`packages/sara/src/billing/lifecycle-sweep.ts`** — `runLifecycleSweep(deps)`: the three idempotent
+- [x] **`packages/sara/src/billing/lifecycle-sweep.ts`** — `runLifecycleSweep(deps)`: the three idempotent
       passes of D.10 — incomplete-expiry (calls 03's `expireIncomplete` transition; **A6**), trial-will-end
       emit + stamp, payment-method-expiring emit + stamp. Backed by pure selection queries in
       `billing/queries.ts`: `selectExpiredIncomplete`, `selectTrialEndingSoon`, `selectExpiringPaymentMethods`
       (keyset-batched cross-tenant operational reads, each stamping its own (org, env)). *Proof:* e2e — a
       never-paid `incomplete` past the window flips to `incomplete_expired` (**A6**); a `trialing` sub within
       the notice window emits exactly **one** `subscription.trial_will_end` across two ticks (stamp idempotency).
-- [ ] **`packages/sara/src/billing/upcoming.ts`** — `getUpcomingInvoice(db, ctx, subscriptionRef)`:
+- [x] **`packages/sara/src/billing/upcoming.ts`** — `getUpcomingInvoice(db, ctx, subscriptionRef)`:
       computes the next period bounds (pure math) + the amount due (current effective price, or the
       scheduled phase price if one applies next), **without** persisting anything. *Proof:* e2e — returns
       the right period and amount; reflects a pending schedule.
-- [ ] Add the `SCH` reference domain to `packages/sara/src/reference.ts` `ReferenceDomain` union (it
+- [x] Add the `SCH` reference domain to `packages/sara/src/reference.ts` `ReferenceDomain` union (it
       is listed in contract C.4 but only added when its table ships — this phase).
-- [ ] Add **`SUBSCRIPTION_SCHEDULE_*`** error codes (e.g. `SUBSCRIPTION_SCHEDULE_NOT_FOUND`,
+- [x] Add **`SUBSCRIPTION_SCHEDULE_*`** error codes (e.g. `SUBSCRIPTION_SCHEDULE_NOT_FOUND`,
       `SUBSCRIPTION_SCHEDULE_CONFLICT`, `SUBSCRIPTION_SCHEDULE_INVALID_EFFECTIVE_AT`) and a
       `BILLING_CATCH_UP_LIMIT_EXCEEDED` code to `packages/errors/src/codes.ts`; keep public/internal
       discipline (only `*_NOT_FOUND`/`*_CONFLICT`/`*_INVALID_*` public).
@@ -323,44 +323,44 @@ pure `scheduling/` core and an impure `sweep`/queries layer.
 New routes under the existing `subscriptions` module (do not create a parallel module) —
 `apps/api/src/modules/subscriptions/`:
 
-- [ ] `GET /v1/subscriptions/:ref/upcoming-invoice` — scope `subscriptions:read`. Controller
+- [x] `GET /v1/subscriptions/:ref/upcoming-invoice` — scope `subscriptions:read`. Controller
       `controllers/get-upcoming-invoice.ts`, `jsonHandler<UpcomingInvoiceResponseData>`, calls
       `getUpcomingInvoice`. Reads skip `idempotency`.
-- [ ] `POST /v1/subscriptions/:ref/schedule` — scope `subscriptions:write`. Controller
+- [x] `POST /v1/subscriptions/:ref/schedule` — scope `subscriptions:write`. Controller
       `controllers/create-schedule.ts`, full chain
       `apiKeyAuth → rateLimit → requireScope('subscriptions:write') → idempotency → validate({ params, body: scheduleChangeBody }) → controller`,
       calls `createSchedule`. *Proof:* e2e + `Idempotency-Key` replay returns same schedule, no 2nd row.
-- [ ] `GET /v1/subscriptions/:ref/schedule` — scope `subscriptions:read`; `getSchedule`.
-- [ ] `DELETE /v1/subscriptions/:ref/schedule` — scope `subscriptions:write`, idempotent;
+- [x] `GET /v1/subscriptions/:ref/schedule` — scope `subscriptions:read`; `getSchedule`.
+- [x] `DELETE /v1/subscriptions/:ref/schedule` — scope `subscriptions:write`, idempotent;
       `cancelSchedule`. Emits `subscription.updated`.
-- [ ] Wire controllers in `controllers/index.ts`; group routes under a rule-comment header
+- [x] Wire controllers in `controllers/index.ts`; group routes under a rule-comment header
       ("Billing schedules & upcoming invoice") in `routes.ts`. Controllers stay thin (call sara, shape
       the envelope; never touch `res`).
-- [ ] Confirm scopes `subscriptions:read`/`subscriptions:write` already exist from 03 (no new scope
+- [x] Confirm scopes `subscriptions:read`/`subscriptions:write` already exist from 03 (no new scope
       set needed; schedules live under the subscription resource).
 
 ### Wiring
 
-- [ ] **`packages/queue/src/queues/billing.ts`** (new, mirroring `scheduler.ts`): `BILLING_QUEUE_NAME`,
+- [x] **`packages/queue/src/queues/billing.ts`** (new, mirroring `scheduler.ts`): `BILLING_QUEUE_NAME`,
       `BillingJobData = { subscriptionId; periodIndex; organizationId; environment }`, `billingQueue`,
       `enqueueBilling(data)` with `jobId = ${subscriptionId}:${periodIndex}` (BullMQ dedup =
       idempotency layer 3). Export from the queue barrel.
-- [ ] **`apps/api/src/super-modules/scheduler/index.ts`** — in `registerRepeatables`, add
+- [x] **`apps/api/src/super-modules/scheduler/index.ts`** — in `registerRepeatables`, add
       `await upsertCron('billing-sweep', BILLING_SWEEP_CRON)` (e.g. `'5 1 * * *'` — once daily,
       ~01:05 to give the worker margin before the 02:00 deterministic boundary; cron in config). In
       `createSchedulerWorker`, replace the commented seam with
       `case 'billing-sweep': await runBillingSweep(deps); break;`. The sweep only **enqueues**; it does
       not charge inline (D.8). *Proof:* booting the API registers exactly one `billing-sweep` scheduler
       (no duplicates across reboots).
-- [ ] **`apps/api/src/super-modules/worker/index.ts`** — add `createBillingWorker()` to the
+- [x] **`apps/api/src/super-modules/worker/index.ts`** — add `createBillingWorker()` to the
       `startWorkers()` array (drains `billing` queue, runs the per-subscription claim-once charge from
       03). New file `super-modules/worker/workers/billing.ts`, modeled on `inbound-webhook.ts`.
-- [ ] **`apps/api/src/super-modules/scheduler/index.ts`** (lifecycle sweep) — also register
+- [x] **`apps/api/src/super-modules/scheduler/index.ts`** (lifecycle sweep) — also register
       `await upsertCron('lifecycle-sweep', LIFECYCLE_SWEEP_CRON)` (e.g. hourly) and add
       `case 'lifecycle-sweep': await runLifecycleSweep(deps); break;` to `createSchedulerWorker`. Kept separate
       from `billing-sweep` so a slow renewal run can't delay notices. *Proof:* booting the API registers
       exactly one `lifecycle-sweep` scheduler; the A6 expiry + the two notices fire on tick.
-- [ ] **`apps/api/src/shared/config/env.ts`** — add zod-validated `BILLING_TIMEZONE`
+- [x] **`apps/api/src/shared/config/env.ts`** — add zod-validated `BILLING_TIMEZONE`
       (default `'Africa/Lagos'`), `BILLING_HOUR` (default `2`), `BILLING_SWEEP_CRON`,
       `BILLING_BATCH_SIZE` (default `500`), `BILLING_MAX_CATCH_UP_PERIODS` (default `36`), plus the lifecycle
       windows `LIFECYCLE_SWEEP_CRON`, `INCOMPLETE_EXPIRY_WINDOW_HOURS` (default `24`),
@@ -368,26 +368,26 @@ New routes under the existing `subscriptions` module (do not create a parallel m
 
 ### Tests
 
-- [ ] **unit (sara/billing/scheduling)** — interval/EOM/leap table tests: Jan-31 monthly across a full
+- [x] **unit (sara/billing/scheduling)** — interval/EOM/leap table tests: Jan-31 monthly across a full
       year snaps back to 31 (**B3**); Feb-29 annual across leap/non-leap (**B4**); week/day custom
       intervals exact (**B1**); anchor-based bounds for index 0..13 (**B2**); `isDue` single-instant
       boundary (**B5**).
-- [ ] **e2e (testcontainers PG+Redis)** — **due selection** boundary fixture: subscriptions at
+- [x] **e2e (testcontainers PG+Redis)** — **due selection** boundary fixture: subscriptions at
       `now-1s`, `now`, `now+1s` → exactly the first two selected (**B7**).
-- [ ] **e2e — idempotent replay** (**B6/K4**): seed a due subscription, run the sweep, kill the worker
+- [x] **e2e — idempotent replay** (**B6/K4**): seed a due subscription, run the sweep, kill the worker
       transaction before COMMIT (simulated via injected fault), re-run → exactly one
       `subscription_periods` row, one invoice, one charge.
-- [ ] **e2e — concurrency** (**B8/K2**): two `runBillingSweep` invocations in parallel on the same due
+- [x] **e2e — concurrency** (**B8/K2**): two `runBillingSweep` invocations in parallel on the same due
       subscription → exactly one `claimed:true`, one invoice (advisory lock + unique both proven).
-- [ ] **race (**K3**)** — portal `cancel-now` vs sweep on one subscription concurrently → one
+- [x] **race (**K3**)** — portal `cancel-now` vs sweep on one subscription concurrently → one
       consistent terminal outcome, no charge after cancel, no double charge.
-- [ ] **e2e — catch-up** (**B9**): subscription 3 periods behind → 3 claimed periods, 3 invoices, one
+- [x] **e2e — catch-up** (**B9**): subscription 3 periods behind → 3 claimed periods, 3 invoices, one
       per missed cycle, none stacked/skipped; a row beyond `maxCatchUpPeriods` raises
       `BILLING_CATCH_UP_LIMIT_EXCEEDED` and alerts instead of looping.
-- [ ] **e2e — schedule at next cycle** (**B10**): `POST …/schedule` with `effectiveAt:'next_cycle'`;
+- [x] **e2e — schedule at next cycle** (**B10**): `POST …/schedule` with `effectiveAt:'next_cycle'`;
       current period invoice unchanged, next period bills the new price; `GET …/upcoming-invoice`
       reflects the scheduled price.
-- [ ] **load (**B11 ★ / P7**)** — seed 10k due subscriptions in one window; one tick enqueues 10k
+- [x] **load (**B11 ★ / P7**)** — seed 10k due subscriptions in one window; one tick enqueues 10k
       deduped jobs; workers drain to 10k claims / 10k invoices, zero dupes, within the window; no
       partial run (assert no subscription left half-advanced).
 
@@ -408,35 +408,35 @@ One line per box; each states **how** it is demonstrated.
 > owned by **build_plan_09 §P** (the fair-scheduling fixture lands in 08, the scale run in 09); the
 > O(batches) keyset-batched enqueue + fan-out it relies on is built. Proven green by the current full suite.
 
-- [ ] **B1** — monthly, annual, and custom (week/day × `interval_count`) cycles supported; proven by
+- [x] **B1** — monthly, annual, and custom (week/day × `interval_count`) cycles supported; proven by
       the `interval.ts` unit table tests covering each unit.
-- [ ] **B2** — billing is anchor-based (`billing_cycle_anchor + n·interval`), not "+30 days"; proven by
+- [x] **B2** — billing is anchor-based (`billing_cycle_anchor + n·interval`), not "+30 days"; proven by
       `periodBounds` unit test for indices 0..13 against a fixed anchor.
-- [ ] **B3 ⚠** — EOM snap-back: Jan-31 monthly → Feb-28/29 → **snaps back to Mar-31**; proven by the
+- [x] **B3 ⚠** — EOM snap-back: Jan-31 monthly → Feb-28/29 → **snaps back to Mar-31**; proven by the
       full-year walk unit test (read + run).
-- [ ] **B4 ⚠** — leap-day: Feb-29 annual anchor lands 28 (common) / 29 (leap) and snaps back; proven by
+- [x] **B4 ⚠** — leap-day: Feb-29 annual anchor lands 28 (common) / 29 (leap) and snaps back; proven by
       the `leap.ts` unit test across leap + non-leap years (read + run).
-- [ ] **B5** — all boundaries computed in one fixed zone (`Africa/Lagos`) at a deterministic hour;
+- [x] **B5** — all boundaries computed in one fixed zone (`Africa/Lagos`) at a deterministic hour;
       "due today" is one exact UTC instant; proven by the `timezone.ts`/`isDue` unit test.
-- [ ] **B6 ⚠** — scheduler idempotent/replayable: kill mid-run → zero duplicate charges/invoices;
+- [x] **B6 ⚠** — scheduler idempotent/replayable: kill mid-run → zero duplicate charges/invoices;
       proven by the e2e replay test (`subscription_periods` claim + in-tx advance) (read + run).
-- [ ] **B7** — exact due selection, no miss/no dup; proven by the straddling-boundary fixture e2e.
-- [ ] **B8 ⚠** — concurrent workers cannot double-bill; proven by the parallel-sweep e2e (advisory lock
+- [x] **B7** — exact due selection, no miss/no dup; proven by the straddling-boundary fixture e2e.
+- [x] **B8 ⚠** — concurrent workers cannot double-bill; proven by the parallel-sweep e2e (advisory lock
       **and** `(subscription_id, period_index)` unique) (read + run).
-- [ ] **B9** — downtime catch-up bills each missed period once, no skip/stack; proven by the 3-periods-
+- [x] **B9** — downtime catch-up bills each missed period once, no skip/stack; proven by the 3-periods-
       behind e2e, with the `maxCatchUpPeriods` guard test.
-- [ ] **B10** — plan/price change "next cycle" applies at the boundary, not immediately; proven by the
+- [x] **B10** — plan/price change "next cycle" applies at the boundary, not immediately; proven by the
       schedule e2e (current invoice unchanged, next invoice uses new price).
 - [ ] **B11 ★** — 10k-due throughput without timeout/partial run; proven by the load test (10k claims /
       10k invoices, zero dupes, no half-advanced rows).
-- [ ] **K2** — duplicate invoices & duplicate period charges structurally impossible; proven by the two
+- [x] **K2** — duplicate invoices & duplicate period charges structurally impossible; proven by the two
       unique constraints (`subscription_periods` and `invoices(subscription_id, period_index)`) and the
       conflict tests.
-- [ ] **K3 ⚠** — scheduler-vs-portal on the same subscription doesn't corrupt state; proven by the race
+- [x] **K3 ⚠** — scheduler-vs-portal on the same subscription doesn't corrupt state; proven by the race
       test (advisory lock + optimistic `version`) (read + run).
-- [ ] **K4** — scheduler runs independently idempotent; proven by the replay e2e (same as B6) plus the
+- [x] **K4** — scheduler runs independently idempotent; proven by the replay e2e (same as B6) plus the
       `upsertCron` single-registration assertion.
-- [ ] **A6** — a never-paid `incomplete` subscription auto-expires to `incomplete_expired` after
+- [x] **A6** — a never-paid `incomplete` subscription auto-expires to `incomplete_expired` after
       `INCOMPLETE_EXPIRY_WINDOW`; proven by the `lifecycle-sweep` e2e (the row flips after the window;
       idempotent on replay). The transition is 03's `expireIncomplete`; the **timer that fires it is here**.
 

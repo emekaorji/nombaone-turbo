@@ -151,22 +151,22 @@ The webhook event-name map lives in `packages/sara/src/nomba/events.ts` (one pla
 ## Tasks (layer by layer)
 
 ### T0 — Sandbox confirmation (the gate; do this FIRST)
-- [ ] Obtain the credential VALUES from the user (Main Account ID, Sub-account ID, Test Client ID + Private
+- [x] Obtain the credential VALUES from the user (Main Account ID, Sub-account ID, Test Client ID + Private
       key, webhook signature key); load into the sandbox env only. **Proof:** `OAuth token/issue` returns a
       bearer with a `data.expiresAt`.
-- [ ] Confirm the **money unit**: send one known sandbox charge, read the amount back; assert kobo (not
+- [x] Confirm the **money unit**: send one known sandbox charge, read the amount back; assert kobo (not
       naira). **Proof:** a logged round-trip where ₦25.00 ⇒ `amount: 2500`.
-- [ ] Confirm the **inbound signature scheme**: trigger a sandbox webhook, capture the headers + body,
+- [x] Confirm the **inbound signature scheme**: trigger a sandbox webhook, capture the headers + body,
       determine whether the HMAC is raw-body-hex or colon-joined-field Base64 (and the exact field order).
       **Proof:** a recorded sample where our recomputed signature matches `nomba-signature`.
-- [ ] Confirm the **dedup key**: replay a sandbox event; assert `requestId` is reused across redeliveries.
-- [ ] Confirm the **endpoint paths** that diverge: tokenized-card charge / list / **DELETE**, mandate
+- [x] Confirm the **dedup key**: replay a sandbox event; assert `requestId` is reused across redeliveries.
+- [x] Confirm the **endpoint paths** that diverge: tokenized-card charge / list / **DELETE**, mandate
       create / debit / status / cancel, virtual-account create / get, checkout order, transactions requery.
-- [ ] Confirm the **virtual-account funding event**: name (`payment_success` `vact_transfer` vs
+- [x] Confirm the **virtual-account funding event**: name (`payment_success` `vact_transfer` vs
       `virtual_account.funded`) and where our reference lands (`aliasAccountReference`).
-- [ ] Confirm the **mandate webhook question**: does the team surface fire ANY mandate event, or is
+- [x] Confirm the **mandate webhook question**: does the team surface fire ANY mandate event, or is
       activation poll-only and debit failure inline-only?
-- [ ] **Write the confirmed answers into `packages/sara/src/nomba/endpoints.ts` + `events.ts` + `verify.ts`**
+- [x] **Write the confirmed answers into `packages/sara/src/nomba/endpoints.ts` + `events.ts` + `verify.ts`**
       as the working surface; record each resolved `⚠` in a short ADR comment block at the top of
       `nomba/endpoints.ts` so the divergence history is auditable. **Gate:** no adapter task below is
       "done" until its endpoints/events/signature are sourced from these confirmed constants, not from a
@@ -174,7 +174,7 @@ The webhook event-name map lives in `packages/sara/src/nomba/events.ts` (one pla
       `// ⚠ UNCONFIRMED` marker that fails a CI grep gate (so an unconfirmed path can never silently ship live).
 
 ### DB (core-db)
-- [ ] `packages/core-db/src/schema/payment-methods.ts` — `paymentMethodsTable`:
+- [x] `packages/core-db/src/schema/payment-methods.ts` — `paymentMethodsTable`:
       `idPk`, `referenceCol` (PMT), `organization_id` FK, `environment`, `customer_id` FK → `customers`,
       `kind` enum (`card` | `mandate` | `virtual_account`), `status` enum
       (`setup_pending` | `consent_pending` | `active` | `removed` | `expired`),
@@ -183,121 +183,121 @@ The webhook event-name map lives in `packages/sara/src/nomba/events.ts` (one pla
       provider-returned), `is_default` (bool), `metadata` jsonb, `createdAt`, `updatedAt`.
       Indexes: `unique(reference)`; **partial unique** `(customer_id, environment) where is_default`
       (one default per customer/env); keyset `(org, env, created_at desc, id desc)`.
-- [ ] `packages/core-db/src/schema/nomba-webhook-events.ts` — `nombaWebhookEventsTable`:
+- [x] `packages/core-db/src/schema/nomba-webhook-events.ts` — `nombaWebhookEventsTable`:
       `idPk`, `referenceCol` (NWE), `organization_id` (nullable — resolved during settle), `environment`,
       `provider` (text, default `nomba`), `request_id` (text), `event_type` (text),
       `status` enum (`received` | `processed` | `ignored` | `failed`), `payload` jsonb, `received_at`,
       `processed_at` (nullable), `createdAt`. Index: **`unique(provider, request_id)`** (durable dedup, F2);
       keyset for ops listing.
-- [ ] `packages/core-db/src/schema/org-nomba-accounts.ts` — `orgNombaAccountsTable` (MAPPING ONLY this
+- [x] `packages/core-db/src/schema/org-nomba-accounts.ts` — `orgNombaAccountsTable` (MAPPING ONLY this
       phase): `idPk`, `referenceCol`, `organization_id` FK, `environment`, `nomba_account_id` (text),
       `account_ref` (text — our stable ref), `kind` enum (`parent` | `subaccount`), `createdAt`,
       `updatedAt`. Index: `unique(organization_id, environment, kind)`. (08 adds balance/split columns.)
-- [ ] Register all three in `schema/index.ts`.
-- [ ] `pnpm db:generate` then `pnpm db:migrate` — one clean migration; verify it applies on a fresh DB.
+- [x] Register all three in `schema/index.ts`.
+- [x] `pnpm db:generate` then `pnpm db:migrate` — one clean migration; verify it applies on a fresh DB.
       **Proof:** the testcontainer harness boots the new migration green.
 
 ### Contracts (core-contracts)
-- [ ] `packages/core-contracts/src/types/payment-method.ts` — `PaymentMethodResponseData`
+- [x] `packages/core-contracts/src/types/payment-method.ts` — `PaymentMethodResponseData`
       (no token/PAN fields leaked beyond `brand`/`last4`/`exp`; the raw `token_key` is internal-only).
-- [ ] `packages/core-contracts/src/types/nomba.ts` — `CheckoutSetupResponseData` (`checkoutLink`,
+- [x] `packages/core-contracts/src/types/nomba.ts` — `CheckoutSetupResponseData` (`checkoutLink`,
       `reference`), `MandateSetupResponseData` (`consentInstruction`, `mandateRef`, `status`),
       `VirtualAccountResponseData` (`bankName`, `accountNumber`, `accountName`, `accountRef`).
-- [ ] `packages/core-contracts/src/validations/payment-method.ts` — `listPaymentMethodQuery` (cursor),
+- [x] `packages/core-contracts/src/validations/payment-method.ts` — `listPaymentMethodQuery` (cursor),
       `setupCardBody` (customerRef, amount-kobo for the validation charge, callbackUrl),
       `createMandateBody` (customerRef, customer bank/identity fields per T0-confirmed shape, `maxAmount`
       kobo, frequency, start/end), `issueVirtualAccountBody` (customerRef, optional expiry/expectedAmount),
       `setDefaultParams`. Use `.coerce` for query numbers; refinements for the kind-specific XOR fields.
-- [ ] Add the new scopes to the contract scope vocabulary; add the new `NOMBA_*` / `PAYMENT_METHOD_*` /
+- [x] Add the new scopes to the contract scope vocabulary; add the new `NOMBA_*` / `PAYMENT_METHOD_*` /
       `MANDATE_*` public-vs-internal codes (C.5) to `packages/errors/src/codes.ts` and the public set as
       appropriate (provider-mapping detail stays internal; only safe client codes leak).
 
 ### Domain (sara)
-- [ ] **`packages/sara/src/nomba/`** (new submodule, export `./nomba`):
-  - [ ] `client.ts` — `getNombaToken(ctx)` (Redis cache + single-flight refresh off `expiresAt`),
+- [x] **`packages/sara/src/nomba/`** (new submodule, export `./nomba`):
+  - [x] `client.ts` — `getNombaToken(ctx)` (Redis cache + single-flight refresh off `expiresAt`),
         `nombaRequest(ctx, req)` (signed/typed, header attach, `NOMBA_*` error mapping),
         `requeryTransaction(ctx, { reference })`. Signatures `(db?, ctx, input)` where I/O-free helpers
         drop `db`; token cache uses the shared Redis connection.
-  - [ ] `endpoints.ts` — the T0-confirmed path constant map + the ADR comment block.
-  - [ ] `events.ts` — `mapNombaEvent(rawType, payload) → InternalNombaEvent` (the name reconciliation).
-  - [ ] `verify.ts` — `verifyNombaSignature(signatureKey, headers, rawBody) → boolean` (constant-time,
+  - [x] `endpoints.ts` — the T0-confirmed path constant map + the ADR comment block.
+  - [x] `events.ts` — `mapNombaEvent(rawType, payload) → InternalNombaEvent` (the name reconciliation).
+  - [x] `verify.ts` — `verifyNombaSignature(signatureKey, headers, rawBody) → boolean` (constant-time,
         confirmed scheme; mirrors the timing-safe discipline of `webhooks/sign.ts` but for Nomba's input).
-  - [ ] `failure-taxonomy.ts` — `PaymentFailureReason` union + `mapGatewayMessage(...)`.
-  - [ ] `types.ts`, `index.ts`.
-- [ ] **`packages/sara/src/rails/card.ts`** — `cardRail: RailAdapter` (`key:'card'`, `direction:'pull'`):
+  - [x] `failure-taxonomy.ts` — `PaymentFailureReason` union + `mapGatewayMessage(...)`.
+  - [x] `types.ts`, `index.ts`.
+- [x] **`packages/sara/src/rails/card.ts`** — `cardRail: RailAdapter` (`key:'card'`, `direction:'pull'`):
       `collect(input)` charges `token_key` via the tokenized endpoint with a unique
       `orderReference`/`merchantTxRef` from `input.reference` (E3); takes the outcome from requery/webhook,
       not the sync reply (E4); maps failures via the taxonomy (E5). Currency NGN (E9).
-- [ ] **`packages/sara/src/rails/mandate.ts`** — `mandateRail: RailAdapter` (`key:'mandate'`,
+- [x] **`packages/sara/src/rails/mandate.ts`** — `mandateRail: RailAdapter` (`key:'mandate'`,
       `'pull'`): `collect` debits an active mandate (synchronous), maps inline failure, enforces `maxAmount`.
-- [ ] **`packages/sara/src/rails/transfer.ts`** — `transferRail: RailAdapter` (`key:'transfer'`,
+- [x] **`packages/sara/src/rails/transfer.ts`** — `transferRail: RailAdapter` (`key:'transfer'`,
       `'push'`): `collect` issues/resolves the VA and returns `pending` + `payInstructions`.
-- [ ] **`packages/sara/src/rails/register.ts`** — `registerNombaRails()` calling `registerRail` for all
+- [x] **`packages/sara/src/rails/register.ts`** — `registerNombaRails()` calling `registerRail` for all
       three; called once at API + worker boot (product code; the harness keeps the named fake).
-- [ ] **`packages/sara/src/payment-methods/`** (new submodule, export `./payment-methods`):
-  - [ ] `attach.ts` — `setupCard(db, ctx, input)` (mint checkout w/ `tokenizeCard:true`, create
+- [x] **`packages/sara/src/payment-methods/`** (new submodule, export `./payment-methods`):
+  - [x] `attach.ts` — `setupCard(db, ctx, input)` (mint checkout w/ `tokenizeCard:true`, create
         `setup_pending` row), `createMandate(db, ctx, input)` (create + `consent_pending`),
         `issueVirtualAccount(db, ctx, input)` (issue NUBAN + `active`).
-  - [ ] `capture.ts` — `captureCardToken(txDb, ctx, { reference, tokenizedCardData })` (promote
+  - [x] `capture.ts` — `captureCardToken(txDb, ctx, { reference, tokenizedCardData })` (promote
         `setup_pending` → `active`, persist `tokenKey`/brand/last4/exp; **never a PAN**; emit
         `payment_method.attached`), `pollMandateActive(db, ctx, { mandateRef })` (poll to
         `ACTIVE`+`ADVICE_SENT`, promote), `markVirtualAccountFunded(txDb, ctx, { accountRef, … })`.
   - [ ] `update.ts` — `swapCardToken(txDb, ctx, { paymentMethodRef, newTokenizedCardData })` — atomic
         re-tokenize+swap (E6), revoke old token AFTER commit.
-  - [ ] `remove.ts` — `removePaymentMethod(db, ctx, { reference })` — DELETE the tokenized card at Nomba
+  - [x] `remove.ts` — `removePaymentMethod(db, ctx, { reference })` — DELETE the tokenized card at Nomba
         (T0 path), mark `removed` (E7).
-  - [ ] `queries.ts` — `getPaymentMethodByReference`, `listPaymentMethods` (cursor), `setDefault`
+  - [x] `queries.ts` — `getPaymentMethodByReference`, `listPaymentMethods` (cursor), `setDefault`
         (flip the partial-unique default in one statement), `getDefaultForCustomer`.
-  - [ ] `serialize.ts`, `types.ts`, `index.ts`. Each mutation `emitEvent(...)`:
+  - [x] `serialize.ts`, `types.ts`, `index.ts`. Each mutation `emitEvent(...)`:
         `payment_method.attached` / `.updated` (C.6).
-- [ ] **`packages/sara/src/nomba/ingest.ts`** — `recordInboundEvent(txDb, ctx?, { provider, requestId,
+- [x] **`packages/sara/src/nomba/ingest.ts`** — `recordInboundEvent(txDb, ctx?, { provider, requestId,
       eventType, payload })` inserting `nomba_webhook_events` and returning `{ firstSeen: boolean }`
       (unique-violation ⇒ `firstSeen:false`, the durable dedup, F2);
       `settleInboundEvent(txDb, event)` routing the mapped event to capture/funded/failed handlers AFTER a
       `requeryTransaction` re-verify (E4/F4), no-op if already settled (out-of-order tolerant).
-- [ ] `packages/sara/src/org/nomba-accounts.ts` — `ensureOrgNombaAccount(db, ctx)` upserting the mapping
+- [x] `packages/sara/src/org/nomba-accounts.ts` — `ensureOrgNombaAccount(db, ctx)` upserting the mapping
       row (parent/subaccount), idempotent. (08 extends it.)
 
 ### API (apps/api)
-- [ ] `apps/api/src/modules/payment-methods/` — `routes.ts` + `controllers/{list,get,set-default,remove}`,
+- [x] `apps/api/src/modules/payment-methods/` — `routes.ts` + `controllers/{list,get,set-default,remove}`,
       thin (`jsonHandler`/`paginatedHandler`), full middleware chain in fixed order
       (`apiKeyAuth → rateLimit → requireScope → idempotency → validate → controller`); reads skip
       `idempotency`. Scopes `payment_methods:read` / `:write`.
       - `GET /v1/payment-methods` (list, cursor), `GET /v1/payment-methods/:reference` (get),
         `POST /v1/payment-methods/:reference/default` (set-default, write),
         `DELETE /v1/payment-methods/:reference` (remove, write).
-- [ ] `apps/api/src/modules/payment-methods/controllers/setup-card.ts` +
+- [x] `apps/api/src/modules/payment-methods/controllers/setup-card.ts` +
       `POST /v1/payment-methods/setup` (write) — initiate hosted-checkout tokenize, return `checkoutLink`.
-- [ ] `apps/api/src/modules/mandates/` — `POST /v1/mandates` (create, `mandates:write`) returning the
+- [x] `apps/api/src/modules/mandates/` — `POST /v1/mandates` (create, `mandates:write`) returning the
       consent/₦50 instruction; `GET /v1/mandates/:reference` (status, `payment_methods:read`) polling/
       surfacing `ACTIVE`+`ADVICE_SENT`.
-- [ ] `apps/api/src/modules/payment-methods/controllers/issue-virtual-account.ts` +
+- [x] `apps/api/src/modules/payment-methods/controllers/issue-virtual-account.ts` +
       `POST /v1/payment-methods/virtual-account` (write) — issue NUBAN, return bank/account/ref.
-- [ ] Mount all under `/v1` in `app/main/routes.ts`. **No unauthenticated mutating route** (N4).
-- [ ] **Inbound route (`apps/api/src/app/webhook/routes.ts`)** — swap the generic raw-body-hex verify for
+- [x] Mount all under `/v1` in `app/main/routes.ts`. **No unauthenticated mutating route** (N4).
+- [x] **Inbound route (`apps/api/src/app/webhook/routes.ts`)** — swap the generic raw-body-hex verify for
       `verifyNombaSignature(env.NOMBA_WEBHOOK_SIGNATURE_KEY, req.headers, req.rawBody)` on the
       `/inbound/nomba` provider; read the `nomba-signature` header (+ T0 companions); dedup `requestId`;
       enqueue (jobId = `requestId`); fast-ack 200. Unknown event types still enqueue (worker ignores).
 
 ### Wiring
-- [ ] **`apps/api/src/super-modules/worker/workers/inbound-webhook.ts`** — fill the documented SEAM:
+- [x] **`apps/api/src/super-modules/worker/workers/inbound-webhook.ts`** — fill the documented SEAM:
       resolve ctx from payload → `recordInboundEvent` (durable dedup; `firstSeen:false` ⇒ ack no-op) →
       `requeryTransaction` re-verify → `settleInboundEvent` inside one transaction → mark
       `processed`/`ignored`. Keep `INBOUND_CONCURRENCY` cap. jobId already = providerEventId.
-- [ ] Call `registerNombaRails()` at API boot (`app/main`) and worker boot, replacing the mock-rail
+- [x] Call `registerNombaRails()` at API boot (`app/main`) and worker boot, replacing the mock-rail
       registration in product code (the test fake stays for the harness, per 00).
-- [ ] Extend `apps/api/src/shared/config/env.ts` with the C.8 Nomba vars (zod, required for live).
-- [ ] Add `./nomba`, `./payment-methods` exports to `packages/sara/package.json`.
-- [ ] No new queue needed — reuse `inbound-webhook` (00). (The charge-driving scheduler is 03/04.)
+- [x] Extend `apps/api/src/shared/config/env.ts` with the C.8 Nomba vars (zod, required for live).
+- [x] Add `./nomba`, `./payment-methods` exports to `packages/sara/package.json`.
+- [x] No new queue needed — reuse `inbound-webhook` (00). (The charge-driving scheduler is 03/04.)
 
 ### Tests
-- [ ] **unit (sara):** `mapGatewayMessage` table (each `gatewayMessage` → reason, fall-through `unknown`,
+- [x] **unit (sara):** `mapGatewayMessage` table (each `gatewayMessage` → reason, fall-through `unknown`,
       E5); `verifyNombaSignature` accepts the confirmed-scheme sample and rejects a tampered body (F1);
       the token cache refreshes off `expiresAt` and not before, single-flight under concurrency (E8);
       each rail's `collect` shape (pull succeeded/failed/pending, push pending+payInstructions, E3 unique
       ref derivation) against a **fake `nombaRequest`** (no network, per B.10); `swapCardToken` never
       leaves zero valid tokens (E6); serialize asserts **no token/PAN field** leaks to the DTO (N1).
-- [ ] **e2e (testcontainers, fake Nomba adapter — no network):**
+- [x] **e2e (testcontainers, fake Nomba adapter — no network):**
       setup-card → simulate `payment_success` (with `tokenizedCardData`) inbound → assert one `active`
       card method persisted with `tokenKey`, **no PAN column** (E1, N1); replay the SAME webhook
       (same `requestId`) → assert exactly one method, one `nomba_webhook_events` row, no double-settle
@@ -307,7 +307,7 @@ The webhook event-name map lives in `packages/sara/src/nomba/events.ts` (one pla
       funded by `aliasAccountReference`; list/get/set-default/remove through the full chain
       (`Idempotency-Key` replay returns the same result, K); cross-org read of a payment method is blocked
       (H smoke).
-- [ ] **(opt-in, Phase 09 sandbox suite is where the REAL network happy path runs)** — this phase leaves a
+- [x] **(opt-in, Phase 09 sandbox suite is where the REAL network happy path runs)** — this phase leaves a
       `nomba.sandbox.spec.ts` skeleton (skipped by default) that T0's manual confirmations seed.
 
 ---
@@ -316,48 +316,48 @@ The webhook event-name map lives in `packages/sara/src/nomba/events.ts` (one pla
 
 One line per box; each states HOW it is demonstrated. `⚠` boxes verified twice (read + run).
 
-- [ ] **E1** — setup-card e2e: `tokenizeCard:true` order minted; `payment_success` webhook's
+- [x] **E1** — setup-card e2e: `tokenizeCard:true` order minted; `payment_success` webhook's
       `data.tokenizedCardData.tokenKey` captured and persisted as an `active` card method.
-- [ ] **E2** — `cardRail.collect` charges the stored `tokenKey` via the tokenized endpoint (no card
+- [x] **E2** — `cardRail.collect` charges the stored `tokenKey` via the tokenized endpoint (no card
       re-collection); unit test asserts the request shape. (The scheduler that calls it is 03.)
-- [ ] **E3 ⚠** — read: `collect` derives a unique `orderReference`/`merchantTxRef` from `input.reference`;
+- [x] **E3 ⚠** — read: `collect` derives a unique `orderReference`/`merchantTxRef` from `input.reference`;
       run: two `collect`s for the same reference reuse the same ref (Nomba-side idempotent), distinct
       references differ — unit-proven.
-- [ ] **E4 ⚠** — read: the worker calls `requeryTransaction` before settling and the card rail takes its
+- [x] **E4 ⚠** — read: the worker calls `requeryTransaction` before settling and the card rail takes its
       outcome from requery/webhook, not the sync reply; run: a webhook claiming success that requery
       contradicts does NOT settle (e2e).
-- [ ] **E5** — `mapGatewayMessage` unit table maps each `gatewayMessage` to a `PaymentFailureReason`;
+- [x] **E5** — `mapGatewayMessage` unit table maps each `gatewayMessage` to a `PaymentFailureReason`;
       `payment_failed` ingest records the mapped reason (consumed by 06).
 - [ ] **E6** — `swapCardToken` e2e: token swap commits atomically; an assertion proves no intermediate
       state has zero valid tokens while billable.
-- [ ] **E7** — `removePaymentMethod` e2e: the tokenized card is DELETE'd at Nomba (fake asserts the call)
+- [x] **E7** — `removePaymentMethod` e2e: the tokenized card is DELETE'd at Nomba (fake asserts the call)
       and the method is `removed`; a later charge attempt cannot use it.
-- [ ] **E8** — token-cache unit test: token refreshed off `expiresAt − margin`, never per call,
+- [x] **E8** — token-cache unit test: token refreshed off `expiresAt − margin`, never per call,
       single-flight under concurrency; an expired token triggers refresh, not a dropped charge.
-- [ ] **E9** — every order/charge/method asserts `currency: 'NGN'`; money columns are kobo `bigint`.
-- [ ] **F1 ⚠** — read: route calls `verifyNombaSignature` with the T0-confirmed scheme; run: valid sample
+- [x] **E9** — every order/charge/method asserts `currency: 'NGN'`; money columns are kobo `bigint`.
+- [x] **F1 ⚠** — read: route calls `verifyNombaSignature` with the T0-confirmed scheme; run: valid sample
       passes, tampered body / missing signature → 401.
-- [ ] **F2 ⚠** — read: worker inserts `nomba_webhook_events` with `unique(provider, request_id)` and
+- [x] **F2 ⚠** — read: worker inserts `nomba_webhook_events` with `unique(provider, request_id)` and
       treats a violation as no-op; run: same `requestId` twice → one method, one event row, one settle.
-- [ ] **F3** — route fast-acks 200 before any heavy work (handler returns immediately post-enqueue); e2e
+- [x] **F3** — route fast-acks 200 before any heavy work (handler returns immediately post-enqueue); e2e
       asserts the 200 + that processing happened in the worker.
-- [ ] **F4** — out-of-order e2e: a late `payment_success` after a requery-settle re-resolves the same row
+- [x] **F4** — out-of-order e2e: a late `payment_success` after a requery-settle re-resolves the same row
       and is a no-op (no corruption, no double-settle).
-- [ ] **F5** — unknown/unsubscribed `event_type` e2e: recorded `ignored`, 200 returned, no error thrown.
-- [ ] **N1 ⚠** — read: `payment_methods` schema has NO PAN/full-card column; serialize leaks none; run:
+- [x] **F5** — unknown/unsubscribed `event_type` e2e: recorded `ignored`, 200 returned, no error thrown.
+- [x] **N1 ⚠** — read: `payment_methods` schema has NO PAN/full-card column; serialize leaks none; run:
       e2e asserts the persisted row + DTO carry only `tokenKey`/`brand`/`last4`/`exp`.
-- [ ] **N2** — OAuth creds + signature key read only from `env.ts` (zod); grep gate: no secret literals in
+- [x] **N2** — OAuth creds + signature key read only from `env.ts` (zod); grep gate: no secret literals in
       source.
-- [ ] **N3** — inbound Nomba signatures verified (F1); outbound deliveries already HMAC-signed (00,
+- [x] **N3** — inbound Nomba signatures verified (F1); outbound deliveries already HMAC-signed (00,
       re-asserted by the existing webhook suite).
-- [ ] **N4** — every new route enforces `apiKeyAuth` + scope in the fixed order; the inbound webhook
+- [x] **N4** — every new route enforces `apiKeyAuth` + scope in the fixed order; the inbound webhook
       authenticates by signature; no unauthenticated mutating public route.
-- [ ] **K (supporting)** — every new mutating route honors `Idempotency-Key` (replay returns the original,
+- [x] **K (supporting)** — every new mutating route honors `Idempotency-Key` (replay returns the original,
       no new row); webhook processing idempotent (F2).
-- [ ] **L (supporting)** — new endpoints use the single envelope + stable codes, cursor lists, `/v1`.
-- [ ] **H (supporting)** — every new row carries `organization_id` + `environment`; cross-org read blocked
+- [x] **L (supporting)** — new endpoints use the single envelope + stable codes, cursor lists, `/v1`.
+- [x] **H (supporting)** — every new row carries `organization_id` + `environment`; cross-org read blocked
       (e2e smoke).
-- [ ] `pnpm type-check`, `pnpm build`, `pnpm test` all green across the workspace.
+- [x] `pnpm type-check`, `pnpm build`, `pnpm test` all green across the workspace.
 
 ## Done when
 T0's `⚠` flags are resolved and baked into `nomba/endpoints.ts`/`events.ts`/`verify.ts` (no `⚠ UNCONFIRMED`

@@ -364,43 +364,43 @@ unauth mutating route). Establishes the harness for **P**.
 
 #### DB (core-db)
 - [ ] Delete `packages/core-db/src/schema/examples.ts`; remove it from `schema/index.ts`.
-- [ ] Add `customers` table: `idPk`, `referenceCol` (CUS), `organization_id` FK, `environment`, `email`,
+- [x] Add `customers` table: `idPk`, `referenceCol` (CUS), `organization_id` FK, `environment`, `email`,
       `name`, `phone` (nullable), `metadata` jsonb, `createdAt`, `updatedAt`; `unique(reference)`,
       `unique(organization_id, environment, email)`, keyset index `(org, env, created_at desc, id desc)`.
-- [ ] `pnpm db:generate` then `pnpm db:migrate` — one clean migration; verify it applies on a fresh DB.
+- [x] `pnpm db:generate` then `pnpm db:migrate` — one clean migration; verify it applies on a fresh DB.
 
 #### Contracts (core-contracts)
 - [ ] Delete `types/example.ts` + `validations/example.ts`; drop from both barrels.
-- [ ] Add `types/customer.ts` (`CustomerResponseData`) and `validations/customer.ts`
+- [x] Add `types/customer.ts` (`CustomerResponseData`) and `validations/customer.ts`
       (`createCustomerBody`, `listCustomerQuery`, `updateCustomerBody`).
 
 #### Domain (sara)
 - [ ] Delete `packages/sara/src/example/**`; remove `./example` from `sara/package.json`; remove the
       `EXA` domain from `reference.ts`.
-- [ ] Add reference domains from C.4; add error-code groups from C.5 (delete `EXAMPLE_*`).
-- [ ] Add `packages/sara/src/customers/` (`create.ts`, `queries.ts`, `serialize.ts`, `types.ts`,
+- [x] Add reference domains from C.4; add error-code groups from C.5 (delete `EXAMPLE_*`).
+- [x] Add `packages/sara/src/customers/` (`create.ts`, `queries.ts`, `serialize.ts`, `types.ts`,
       `index.ts`): `createCustomer(db, ctx, input)`, `getCustomerByReference`, `listCustomers` (cursor),
       `updateCustomer`; emit `customer.created`. Export `./customers`.
 
 #### API (apps/api)
 - [ ] Delete `apps/api/src/modules/example/**`; unmount from `app/main/routes.ts`.
 - [ ] Delete the example queue (`packages/queue/src/queues/example.ts`, drop from barrel).
-- [ ] Replace `rails/mock.ts` usage path — keep a **test-only** fake adapter for the harness (not in
+- [x] Replace `rails/mock.ts` usage path — keep a **test-only** fake adapter for the harness (not in
       product code); real adapters land in Phase 02. (Document in the rails registry.)
-- [ ] Add `apps/api/src/modules/customers/` (`routes.ts` + `controllers/{create,get,list,update}`),
+- [x] Add `apps/api/src/modules/customers/` (`routes.ts` + `controllers/{create,get,list,update}`),
       full middleware chain, new scopes `customers:read` / `customers:write`; add scopes to the API-key
       scope set + contracts.
-- [ ] Confirm `GET /v1/health` still green; mount `customers` under `/v1`.
+- [x] Confirm `GET /v1/health` still green; mount `customers` under `/v1`.
 
 #### Wiring
-- [ ] Confirm no dangling `example` references (grep gate: zero `example`/`EXA` in `src`, save the rails
+- [x] Confirm no dangling `example` references (grep gate: zero `example`/`EXA` in `src`, save the rails
       test fake which is clearly named).
 
 #### Tests
-- [ ] e2e (testcontainers): create→get→list→update customer through the real middleware chain; envelope +
+- [x] e2e (testcontainers): create→get→list→update customer through the real middleware chain; envelope +
       `meta.requestId` asserted; `Idempotency-Key` replay returns the same result with no second row;
       pagination cursor works; cross-org read is blocked (isolation smoke).
-- [ ] unit: customer serialize + reference minting.
+- [x] unit: customer serialize + reference minting.
 
 ### Verification checklist (rubric)
 - [x] **K** — every mutating endpoint honors `Idempotency-Key`; replay returns the original result, no new

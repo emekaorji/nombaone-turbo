@@ -147,7 +147,7 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
 
 ### DB (core-db)
 
-- [ ] **`plans` table** — `packages/core-db/src/schema/plans.ts`. Columns: `id: idPk()`,
+- [x] **`plans` table** — `packages/core-db/src/schema/plans.ts`. Columns: `id: idPk()`,
       `reference: referenceCol()`, `organizationId` (uuid, FK → `organizationsTable.id`, `onDelete: cascade`),
       `environment: environmentEnum`, `name: text notNull`, `description: text` (nullable),
       `status: planStatusEnum notNull default 'active'`, `metadata: jsonb notNull default '{}'`,
@@ -157,7 +157,7 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
       two plans of the same name per env — **K2**); `index('plans_keyset_idx').on(organizationId,
       environment, createdAt.desc(), id.desc())`. Export `PlanRow` / `PlanInsert` via `$inferSelect/$inferInsert`.
       *Proof:* table compiles; `pnpm --filter @nombaone/core-db type-check` green.
-- [ ] **`prices` table** — `packages/core-db/src/schema/prices.ts`. Columns: `id: idPk()`,
+- [x] **`prices` table** — `packages/core-db/src/schema/prices.ts`. Columns: `id: idPk()`,
       `reference: referenceCol()`, `organizationId` (FK → orgs, cascade), `environment: environmentEnum`,
       `planId` (uuid, FK → `plansTable.id`, `onDelete: 'restrict'` — **you cannot drop a plan out from under
       its prices; this is the structural anti-orphan rule, O1**), `unitAmount: bigint('unit_amount',
@@ -179,27 +179,27 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
       `index('prices_plan_active_idx').on(planId, active)` (resolve a plan's sellable prices fast);
       `index('prices_keyset_idx').on(organizationId, environment, createdAt.desc(), id.desc())`.
       Export `PriceRow` / `PriceInsert`. *Proof:* compiles; FK `onDelete: restrict` present.
-- [ ] **Register schemas** — add `export * from './plans';` and `export * from './prices';` to
+- [x] **Register schemas** — add `export * from './plans';` and `export * from './prices';` to
       `packages/core-db/src/schema/index.ts` (after `examples`, or after `customers` once 00 lands).
-- [ ] **Migration** — `pnpm db:generate` then `pnpm db:migrate` (NEVER `push`, per global rule). One clean
+- [x] **Migration** — `pnpm db:generate` then `pnpm db:migrate` (NEVER `push`, per global rule). One clean
       migration adding `plan_status`, `price_interval`, `price_usage_type`, `price_billing_scheme` enums and
       the two tables. *Proof:* migration applies on a fresh testcontainers DB in the e2e boot; SQL file
       committed under `packages/core-db/drizzle/`.
 
 ### Contracts (core-contracts)
 
-- [ ] **`types/plan.ts`** — `PlanStatus = 'active' | 'archived'`; `PlanResponseData` (`id` = reference,
+- [x] **`types/plan.ts`** — `PlanStatus = 'active' | 'archived'`; `PlanResponseData` (`id` = reference,
       `name`, `description: string | null`, `status`, `metadata`, `environment`, `createdAt`, `updatedAt` —
       all ISO-8601 UTC strings).
-- [ ] **`types/price.ts`** — `PriceInterval`, `PriceUsageType`, `PriceBillingScheme`; `PriceResponseData`
+- [x] **`types/price.ts`** — `PriceInterval`, `PriceUsageType`, `PriceBillingScheme`; `PriceResponseData`
       (`id` = reference, `planId` = the plan's **reference** not its UUID, `unitAmount: number` (kobo),
       `currency: 'NGN'`, `interval`, `intervalCount`, `usageType`, `billingScheme`, `trialPeriodDays`,
       `active`, `metadata`, `environment`, `createdAt`). Export both from `types/index.ts` barrel.
-- [ ] **`validations/plan.ts`** — `createPlanBody` (`name: string min 1 max 200`, `description: string max
+- [x] **`validations/plan.ts`** — `createPlanBody` (`name: string min 1 max 200`, `description: string max
       2000 optional`, `metadata: record optional`); `updatePlanBody` (`name?`, `description?`, `metadata?` —
       at least one key, `.refine`); `listPlanQuery` (`status?: enum`, `limit: coerce int 1..100 default 20`,
       `cursor?: string`). Archive needs no body. DTO types via `z.infer`.
-- [ ] **`validations/price.ts`** — `createPriceBody`:
+- [x] **`validations/price.ts`** — `createPriceBody`:
       `{ unitAmount: z.coerce.number().int().positive() (kobo),
          interval: z.enum(['day','week','month','year']),
          intervalCount: z.coerce.number().int().positive().default(1),
@@ -210,15 +210,15 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
       `listPriceQuery` (`planRef?: string`, `active?: coerce boolean`, `limit`, `cursor`).
       Export from `validations/index.ts`. *Proof:* schemas parse a minimal `{ unitAmount, interval }` body
       filling all defaults (a unit test asserts the defaulted output — **L5**).
-- [ ] **Scope enum** — extend `apiKeyScope` in `validations/api-key.ts` with `'plans:read'`, `'plans:write'`,
+- [x] **Scope enum** — extend `apiKeyScope` in `validations/api-key.ts` with `'plans:read'`, `'plans:write'`,
       `'prices:read'`, `'prices:write'`. *Proof:* an api key can be minted with the new scopes (contract test).
 
 ### Domain (sara)
 
-- [ ] **Reference domains** — add `'PLN'` and `'PRC'` to the `ReferenceDomain` union in
+- [x] **Reference domains** — add `'PLN'` and `'PRC'` to the `ReferenceDomain` union in
       `packages/sara/src/reference.ts` (per C.4). *Proof:* `mintReference('PLN')` → `nbo…pln`,
       `mintReference('PRC')` → `nbo…prc` (unit test).
-- [ ] **Error codes** — add to `packages/errors/src/codes.ts` (per C.5): `PLAN_NOT_FOUND`,
+- [x] **Error codes** — add to `packages/errors/src/codes.ts` (per C.5): `PLAN_NOT_FOUND`,
       `PLAN_NAME_TAKEN`, `PLAN_ALREADY_ARCHIVED`, `PLAN_HAS_ACTIVE_SUBSCRIBERS`, `PRICE_NOT_FOUND`,
       `PRICE_PLAN_MISMATCH`, `PRICE_IMMUTABLE`, `PRICE_ALREADY_INACTIVE`, `PRICE_TIERED_NOT_SUPPORTED`,
       `CATALOG_INVALID_INTERVAL`. Add the safe, client-actionable ones to `PUBLIC_ERROR_CODES`
@@ -227,11 +227,11 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
       keep `PRICE_IMMUTABLE`/`CATALOG_INVALID_INTERVAL` mappable as BadRequest. *Proof:* a thrown
       `PLAN_HAS_ACTIVE_SUBSCRIBERS` surfaces its code on the wire (e2e); an internal-only code collapses to
       `SYSTEM_INTERNAL_ERROR`.
-- [ ] **Event types** — register `plan.created`, `plan.updated`, `plan.archived`, `price.created`,
+- [x] **Event types** — register `plan.created`, `plan.updated`, `plan.archived`, `price.created`,
       `price.deactivated` (C.6 — `plan.created`/`plan.updated` are already named in the catalog; add the
       `plan.archived` + price events as this phase's additions). These flow through the existing
       `emitEvent` chokepoint; no new emit machinery.
-- [ ] **`packages/sara/src/plans/`** — new submodule, files mirroring `example/`:
+- [x] **`packages/sara/src/plans/`** — new submodule, files mirroring `example/`:
   - `create.ts` → `createPlan(db: InfraTxDb, ctx: DomainContext, input: CreatePlanInput):
         Promise<PlanResponseData>` — `mintReference('PLN')`; pre-check name uniqueness in scope (throw
         `PLAN_NAME_TAKEN` on the unique-index violation, surfaced as `Conflict`); insert row; `emitEvent
@@ -260,7 +260,7 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
         `packages/sara/package.json` `exports`.
   - *Proof:* unit tests for serialize + reference; the guard-fires test (stub count = 1 → throws
         `PLAN_HAS_ACTIVE_SUBSCRIBERS`); the archive deactivates-prices test.
-- [ ] **`packages/sara/src/prices/`** — new submodule (immutable; NO `update.ts`):
+- [x] **`packages/sara/src/prices/`** — new submodule (immutable; NO `update.ts`):
   - `create.ts` → `createPrice(db: InfraTxDb, ctx, input: CreatePriceInput): Promise<PriceResponseData>` —
         `assertPositiveKobo(input.unitAmount)`; reject `billingScheme === 'tiered'` with
         `PRICE_TIERED_NOT_SUPPORTED` (seam guard); `resolvePlanId(db, ctx, input.planRef)` (throws
@@ -287,7 +287,7 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
 
 ### API (apps/api)
 
-- [ ] **`apps/api/src/modules/plans/`** — module per B.2 (`routes.ts`, `index.ts`, `controllers/`). Mirror
+- [x] **`apps/api/src/modules/plans/`** — module per B.2 (`routes.ts`, `index.ts`, `controllers/`). Mirror
       `modules/example/`. Controllers (thin, `jsonHandler`/`paginatedHandler`, derive `ctx` from
       `req.apiKey`, never from client):
   - `controllers/create-plan.ts` → `POST` create (201) → `createPlan`.
@@ -299,7 +299,7 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
   - `controllers/create-plan-price.ts` → `POST /plans/:ref/prices` → `createPrice` (binds `planRef` from
         the param).
   - `controllers/list-plan-prices.ts` → `GET /plans/:ref/prices` → `listPricesForPlan` (paginated).
-- [ ] **`apps/api/src/modules/plans/routes.ts`** — fixed middleware chain per route (B.3):
+- [x] **`apps/api/src/modules/plans/routes.ts`** — fixed middleware chain per route (B.3):
       `apiKeyAuth → rateLimit → requireScope(...) → idempotency → validate({...}) → controller`; reads skip
       `idempotency`. Routes (bare paths; `/v1` applied at the single mount):
   - `POST /plans` — `plans:write`, idempotent, `validate({ body: createPlanBody })`.
@@ -311,31 +311,31 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
   - `GET /plans/:reference/prices` — `prices:read`, `validate({ query: listPriceQuery })`.
   Grouped under rule-comment headers ("plans CRUD", "plan lifecycle", "prices under a plan"). **No
   `DELETE /plans/:reference` route exists** (the O1 guarantee at the HTTP surface).
-- [ ] **`apps/api/src/modules/prices/`** — read-only module: `routes.ts` + `controllers/{get-price,list-prices}`.
+- [x] **`apps/api/src/modules/prices/`** — read-only module: `routes.ts` + `controllers/{get-price,list-prices}`.
   - `GET /prices/:reference` — `prices:read` → `getPriceByReference`.
   - `GET /prices` — `prices:read`, `validate({ query: listPriceQuery })` → `listPrices` (paginated; optional
         `planRef`/`active` filters). **No POST/PATCH/DELETE on `/v1/prices`** — prices are created only under
         their plan (`/plans/:ref/prices`) and are immutable; this read-only top-level resource is the global
         lookup surface.
-- [ ] **Mount** — `apps/api/src/app/main/routes.ts`: `v1Router.use(plansRouter)` and
+- [x] **Mount** — `apps/api/src/app/main/routes.ts`: `v1Router.use(plansRouter)` and
       `v1Router.use(pricesRouter)`. Add `plans:read|write`, `prices:read|write` to the api-key scope set
       wherever the example scopes are enumerated (the `requireScope` middleware + the api-key contract).
       *Proof:* `GET /v1/health` still green; routes resolve under `/v1`.
 
 ### Wiring
 
-- [ ] **No queue / scheduler / rail work this phase.** Catalog is provider-agnostic and synchronous; no
+- [x] **No queue / scheduler / rail work this phase.** Catalog is provider-agnostic and synchronous; no
       outbox worker beyond the existing `emitEvent` fan-out, no Nomba adapter. (The interval columns are
       *consumed* by 04's scheduler, the price pin by 03's subscription — both downstream.) Explicitly record
       "no wiring added" so a reviewer doesn't hunt for it.
-- [ ] **Seam doc** — add a `/** SEAM(03) */` comment block in `plans/archive.ts` at `countActiveSubscribers`
+- [x] **Seam doc** — add a `/** SEAM(03) */` comment block in `plans/archive.ts` at `countActiveSubscribers`
       naming the exact 03 query and the unchanged call site, and a `/** SEAM(05) */` comment in
       `prices/create.ts` at the `tiered` rejection naming the future `price_tiers` table + serializer field.
       *Proof:* grep for `SEAM(03)` / `SEAM(05)` returns these two anchors.
 
 ### Tests
 
-- [ ] **e2e (testcontainers, real migrations + middleware chain)** — `apps/api/.../plans.e2e.test.ts`:
+- [x] **e2e (testcontainers, real migrations + middleware chain)** — `apps/api/.../plans.e2e.test.ts`:
   - create plan → get → list → update → create price under it → list its prices → get price via `/v1/prices`
     → archive plan; every response asserts the single envelope + `meta.requestId`; money asserted as integer
     kobo; timestamps ISO-8601 UTC (**L1, L3, L4**).
@@ -353,14 +353,14 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
     route → `403`.
   - **immutability (versioning)**: create price P1; "raise" via new price P2 + deactivate P1; re-fetch P1 →
     `unitAmount` unchanged, `active=false`; P2 `active=true`. There is no endpoint that edits P1's amount.
-- [ ] **unit (colocated in `sara`)**:
+- [x] **unit (colocated in `sara`)**:
   - `plans/serialize` + `prices/serialize` (id = reference, plan **reference** not UUID, ISO timestamps).
   - `mintReference('PLN'|'PRC')` shape.
   - `assertPlanArchivable` throws on stubbed count `> 0`, passes on `0`.
   - `createPrice` rejects `tiered` (`PRICE_TIERED_NOT_SUPPORTED`) and rejects a non-positive amount
     (`assertPositiveKobo`).
   - default-filling: `createPriceBody.parse({ unitAmount, interval })` yields all L5 defaults.
-- [ ] **grep gate**: zero new `example`/`EXA` references introduced by this phase; the two seam anchors
+- [x] **grep gate**: zero new `example`/`EXA` references introduced by this phase; the two seam anchors
       present.
 
 ---
@@ -374,33 +374,33 @@ reference simply not exist. Cursor pagination is keyset on `(created_at desc, id
 > versioning workflow needs a way to retire the old price after creating its replacement; it's a sellability
 > state change (the only mutation a price allows), not a money edit, so it stays consistent with immutability.
 
-- [ ] **A (versioning, catalog half)** — a price row is never edited; "raising a price" creates a new `prices`
+- [x] **A (versioning, catalog half)** — a price row is never edited; "raising a price" creates a new `prices`
       row and deactivates the old one, proven by the immutability e2e (P1's `unit_amount` unchanged after P2)
       and by the absence of any `updatePrice` domain function / `PATCH /v1/prices` route. (Subscription pin →
       03.)
-- [ ] **H1** — `plans` and `prices` both carry `organization_id` + `environment` (schema review; every WHERE
+- [x] **H1** — `plans` and `prices` both carry `organization_id` + `environment` (schema review; every WHERE
       clause filters on both).
-- [ ] **H2 ⚠** — isolation e2e: Tenant A cannot read or mutate Tenant B's plan/price on any catalog endpoint
+- [x] **H2 ⚠** — isolation e2e: Tenant A cannot read or mutate Tenant B's plan/price on any catalog endpoint
       (read once in code review of the WHERE clauses, run once via the cross-tenant test).
-- [ ] **K1 ⚠** — `Idempotency-Key` replay on `POST /plans` and `POST /plans/:ref/prices` returns the original
+- [x] **K1 ⚠** — `Idempotency-Key` replay on `POST /plans` and `POST /plans/:ref/prices` returns the original
       result with no new row (replay e2e).
-- [ ] **K2** — `unique(reference)` and `unique(org, env, name)` make duplicate plans structurally impossible;
+- [x] **K2** — `unique(reference)` and `unique(org, env, name)` make duplicate plans structurally impossible;
       the `409 PLAN_NAME_TAKEN` e2e proves the constraint, not just a code check.
-- [ ] **L1** — RESTful, consistent verbs: `POST/GET/PATCH /v1/plans`, action `POST /v1/plans/:ref/archive`,
+- [x] **L1** — RESTful, consistent verbs: `POST/GET/PATCH /v1/plans`, action `POST /v1/plans/:ref/archive`,
       nested `POST/GET /v1/plans/:ref/prices`, read-only `GET /v1/prices` (route table review + e2e).
-- [ ] **L2 ⚠** — single error envelope, stable `PLAN_*`/`PRICE_*` codes; an internal-only code collapses to
+- [x] **L2 ⚠** — single error envelope, stable `PLAN_*`/`PRICE_*` codes; an internal-only code collapses to
       `SYSTEM_INTERNAL_ERROR` (error-shape assertions in e2e).
-- [ ] **L3** — every list (`/v1/plans`, `/v1/plans/:ref/prices`, `/v1/prices`) is cursor-paginated with
+- [x] **L3** — every list (`/v1/plans`, `/v1/plans/:ref/prices`, `/v1/prices`) is cursor-paginated with
       `nextCursor`/`hasMore`, no total count (pagination e2e).
-- [ ] **L4** — timestamps ISO-8601 UTC; `unitAmount` integer kobo + `currency: 'NGN'` on every price DTO
+- [x] **L4** — timestamps ISO-8601 UTC; `unitAmount` integer kobo + `currency: 'NGN'` on every price DTO
       (serializer review + e2e field assertions).
-- [ ] **L5** — `POST /plans/:ref/prices` with only `{ unitAmount, interval }` succeeds, all other fields
+- [x] **L5** — `POST /plans/:ref/prices` with only `{ unitAmount, interval }` succeeds, all other fields
       defaulted (`intervalCount=1`, `usageType=licensed`, `billingScheme=per_unit`, `trialPeriodDays=0`,
       `currency=NGN`, `active=true`) — default-fill unit test + e2e.
-- [ ] **L6** — every catalog route is under `/v1` (mount review).
-- [ ] **N4** — every catalog route enforces `apiKeyAuth` + the correct scope; no unauthenticated mutating
+- [x] **L6** — every catalog route is under `/v1` (mount review).
+- [x] **N4** — every catalog route enforces `apiKeyAuth` + the correct scope; no unauthenticated mutating
       route; `:read` key on a `:write` route → `403` (auth e2e; route-chain review).
-- [ ] **O1 ⚠** — *plan with active subscribers not orphaned/deletable*: (read) no `DELETE` route + FK
+- [x] **O1 ⚠** — *plan with active subscribers not orphaned/deletable*: (read) no `DELETE` route + FK
       `onDelete: restrict` on `prices.plan_id` + price immutability; (run) `assertPlanArchivable` blocks
       archive with stubbed subscriber count `> 0` → `409 PLAN_HAS_ACTIVE_SUBSCRIBERS`, archive deactivates
       prices when count `= 0`. Seam wired to real `subscriptions` count in 03 with no call-site change.
