@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgEnum, pgTable, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, integer, jsonb, pgEnum, pgTable, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { organizationsTable } from './organizations';
 import { createdAt, environmentEnum, idPk, updatedAt } from './shared';
@@ -12,6 +12,12 @@ export const prorationCreditPolicyEnum = pgEnum('proration_credit_policy', [
 export const defaultCollectionMethodEnum = pgEnum('default_collection_method', [
   'charge_automatically',
   'send_invoice',
+]);
+
+/** How a tenant's collections settle (08). Split at collection is the default. */
+export const orgSettlementModeEnum = pgEnum('org_settlement_mode', [
+  'split_at_collection',
+  'collect_then_payout',
 ]);
 
 /**
@@ -47,6 +53,17 @@ export const orgBillingSettingsTable = pgTable(
       .notNull()
       .default('charge_automatically'),
     commsEnabled: boolean('comms_enabled').notNull().default(true),
+    // ── 08 limits / settlement / branding (additive; still 05's sole CREATE) ────
+    rateLimitPerMinute: integer('rate_limit_per_minute'), // null ⇒ platform default (floor)
+    monthlyRequestQuota: bigint('monthly_request_quota', { mode: 'number' }), // null ⇒ unlimited
+    settlementMode: orgSettlementModeEnum('settlement_mode').notNull().default('split_at_collection'),
+    platformFeeBps: integer('platform_fee_bps'), // null ⇒ DEFAULT_FEE_SCHEDULE
+    platformFeeMinKobo: bigint('platform_fee_min_kobo', { mode: 'number' }),
+    platformFeeMaxKobo: bigint('platform_fee_max_kobo', { mode: 'number' }),
+    branding: jsonb('branding')
+      .$type<{ displayName?: string; supportEmail?: string; logoUrl?: string; primaryColorHex?: string }>()
+      .notNull()
+      .default({}),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

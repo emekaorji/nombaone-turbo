@@ -36,7 +36,9 @@
     "./dunning": "./src/dunning/index.ts",
     "./plans": "./src/plans/index.ts",
     "./prices": "./src/prices/index.ts",
-    "./example": "./src/example/index.ts"
+    "./example": "./src/example/index.ts",
+    "./settlement": "./src/settlement/index.ts",
+    "./scheduling": "./src/scheduling/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

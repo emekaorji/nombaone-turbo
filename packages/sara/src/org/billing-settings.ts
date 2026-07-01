@@ -3,15 +3,23 @@ import { and, eq } from 'drizzle-orm';
 import { orgBillingSettingsTable, type OrgBillingSettingsRow } from '@nombaone/core-db/schema';
 
 import type { BillingSettingsResponseData } from '@nombaone/core-contracts/types';
-import type { DomainContext, InfraTxDb } from '../context';
+import type { DomainContext, InfraReadScope, InfraTxDb } from '../context';
 
 export type ProrationCreditPolicy = 'credit_next_cycle' | 'none';
 export type DefaultCollectionMethod = 'charge_automatically' | 'send_invoice';
+export type SettlementMode = 'split_at_collection' | 'collect_then_payout';
+export interface TenantBranding {
+  displayName?: string;
+  supportEmail?: string;
+  logoUrl?: string;
+  primaryColorHex?: string;
+}
 
 /**
- * A tenant's FULL effective billing + dunning policy. The collect path reads
- * `partialCollectionEnabled`; the dunning engine (06) reads the rest. One reader,
- * one source of truth — 05 created the table, 06 extended it additively.
+ * A tenant's FULL effective billing policy. The collect path reads
+ * `partialCollectionEnabled`; dunning (06) reads its slice; settlement + the limiter
+ * (08) read the rest. One reader, one source of truth — 05 created the table, 06 +
+ * 08 extended it additively.
  */
 export interface EffectiveBillingSettings {
   partialCollectionEnabled: boolean;
@@ -25,6 +33,14 @@ export interface EffectiveBillingSettings {
   paydayBiasEnabled: boolean;
   defaultCollectionMethod: DefaultCollectionMethod;
   commsEnabled: boolean;
+  // 08 limits / settlement / branding
+  rateLimitPerMinute: number | null;
+  monthlyRequestQuota: number | null;
+  settlementMode: SettlementMode;
+  platformFeeBps: number | null;
+  platformFeeMinKobo: number | null;
+  platformFeeMaxKobo: number | null;
+  branding: TenantBranding;
 }
 
 /**
@@ -43,6 +59,13 @@ export const DEFAULT_BILLING_SETTINGS: EffectiveBillingSettings = {
   paydayBiasEnabled: true,
   defaultCollectionMethod: 'charge_automatically',
   commsEnabled: true,
+  rateLimitPerMinute: null,
+  monthlyRequestQuota: null,
+  settlementMode: 'split_at_collection',
+  platformFeeBps: null,
+  platformFeeMinKobo: null,
+  platformFeeMaxKobo: null,
+  branding: {},
 };
 
 const fromRow = (row: OrgBillingSettingsRow): EffectiveBillingSettings => ({
@@ -57,6 +80,13 @@ const fromRow = (row: OrgBillingSettingsRow): EffectiveBillingSettings => ({
   paydayBiasEnabled: row.paydayBiasEnabled,
   defaultCollectionMethod: row.defaultCollectionMethod,
   commsEnabled: row.commsEnabled,
+  rateLimitPerMinute: row.rateLimitPerMinute,
+  monthlyRequestQuota: row.monthlyRequestQuota,
+  settlementMode: row.settlementMode,
+  platformFeeBps: row.platformFeeBps,
+  platformFeeMinKobo: row.platformFeeMinKobo,
+  platformFeeMaxKobo: row.platformFeeMaxKobo,
+  branding: row.branding,
 });
 
 /**
@@ -65,7 +95,7 @@ const fromRow = (row: OrgBillingSettingsRow): EffectiveBillingSettings => ({
  * index.
  */
 export async function getOrgBillingSettings(
-  txDb: InfraTxDb,
+  txDb: InfraReadScope,
   ctx: DomainContext
 ): Promise<EffectiveBillingSettings> {
   const [row] = await txDb

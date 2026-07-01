@@ -19,3 +19,5 @@ export * from './credit';
 export * from './dunning';
 export * from './billing-settings';
 export * from './example';
+export * from './settlement';
+export * from './settings';

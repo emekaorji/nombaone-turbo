@@ -11,6 +11,13 @@ import { organizationsTable } from './organizations';
  */
 export const orgNombaAccountKindEnum = pgEnum('org_nomba_account_kind', ['parent', 'subaccount']);
 
+/** Sub-account lifecycle (08 settlement) — a settlement needs an `active` sub-account. */
+export const nombaAccountStatusEnum = pgEnum('nomba_account_status', [
+  'pending',
+  'active',
+  'suspended',
+]);
+
 export const orgNombaAccountsTable = pgTable(
   'org_nomba_accounts',
   {
@@ -23,6 +30,9 @@ export const orgNombaAccountsTable = pgTable(
     nombaAccountId: text('nomba_account_id').notNull(),
     accountRef: text('account_ref').notNull(),
     kind: orgNombaAccountKindEnum('kind').notNull(),
+    // 08: the Nomba-side sub-account id (foreign ref only) + sub-account status.
+    subAccountId: text('sub_account_id'),
+    status: nombaAccountStatusEnum('status').notNull().default('pending'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
