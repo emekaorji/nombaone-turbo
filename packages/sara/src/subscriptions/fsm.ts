@@ -1,6 +1,6 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
-import type { SubscriptionStatus } from '@nombaone/core-contracts/types';
+import type { SubscriptionStatus, WebhookEventType } from '@nombaone/core-contracts/types';
 
 /**
  * ── The subscription lifecycle state machine (contract C.2) ──────────────────
@@ -48,7 +48,7 @@ export function assertLegalTransition(from: SubscriptionStatus, to: Subscription
  * `subscription.canceled` vs involuntary `subscription.churned`) is supplied by the
  * caller; this map is the fallback + documentation of the catalog mapping.
  */
-export const DEFAULT_EVENT_FOR_STATUS: Record<SubscriptionStatus, string> = {
+export const DEFAULT_EVENT_FOR_STATUS: Record<SubscriptionStatus, WebhookEventType> = {
   incomplete: 'subscription.created',
   incomplete_expired: 'subscription.updated',
   trialing: 'subscription.created',

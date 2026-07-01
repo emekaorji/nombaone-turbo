@@ -13,9 +13,25 @@
  */
 export const WEBHOOK_EVENT_CATALOG = {
   'customer.created': { when: 'a customer is created', payload: ['reference'] },
+  'customer.updated': { when: "a customer's mutable fields change", payload: ['reference'] },
+
+  'coupon.created': { when: 'a coupon definition is created', payload: ['reference', 'code'] },
+
+  'discount.created': {
+    when: 'a coupon is applied to a customer (a discount begins)',
+    payload: ['reference'],
+  },
+  'discount.removed': { when: 'a discount is removed from a customer', payload: ['reference'] },
 
   'plan.created': { when: 'a plan is created', payload: ['reference'] },
-  'plan.updated': { when: 'a plan is updated or archived', payload: ['reference'] },
+  'plan.updated': { when: 'a plan is updated', payload: ['reference'] },
+  'plan.archived': { when: 'a plan is archived', payload: ['reference'] },
+
+  'price.created': { when: 'a price is created', payload: ['reference'] },
+  'price.deactivated': {
+    when: 'a price is deactivated (directly or when its plan is archived)',
+    payload: ['reference'],
+  },
 
   'subscription.created': { when: 'a subscription is created', payload: ['reference', 'status'] },
   'subscription.updated': {
@@ -75,6 +91,10 @@ export const WEBHOOK_EVENT_CATALOG = {
     when: 'collected funds are settled to the tenant sub-account (08)',
     payload: ['reference'],
   },
+
+  // ── Reference resource (the worked `example` scaffold; delete with the module) ──
+  'example.created': { when: 'an example resource is created (reference scaffold)', payload: ['reference'] },
+  'example.settled': { when: 'an example resource is settled (reference scaffold)', payload: ['reference'] },
 } as const;
 
 export type WebhookEventType = keyof typeof WEBHOOK_EVENT_CATALOG;

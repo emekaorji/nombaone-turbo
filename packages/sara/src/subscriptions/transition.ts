@@ -9,6 +9,7 @@ import { getSubscriptionByReference, loadSubscriptionRow } from './queries';
 
 import type { DomainContext, InfraTxDb } from '../context';
 import type { SubscriptionResponseData, SubscriptionStatus } from './types';
+import type { WebhookEventType } from '@nombaone/core-contracts/types';
 
 type SubscriptionMutableFields = Partial<
   Pick<
@@ -27,7 +28,7 @@ type SubscriptionMutableFields = Partial<
 >;
 
 interface TransitionOpts {
-  event?: string;
+  event?: WebhookEventType;
   set?: SubscriptionMutableFields;
 }
 
