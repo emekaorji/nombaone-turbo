@@ -28,4 +28,5 @@ export * from './coupons';
 export * from './discounts';
 export * from './credit-grants';
 export * from './org-billing-settings';
+export * from './dunning-attempts';
 export * from './examples';

@@ -12,4 +12,6 @@ export * from './invoice';
 export * from './coupon';
 export * from './discount';
 export * from './credit';
+export * from './dunning';
+export * from './billing-settings';
 export * from './example';

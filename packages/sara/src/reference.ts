@@ -33,6 +33,7 @@ export type ReferenceDomain =
   | 'CPN' // coupon
   | 'DSC' // discount
   | 'CRG' // credit grant
+  | 'DUN' // dunning attempt
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {
