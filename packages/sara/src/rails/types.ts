@@ -31,6 +31,14 @@ export interface RailCollectResult {
   /** For push rails: where the payer should send money (e.g. a virtual NUBAN). */
   payInstructions?: Record<string, unknown>;
   failureReason?: string;
+  /**
+   * A PULL rail that SHORT-collected (e.g. a NIBSS mandate debit that pulled only
+   * the mandated account's available balance): the actual kobo collected, present
+   * only when `status` is `succeeded` AND it is LESS than the requested
+   * `amountKobo`. Absent ⇒ the full requested amount was collected (the
+   * all-or-nothing common case for card tokens / full debits).
+   */
+  collectedKobo?: Kobo;
 }
 
 export interface RailAdapter {

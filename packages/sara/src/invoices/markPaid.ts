@@ -63,6 +63,61 @@ export async function claimInvoicePaid(
 }
 
 /**
+ * Atomically CLAIM a SHORT collection (partial collection enabled, 05). The CAS
+ * additionally requires `amount_paid = 0` so ONLY the first partial collection
+ * wins — a concurrent or redelivered short collect finds a non-zero `amount_paid`
+ * and loses, so the collected-amount ledger entry posts exactly once (J6). Sets
+ * `amount_paid` (collected) + `amount_remaining` (owed) but deliberately NOT
+ * `paid_at`, so `deriveInvoiceStatus` reports `partially_paid` and 06 dunning
+ * pursues `amount_remaining`. Emits `invoice.payment_partially_collected` only on a
+ * winning claim; the winner then posts the collected-amount ledger entry.
+ *
+ * NOTE for 06 (dunning): the `partially_paid → paid` completion (a later retry that
+ * collects the remainder) rides `claimInvoicePaid`, which is deliberately NOT gated
+ * on `amount_paid = 0` — do not add that predicate, or a partial invoice could
+ * never be completed. Concurrent partial-vs-full collects don't occur here because
+ * collectForInvoice runs once per invoice per cycle and the rail dedups on our
+ * reference (both see the same result).
+ */
+export async function claimInvoicePartiallyPaid(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  invoice: InvoiceRow,
+  collected: number
+): Promise<InvoicePaidClaim> {
+  const amountRemaining = invoice.amountDue - collected;
+  const [won] = await txDb
+    .update(invoicesTable)
+    .set({ amountPaid: collected, amountRemaining })
+    .where(
+      and(
+        eq(invoicesTable.id, invoice.id),
+        isNull(invoicesTable.paidAt),
+        isNull(invoicesTable.voidedAt),
+        isNull(invoicesTable.uncollectibleAt),
+        eq(invoicesTable.amountPaid, 0)
+      )
+    )
+    .returning();
+
+  if (!won) {
+    const [current] = await txDb
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoice.id))
+      .limit(1);
+    return { claimed: false, invoice: current ?? invoice };
+  }
+
+  await emitEvent(txDb, {
+    ...ctx,
+    type: 'invoice.payment_partially_collected',
+    payload: { reference: invoice.reference, amountPaid: collected, amountRemaining },
+  });
+  return { claimed: true, invoice: won };
+}
+
+/**
  * Back-link the settlement/charge ledger transaction onto an already-claimed
  * invoice. Run by the claim winner immediately after posting the ledger entry, so
  * money moves only after the invoice has been exclusively claimed.

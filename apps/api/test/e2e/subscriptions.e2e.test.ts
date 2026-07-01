@@ -5,9 +5,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   customersTable,
   domainEventsTable,
+  invoiceLineItemsTable,
   invoicesTable,
   ledgerTransactionsTable,
   paymentMethodsTable,
+  subscriptionItemsTable,
   subscriptionPeriodsTable,
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
@@ -19,6 +21,7 @@ import {
   runLifecycleSweep,
 } from '@nombaone/sara/billing';
 import { createCustomer } from '@nombaone/sara/customers';
+import { upsertOrgBillingSettings } from '@nombaone/sara/org';
 import { createPlan } from '@nombaone/sara/plans';
 import { createPrice } from '@nombaone/sara/prices';
 import { registerRail } from '@nombaone/sara/rails';
@@ -38,6 +41,11 @@ import type { NombaClient } from '@nombaone/sara/nomba';
  */
 let cardOutcome: 'succeeded' | 'pending' | 'failed' = 'succeeded';
 let requeryAmount = 0;
+// When set AND `cardOutcome === 'succeeded'`, the card rail SHORT-collects this
+// many kobo (a partial debit). `null` ⇒ full collection (the common case).
+let cardCollectedKobo: number | null = null;
+// Rail-invocation spy — J8 asserts the rail is NEVER called for a ₦0 invoice.
+let cardCallCount = 0;
 
 describe('subscriptions + billing e2e', () => {
   let harness: Harness;
@@ -67,7 +75,17 @@ describe('subscriptions + billing e2e', () => {
   beforeAll(async () => {
     harness = await startHarness();
     harness.setNombaClient(fakeNomba);
-    registerRail({ key: 'card', direction: 'pull', collect: async () => ({ status: cardOutcome }) });
+    registerRail({
+      key: 'card',
+      direction: 'pull',
+      collect: async () => {
+        cardCallCount += 1;
+        if (cardOutcome === 'succeeded' && cardCollectedKobo != null) {
+          return { status: 'succeeded', collectedKobo: cardCollectedKobo };
+        }
+        return { status: cardOutcome };
+      },
+    });
     registerRail({ key: 'mandate', direction: 'pull', collect: async () => ({ status: cardOutcome }) });
     registerRail({
       key: 'transfer',
@@ -675,5 +693,210 @@ describe('subscriptions + billing e2e', () => {
     expect(balance.body.data.balance).toBe(150000); // ledger account, O(1)
     expect(balance.body.data.grants).toHaveLength(2);
     expect(balance.body.data.grants[0].amount).toBe(100000); // oldest-first
+  });
+
+  // ── C5 seat/quantity proration ─────────────────────────────────────────────
+  it('C5 — a mid-cycle seat/quantity increase prorates immediately with two proration lines', async () => {
+    const { subRef, subId } = await twoPricedSub(1_000_000);
+    const changed = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`))
+      .set('Idempotency-Key', `qty-${uniq()}`)
+      .send({ quantity: 2 });
+    expect(changed.status).toBe(200);
+
+    // the subscription item now carries quantity 2 (C5 mutates subscription_items.quantity)
+    const [item] = await harness.db
+      .select({ quantity: subscriptionItemsTable.quantity })
+      .from(subscriptionItemsTable)
+      .where(eq(subscriptionItemsTable.subscriptionId, subId));
+    expect(item!.quantity).toBe(2);
+
+    // an immediate proration invoice, charged now, carrying the TWO signed lines (C7)
+    const [proration] = await harness.db
+      .select({ id: invoicesTable.id, reference: invoicesTable.reference, amountDue: invoicesTable.amountDue, paidAt: invoicesTable.paidAt })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.billingReason, 'subscription_update')));
+    expect(proration!.amountDue).toBeGreaterThan(0); // seat increase = upgrade-shaped
+    expect(proration!.paidAt).toBeTruthy();
+    const proLines = (
+      await harness.db
+        .select({ kind: invoiceLineItemsTable.kind, amount: invoiceLineItemsTable.amount })
+        .from(invoiceLineItemsTable)
+        .where(eq(invoiceLineItemsTable.invoiceId, proration!.id))
+    ).filter((l) => l.kind === 'proration');
+    expect(proLines).toHaveLength(2);
+    expect(proLines.some((l) => l.amount < 0)).toBe(true); // −unused old
+    expect(proLines.some((l) => l.amount > 0)).toBe(true); // +new charge
+    expect(await countKind(proration!.reference, 'charge')).toBe(1); // matching ledger entry (J5)
+  });
+
+  // ── C7/J — discount as an explicit negative line on a renewal ──────────────
+  it('C7/J — an active forever discount lands as an explicit negative discount line on the next renewal invoice', async () => {
+    cardOutcome = 'succeeded';
+    cardCollectedKobo = null;
+    const { customerRef, priceRef } = await seedPrice(500000);
+    const pm = await seedActiveCard(customerRef);
+    const subRef = (await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: pm })).body.data.id as string;
+    const subId = (await loadSubscriptionRow(harness.db, ctxA, subRef)).id;
+
+    const coupon = await newCoupon({ code: `REP${uniq()}`, percentOff: 20, duration: 'forever' });
+    await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/discount`)).set('Idempotency-Key', `d-${uniq()}`).send({ coupon: coupon.body.data.id });
+
+    await setDue(subRef);
+    await runCycle(harness.db, ctxA, subRef); // renew period 1 with the discount applied
+
+    const [inv] = await harness.db
+      .select({ id: invoicesTable.id, subtotal: invoicesTable.subtotal, discountTotal: invoicesTable.discountTotal, amountDue: invoicesTable.amountDue })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
+    expect(inv!.subtotal).toBe(500000);
+    expect(inv!.discountTotal).toBe(100000); // 20% off
+    expect(inv!.amountDue).toBe(400000);
+    const discountLine = (
+      await harness.db
+        .select({ kind: invoiceLineItemsTable.kind, amount: invoiceLineItemsTable.amount })
+        .from(invoiceLineItemsTable)
+        .where(eq(invoiceLineItemsTable.invoiceId, inv!.id))
+    ).find((l) => l.kind === 'discount');
+    expect(discountLine).toBeTruthy();
+    expect(discountLine!.amount).toBe(-100000); // an explicit negative line, not an opaque reduced total
+  });
+
+  // ── J8 zero-amount invoice → paid with NO rail charge ──────────────────────
+  it('J8 — a 100%-off coupon zeroes the renewal invoice → paid with NO rail charge', async () => {
+    cardOutcome = 'succeeded';
+    cardCollectedKobo = null;
+    const { customerRef, priceRef } = await seedPrice(500000);
+    const pm = await seedActiveCard(customerRef);
+    const subRef = (await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: pm })).body.data.id as string;
+    const subId = (await loadSubscriptionRow(harness.db, ctxA, subRef)).id;
+
+    const coupon = await newCoupon({ code: `FREE${uniq()}`, percentOff: 100, duration: 'forever' });
+    await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/discount`)).set('Idempotency-Key', `d-${uniq()}`).send({ coupon: coupon.body.data.id });
+
+    await setDue(subRef);
+    const callsBefore = cardCallCount;
+    const result = await runCycle(harness.db, ctxA, subRef);
+    expect(cardCallCount).toBe(callsBefore); // J8: rail NEVER invoked for a ₦0 invoice
+    expect(result.outcome).toBe('paid');
+
+    const [inv] = await harness.db
+      .select({ reference: invoicesTable.reference, amountDue: invoicesTable.amountDue, paidAt: invoicesTable.paidAt })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
+    expect(inv!.amountDue).toBe(0);
+    expect(inv!.paidAt).toBeTruthy();
+    expect(await countKind(inv!.reference, 'charge')).toBe(0); // no ₦0 charge
+    expect(await eventTypesFor(inv!.reference)).toContain('invoice.paid');
+  });
+
+  // ── partial collection (tenant opt-in, off by default) ─────────────────────
+  it('partial collection ON — a short debit banks the collected kobo, marks partially_paid + tracks the remainder', async () => {
+    cardOutcome = 'succeeded';
+    cardCollectedKobo = null;
+    const { customerRef, priceRef } = await seedPrice(500000);
+    const pm = await seedActiveCard(customerRef);
+    const subRef = (await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: pm })).body.data.id as string;
+    const subId = (await loadSubscriptionRow(harness.db, ctxA, subRef)).id;
+
+    await upsertOrgBillingSettings(harness.db, ctxA, { partialCollectionEnabled: true });
+    cardCollectedKobo = 300000; // the rail pulls only ₦3,000 of the ₦5,000 due
+    await setDue(subRef);
+    const result = await runCycle(harness.db, ctxA, subRef);
+    expect(result.outcome).toBe('past_due');
+
+    const [inv] = await harness.db
+      .select({ reference: invoicesTable.reference, amountPaid: invoicesTable.amountPaid, amountRemaining: invoicesTable.amountRemaining, paidAt: invoicesTable.paidAt })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
+    expect(inv!.amountPaid).toBe(300000);
+    expect(inv!.amountRemaining).toBe(200000);
+    expect(inv!.paidAt).toBeNull(); // NOT fully paid
+    const shown = await asA(request(harness.app).get(`/v1/invoices/${inv!.reference}`));
+    expect(shown.body.data.status).toBe('partially_paid');
+    expect(await countKind(inv!.reference, 'charge')).toBe(1); // the collected amount is posted
+    const sub = await asA(request(harness.app).get(`/v1/subscriptions/${subRef}`));
+    expect(sub.body.data.status).toBe('past_due'); // 06 dunning pursues the remainder
+    cardCollectedKobo = null;
+  });
+
+  it('partial collection OFF (default) — a short debit is all-or-nothing → invoice open, sub past_due, nothing banked', async () => {
+    cardOutcome = 'succeeded';
+    cardCollectedKobo = null;
+    const { customerRef, priceRef } = await seedPrice(500000);
+    const pm = await seedActiveCard(customerRef);
+    const subRef = (await newSub({ customerId: customerRef, priceId: priceRef, paymentMethodId: pm })).body.data.id as string;
+    const subId = (await loadSubscriptionRow(harness.db, ctxA, subRef)).id;
+
+    await upsertOrgBillingSettings(harness.db, ctxA, { partialCollectionEnabled: false });
+    cardCollectedKobo = 300000; // short
+    await setDue(subRef);
+    const result = await runCycle(harness.db, ctxA, subRef);
+    expect(result.outcome).toBe('past_due');
+
+    const [inv] = await harness.db
+      .select({ reference: invoicesTable.reference, amountPaid: invoicesTable.amountPaid })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
+    expect(inv!.amountPaid).toBe(0); // nothing banked (all-or-nothing)
+    const shown = await asA(request(harness.app).get(`/v1/invoices/${inv!.reference}`));
+    expect(shown.body.data.status).toBe('open');
+    expect(await countKind(inv!.reference, 'charge')).toBe(0);
+    const sub = await asA(request(harness.app).get(`/v1/subscriptions/${subRef}`));
+    expect(sub.body.data.status).toBe('past_due');
+    cardCollectedKobo = null;
+  });
+
+  // ── K1 idempotency-key replay on a proration-triggering change ─────────────
+  it('K1 — replaying POST /change with the same Idempotency-Key does not double-charge', async () => {
+    const { subRef, subId, planId } = await twoPricedSub(1_000_000);
+    const dear = await priceOn(planId, 2_000_000);
+    const key = `k1-${uniq()}`;
+    const a = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', key).send({ priceId: dear });
+    const b = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', key).send({ priceId: dear });
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+    expect(b.body.data.priceId).toBe(dear);
+
+    // exactly ONE immediate proration invoice — the replay returned the cached result.
+    const invoices = await harness.db
+      .select({ id: invoicesTable.id })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.billingReason, 'subscription_update')));
+    expect(invoices).toHaveLength(1);
+    expect(await countKind((await harness.db.select({ reference: invoicesTable.reference }).from(invoicesTable).where(eq(invoicesTable.id, invoices[0]!.id)))[0]!.reference, 'charge')).toBe(1);
+  });
+
+  // ── C2→C8 end-to-end: a downgrade credit is CONSUMED oldest-first on renewal ─
+  it('C2/C8 — a banked downgrade credit is consumed as a credit line on the next renewal invoice', async () => {
+    const { subRef, subId, customerRef, planId } = await twoPricedSub(2_000_000);
+    const cheap = await priceOn(planId, 1_000_000);
+    await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', `dg-${uniq()}`).send({ priceId: cheap });
+
+    const before = await asA(request(harness.app).get(`/v1/customers/${customerRef}/credit`));
+    const bankedBalance = before.body.data.balance as number;
+    expect(bankedBalance).toBeGreaterThan(0); // downgrade banked a credit (C2)
+
+    await setDue(subRef);
+    await runCycle(harness.db, ctxA, subRef); // renew at the new (cheaper) price → credit applies
+
+    const [inv] = await harness.db
+      .select({ id: invoicesTable.id, subtotal: invoicesTable.subtotal, creditTotal: invoicesTable.creditTotal, amountDue: invoicesTable.amountDue })
+      .from(invoicesTable)
+      .where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
+    expect(inv!.subtotal).toBe(1_000_000);
+    expect(inv!.creditTotal).toBeGreaterThan(0); // credit consumed (C8)
+    expect(inv!.amountDue).toBe(inv!.subtotal - inv!.creditTotal); // fixed-order resolution
+    const creditLine = (
+      await harness.db
+        .select({ kind: invoiceLineItemsTable.kind, amount: invoiceLineItemsTable.amount })
+        .from(invoiceLineItemsTable)
+        .where(eq(invoiceLineItemsTable.invoiceId, inv!.id))
+    ).find((l) => l.kind === 'credit');
+    expect(creditLine).toBeTruthy();
+    expect(creditLine!.amount).toBeLessThan(0); // an explicit negative credit line
+
+    // the ledger-backed balance dropped by exactly what was consumed (oldest-first).
+    const after = await asA(request(harness.app).get(`/v1/customers/${customerRef}/credit`));
+    expect(after.body.data.balance).toBe(bankedBalance - inv!.creditTotal);
   });
 });

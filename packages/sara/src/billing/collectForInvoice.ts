@@ -4,8 +4,14 @@ import { invoicesTable, type InvoiceRow, type PaymentMethodRow } from '@nombaone
 
 import { ensureSystemAccounts } from '../config';
 import { emitEvent } from '../events';
-import { claimInvoicePaid, linkInvoiceLedgerTransaction } from '../invoices';
+import {
+  claimInvoicePaid,
+  claimInvoicePartiallyPaid,
+  linkInvoiceLedgerTransaction,
+} from '../invoices';
 import { ensureAccount, postTransaction } from '../ledger';
+import { getOrgBillingSettings } from '../org';
+import { resolvePartialCollection } from '../proration';
 import { getRail } from '../rails';
 import { enterPastDue } from '../subscriptions';
 import { loadSubscriptionRowById, railKeyForMethod, reconcilePaidSubEffects } from './effects';
@@ -54,24 +60,69 @@ export async function collectForInvoice(
   });
 
   if (result.status === 'succeeded') {
+    const collected = result.collectedKobo ?? invoice.amountDue;
+
+    // FULL collection (the all-or-nothing common case — card token, full debit).
     // CLAIM before posting: only the winner of the atomic claim moves money, so a
     // concurrent inbound confirm (or a racing collect) cannot double-post (J6). The
     // rail itself dedups on our reference, so the external charge happened once.
-    const claim = await claimInvoicePaid(txDb, ctx, invoice);
-    if (!claim.claimed) {
-      return { outcome: 'paid', invoice: claim.invoice };
+    if (collected >= invoice.amountDue) {
+      const claim = await claimInvoicePaid(txDb, ctx, invoice);
+      if (!claim.claimed) {
+        return { outcome: 'paid', invoice: claim.invoice };
+      }
+      const posted = await postTransaction(txDb, ctx, {
+        kind: 'charge',
+        memo: `charge ${invoice.reference}`,
+        entries: [
+          { accountId: cash.id, direction: 'debit', amount: invoice.amountDue },
+          { accountId: platformRevenue.id, direction: 'credit', amount: invoice.amountDue },
+        ],
+      });
+      const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
+      await reconcilePaidSubEffects(txDb, ctx, linked);
+      return { outcome: 'paid', invoice: linked };
     }
-    const posted = await postTransaction(txDb, ctx, {
-      kind: 'charge',
-      memo: `charge ${invoice.reference}`,
-      entries: [
-        { accountId: cash.id, direction: 'debit', amount: invoice.amountDue },
-        { accountId: platformRevenue.id, direction: 'credit', amount: invoice.amountDue },
-      ],
-    });
-    const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
-    await reconcilePaidSubEffects(txDb, ctx, linked);
-    return { outcome: 'paid', invoice: linked };
+
+    // SHORT collection. Tenant policy (05, off by default) decides the outcome.
+    const settings = await getOrgBillingSettings(txDb, ctx);
+    const policy = resolvePartialCollection(
+      settings.partialCollectionEnabled,
+      invoice.amountDue,
+      collected
+    );
+
+    // ENABLED + a genuine partial (collected > 0) → bank the collected kobo, track
+    // the remainder as `partially_paid`, and move the sub → past_due so 06 dunning
+    // pursues `amount_remaining`. Claim-before-post (amount_paid = 0 CAS) makes the
+    // collected-amount ledger entry post exactly once.
+    if (policy.status === 'partially_paid' && collected > 0) {
+      const claim = await claimInvoicePartiallyPaid(txDb, ctx, invoice, collected);
+      if (!claim.claimed) {
+        return { outcome: 'past_due', invoice: claim.invoice };
+      }
+      const posted = await postTransaction(txDb, ctx, {
+        kind: 'charge',
+        memo: `partial charge ${invoice.reference}`,
+        entries: [
+          { accountId: cash.id, direction: 'debit', amount: collected },
+          { accountId: platformRevenue.id, direction: 'credit', amount: collected },
+        ],
+      });
+      const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
+      // A remainder is owed → the sub is past_due (06 retries the remainder). No
+      // attempt_count bump / payment_failed here: money DID arrive; the
+      // `payment_partially_collected` event + `amount_remaining` carry the state.
+      await moveActiveSubPastDue(txDb, ctx, linked);
+      return { outcome: 'past_due', invoice: linked };
+    }
+
+    // DISABLED (or a degenerate zero-collection) → all-or-nothing failure. The
+    // partial pull is NOT banked (reversal on the rail is an integration concern,
+    // out of scope); the invoice stays `open` and the sub goes past_due (unchanged
+    // from 03).
+    const failed = await failCollection(txDb, ctx, invoice, result.failureReason ?? 'short_collection');
+    return { outcome: 'past_due', invoice: failed };
   }
 
   if (result.status === 'failed') {
@@ -80,6 +131,20 @@ export async function collectForInvoice(
   }
 
   return { outcome: 'pending', invoice };
+}
+
+/** Move an `active`/`trialing` subscription to `past_due` (06 dunning takes over).
+ *  An `incomplete` first charge stays incomplete (its window is 04's sweep). */
+async function moveActiveSubPastDue(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  invoice: InvoiceRow
+): Promise<void> {
+  if (!invoice.subscriptionId) return;
+  const sub = await loadSubscriptionRowById(txDb, ctx, invoice.subscriptionId);
+  if (sub.status === 'active' || sub.status === 'trialing') {
+    await enterPastDue(txDb, ctx, sub);
+  }
 }
 
 async function failCollection(
@@ -94,14 +159,7 @@ async function failCollection(
     .where(eq(invoicesTable.id, invoice.id))
     .returning();
 
-  if (invoice.subscriptionId) {
-    const sub = await loadSubscriptionRowById(txDb, ctx, invoice.subscriptionId);
-    // active or trial-end charge failed → past_due (06 dunning). An `incomplete`
-    // first charge stays incomplete (its retry/expiry window is 04's sweep).
-    if (sub.status === 'active' || sub.status === 'trialing') {
-      await enterPastDue(txDb, ctx, sub);
-    }
-  }
+  await moveActiveSubPastDue(txDb, ctx, invoice);
 
   await emitEvent(txDb, {
     ...ctx,
