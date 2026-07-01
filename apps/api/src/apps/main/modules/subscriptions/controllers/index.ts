@@ -13,3 +13,4 @@ export * from './pause-subscription';
 export * from './resubscribe-subscription';
 export * from './resume-subscription';
 export * from './update-subscription';
+export * from './list-subscription-events';

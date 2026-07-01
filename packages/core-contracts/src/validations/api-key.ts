@@ -21,6 +21,7 @@ const apiKeyScope = z.enum([
   'settlements:read',
   'settings:read',
   'settings:write',
+  'metrics:read',
   'example:read',
   'example:write',
   'webhooks:read',

@@ -40,7 +40,8 @@
     "./settlement": "./src/settlement/index.ts",
     "./scheduling": "./src/scheduling/index.ts",
     "./tenant-config": "./src/tenant-config/index.ts",
-    "./observability": "./src/observability/index.ts"
+    "./observability": "./src/observability/index.ts",
+    "./metrics": "./src/metrics/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

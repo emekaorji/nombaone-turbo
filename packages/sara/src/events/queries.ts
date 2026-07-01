@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, or } from 'drizzle-orm';
+import { and, asc, desc, eq, lt, or, sql } from 'drizzle-orm';
 
 import { domainEventsTable } from '@nombaone/core-db/schema';
 
@@ -8,6 +8,30 @@ import { serializeDomainEvent } from './serialize';
 import type { DomainContext, InfraDb } from '../context';
 import type { Page } from '../pagination';
 import type { DomainEventResponseData } from '@nombaone/core-contracts/types';
+
+/**
+ * The per-subscription audit trail (M / ties to A's event-sourcing): the ordered
+ * `domain_events` whose payload `reference` is the subscription — its whole life,
+ * replayable. Read-only; tenant-scoped.
+ */
+export async function listSubscriptionAuditTrail(
+  db: InfraDb,
+  ctx: DomainContext,
+  subscriptionRef: string
+): Promise<DomainEventResponseData[]> {
+  const rows = await db
+    .select()
+    .from(domainEventsTable)
+    .where(
+      and(
+        eq(domainEventsTable.organizationId, ctx.organizationId),
+        eq(domainEventsTable.environment, ctx.environment),
+        sql`${domainEventsTable.payload} ->> 'reference' = ${subscriptionRef}`
+      )
+    )
+    .orderBy(asc(domainEventsTable.createdAt), asc(domainEventsTable.id));
+  return rows.map(serializeDomainEvent);
+}
 
 export interface ListDomainEventsOptions {
   limit?: number;

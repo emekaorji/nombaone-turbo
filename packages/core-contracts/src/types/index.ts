@@ -21,3 +21,4 @@ export * from './billing-settings';
 export * from './example';
 export * from './settlement';
 export * from './settings';
+export * from './metrics';

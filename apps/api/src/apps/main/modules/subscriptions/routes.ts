@@ -26,6 +26,7 @@ import {
   getScheduleController,
   getSubscriptionController,
   getUpcomingInvoiceController,
+  listSubscriptionEventsController,
   listSubscriptionsController,
   pauseSubscriptionController,
   removeSubscriptionDiscountController,
@@ -69,6 +70,14 @@ subscriptionsRouter.get(
   requireScope('subscriptions:read'),
   validate({ query: listSubscriptionQuery }),
   listSubscriptionsController
+);
+// The per-subscription audit trail (M) — its full domain-event history.
+subscriptionsRouter.get(
+  '/subscriptions/:reference/events',
+  apiKeyAuth,
+  rateLimit,
+  requireScope('subscriptions:read'),
+  listSubscriptionEventsController
 );
 
 // ── generic update (default method / metadata only) ──────────────────────────
