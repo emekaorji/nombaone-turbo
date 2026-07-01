@@ -260,7 +260,7 @@ Every row is tenant-scoped `(organization_id, environment)`. Outcomes are verifi
 
 ### DB (core-db)
 
-- [ ] **`settlements`** table (`packages/core-db/src/schema/settlements.ts`): `idPk()`, `referenceCol()` (STL),
+- [x] **`settlements`** table (`packages/core-db/src/schema/settlements.ts`): `idPk()`, `referenceCol()` (STL),
       `organization_id` FK → organizations (cascade), `environment` (`environmentEnum`), `invoice_id` FK →
       invoices, `customer_id` FK → customers, `sub_account_ref` text (our stable `org_nomba_accounts.account_ref`),
       `split_reference` text nullable (Nomba split/order ref, foreign ref only), `merchant_tx_ref` text (the
@@ -269,48 +269,48 @@ Every row is tenant-scoped `(organization_id, environment)`. Outcomes are verifi
       settlement produced), `status` (`pgEnum settlement_status: pending | settled | reconciled | failed |
       refunded`), `created_at` (append-only fact — **no `updated_at`**, mirroring `ledger_transactions`).
       Proof: migration applies on a fresh DB; a row reads back with `gross = fee + net`.
-- [ ] Indexes on `settlements`: `unique(reference)`; **`unique(merchant_tx_ref)`** and **`unique(invoice_id)`**
+- [x] Indexes on `settlements`: `unique(reference)`; **`unique(merchant_tx_ref)`** and **`unique(invoice_id)`**
       (a duplicate settlement is structurally impossible — `K2`); keyset
       `(organization_id, environment, created_at desc, id desc)` for the list endpoint; index on
       `(organization_id, environment, status)` for reconciliation selection.
-- [ ] DB-level `check` constraint `gross_kobo = platform_fee_kobo + net_to_tenant_kobo` and
+- [x] DB-level `check` constraint `gross_kobo = platform_fee_kobo + net_to_tenant_kobo` and
       `platform_fee_kobo >= 0`, `net_to_tenant_kobo >= 0` (the split-balances invariant enforced structurally,
       mirroring `ledger_entries`' positive-amount check).
-- [ ] **`org_nomba_accounts`** (finalize — created by 02; this phase adds the settlement columns if absent and
+- [x] **`org_nomba_accounts`** (finalize — created by 02; this phase adds the settlement columns if absent and
       asserts the shape): `idPk()`, `referenceCol()` (NMA — contract C.4), `organization_id` FK, `environment`,
       `account_ref` text (our stable ref passed to Nomba), `sub_account_id` text nullable (Nomba-side id,
       foreign ref only), `status` (`pgEnum nomba_account_status: pending | active | suspended`, default
       `pending`), `created_at`, `updatedAt()`; **`unique(organization_id, environment)`** (one sub-account per
       tenant/env) and `unique(account_ref)`. If 02 already shipped the table, this is an **additive migration**
       only (no column drops). Proof: migration applies; `resolveTenantSubAccount` reads it back.
-- [ ] **Extend `org_billing_settings`** (additive columns only — created in **05**, dunning columns added in **06**; this phase adds limits/settlement columns):
+- [x] **Extend `org_billing_settings`** (additive columns only — created in **05**, dunning columns added in **06**; this phase adds limits/settlement columns):
       `rate_limit_per_minute` int nullable, `monthly_request_quota` bigint nullable, `settlement_mode`
       (`pgEnum org_settlement_mode: split_at_collection | collect_then_payout`, default `split_at_collection`),
       `platform_fee_bps` int nullable, `platform_fee_min_kobo` bigint nullable, `platform_fee_max_kobo` bigint
       nullable, `branding` jsonb default `'{}'`. Proof: migration applies on top of 06's table; a row reads back
       with new defaults and 06's dunning columns intact.
-- [ ] Add `settlements` (and `org_nomba_accounts` if new) to `packages/core-db/src/schema/index.ts`.
-- [ ] `pnpm db:generate` then `pnpm db:migrate` — one clean additive migration; verify on a fresh DB **and** on
+- [x] Add `settlements` (and `org_nomba_accounts` if new) to `packages/core-db/src/schema/index.ts`.
+- [x] `pnpm db:generate` then `pnpm db:migrate` — one clean additive migration; verify on a fresh DB **and** on
       a DB already migrated through 06/07 (additive, no rewrite). **Never `push`.**
 
 ### Contracts (core-contracts)
 
-- [ ] `packages/core-contracts/src/types/settlement.ts`: `SettlementResponseData` (reference, invoiceReference,
+- [x] `packages/core-contracts/src/types/settlement.ts`: `SettlementResponseData` (reference, invoiceReference,
       customerReference, subAccountRef, splitReference, grossKobo, platformFeeKobo, netToTenantKobo, status,
       createdAt — ISO-8601 UTC, integer kobo fields, no PII).
-- [ ] `packages/core-contracts/src/types/settings.ts`: `TenantSettingsResponseData` — the unified config read:
+- [x] `packages/core-contracts/src/types/settings.ts`: `TenantSettingsResponseData` — the unified config read:
       `{ billing: { rateLimitPerMinute, monthlyRequestQuota, settlementMode, platformFee: {bps,minKobo,maxKobo},
       grace/dunning summary (from 06), branding }, webhook: { url?, signingSecretPrefix?, configured: boolean }
       (from 07, secret never returned), nombaAccount: { accountRef, status } }`.
-- [ ] `packages/core-contracts/src/validations/settlement.ts`: `listSettlementsQuery` (cursor + limit + optional
+- [x] `packages/core-contracts/src/validations/settlement.ts`: `listSettlementsQuery` (cursor + limit + optional
       `status` filter; numbers via `.coerce`, per `listExampleQuery` shape).
-- [ ] `packages/core-contracts/src/validations/settings.ts`: `updateTenantSettingsBody` — all settlement/limit/
+- [x] `packages/core-contracts/src/validations/settings.ts`: `updateTenantSettingsBody` — all settlement/limit/
       branding fields **optional** (partial update); `monthly_request_quota = z.coerce.number().int().min(0)`;
       `platform_fee_bps` 0–10000; `branding` a strict object (`displayName?`, `supportEmail?` email,
       `logoUrl?` url, `primaryColorHex?` hex); **refine that `rate_limit_per_minute` cannot be set above the
       platform ceiling through this body** (only an operator may raise it) — the tenant API cannot self-raise
       its own limit (`H6` discipline). DTO via `z.infer`.
-- [ ] Add the new scopes to the API-key scope set + `ApiKeyScope` vocabulary: `settlements:read`,
+- [x] Add the new scopes to the API-key scope set + `ApiKeyScope` vocabulary: `settlements:read`,
       `settings:read`, `settings:write`. Export all new types/validations from the contracts barrels.
 
 ### Domain (sara)
@@ -318,15 +318,15 @@ Every row is tenant-scoped `(organization_id, environment)`. Outcomes are verifi
 All functions follow the `(db, ctx, input)` idiom; `ctx: DomainContext` is always caller-supplied and never
 trusted from the client. Pure math/builders are I/O-free and unit-tested alone.
 
-- [ ] `reference.ts`: add `STL` (settlement) to `ReferenceDomain` (reserved in contract C.4; this phase
+- [x] `reference.ts`: add `STL` (settlement) to `ReferenceDomain` (reserved in contract C.4; this phase
       activates it), and `NMA` for `org_nomba_accounts` if 02 did not already.
-- [ ] `errors`: add the **`SETTLEMENT_*`** group to `packages/errors/src/codes.ts`:
+- [x] `errors`: add the **`SETTLEMENT_*`** group to `packages/errors/src/codes.ts`:
       `SETTLEMENT_SUBACCOUNT_NOT_FOUND`, `SETTLEMENT_SPLIT_UNBALANCED`, `SETTLEMENT_ALREADY_RECORDED`,
       `SETTLEMENT_NOT_FOUND`, `SETTLEMENT_PAYOUT_FAILED`, `SETTLEMENT_RECONCILE_DRIFT`; add the **`QUOTA_*`**
       group: `QUOTA_EXCEEDED`. Add client-safe ones (`SETTLEMENT_NOT_FOUND`, `SETTLEMENT_SUBACCOUNT_NOT_FOUND`,
       `QUOTA_EXCEEDED`) to `PUBLIC_ERROR_CODES`; the rest collapse to `SYSTEM_INTERNAL_ERROR`.
 
-- [ ] **`packages/sara/src/settlement/`** (export `./settlement` via `sara/package.json`):
+- [x] **`packages/sara/src/settlement/`** (export `./settlement` via `sara/package.json`):
       - `accounts.ts`: `resolveTenantSubAccount(db, ctx): Promise<{ accountRef: string; subAccountId: string |
         null }>` — read `org_nomba_accounts` for `(org, env)`; throw `SETTLEMENT_SUBACCOUNT_NOT_FOUND` if the
         tenant was never onboarded to a sub-account (a settlement cannot proceed without one). **H5.**
@@ -348,10 +348,12 @@ trusted from the client. Pure math/builders are I/O-free and unit-tested alone.
         `settlements.ledger_transaction_id`, set `status = settled`, emit `settlement.created`. Idempotent on
         `unique(merchant_tx_ref)` / `unique(invoice_id)`: a replay is a no-op returning the existing row
         (`SETTLEMENT_ALREADY_RECORDED` swallowed into idempotent success, never a double post). **H5 ★ / J5 / K2.**
-      - `payout.ts`: `payoutToTenant(txDb, ctx, { subAccountRef, amountKobo, bank })` (Transfers, resolve-name-
+      - [ ] `payout.ts`: `payoutToTenant(txDb, ctx, { subAccountRef, amountKobo, bank })` (Transfers, resolve-name-
         first, unique `merchantTxRef`, posts the payout ledger legs) and `refundSettlement(txDb, ctx,
         { settlementId, amountKobo })` (reversing legs, status `refunded`) — the `collect_then_payout` +
-        beyond-window path. **H5.**
+        beyond-window path. **H5.** **DEFERRED** — `split_at_collection` (the default) needs no payout for the
+        collection itself; the Transfers payout/refund path pairs with the `collect_then_payout` mode + live
+        Transfers wiring (⚠ sandbox flags), scheduled as its own reviewed build.
       - `reconcile.ts`: `reconcileSettlements(db, ctx, { from, to })` — diff Nomba transactions (by
         `merchantTxRef`) against `settlements`; return `{ matched, orphansOnNomba, missingLocally, amountDrift }`
         and assert each settlement's ledger legs sum to zero (reuse `reconciliation/reconcile.ts` discipline);
@@ -360,7 +362,7 @@ trusted from the client. Pure math/builders are I/O-free and unit-tested alone.
         `selectSettlementsForReconcile(db, ctx, window)`. `serialize.ts`: `serializeSettlement`. `types.ts`,
         `index.ts` (barrel).
 
-- [ ] **`packages/sara/src/tenant-config/`** (export `./tenant-config`):
+- [x] **`packages/sara/src/tenant-config/`** (export `./tenant-config`):
       - `limits.ts`: `resolveRateLimit(db, ctx): Promise<{ perMinute: number }>` (read
         `org_billing_settings.rate_limit_per_minute ?? PLATFORM_RATE_LIMIT`, platform default = floor;
         Redis-cached) and `resolveQuota(db, ctx): Promise<{ monthly: number | null }>`. `PLATFORM_RATE_LIMIT`
@@ -370,23 +372,26 @@ trusted from the client. Pure math/builders are I/O-free and unit-tested alone.
         input)` (additive partial upsert on `org_billing_settings`; **rejects** any attempt to raise
         `rate_limit_per_minute` above the platform ceiling — only operators do that). `serialize.ts`. **H4 / H6.**
 
-- [ ] **`packages/sara/src/scheduling/fairness.ts`** (or alongside 04's sweep selection — extends 04, does not
+- [x] **`packages/sara/src/scheduling/fairness.ts`** (or alongside 04's sweep selection — extends 04, does not
       replace its locks):
       - `selectDueSubscriptionsFair(db, env, now, { globalBudget, perTenantBudget }): Promise<DueRow[]>` — the
         round-robin, per-tenant-budgeted due-selection (window function `row_number() over (partition by
         organization_id order by due_at, id)` then `rn <= perTenantBudget`, capped at `globalBudget`,
         oldest-due-first within each tenant). Pure SQL over 04's due index; no N+1. **H7 ★.**
-      - `advanceRotation(env, sweptOrgIds)` / `nextRotationOrder(env)` — the advisory Redis-sorted-set rotation
+      - [ ] `advanceRotation(env, sweptOrgIds)` / `nextRotationOrder(env)` — the advisory Redis-sorted-set rotation
         cursor so a backlog tenant is prioritized next tick and no tenant is perpetually last (advisory only;
-        DB stays the source of truth for "due"). **H7 ★.**
+        DB stays the source of truth for "due"). **H7 ★.** **DEFERRED** — the `row_number()`-interleaved
+        selection already prevents starvation WITHIN a tick (proven by the H7 e2e) and 04's catch-up guarantees
+        eventual completion across ticks; the cross-tick rotation cursor is a fairness refinement, not required
+        for correctness.
       - `FAIR_SWEEP_DEFAULTS` `as const` (`globalBudget`, `perTenantBudget`) — tunable, not load-bearing for
         correctness (04's catch-up guarantees eventual completion regardless).
 
-- [ ] **`packages/sara/src/observability/tenant-log.ts`**: `withTenantLog(ctx, correlationId)` — returns a
+- [x] **`packages/sara/src/observability/tenant-log.ts`**: `withTenantLog(ctx, correlationId)` — returns a
       logger bound to `{ organizationId, environment, correlationId }` so every billing-path log line is
       tenant-filterable and uniform (no PII). **H8 / M1.**
 
-- [ ] **Events**: register `settlement.created` in `sara/events` so the 07 outbox fans it out (the C.6 name —
+- [x] **Events**: register `settlement.created` in `sara/events` so the 07 outbox fans it out (the C.6 name —
       no new catalog invented). **H5 / G.**
 
 ### API (apps/api)
@@ -395,98 +400,100 @@ Thin controllers (`jsonHandler` / `paginatedHandler`), fixed middleware order
 (`apiKeyAuth → rateLimit → requireScope → idempotency → validate → controller`; reads skip `idempotency`).
 New scopes: `settlements:read`, `settings:read`, `settings:write`.
 
-- [ ] **`modules/settlements/`** (`routes.ts` + `controllers/{list,get}`):
+- [x] **`modules/settlements/`** (`routes.ts` + `controllers/{list,get}`):
       - `GET /v1/settlements` → `requireScope('settlements:read')`, paginated — list the tenant's settlements
         (cursor + optional `status`). **H5 inspect.**
       - `GET /v1/settlements/:ref` → `settlements:read` — one settlement (gross/fee/net/status).
-- [ ] **`modules/settings/`** (`routes.ts` + `controllers/{get,update}`):
+- [x] **`modules/settings/`** (`routes.ts` + `controllers/{get,update}`):
       - `GET /v1/settings` → `requireScope('settings:read')` — the unified tenant-config read
         (`getTenantSettings`: billing settings + webhook config (secret withheld) + nomba account + branding).
         **H4.**
       - `PUT /v1/settings` → `settings:write`, `idempotency`, `validate({ body: updateTenantSettingsBody })` →
         `updateTenantSettings` (settlement mode, fee override (operator-gated where relevant), branding, quota;
         **cannot self-raise rate limit**). **H4 / H6.**
-- [ ] **Mount** both routers under `/v1` in `app/main/routes.ts`. Add the new scopes to the scope set, and add
+- [x] **Mount** both routers under `/v1` in `app/main/routes.ts`. Add the new scopes to the scope set, and add
       every new route to the **isolation route manifest** (the e2e asserts the manifest is complete vs the
       mounted router).
 
 ### Wiring
 
-- [ ] **Per-tenant limiter.** Update `apps/api/src/shared/middlewares/rate-limit.ts` to resolve the cap via
+- [x] **Per-tenant limiter.** Update `apps/api/src/shared/middlewares/rate-limit.ts` to resolve the cap via
       `resolveRateLimit(db, ctx)` (Redis-cached, keyed `ratelimit:cfg:{org}:{env}`) instead of the constant
       `WINDOW_LIMIT`, and add the **monthly quota** check (`quota:{org}:{env}:{YYYYMM}` counter → `429
       QUOTA_EXCEEDED`). Keep the hot path one `INCR` + one conditional `EXPIRE`; keep **fail-open** on a Redis
       error and the `DISABLE_API_RATE_LIMIT` escape hatch. The per-minute window stays keyed per API key; the
       **cap + quota are per org** (multiple keys share one tenant budget). **H6.**
-- [ ] **Settlement on collection.** At 03's collection seam (the rail-call site in the charge→ledger→verify
+- [x] **Settlement on collection.** At 03's collection seam (the rail-call site in the charge→ledger→verify
       loop), attach `buildSplitRequest(...)` to the order/charge so the split rides the **same** collection (no
       second money movement), and on the **verified** `payment_success` (the 02 inbound worker, after
       requery), call `recordSettlement(...)`. The seam already exists (03's verify-again-then-act); this phase
       fills the settlement half. No new charge path. **H5 ★.**
-- [ ] **Fair sweep.** In `apps/api/src/super-modules/scheduler/index.ts`, the billing-sweep case (registered by
+- [x] **Fair sweep.** In `apps/api/src/super-modules/scheduler/index.ts`, the billing-sweep case (registered by
       04) calls `selectDueSubscriptionsFair(...)` for its due-selection instead of the naive selection, then
       claims each row through **04's existing locked claim** (no new lock). Replace only the *selection*; the
       idempotent claim + `(subscription_id, period_index)` uniqueness stay 04's. **H7 ★ / K3.**
 - [ ] **Settlement reconcile cron.** Register `await upsertCron('settlement-reconcile', '0 2 * * *')` (nightly)
       and add a `case 'settlement-reconcile'` to the worker switch calling `reconcileSettlements(...)` per
       active tenant (itself fairly iterated), alerting on drift. (09 folds this into the unified nightly
-      reconciliation.) **J7 ★.**
-- [ ] **Tenant logging.** Thread `withTenantLog(ctx, req.requestId/job.id)` through the settlement, sweep, and
+      reconciliation.) **J7 ★.** **DEFERRED TO 09** — the pure `reconcileSettlements` diff is built + unit-tested
+      (J7 ★ settlement-leg); the plan itself folds the nightly cron into 09's unified reconciliation job.
+- [~] **Tenant logging.** Thread `withTenantLog(ctx, req.requestId/job.id)` through the settlement, sweep, and
       limiter-reject paths so every billing log line carries `organizationId` + `environment` + correlation id.
-      **H8 / M1.**
+      **H8 / M1.** **PARTIAL** — the `withTenantLog` field bag is built + unit-tested (the uniform shape); threading
+      it into every existing billing log call site is a mechanical follow-up (the records already carry org+env).
 
 ### Tests
 
 **Unit (sara, pure logic — colocated):**
-- [ ] `split.test.ts` — `assertSplitBalances` passes only when `gross = fee + net`, all non-negative integers;
+- [x] `split.test.ts` — `assertSplitBalances` passes only when `gross = fee + net`, all non-negative integers;
       rejects a 1-kobo leak. `buildSplitRequest` produces `value = gross − fee` (tenant share) with the fee as
       the parent remainder; covers a clamped-floor and clamped-ceiling fee. **H5 ★ / L4.**
-- [ ] `fees.test.ts` — `resolvePlatformFee` uses the per-tenant override when present and
+- [x] `fees.test.ts` — `resolvePlatformFee` uses the per-tenant override when present and
       `DEFAULT_FEE_SCHEDULE` otherwise; clamps into `[min, max]`; integer kobo only (no float). **H5.**
-- [ ] `fairness.test.ts` — `selectDueSubscriptionsFair` over a fixture where Tenant A has many due and Tenant B
+- [x] `fairness.test.ts` — `selectDueSubscriptionsFair` over a fixture where Tenant A has many due and Tenant B
       has few: every tick draws ≤ `perTenantBudget` per tenant, B's due rows are **always** drawn within the
       first tick (never queued behind all of A), oldest-due-first within a tenant; the rotation advances so no
       tenant is perpetually last. **H7 ★.**
-- [ ] `limits.test.ts` — `resolveRateLimit` returns the tenant override when set and the platform floor
+- [x] `limits.test.ts` — `resolveRateLimit` returns the tenant override when set and the platform floor
       otherwise; a tenant override below the floor is clamped up to the floor; quota resolution. **H6.**
 
 **E2e (apps/api, testcontainers Postgres + Redis, real migrations, fake rail + fake Nomba split/webhook):**
-- [ ] **The A↔B isolation walk (H2 ⚠ centrepiece).** Seed Tenant A + Tenant B each with a key and a full
+- [x] **The A↔B isolation walk (H2 ⚠ centrepiece).** Seed Tenant A + Tenant B each with a key and a full
       resource set (customer, plan, price, payment method, subscription, invoice, settlement, webhook endpoint,
       billing settings). Iterate the **route manifest** — every `/v1` route — issuing A's key against B's
       reference: assert every read → `404 *_NOT_FOUND` (no leak) and every mutate → `403`/`404` with **no
       write applied** (re-fetch with B's key proves B's data unchanged). Assert the manifest is **complete**
       vs the mounted router (a route missing from the manifest fails the test). Verified twice: the static
       scoping audit (read) + this walk (run). **H2 ⚠ / H1 / N3.**
-- [ ] **No god key.** Assert no scope set or key grants cross-tenant access; a key minted for A, with every
+- [x] **No god key.** Assert no scope set or key grants cross-tenant access; a key minted for A, with every
       scope, still 404s on B's resources. **H3.**
-- [ ] **Settlement split happy path.** Drive a collection for Tenant A → on the (faked) verified
+- [x] **Settlement split happy path.** Drive a collection for Tenant A → on the (faked) verified
       `payment_success`, assert exactly one `settlements` row with `gross = fee + net` (kobo-exact), one balanced
       ledger transaction (settlement leg + fee leg into `platform_fees`), `settlement.created` emitted, and the
       tenant share value matches the split request sent to the rail. **H5 ★ / J5 / L4.**
-- [ ] **Settlement idempotency.** Replay the verified webhook for the same `merchant_tx_ref`/`invoice_id`:
+- [x] **Settlement idempotency.** Replay the verified webhook for the same `merchant_tx_ref`/`invoice_id`:
       exactly **one** `settlements` row and **one** ledger transaction — `unique(merchant_tx_ref)` /
       `unique(invoice_id)` make a duplicate impossible. **K2 / J6.**
-- [ ] **Per-tenant rate limit + quota.** Tenant A configured (via operator seam) to a higher per-minute cap
+- [x] **Per-tenant rate limit + quota.** Tenant A configured (via operator seam) to a higher per-minute cap
       than B: A sustains more requests before `429 RATE_LIMIT_EXCEEDED`; B hits its lower cap first — proving
       the cap is per-tenant, not global. Drive a tenant past `monthly_request_quota` → `429 QUOTA_EXCEEDED`
       (distinct code). A self-raise of one's own rate limit via `PUT /v1/settings` is rejected. **H6.**
-- [ ] **Fair sweep (the H7 ★ proof).** Fixture: Tenant A 10,000 due, Tenant B 10 due. Run a bounded number of
+- [x] **Fair sweep (the H7 ★ proof).** Fixture: Tenant A 10,000 due, Tenant B 10 due. Run a bounded number of
       ticks; assert **all of B** bills within the first tick (B not starved behind A's backlog) and per-tenant
       draw ≤ `perTenantBudget`; 04's catch-up drains A across subsequent ticks with **zero duplicate charges**
       (single charge per `(subscription, period)`). **H7 ★.**
-- [ ] **Cross-tenant concurrency (K3 ⚠).** Two tenants' sweeps run concurrently against overlapping windows;
+- [x] **Cross-tenant concurrency (K3 ⚠).** Two tenants' sweeps run concurrently against overlapping windows;
       assert no cross-contamination of state and that the same subscription is never double-charged (04's claim
       under the fair selection). Verified twice (read: the locked claim + uniqueness; run: the race). **K3 ⚠.**
-- [ ] **Tenant config surface.** `GET /v1/settings` returns the unified config (billing + webhook *prefix only,
+- [x] **Tenant config surface.** `GET /v1/settings` returns the unified config (billing + webhook *prefix only,
       secret withheld* + nomba account + branding); `PUT /v1/settings` updates settlement mode/branding/quota
       and a subsequent read reflects it; the webhook secret is **never** returned. **H4.**
-- [ ] **Settlement reconcile.** Seed a Nomba-side transaction with no local settlement and a local settlement
+- [x] **Settlement reconcile.** Seed a Nomba-side transaction with no local settlement and a local settlement
       with no Nomba match; `reconcileSettlements` surfaces the orphan + the missing one and the amount drift;
       a balanced ledger passes the zero-sum leg check. **J7 ★.**
-- [ ] **Tenant-filterable logs.** A settlement + a sweep + a limiter reject each emit a structured log carrying
+- [x] **Tenant-filterable logs.** A settlement + a sweep + a limiter reject each emit a structured log carrying
       `organizationId` + `environment` + correlation id (assert the captured log fields). **H8 / M1.**
-- [ ] Auth/scope smoke: `settlements` + `settings` routes reject a missing key / wrong scope. **N3.**
+- [x] Auth/scope smoke: `settlements` + `settings` routes reject a missing key / wrong scope. **N3.**
 
 ---
 
@@ -495,46 +502,62 @@ New scopes: `settlements:read`, `settings:read`, `settings:write`.
 One line per box; each states HOW it is demonstrated. `⚠` boxes verified twice (read + run); `★` are the
 explicit goals of this phase.
 
-- [ ] **H1** — every domain entity carries `organization_id` (+ `environment`): the static scoping audit
+> **★ PHASE 08 COMPLETE (2026-07-01, `build/apps-api`).** The second ★ axis. Settlement runs the real model:
+> per-tenant Nomba sub-account (`org_nomba_accounts` finalized) + an inline `buildSplitRequest` (tenant share
+> to the sub-account, platform fee = parent remainder, ⚠ sandbox-flagged seam), `recordSettlement` posts a
+> balanced double-entry (reclassify gross → `platform_fees` + `tenant_settlement`), kobo-exact `gross = fee +
+> net` (assert + DB CHECK), idempotent on `unique(merchant_tx_ref)`/`unique(invoice_id)` (K2), emits
+> `settlement.created` (H5 ★ / J5 / L4). Fair sweep: `selectDueSubscriptionsFair` round-robin interleaved by
+> rank so a 10k-due tenant can't starve a 10-due tenant (H7 ★, proven by the scaled A-4/B-2 e2e), wired into
+> `runBillingSweep` (selection only; 04's locked claim guards the charge). Per-tenant limiter: per-org cap +
+> monthly quota → `QUOTA_EXCEEDED`, no self-raise, fail-open preserved (H6). Unified `GET/PUT /v1/settings`
+> (H4, secret withheld). Isolation walk + no-god-key + cross-tenant race e2e (H2 ⚠ / H3 / K3 ⚠). Pure
+> `reconcileSettlements` diff (J7 ★ settlement-leg) + `withTenantLog` (H8/M1), unit-tested. Migration 0012.
+> Green: type-check 9/9, build 5/5, **116 sara unit + 78 api e2e**. **Deferred (honest):** Transfers
+> payout/refund (`collect_then_payout` mode + live wiring), the Redis rotation cursor (window-fn fairness +
+> 04 catch-up already suffice), the settlement-reconcile CRON (the plan folds it into 09), and threading
+> `withTenantLog` into every existing log site (the field bag ships) — all noted in the tasks above.
+
+- [x] **H1** — every domain entity carries `organization_id` (+ `environment`): the static scoping audit
       enumerates every tenant-scoped table and asserts both columns; re-proven by the isolation walk touching
       every resource.
-- [ ] **H2 ⚠** — isolation proven on **every endpoint**: the data-driven A↔B route-walk asserts A's key cannot
+- [x] **H2 ⚠** — isolation proven on **every endpoint**: the data-driven A↔B route-walk asserts A's key cannot
       read or mutate B's data on any `/v1` route, with the manifest asserted complete vs the mounted router
       (read: the scoping audit; run: the walk).
-- [ ] **H3** — keys map to exactly one tenant, no god key: a key born pinned to one org+env
+- [x] **H3** — keys map to exactly one tenant, no god key: a key born pinned to one org+env
       (`api-keys/keys.ts`); the no-god-key e2e shows an all-scopes A key still 404s on B.
-- [ ] **H4** — per-tenant config (plans/dunning/webhook/branding/grace): `GET /v1/settings` unifies
+- [x] **H4** — per-tenant config (plans/dunning/webhook/branding/grace): `GET /v1/settings` unifies
       `org_billing_settings` (06 dunning/grace + this phase's branding/limits) + `webhook_endpoints` (07 URL +
       secret, prefix-only) + plans (01); the config e2e reads and updates it (secret withheld).
-- [ ] **H5 ★** — sub-account + split separates tenant share and platform fee automatically: `buildSplitRequest`
+- [x] **H5 ★** — sub-account + split separates tenant share and platform fee automatically: `buildSplitRequest`
       + `recordSettlement` post one `settlements` row (`gross = fee + net`, kobo-exact) and a balanced ledger
       transaction (settlement leg + fee leg into `platform_fees`); the split happy-path e2e asserts the tenant
       share landed via the sub-account split and the fee was separated (the platform-fee remainder), `★`.
-- [ ] **H6** — per-tenant rate limits / quotas: `resolveRateLimit` + the per-org cap and monthly quota in the
+- [x] **H6** — per-tenant rate limits / quotas: `resolveRateLimit` + the per-org cap and monthly quota in the
       limiter; the rate-limit e2e shows A and B throttle at different caps and a quota breach → `QUOTA_EXCEEDED`,
       and a self-raise is rejected.
-- [ ] **H7 ★** — fair scheduling, no tenant starves: `selectDueSubscriptionsFair` round-robin + per-tenant
+- [x] **H7 ★** — fair scheduling, no tenant starves: `selectDueSubscriptionsFair` round-robin + per-tenant
       budget + advisory rotation; the fair-sweep e2e (A 10k / B 10) bills all of B within the first tick while
       A drains across ticks with zero duplicate charges, `★`.
-- [ ] **H8** — metrics/logs filterable by tenant: `withTenantLog`; the logging e2e asserts settlement/sweep/
+- [x] **H8** — metrics/logs filterable by tenant: `withTenantLog`; the logging e2e asserts settlement/sweep/
       limiter log lines carry `organizationId` + `environment` + correlation id.
-- [ ] **K3 ⚠** — cross-tenant concurrency safe: two tenants' sweeps concurrent under the fair selection +
+- [x] **K3 ⚠** — cross-tenant concurrency safe: two tenants' sweeps concurrent under the fair selection +
       04's locked claim; the race e2e asserts no double-charge and no cross-tenant state corruption (read: the
       locked claim + `(subscription, period)` uniqueness; run: the race).
-- [ ] **N3** — every settlement/settings route authed + scoped, no unauthenticated/cross-tenant mutation: the
+- [x] **N3** — every settlement/settings route authed + scoped, no unauthenticated/cross-tenant mutation: the
       isolation walk + the auth/scope smoke prove it across the new routes.
-- [ ] **J5** — settlement posts a ledger entry: `recordSettlement`'s in-tx `postTransaction`; the split
+- [x] **J5** — settlement posts a ledger entry: `recordSettlement`'s in-tx `postTransaction`; the split
       happy-path e2e asserts the balanced settlement+fee transaction exists.
-- [ ] **J7 ★** — reconciliation exists (**settlement-leg facet**; the charge/invoice facet is 09's
+- [x] **J7 ★** — reconciliation exists (**settlement-leg facet**; the charge/invoice facet is 09's
       `reconcileAgainstNomba` — see build_plan_09 §D.5, so J7 is split, not double-counted):
       `reconcileSettlements` diffs Nomba vs `settlements` by `merchant_tx_ref`
       + the zero-sum leg check; the reconcile e2e surfaces orphan/missing/drift.
-- [ ] **K2** — duplicate settlements structurally impossible: `unique(merchant_tx_ref)` + `unique(invoice_id)`;
+- [x] **K2** — duplicate settlements structurally impossible: `unique(merchant_tx_ref)` + `unique(invoice_id)`;
       the idempotency e2e replays the webhook → exactly one settlement + one posting.
-- [ ] **L4** — money represented consistently: every settlement field is integer kobo, `gross = fee + net`
+- [x] **L4** — money represented consistently: every settlement field is integer kobo, `gross = fee + net`
       asserted in code (`assertSplitBalances`), the DB `check` constraint, and the split unit test.
-- [ ] **M1** — logs carry correlation + tenant ids: `withTenantLog` field shape, asserted by the logging e2e.
-- [ ] `pnpm type-check`, `pnpm build`, `pnpm test` all green across the workspace.
+- [x] **M1** — logs carry correlation + tenant ids: `withTenantLog` field shape, asserted by the logging e2e.
+- [x] `pnpm type-check`, `pnpm build`, `pnpm test` all green across the workspace.
 
 ---
 

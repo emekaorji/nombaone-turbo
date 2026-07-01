@@ -14,6 +14,7 @@ import { coerceFailureReason } from '../nomba/failure-taxonomy';
 import { getOrgBillingSettings } from '../org';
 import { resolvePartialCollection } from '../proration';
 import { getRail } from '../rails';
+import { findTenantSubAccount, recordSettlement } from '../settlement';
 import { enterPastDue } from '../subscriptions';
 import { loadSubscriptionRowById, railKeyForMethod, reconcilePaidSubEffects } from './effects';
 
@@ -82,6 +83,10 @@ export async function collectForInvoice(
       });
       const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
       await reconcilePaidSubEffects(txDb, ctx, linked);
+      // H5: settle the verified collection through the tenant's sub-account split
+      // (best-effort — only tenants onboarded to a sub-account settle; others are
+      // unaffected). Idempotent on the invoice reference (merchant_tx_ref).
+      await settleCollectionIfConfigured(txDb, ctx, linked);
       return { outcome: 'paid', invoice: linked };
     }
 
@@ -138,6 +143,27 @@ export async function collectForInvoice(
   }
 
   return { outcome: 'pending', invoice };
+}
+
+/**
+ * H5: settle a verified full collection through the tenant's sub-account split.
+ * Best-effort and gated — only a tenant onboarded to a sub-account settles; the fee
+ * engine + `recordSettlement` handle the rest (idempotent on the invoice reference).
+ */
+async function settleCollectionIfConfigured(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  invoice: InvoiceRow
+): Promise<void> {
+  if (!invoice.subscriptionId || invoice.amountDue <= 0) return;
+  const sub = await findTenantSubAccount(txDb, ctx);
+  if (!sub) return;
+  await recordSettlement(txDb, ctx, {
+    invoiceId: invoice.id,
+    customerId: invoice.customerId,
+    merchantTxRef: invoice.reference,
+    grossKobo: invoice.amountDue,
+  });
 }
 
 /** Move an `active`/`trialing` subscription to `past_due` (06 dunning takes over).

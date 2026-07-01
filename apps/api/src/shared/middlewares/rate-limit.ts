@@ -1,5 +1,7 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
+import { resolveQuota, resolveRateLimit } from '@nombaone/sara/tenant-config';
 
+import { db } from '../config/db';
 import { env } from '../config/env';
 import { redis } from '../config/redis';
 import { logger } from '../observability/logger';
@@ -27,10 +29,37 @@ import type { RequestHandler } from 'express';
  * `X-RateLimit-Remaining`, plus `Retry-After` on rejection.
  */
 
-/** Requests allowed per window, per key. */
-const WINDOW_LIMIT = 120;
 /** Window length in seconds. */
 const WINDOW_SECONDS = 60;
+/** How long the resolved per-tenant config is cached in Redis (short — settings are cold). */
+const CONFIG_TTL_SECONDS = 60;
+
+interface LimiterConfig {
+  perMinute: number;
+  monthlyQuota: number | null;
+}
+
+/**
+ * Resolve a tenant's cap + monthly quota, cached in Redis so the hot path stays
+ * cheap (one GET; a cold miss does one DB read). The per-minute WINDOW is keyed per
+ * API key, but the CAP + QUOTA are per org so a tenant's keys share one budget (H6).
+ */
+async function resolveLimiterConfig(
+  organizationId: string,
+  environment: 'test' | 'live'
+): Promise<LimiterConfig> {
+  const cacheKey = `ratelimit:cfg:${organizationId}:${environment}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) return JSON.parse(cached) as LimiterConfig;
+  const ctx = { organizationId, environment };
+  const [{ perMinute }, { monthly }] = await Promise.all([
+    resolveRateLimit(db, ctx),
+    resolveQuota(db, ctx),
+  ]);
+  const cfg: LimiterConfig = { perMinute, monthlyQuota: monthly };
+  await redis.set(cacheKey, JSON.stringify(cfg), 'EX', CONFIG_TTL_SECONDS);
+  return cfg;
+}
 
 export const rateLimit: RequestHandler = async (req, res, next) => {
   if (env.DISABLE_API_RATE_LIMIT) {
@@ -45,27 +74,46 @@ export const rateLimit: RequestHandler = async (req, res, next) => {
     return;
   }
 
+  const { organizationId, environment } = req.apiKey;
   const redisKey = `ratelimit:${req.apiKey.apiKeyId}:${Math.floor(Date.now() / 1000 / WINDOW_SECONDS)}`;
 
   try {
+    const cfg = await resolveLimiterConfig(organizationId, environment);
+
+    // Monthly quota (per org) — coarse, Redis-authoritative in-window. `null` ⇒ off.
+    if (cfg.monthlyQuota != null) {
+      const now = new Date();
+      const period = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+      const quotaKey = `quota:${organizationId}:${environment}:${period}`;
+      const used = await redis.incr(quotaKey);
+      if (used === 1) await redis.expire(quotaKey, 40 * 24 * 3600); // > one month
+      if (used > cfg.monthlyQuota) {
+        throw AppError.TooManyRequests(
+          'Monthly request quota exceeded',
+          { quota: cfg.monthlyQuota, period },
+          NOMBAONE_ERROR_CODES.QUOTA_EXCEEDED
+        );
+      }
+    }
+
     const count = await redis.incr(redisKey);
     if (count === 1) {
       // First hit in this window — set the expiry so the counter self-resets.
       await redis.expire(redisKey, WINDOW_SECONDS);
     }
 
-    const remaining = Math.max(0, WINDOW_LIMIT - count);
-    res.setHeader('X-RateLimit-Limit', String(WINDOW_LIMIT));
+    const remaining = Math.max(0, cfg.perMinute - count);
+    res.setHeader('X-RateLimit-Limit', String(cfg.perMinute));
     res.setHeader('X-RateLimit-Remaining', String(remaining));
 
-    if (count > WINDOW_LIMIT) {
+    if (count > cfg.perMinute) {
       // Seconds until the current fixed window rolls over.
       const ttl = await redis.ttl(redisKey);
       const retryAfter = ttl > 0 ? ttl : WINDOW_SECONDS;
       res.setHeader('Retry-After', String(retryAfter));
       throw AppError.TooManyRequests(
         'Rate limit exceeded',
-        { limit: WINDOW_LIMIT, windowSeconds: WINDOW_SECONDS, retryAfter },
+        { limit: cfg.perMinute, windowSeconds: WINDOW_SECONDS, retryAfter },
         NOMBAONE_ERROR_CODES.RATE_LIMIT_EXCEEDED
       );
     }

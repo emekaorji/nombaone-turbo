@@ -15,10 +15,10 @@ export interface TenantSubAccount {
  * Resolve a tenant's settlement sub-account (H5). A settlement cannot proceed
  * without one — `SETTLEMENT_SUBACCOUNT_NOT_FOUND` if the tenant was never onboarded.
  */
-export async function resolveTenantSubAccount(
+export async function findTenantSubAccount(
   db: InfraDb,
   ctx: DomainContext
-): Promise<TenantSubAccount> {
+): Promise<TenantSubAccount | null> {
   const [row] = await db
     .select()
     .from(orgNombaAccountsTable)
@@ -30,16 +30,26 @@ export async function resolveTenantSubAccount(
       )
     )
     .limit(1);
-  if (!row) {
+  if (!row) return null;
+  return {
+    accountRef: row.accountRef,
+    subAccountId: row.subAccountId ?? row.nombaAccountId,
+    status: row.status,
+  };
+}
+
+/** Like {@link findTenantSubAccount} but throws when the tenant was never onboarded. */
+export async function resolveTenantSubAccount(
+  db: InfraDb,
+  ctx: DomainContext
+): Promise<TenantSubAccount> {
+  const found = await findTenantSubAccount(db, ctx);
+  if (!found) {
     throw AppError.UnprocessableEntity(
       'tenant has no Nomba sub-account; cannot settle',
       { organizationId: ctx.organizationId },
       NOMBAONE_ERROR_CODES.SETTLEMENT_SUBACCOUNT_NOT_FOUND
     );
   }
-  return {
-    accountRef: row.accountRef,
-    subAccountId: row.subAccountId ?? row.nombaAccountId,
-    status: row.status,
-  };
+  return found;
 }

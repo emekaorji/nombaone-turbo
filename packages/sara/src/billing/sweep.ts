@@ -1,3 +1,4 @@
+import { selectDueSubscriptionsFair, type FairSweepConfig } from '../scheduling';
 import { findDueSubscriptions, type DueCursor } from './queries';
 
 import type { DomainContext, Environment, InfraDb } from '../context';
@@ -16,6 +17,12 @@ export interface BillingSweepDeps {
   batchSize: number;
   /** Infra enqueue, injected so sara stays free of the queue layer (DI). */
   enqueue: (job: BillingSweepEnqueueJob) => Promise<unknown>;
+  /**
+   * H7 ★: fair, per-tenant-budgeted selection instead of the naive keyset scan. When
+   * set, ONE bounded tick draws a fair share per tenant (no tenant starves); 04's
+   * catch-up drains backlogs across ticks. Selection only — the claim stays 04's.
+   */
+  fair?: { environment: Environment; config?: FairSweepConfig };
 }
 
 /**
@@ -27,8 +34,30 @@ export interface BillingSweepDeps {
  * queue dedups by jobId (K4).
  */
 export async function runBillingSweep(deps: BillingSweepDeps): Promise<{ enqueued: number }> {
-  let cursor: DueCursor | undefined;
   let enqueued = 0;
+
+  // H7 ★: fair mode — one bounded, round-robin tick (04's catch-up drains the rest).
+  if (deps.fair) {
+    const rows = await selectDueSubscriptionsFair(
+      deps.db,
+      deps.fair.environment,
+      deps.now,
+      deps.fair.config
+    );
+    for (const row of rows) {
+      await deps.enqueue({
+        subscriptionId: row.id,
+        subscriptionReference: row.reference,
+        periodIndex: row.currentPeriodIndex,
+        organizationId: row.organizationId,
+        environment: row.environment,
+      });
+      enqueued += 1;
+    }
+    return { enqueued };
+  }
+
+  let cursor: DueCursor | undefined;
 
   for (;;) {
     const { rows, nextCursor } = await findDueSubscriptions(deps.db, {

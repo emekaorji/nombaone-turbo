@@ -18,6 +18,9 @@ export async function handleBillingSweep(): Promise<{ enqueued: number }> {
     now: new Date(),
     batchSize: env.BILLING_BATCH_SIZE,
     enqueue: (data) => enqueueBilling(data),
+    // H7 ★: fair, per-tenant-budgeted selection so a huge-backlog tenant can't
+    // starve a small one; 04's catch-up drains the rest across ticks.
+    fair: { environment: env.INFRA_ENVIRONMENT },
   });
   logger.info('[cron] billing-sweep enqueued', { enqueued });
   return { enqueued };

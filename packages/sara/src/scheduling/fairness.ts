@@ -7,6 +7,8 @@ export interface FairDueRow {
   id: string;
   reference: string;
   organizationId: string;
+  environment: Environment;
+  currentPeriodIndex: number;
 }
 
 export interface FairSweepConfig {
@@ -35,9 +37,10 @@ export async function selectDueSubscriptionsFair(
   cfg: FairSweepConfig = FAIR_SWEEP_DEFAULTS
 ): Promise<FairDueRow[]> {
   const result = await db.execute(sql`
-    SELECT id, reference, organization_id AS "organizationId"
+    SELECT id, reference, organization_id AS "organizationId",
+           environment, current_period_index AS "currentPeriodIndex"
     FROM (
-      SELECT id, reference, organization_id, next_billing_at,
+      SELECT id, reference, organization_id, environment, current_period_index, next_billing_at,
              row_number() OVER (
                PARTITION BY organization_id ORDER BY next_billing_at ASC, id ASC
              ) AS rn
