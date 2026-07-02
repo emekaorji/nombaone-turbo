@@ -60,6 +60,8 @@ export const orgBillingSettingsTable = pgTable(
     platformFeeBps: integer('platform_fee_bps'), // null ⇒ DEFAULT_FEE_SCHEDULE
     platformFeeMinKobo: bigint('platform_fee_min_kobo', { mode: 'number' }),
     platformFeeMaxKobo: bigint('platform_fee_max_kobo', { mode: 'number' }),
+    // Minimum a tenant may withdraw / that stays as a buffer on payout. null ⇒ 0.
+    minWithdrawableKobo: bigint('min_withdrawable_kobo', { mode: 'number' }),
     branding: jsonb('branding')
       .$type<{ displayName?: string; supportEmail?: string; logoUrl?: string; primaryColorHex?: string }>()
       .notNull()

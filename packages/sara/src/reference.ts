@@ -35,6 +35,8 @@ export type ReferenceDomain =
   | 'CRG' // credit grant
   | 'DUN' // dunning attempt
   | 'STL' // settlement
+  | 'REF' // refund
+  | 'PAY' // payout
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {

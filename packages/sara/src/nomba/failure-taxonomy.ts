@@ -13,6 +13,7 @@ export type PaymentFailureReason =
   | 'do_not_honor'
   | 'mandate_suspended'
   | 'processor_unavailable'
+  | 'otp_required'
   | 'unknown';
 
 /**
@@ -23,6 +24,7 @@ export function mapGatewayMessage(gatewayMessage?: string, _code?: string): Paym
   const m = (gatewayMessage ?? '').toLowerCase().trim();
   if (!m) return 'unknown';
 
+  if (m.includes('otp') || m.includes('3ds')) return 'otp_required';
   if (m.includes('insufficient')) return 'insufficient_funds';
   if (m.includes('token') && m.includes('expir')) return 'token_expired';
   if (m.includes('expir') && m.includes('card')) return 'expired_card';
@@ -58,6 +60,7 @@ const ALL_FAILURE_REASONS: ReadonlySet<string> = new Set<PaymentFailureReason>([
   'do_not_honor',
   'mandate_suspended',
   'processor_unavailable',
+  'otp_required',
   'unknown',
 ]);
 

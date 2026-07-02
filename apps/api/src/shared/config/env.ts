@@ -51,6 +51,13 @@ const envSchema = z.object({
     .union([z.literal('true'), z.literal('false')])
     .optional()
     .transform((v) => v === 'true'),
+  // Tenant PAYOUT provider transfer (F2). Default OFF: `payoutToTenant` posts the
+  // ledger debit + records the payout as `ledger_posted` but does NOT call the
+  // ⚠UNCONFIRMED Nomba `bankTransfer`. Flip on ONLY after a live bankTransfer confirm.
+  NOMBA_PAYOUT_ENABLED: z
+    .union([z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === 'true'),
 
   /**
    * Billing scheduler (04). A single fixed billing zone + deterministic hour make
@@ -70,6 +77,8 @@ const envSchema = z.object({
   // looks back a little over a day so consecutive runs overlap and nothing is missed.
   RECONCILE_NOMBA_CRON: z.string().min(1).default('0 2 * * *'),
   RECONCILE_NOMBA_WINDOW_HOURS: z.coerce.number().int().positive().default(26),
+  // Mandate activation sweep (direct debit): poll `consent_pending` mandates → active.
+  MANDATE_ACTIVATION_SWEEP_CRON: z.string().min(1).default('*/10 * * * *'),
   INCOMPLETE_EXPIRY_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
   TRIAL_NOTICE_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
   PM_EXPIRY_NOTICE_WINDOW_DAYS: z.coerce.number().int().positive().default(14),

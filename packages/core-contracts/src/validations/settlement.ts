@@ -6,3 +6,17 @@ export const listSettlementsQuery = z.object({
   status: z.enum(['pending', 'settled', 'reconciled', 'failed', 'refunded']).optional(),
 });
 export type ListSettlementsQuery = z.infer<typeof listSettlementsQuery>;
+
+/** Refund a settlement's tenant share (default = full remaining refundable). */
+export const refundSettlementBody = z.object({
+  amountKobo: z.number().int().positive().optional(),
+});
+export type RefundSettlementBody = z.infer<typeof refundSettlementBody>;
+
+/** Tenant-level withdrawal of settled funds, honouring the escrow lock. */
+export const createPayoutBody = z.object({
+  amountKobo: z.number().int().positive(),
+  bankCode: z.string().min(1),
+  accountNumber: z.string().min(1),
+});
+export type CreatePayoutBody = z.infer<typeof createPayoutBody>;

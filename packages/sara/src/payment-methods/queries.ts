@@ -7,9 +7,42 @@ import { emitEvent } from '../events';
 import { buildPage, clampLimit, decodeCursor } from '../pagination';
 import { serializePaymentMethod } from './serialize';
 
-import type { DomainContext, InfraDb, InfraTxDb } from '../context';
+import type { DomainContext, Environment, InfraDb, InfraTxDb } from '../context';
 import type { Page } from '../pagination';
 import type { ListPaymentMethodsOptions, PaymentMethodResponseData } from './types';
+
+export interface PendingMandate {
+  organizationId: string;
+  reference: string;
+}
+
+/**
+ * Select `consent_pending` direct-debit mandates for the activation sweep — a NIBSS
+ * mandate has no consent webhook, so a cron polls each pending mandate's status until
+ * it goes ACTIVE. Env-scoped (the sweep runs per environment); the handler rebuilds
+ * each mandate's owning-org context to poll it.
+ */
+export async function selectPendingMandates(
+  db: InfraDb,
+  environment: Environment,
+  limit: number
+): Promise<PendingMandate[]> {
+  return db
+    .select({
+      organizationId: paymentMethodsTable.organizationId,
+      reference: paymentMethodsTable.reference,
+    })
+    .from(paymentMethodsTable)
+    .where(
+      and(
+        eq(paymentMethodsTable.environment, environment),
+        eq(paymentMethodsTable.kind, 'mandate'),
+        eq(paymentMethodsTable.status, 'consent_pending')
+      )
+    )
+    .orderBy(desc(paymentMethodsTable.createdAt))
+    .limit(limit);
+}
 
 /** Resolve one payment method by reference within scope (joins the customer ref). */
 export async function getPaymentMethodByReference(

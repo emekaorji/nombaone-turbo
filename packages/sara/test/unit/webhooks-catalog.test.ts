@@ -58,6 +58,17 @@ describe('webhooks/catalog — the frozen event set (G1/G5/G7)', () => {
   it('states an at-least-once delivery guarantee (G5)', () => {
     expect(WEBHOOK_DELIVERY_GUARANTEE).toBe('at-least-once');
   });
+
+  it('carries the OTP/3DS action-required + settlement refund/payout events', () => {
+    expect(WEBHOOK_EVENT_TYPES).toContain('invoice.action_required');
+    expect(WEBHOOK_EVENT_CATALOG['invoice.action_required'].payload).toEqual([
+      'reference',
+      'reason',
+      'checkoutLink',
+    ]);
+    expect(WEBHOOK_EVENT_TYPES).toContain('settlement.refunded');
+    expect(WEBHOOK_EVENT_TYPES).toContain('settlement.payout_created');
+  });
 });
 
 describe('webhooks/backoff — exponential schedule + dead-letter transition (G3)', () => {

@@ -1,3 +1,4 @@
+export * from './actionLink';
 export * from './applyProration';
 export * from './changeSubscription';
 export * from './claim';

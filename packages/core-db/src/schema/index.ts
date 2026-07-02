@@ -30,4 +30,6 @@ export * from './credit-grants';
 export * from './org-billing-settings';
 export * from './dunning-attempts';
 export * from './settlements';
+export * from './refunds';
+export * from './payouts';
 export * from './examples';

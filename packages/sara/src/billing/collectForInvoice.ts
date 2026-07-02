@@ -16,6 +16,7 @@ import { resolvePartialCollection } from '../proration';
 import { getRail } from '../rails';
 import { findTenantSubAccount, recordSettlement } from '../settlement';
 import { enterPastDue } from '../subscriptions';
+import { mintInvoiceCheckoutLink } from './actionLink';
 import { loadSubscriptionRowById, railKeyForMethod, reconcilePaidSubEffects } from './effects';
 
 import type { DomainContext, InfraTxDb } from '../context';
@@ -137,12 +138,45 @@ export async function collectForInvoice(
     return { outcome: 'past_due', invoice: failed };
   }
 
+  if (result.status === 'requires_action') {
+    await handleActionRequired(txDb, ctx, invoice, result.action?.message ?? 'otp_required');
+    return { outcome: 'pending', invoice };
+  }
+
   if (result.status === 'failed') {
     const failed = await failCollection(txDb, ctx, invoice, result.failureReason);
     return { outcome: 'past_due', invoice: failed };
   }
 
   return { outcome: 'pending', invoice };
+}
+
+/**
+ * A card charge was ACCEPTED but the bank requires customer OTP/3DS (live-proven,
+ * bank-gated). This is NOT a failure: don't bump `attempt_count` and don't emit
+ * `payment_failed`. Mint a fresh hosted-checkout link, move the sub → past_due (06
+ * dunning owns it, holding on `card_update_required` so it never blind-retries),
+ * and emit `invoice.action_required` once so the tenant can send the customer the
+ * link. The invoice stays `open`; the completion webhook (orderReference
+ * `${ref}-otp`) settles it via the normal inbound path.
+ */
+async function handleActionRequired(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  invoice: InvoiceRow,
+  gatewayMessage: string
+): Promise<void> {
+  const checkoutLink = await mintInvoiceCheckoutLink(txDb, ctx, invoice);
+  await txDb
+    .update(invoicesTable)
+    .set({ lastFailureReason: 'otp_required', lastGatewayMessage: gatewayMessage })
+    .where(eq(invoicesTable.id, invoice.id));
+  await moveActiveSubPastDue(txDb, ctx, invoice);
+  await emitEvent(txDb, {
+    ...ctx,
+    type: 'invoice.action_required',
+    payload: { reference: invoice.reference, reason: 'otp_required', checkoutLink },
+  });
 }
 
 /**

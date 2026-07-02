@@ -2,8 +2,10 @@ import { eq } from 'drizzle-orm';
 
 import { invoicesTable } from '@nombaone/core-db/schema';
 
+import { closeHeldAttemptsForInvoice } from '../dunning/attempt';
 import { markInboundEvent, recordInboundEvent, type NombaClient } from '../nomba';
 import { extractOurReference, extractProviderTransactionId } from '../payment-methods';
+import { OTP_ORDER_REF_SUFFIX } from './actionLink';
 import { confirmInvoiceFromWebhook } from './confirmInvoiceFromWebhook';
 
 import type { DomainContext, InfraTxDb } from '../context';
@@ -32,11 +34,18 @@ export async function processInboundInvoiceEvent(
   client: NombaClient,
   input: { requestId: string; eventType: string; payload: Record<string, unknown> }
 ): Promise<InboundInvoiceResult> {
-  const reference = extractOurReference(input.payload);
-  if (!reference) return { matched: false, handled: false };
+  const rawReference = extractOurReference(input.payload);
+  if (!rawReference) return { matched: false, handled: false };
+  // An OTP/3DS-completion checkout carries `${invoice.reference}-otp` (a distinct
+  // order ref that dodged Nomba's dedup on the original charge). Strip the suffix so
+  // it settles the SAME invoice. Our refs have no hyphens, so the tail is unambiguous.
+  const reference = rawReference.endsWith(OTP_ORDER_REF_SUFFIX)
+    ? rawReference.slice(0, -OTP_ORDER_REF_SUFFIX.length)
+    : rawReference;
 
   const [inv] = await txDb
     .select({
+      id: invoicesTable.id,
       organizationId: invoicesTable.organizationId,
       environment: invoicesTable.environment,
     })
@@ -57,6 +66,12 @@ export async function processInboundInvoiceEvent(
     providerReference: requery.providerReference,
   };
   const result = await confirmInvoiceFromWebhook(txDb, ctx, reference, verification);
+
+  // If this invoice had a HELD dunning attempt (expired-card update or an OTP/3DS
+  // re-auth completed via the fresh link), close it out + emit recovery.
+  if (result.settled) {
+    await closeHeldAttemptsForInvoice(txDb, ctx, inv.id, reference);
+  }
 
   const { firstSeen } = await recordInboundEvent(txDb, {
     environment: ctx.environment,

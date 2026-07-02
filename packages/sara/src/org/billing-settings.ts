@@ -40,6 +40,8 @@ export interface EffectiveBillingSettings {
   platformFeeBps: number | null;
   platformFeeMinKobo: number | null;
   platformFeeMaxKobo: number | null;
+  /** Minimum a tenant must leave / can't withdraw below on payout. null ⇒ 0. Operator-only. */
+  minWithdrawableKobo: number | null;
   branding: TenantBranding;
 }
 
@@ -65,6 +67,7 @@ export const DEFAULT_BILLING_SETTINGS: EffectiveBillingSettings = {
   platformFeeBps: null,
   platformFeeMinKobo: null,
   platformFeeMaxKobo: null,
+  minWithdrawableKobo: null,
   branding: {},
 };
 
@@ -86,6 +89,7 @@ const fromRow = (row: OrgBillingSettingsRow): EffectiveBillingSettings => ({
   platformFeeBps: row.platformFeeBps,
   platformFeeMinKobo: row.platformFeeMinKobo,
   platformFeeMaxKobo: row.platformFeeMaxKobo,
+  minWithdrawableKobo: row.minWithdrawableKobo,
   branding: row.branding,
 });
 

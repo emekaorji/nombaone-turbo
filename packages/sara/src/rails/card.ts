@@ -31,7 +31,7 @@ export function createCardRail(client: NombaClient): RailAdapter {
       }
 
       const orderReference = input.reference; // E3
-      const res = await client.request({
+      const res = await client.request<{ data?: { status?: boolean; message?: string } }>({
         method: 'POST',
         endpoint: NOMBA_ENDPOINTS.tokenizedCardCharge,
         idempotencyRef: orderReference,
@@ -44,14 +44,42 @@ export function createCardRail(client: NombaClient): RailAdapter {
             customerEmail: meta.customerEmail,
             callbackUrl: meta.callbackUrl,
             orderReference,
+            // Scope the charge to the tenant's Nomba sub-account — funds land there AND the
+            // payment_success webhook fires (live-confirmed: parent-pool charges never webhook).
+            ...(meta.accountId ? { accountId: meta.accountId } : {}),
           },
         },
       });
 
-      if (!res.ok) {
+      // The domain outcome lives in `data.status` + `data.message` (res.ok is only
+      // HTTP-200). Live-proven shapes of `data.message`:
+      //   • "Approved by Financial Institution"      → silent success (webhook settles)
+      //   • "Kindly enter the OTP sent to ****1958"  → bank OTP/3DS step-up required
+      //   • "Tokenized charge failed"                → decline
+      const inner = res.data?.data;
+      if (!res.ok || inner == null) {
         return { status: 'failed', providerReference: orderReference, failureReason: 'request_failed' };
       }
-      // Accepted — confirm via webhook + requery (E4), do not trust the sync reply.
+      // (C) Definitive decline — data.status:false.
+      if (inner.status !== true) {
+        return {
+          status: 'failed',
+          providerReference: orderReference,
+          failureReason: inner.message ?? 'tokenized_charge_failed',
+        };
+      }
+      // (B) Accepted but the bank forces customer authentication (OTP/3DS).
+      const msg = String(inner.message ?? '').toLowerCase();
+      if (msg.includes('otp') || msg.includes('3ds') || msg.includes('secure')) {
+        return {
+          status: 'requires_action',
+          providerReference: orderReference,
+          failureReason: 'otp_required',
+          action: { type: 'otp_3ds', message: String(inner.message ?? 'otp_required') },
+        };
+      }
+      // (A) Approved / unknown-but-accepted — optimistic pending; confirm via webhook
+      // + requery (E4), never trust the sync reply as a settled `succeeded`.
       return { status: 'pending', providerReference: orderReference };
     },
   };

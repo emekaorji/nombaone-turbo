@@ -72,6 +72,10 @@ export const WEBHOOK_EVENT_CATALOG = {
     when: 'a dunning retry recovered a past_due invoice',
     payload: ['reference'],
   },
+  'invoice.action_required': {
+    when: 'a card charge needs customer authentication (OTP/3DS); a fresh hosted-checkout link is attached',
+    payload: ['reference', 'reason', 'checkoutLink'],
+  },
   'invoice.voided': { when: 'an invoice is voided', payload: ['reference'] },
 
   'payment_method.attached': {
@@ -89,6 +93,14 @@ export const WEBHOOK_EVENT_CATALOG = {
 
   'settlement.created': {
     when: 'collected funds are settled to the tenant sub-account (08)',
+    payload: ['reference'],
+  },
+  'settlement.refunded': {
+    when: "a settlement's tenant share is refunded (fee non-refundable)",
+    payload: ['reference'],
+  },
+  'settlement.payout_created': {
+    when: 'a tenant withdrawal of settled funds is initiated',
     payload: ['reference'],
   },
 

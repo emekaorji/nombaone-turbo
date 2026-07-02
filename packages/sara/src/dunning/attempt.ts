@@ -17,6 +17,7 @@ import { coerceFailureReason, type PaymentFailureReason } from '../nomba/failure
 import { getRail } from '../rails';
 import { mintReference } from '../reference';
 import { churnFromPastDue, recoverFromPastDue } from '../subscriptions';
+import { mintInvoiceCheckoutLink } from '../billing/actionLink';
 import {
   loadSubscriptionRowById,
   railKeyForMethod,
@@ -110,6 +111,10 @@ export async function scheduleFirstAttempt(
   const now = new Date();
   const status = branch === 'card_update_required' ? 'card_update_required' : 'scheduled';
   const commsEnabled = policy.commsEnabled;
+  // OTP/3DS shares the card_update_required hold branch, but `collectForInvoice`
+  // already emitted `invoice.action_required` (with the link) at the failing charge,
+  // so dunning must NOT also emit the card-swap prompt for it.
+  const isOtp = input.reason === 'otp_required';
 
   const [row] = await txDb
     .insert(dunningAttemptsTable)
@@ -127,7 +132,7 @@ export async function scheduleFirstAttempt(
       scheduledAt: now,
       nextAttemptAt: nextAttemptInstant(branch, now, 0, policy),
       commsSentAt: commsEnabled ? now : null,
-      commsEventType: commsEnabled ? commsEventFor(branch) : null,
+      commsEventType: commsEnabled ? (isOtp ? 'invoice.action_required' : commsEventFor(branch)) : null,
     })
     .onConflictDoNothing({
       target: [dunningAttemptsTable.invoiceId, dunningAttemptsTable.attemptNumber],
@@ -152,7 +157,7 @@ export async function scheduleFirstAttempt(
   // The collect path already emitted `invoice.payment_failed` at the failure. Dunning
   // adds only the NON-redundant comms: the card-update PROMPT on the card branch
   // (D5). Reschedule/short-path start silently (D9 — exactly one payment_failed).
-  if (commsEnabled && branch === 'card_update_required') {
+  if (commsEnabled && branch === 'card_update_required' && !isOtp) {
     await emitEvent(txDb, {
       ...ctx,
       type: 'payment_method.expiring',
@@ -163,7 +168,7 @@ export async function scheduleFirstAttempt(
 }
 
 interface DunningChargeResult {
-  outcome: 'succeeded' | 'failed' | 'pending';
+  outcome: 'succeeded' | 'failed' | 'pending' | 'requires_action';
   reason?: PaymentFailureReason;
   gatewayMessage?: string | null;
   invoice: InvoiceRow;
@@ -217,6 +222,16 @@ async function chargeDunningAttempt(
     });
     const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
     return { outcome: 'succeeded', invoice: linked };
+  }
+
+  if (result.status === 'requires_action') {
+    // Bank OTP/3DS step-up on the retry — hold + prompt the customer, never blind-retry.
+    return {
+      outcome: 'requires_action',
+      reason: 'otp_required',
+      gatewayMessage: result.action?.message ?? null,
+      invoice,
+    };
   }
 
   if (result.status === 'failed') {
@@ -317,6 +332,14 @@ export async function recordOutcome(
     return;
   }
 
+  if (charge.outcome === 'requires_action') {
+    // Not a failure: the same card is fine, the bank just wants the customer to
+    // authenticate. HOLD (like card_update_required — no blind retry) and prompt the
+    // customer once with a fresh checkout link.
+    await toActionRequired(txDb, ctx, attempt, invoice, charge.gatewayMessage ?? 'otp_required');
+    return;
+  }
+
   // A verified FAILURE — classify from the taxonomy bucket.
   const reason = charge.reason ?? 'unknown';
   const branch = classifyDunningBranch(reason);
@@ -414,6 +437,47 @@ async function toCardUpdateRequired(
   }
 }
 
+/**
+ * Hold an attempt whose retry needs customer OTP/3DS (bank step-up) and prompt the
+ * customer ONCE with a fresh hosted-checkout link. Mirrors `toCardUpdateRequired`'s
+ * hold machinery (status `card_update_required`, `nextAttemptAt=null`, comms gate)
+ * so the sweep never blind-retries — but the OUTCOME + comms event distinguish it as
+ * a re-auth, not a card swap. The invoice settles via the normal inbound path when
+ * the customer completes the `${ref}-otp` checkout.
+ */
+async function toActionRequired(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  attempt: DunningAttemptRow,
+  invoice: InvoiceRow,
+  gatewayMessage: string
+): Promise<void> {
+  const policy = await resolveBillingSettings(txDb, ctx);
+  const alreadyPrompted = attempt.commsSentAt != null;
+  const checkoutLink = alreadyPrompted ? null : await mintInvoiceCheckoutLink(txDb, ctx, invoice);
+  await txDb
+    .update(dunningAttemptsTable)
+    .set({
+      status: 'card_update_required',
+      branch: 'card_update_required',
+      outcome: 'action_required',
+      nextAttemptAt: null,
+      gatewayMessage,
+      ...(policy.commsEnabled && !alreadyPrompted
+        ? { commsSentAt: new Date(), commsEventType: 'invoice.action_required' }
+        : {}),
+    })
+    .where(eq(dunningAttemptsTable.id, attempt.id));
+
+  if (policy.commsEnabled && !alreadyPrompted) {
+    await emitEvent(txDb, {
+      ...ctx,
+      type: 'invoice.action_required',
+      payload: { reference: invoice.reference, reason: 'otp_required', checkoutLink },
+    });
+  }
+}
+
 /** Recovery (D8): the invoice is paid → return the sub to `active` + emit recovered. */
 export async function recoverSubscription(
   txDb: InfraTxDb,
@@ -473,4 +537,40 @@ export async function triggerReattemptNow(
     .update(dunningAttemptsTable)
     .set({ status: 'scheduled', branch: 'reschedule', nextAttemptAt: new Date() })
     .where(eq(dunningAttemptsTable.id, held.id));
+}
+
+/**
+ * On settlement of an invoice that had a HELD dunning attempt (`card_update_required`
+ * — an expired-card update OR an OTP/3DS re-auth completed via the fresh checkout
+ * link), close the attempt out as recovered and emit `invoice.payment_recovered`.
+ * The settle path (`confirmInvoiceFromWebhook`) already recovered the subscription +
+ * advanced the period, so this only closes the dunning artifact + emits the recovery
+ * event (parity with the dunning-bridge path). No-op (returns false) when no held
+ * attempt exists — fully idempotent on a redelivered webhook.
+ */
+export async function closeHeldAttemptsForInvoice(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  invoiceId: string,
+  invoiceReference: string
+): Promise<boolean> {
+  const closed = await txDb
+    .update(dunningAttemptsTable)
+    .set({ status: 'succeeded', outcome: 'recovered' })
+    .where(
+      and(
+        eq(dunningAttemptsTable.organizationId, ctx.organizationId),
+        eq(dunningAttemptsTable.environment, ctx.environment),
+        eq(dunningAttemptsTable.invoiceId, invoiceId),
+        eq(dunningAttemptsTable.status, 'card_update_required')
+      )
+    )
+    .returning({ id: dunningAttemptsTable.id });
+  if (closed.length === 0) return false;
+  await emitEvent(txDb, {
+    ...ctx,
+    type: 'invoice.payment_recovered',
+    payload: { reference: invoiceReference },
+  });
+  return true;
 }

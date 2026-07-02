@@ -26,6 +26,11 @@ describe('dunning/classify — reason → branch (D3/D4/D5)', () => {
     expect(classifyDunningBranch('token_expired')).not.toBe('reschedule');
   });
 
+  it('otp_required holds on card_update_required (re-auth, never a blind retry)', () => {
+    expect(classifyDunningBranch('otp_required')).toBe('card_update_required');
+    expect(classifyDunningBranch('otp_required')).not.toBe('reschedule');
+  });
+
   it('the hard-refusal family takes the short path', () => {
     expect(classifyDunningBranch('hard_decline')).toBe('short_path');
     expect(classifyDunningBranch('do_not_honor')).toBe('short_path');

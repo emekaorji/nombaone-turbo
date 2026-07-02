@@ -21,6 +21,11 @@ const SHORT_PATH_REASONS: ReadonlySet<PaymentFailureReason> = new Set([
  * normal (payday-biased) cadence.
  */
 export function classifyDunningBranch(reason: PaymentFailureReason): DunningBranch {
+  // A bank OTP/3DS step-up needs the SAME card re-authenticated (not a new card), but
+  // shares the `card_update_required` HOLD semantics exactly: never blind-retry, prompt
+  // the customer once with a fresh checkout link. Reusing the branch avoids a dunning
+  // enum migration; the distinction rides on the `invoice.action_required` event.
+  if (reason === 'otp_required') return 'card_update_required';
   if (CARD_UPDATE_REASONS.has(reason)) return 'card_update_required';
   if (SHORT_PATH_REASONS.has(reason)) return 'short_path';
   return 'reschedule';

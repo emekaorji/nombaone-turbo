@@ -20,3 +20,6 @@ export const WEBHOOK_MAINTENANCE_JOB = 'webhook-maintenance';
 
 /** Nightly local↔Nomba reconcile: requery recent invoices, flag + self-heal drift (item 6). */
 export const RECONCILE_NOMBA_JOB = 'reconcile-nomba';
+
+/** Direct debit: poll `consent_pending` mandates → `active` once NIBSS advice is sent. */
+export const MANDATE_ACTIVATION_SWEEP_JOB = 'mandate-activation-sweep';

@@ -19,6 +19,7 @@ const apiKeyScope = z.enum([
   'billing_settings:read',
   'billing_settings:write',
   'settlements:read',
+  'settlements:write',
   'settings:read',
   'settings:write',
   'metrics:read',

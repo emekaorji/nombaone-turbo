@@ -1,9 +1,13 @@
 import { and, eq } from 'drizzle-orm';
 
-import { orgNombaAccountsTable } from '@nombaone/core-db/schema';
+import { ledgerAccountsTable, orgNombaAccountsTable } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
-import type { DomainContext, InfraDb } from '../context';
+import type { DomainContext, InfraReadScope } from '../context';
+
+/** The ledger account key holding a tenant's withdrawable settled balance. */
+export const tenantSettlementAccountKey = (accountRef: string): string =>
+  `tenant_settlement:${accountRef}`;
 
 export interface TenantSubAccount {
   accountRef: string;
@@ -16,7 +20,7 @@ export interface TenantSubAccount {
  * without one — `SETTLEMENT_SUBACCOUNT_NOT_FOUND` if the tenant was never onboarded.
  */
 export async function findTenantSubAccount(
-  db: InfraDb,
+  db: InfraReadScope,
   ctx: DomainContext
 ): Promise<TenantSubAccount | null> {
   const [row] = await db
@@ -40,7 +44,7 @@ export async function findTenantSubAccount(
 
 /** Like {@link findTenantSubAccount} but throws when the tenant was never onboarded. */
 export async function resolveTenantSubAccount(
-  db: InfraDb,
+  db: InfraReadScope,
   ctx: DomainContext
 ): Promise<TenantSubAccount> {
   const found = await findTenantSubAccount(db, ctx);
@@ -52,4 +56,26 @@ export async function resolveTenantSubAccount(
     );
   }
   return found;
+}
+
+/**
+ * The tenant's withdrawable settled balance — read O(1) from the materialized
+ * `tenant_settlement:{accountRef}` ledger account (a liability CREDITED at
+ * settlement, so its `balance` is a POSITIVE number = the tenant's owed funds).
+ * Zero when no settlement has landed yet.
+ */
+export async function getTenantSettlementBalance(db: InfraReadScope, ctx: DomainContext): Promise<number> {
+  const sub = await resolveTenantSubAccount(db, ctx);
+  const [account] = await db
+    .select({ balance: ledgerAccountsTable.balance })
+    .from(ledgerAccountsTable)
+    .where(
+      and(
+        eq(ledgerAccountsTable.organizationId, ctx.organizationId),
+        eq(ledgerAccountsTable.environment, ctx.environment),
+        eq(ledgerAccountsTable.key, tenantSettlementAccountKey(sub.accountRef))
+      )
+    )
+    .limit(1);
+  return account?.balance ?? 0;
 }

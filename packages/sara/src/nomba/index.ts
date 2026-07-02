@@ -4,5 +4,6 @@ export * from './money';
 export * from './ingest';
 export * from './events';
 export * from './failure-taxonomy';
+export * from './injected';
 export * from './verify';
 export * from './types';

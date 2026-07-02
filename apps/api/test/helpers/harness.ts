@@ -81,6 +81,11 @@ export const startHarness = async (): Promise<Harness> => {
   process.env.INFRA_WEBHOOK_SECRET = process.env.INFRA_WEBHOOK_SECRET ?? 'test_webhook_secret';
   process.env.NOMBA_WEBHOOK_SIGNATURE_KEY =
     process.env.NOMBA_WEBHOOK_SIGNATURE_KEY ?? 'test_nomba_signature_key';
+  // Pin these OFF so tests are deterministic regardless of a developer's `.env`:
+  // debug mode would bypass signature REJECTION, and the payout flag would fire the
+  // (unconfirmed) provider bankTransfer. Set before dotenv (override:false keeps them).
+  process.env.NOMBA_WEBHOOK_DEBUG = 'false';
+  process.env.NOMBA_PAYOUT_ENABLED = 'false';
   // Keep the limiter on by default so its tests are meaningful; specs can flip it.
   delete process.env.DISABLE_API_RATE_LIMIT;
 

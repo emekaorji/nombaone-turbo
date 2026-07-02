@@ -1,5 +1,10 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { createNombaClient, type NombaClient, type NombaConfig } from '@nombaone/sara/nomba';
+import {
+  createNombaClient,
+  setBillingNombaClient,
+  type NombaClient,
+  type NombaConfig,
+} from '@nombaone/sara/nomba';
 import { registerNombaRails } from '@nombaone/sara/rails';
 
 import { env } from './env';
@@ -17,6 +22,8 @@ let cached: NombaClient | null = null;
 export const __setNombaClient = (client: NombaClient | null): void => {
   testOverride = client;
   cached = null;
+  // Keep the billing-layer checkout-link mint in sync with the injected fake.
+  setBillingNombaClient(client);
 };
 
 export const isNombaConfigured = (): boolean =>

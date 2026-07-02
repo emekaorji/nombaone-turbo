@@ -34,7 +34,7 @@ describe('rails/card', () => {
     const rail = createCardRail(
       fakeClient((req) => {
         seen = req;
-        return { ok: true, data: {} };
+        return { ok: true, data: { data: { status: true, message: 'Approved by Financial Institution' } } };
       })
     );
     const res = await rail.collect(input({ metadata: { tokenKey: 'tok_1', customerEmail: 'a@b.c' } }));
@@ -49,6 +49,46 @@ describe('rails/card', () => {
   it('missing token → failed (no charge possible)', async () => {
     const rail = createCardRail(fakeClient(() => ({ ok: true, data: {} })));
     expect((await rail.collect(input({ metadata: {} }))).status).toBe('failed');
+  });
+
+  // The three live-proven outcomes of a tokenized recharge (data.status + data.message).
+  const cardOutcome = (data: unknown) =>
+    createCardRail(fakeClient(() => ({ ok: true, data }))).collect(
+      input({ metadata: { tokenKey: 'tok_1', customerEmail: 'a@b.c' } })
+    );
+
+  it('(A) approved by FI → pending (webhook settles), no action', async () => {
+    const res = await cardOutcome({ data: { status: true, message: 'Approved by Financial Institution' } });
+    expect(res.status).toBe('pending');
+    expect(res.action).toBeUndefined();
+  });
+
+  it('(B) bank OTP/3DS step-up → requires_action:otp_required with the gateway message', async () => {
+    for (const message of ['Kindly enter the OTP sent to ****1958', 'Complete 3DS to continue', 'secure authentication']) {
+      const res = await cardOutcome({ data: { status: true, message } });
+      expect(res.status).toBe('requires_action');
+      expect(res.failureReason).toBe('otp_required');
+      expect(res.action?.type).toBe('otp_3ds');
+      expect(res.action?.message).toBe(message);
+    }
+  });
+
+  it('(C) data.status:false → failed, gateway message passed through', async () => {
+    const res = await cardOutcome({ data: { status: false, message: 'Tokenized charge failed' } });
+    expect(res.status).toBe('failed');
+    expect(res.failureReason).toBe('Tokenized charge failed');
+  });
+
+  it('transport failure (res.ok=false) → failed:request_failed', async () => {
+    const rail = createCardRail(fakeClient(() => ({ ok: false, status: 502, data: {} })));
+    const res = await rail.collect(input({ metadata: { tokenKey: 'tok_1' } }));
+    expect(res.status).toBe('failed');
+    expect(res.failureReason).toBe('request_failed');
+  });
+
+  it('accepted with an unknown (non-OTP) message → optimistic pending (E4)', async () => {
+    const res = await cardOutcome({ data: { status: true, message: 'Processing' } });
+    expect(res.status).toBe('pending');
   });
 });
 

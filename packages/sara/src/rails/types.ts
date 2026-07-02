@@ -22,7 +22,28 @@ export interface RailCollectInput extends DomainContext {
   metadata?: Record<string, unknown>;
 }
 
-export type RailCollectStatus = 'succeeded' | 'pending' | 'failed';
+export type RailCollectStatus = 'succeeded' | 'pending' | 'failed' | 'requires_action';
+
+/**
+ * A pull rail can accept a charge but require the CUSTOMER to authenticate (a
+ * bank-forced OTP / 3DS step-up on a card-not-present recharge — live-proven on
+ * Nomba). This is NOT a failure and NOT a silent success: the collection is held
+ * until the customer completes the step. The billing/dunning layer surfaces a
+ * fresh hosted-checkout `checkoutLink` for the customer to finish.
+ */
+export interface RailCollectAction {
+  /** The only step-up kind today; leaves room for future variants. */
+  type: 'otp_3ds';
+  /** The raw gateway prompt (e.g. "Kindly enter the OTP sent to ****1958"). */
+  message: string;
+  /**
+   * A customer-facing hosted-checkout link to complete authentication, when a
+   * layer that has customer + sub-account context mints it. The card rail leaves
+   * this UNSET (it is a pure Nomba adapter with no tenant email/sub-account);
+   * `mintInvoiceCheckoutLink` in the billing layer populates it.
+   */
+  checkoutLink?: string;
+}
 
 export interface RailCollectResult {
   status: RailCollectStatus;
@@ -39,6 +60,8 @@ export interface RailCollectResult {
    * all-or-nothing common case for card tokens / full debits).
    */
   collectedKobo?: Kobo;
+  /** Present only when `status === 'requires_action'`. */
+  action?: RailCollectAction;
 }
 
 export interface RailAdapter {
