@@ -21,25 +21,32 @@ describe('nomba/failure-taxonomy', () => {
   });
 });
 
-describe('nomba/verify (field-string scheme, T0-confirmed)', () => {
+describe('nomba/verify (field-string scheme, byte-confirmed)', () => {
   const key = 'test_signature_key';
-  // The signature covers the colon-joined PAYLOAD FIELDS (+ timestamp), not the raw
-  // body, so verification keys off the parsed fields the inbound route passes.
+  const ts = '2026-07-02T01:18:16Z';
+  // The signature covers the colon-joined NESTED payload fields + the nomba-timestamp
+  // header (byte-confirmed), not the raw body — so verification keys off the parsed fields.
   const payload = {
     event_type: 'payment_success',
     requestId: 'r-1',
-    transactionId: 'tx-1',
-    timestamp: '1700000000',
+    data: {
+      merchant: { userId: 'u-1', walletId: 'w-1' },
+      transaction: { transactionId: 'tx-1', type: 'online_checkout', time: ts, responseCode: '' },
+    },
   };
   const raw = JSON.stringify(payload);
 
   it('verifies a correctly-signed payload and rejects tampering', () => {
-    const sig = computeNombaSignature(key, raw, payload);
-    expect(verifyNombaSignature(key, sig, raw, payload)).toBe(true);
-    // tampering a SIGNED field breaks the signature
-    expect(verifyNombaSignature(key, sig, raw, { ...payload, transactionId: 'tx-2' })).toBe(false);
-    expect(verifyNombaSignature(key, 'not-the-sig', raw, payload)).toBe(false); // wrong signature
-    expect(verifyNombaSignature(key, '', raw, payload)).toBe(false); // missing signature
+    const sig = computeNombaSignature(key, raw, payload, ts);
+    expect(verifyNombaSignature(key, sig, raw, payload, ts)).toBe(true);
+    // tampering a SIGNED (nested) field breaks the signature
+    const tampered = {
+      ...payload,
+      data: { ...payload.data, transaction: { ...payload.data.transaction, transactionId: 'tx-2' } },
+    };
+    expect(verifyNombaSignature(key, sig, JSON.stringify(tampered), tampered, ts)).toBe(false);
+    expect(verifyNombaSignature(key, 'not-the-sig', raw, payload, ts)).toBe(false); // wrong signature
+    expect(verifyNombaSignature(key, '', raw, payload, ts)).toBe(false); // missing signature
   });
 });
 

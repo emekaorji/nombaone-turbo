@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { invoicesTable } from '@nombaone/core-db/schema';
 
 import { markInboundEvent, recordInboundEvent, type NombaClient } from '../nomba';
-import { extractOurReference } from '../payment-methods';
+import { extractOurReference, extractProviderTransactionId } from '../payment-methods';
 import { confirmInvoiceFromWebhook } from './confirmInvoiceFromWebhook';
 
 import type { DomainContext, InfraTxDb } from '../context';
@@ -47,8 +47,10 @@ export async function processInboundInvoiceEvent(
 
   const ctx: DomainContext = { organizationId: inv.organizationId, environment: inv.environment };
 
-  // E4 — re-verify against the provider; the webhook is only a hint.
-  const requery = await client.requeryTransaction(ctx, { reference });
+  // E4 — re-verify against the provider; the webhook is only a hint. Requery keys on the
+  // NOMBA transaction id (live-confirmed: our reference 404s), so pull it from the payload.
+  const providerTxnId = extractProviderTransactionId(input.payload);
+  const requery = await client.requeryTransaction(ctx, { reference: providerTxnId ?? reference });
   const verification: InboundVerification = {
     status: requery.succeeded ? 'settled' : requery.found ? 'pending' : 'failed',
     settledAmountKobo: requery.amount ?? 0,

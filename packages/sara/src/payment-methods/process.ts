@@ -36,6 +36,20 @@ export function extractOurReference(payload: Record<string, unknown>): string | 
   return null;
 }
 
+/** The NOMBA transaction id from an inbound payload — the key `requeryTransaction` accepts.
+ *  Live-confirmed (2026-07-02): requery by our `orderReference`/`merchantTxRef`/order UUID all
+ *  404; only `data.transaction.transactionId` (e.g. `WEB-ONLINE_C-…`) returns the transaction.
+ *  So E4 re-verification must requery by THIS, not our reference. */
+export function extractProviderTransactionId(payload: Record<string, unknown>): string | null {
+  const data = (payload.data ?? payload) as Record<string, unknown>;
+  const txn = (data.transaction ?? {}) as Record<string, unknown>;
+  const candidates = [txn.transactionId, data.transactionId, txn.id, data.id];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.length > 0) return c;
+  }
+  return null;
+}
+
 /** Resolve the (org, env) that owns a reference (payment-method ref or VA accountRef). */
 export async function resolveScopeByReference(
   db: InfraDb,

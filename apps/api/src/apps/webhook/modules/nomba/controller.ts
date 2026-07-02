@@ -77,7 +77,13 @@ export const nombaWebhookController: RequestHandler = jsonHandler<{ received: tr
     );
   } else if (
     !signature ||
-    !verifyNombaSignature(key as string, signature, rawBody.toString('utf8'), parsed)
+    !verifyNombaSignature(
+      key as string,
+      signature,
+      rawBody.toString('utf8'),
+      parsed,
+      headerValue(req.headers['nomba-timestamp']) ?? undefined
+    )
   ) {
     rejectSignature(provider);
   }

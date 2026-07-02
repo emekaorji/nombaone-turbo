@@ -6,7 +6,7 @@ import { confirmInvoiceFromWebhook } from '../billing/confirmInvoiceFromWebhook'
 import { loadSubscriptionRowById } from '../billing/effects';
 import { emitEvent } from '../events';
 import { coerceFailureReason } from '../nomba/failure-taxonomy';
-import { extractOurReference } from '../payment-methods';
+import { extractOurReference, extractProviderTransactionId } from '../payment-methods';
 import { recordOutcome } from './attempt';
 
 import type { NombaClient } from '../nomba/client';
@@ -76,7 +76,9 @@ export async function processInboundDunningEvent(
   const sub = await loadSubscriptionRowById(txDb, ctx, attempt.subscriptionId);
   const outstanding = invoice.amountDue - invoice.amountPaid;
 
-  const requery = await client.requeryTransaction(ctx, { reference });
+  // E4 requery keys on the NOMBA transaction id (our DUN ref 404s); pull it from the payload.
+  const providerTxnId = extractProviderTransactionId(input.payload);
+  const requery = await client.requeryTransaction(ctx, { reference: providerTxnId ?? reference });
 
   // Verified SUCCESS → settle + recover + mark the attempt recovered.
   if (requery.succeeded && (requery.amount ?? 0) === outstanding && !invoice.paidAt) {
