@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nomba One — Design System</title>
+<title>Nomba One: Design System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   TIER 1 — PRIMITIVES (raw values, never used by components)
+   TIER 1: PRIMITIVES (raw values, never used by components)
    Neutral ramp is pure (chroma 0) and built in OKLCH so the
    steps are perceptually even. Emerald is the brand ramp.
    ============================================================ */
@@ -46,8 +46,8 @@
 }
 
 /* ============================================================
-   TIER 2 — SEMANTIC TOKENS (what components consume).
-   Dark is the default. Light is a pure remap — no component
+   TIER 2: SEMANTIC TOKENS (what components consume).
+   Dark is the default. Light is a pure remap, no component
    ever changes; only these pointers flip.
    ============================================================ */
 :root, [data-theme="dark"]{
@@ -382,7 +382,7 @@ footer .mono{font-size:12px}
   <div class="hero">
     <div class="eyebrow"><span class="live-dot"></span> Design tokens · live</div>
     <h1>One system. Every token. <em>Alive.</em></h1>
-    <p>The single source of truth for the Nomba One interface — a pure-neutral OKLCH scale, one electric-emerald signature, Geist type, and motion that's standardised, not sprinkled. Everything below is live: toggle the theme and watch each token flip.</p>
+    <p>The single source of truth for the Nomba One interface, a pure-neutral OKLCH scale, one electric-emerald signature, Geist type, and motion that's standardised, not sprinkled. Everything below is live: toggle the theme and watch each token flip.</p>
     <div class="meta">
       <span class="chip">Geist Sans / Geist Mono</span>
       <span class="chip"><span style="width:11px;height:11px;border-radius:3px;background:var(--accent)"></span> Electric emerald</span>
@@ -392,39 +392,41 @@ footer .mono{font-size:12px}
 
   <section class="block reveal">
     <div class="sec-head"><span class="sec-num">01</span><h2>Color</h2></div>
-    <p class="sec-desc">Three tiers. Primitives are raw OKLCH values, never touched by components. Semantic tokens are what components read — and dark/light is nothing more than remapping those pointers. Click any swatch to copy its variable.</p>
+    <p class="sec-desc">Three tiers. Primitives are raw OKLCH values, never touched by components. Semantic tokens are what components read, and dark/light is nothing more than remapping those pointers. Click any swatch to copy its variable.</p>
 
-    <div class="sub">Neutral — the workhorse (pure, chroma 0)</div>
+    <div class="sub">Neutral: the workhorse (pure, chroma 0)</div>
     <div class="ramp" id="rampNeutral"></div>
 
-    <div class="sub">Emerald — the signature, used with restraint</div>
+    <div class="sub">Emerald: the signature, used with restraint</div>
     <div class="ramp" id="rampEmerald"></div>
 
-    <div class="sub">Semantic hues — reserved for status &amp; product surfaces</div>
+    <div class="sub">Semantic hues: reserved for status &amp; product surfaces</div>
     <div class="ramp" id="rampSemantic"></div>
 
-    <div class="sub">Semantic tokens — what components actually consume (theme-aware)</div>
+    <div class="sub">Semantic tokens: what components actually consume (theme-aware)</div>
     <div class="tok-grid" id="tokGrid"></div>
   </section>
 
   <section class="block reveal">
     <div class="sec-head"><span class="sec-num">02</span><h2>Typography</h2></div>
-    <p class="sec-desc">Geist for everything — Vercel's own grotesk. Tight negative tracking on display sizes for that infrastructural precision; the mono carries code, data, and eyebrows.</p>
+    <p class="sec-desc">Geist for everything, Vercel's own grotesk. The marketing scale runs big and confident: display through H3 carry tight negative tracking, and the mono carries code, data, and captions. Product UI keeps the denser body sizes below. Big type with generous space is a deliberate signal, the calm confidence of a team that is sure of what it built.</p>
     <div>
-      <div class="type-row"><span class="type-label">Display · 600 · -0.035em</span><span class="type-sample" style="font-size:56px;font-weight:600;letter-spacing:-0.035em;line-height:1">Never assume a card</span></div>
-      <div class="type-row"><span class="type-label">H1 · 600 · -0.03em</span><span class="type-sample" style="font-size:40px;font-weight:600;letter-spacing:-0.03em">Subscriptions, managed</span></div>
-      <div class="type-row"><span class="type-label">H2 · 600 · -0.025em</span><span class="type-sample" style="font-size:30px;font-weight:600;letter-spacing:-0.025em">Dunning that recovers</span></div>
-      <div class="type-row"><span class="type-label">H3 · 600 · -0.015em</span><span class="type-sample" style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Reconciliation, automatic</span></div>
-      <div class="type-row"><span class="type-label">Body · 400 · 1.6</span><span class="type-sample" style="font-size:16px;font-weight:400;color:var(--muted-foreground);max-width:52ch;letter-spacing:-0.006em">Card, transfer, mandate, or crypto — one subscription object, every rail, with automatic fallback and a ledger that never loses a kobo.</span></div>
+      <div class="type-row"><span class="type-label">Display · 96 / 600 · -0.046em · lh 1.03</span><span class="type-sample" style="font-size:clamp(40px,8.5vw,96px);font-weight:600;letter-spacing:-0.046em;line-height:1.03">Subscriptions, solved</span></div>
+      <div class="type-row"><span class="type-label">H1 · 72 / 600 · -0.03em</span><span class="type-sample" style="font-size:clamp(36px,6.4vw,72px);font-weight:600;letter-spacing:-0.03em;line-height:1.05">Subscriptions, managed</span></div>
+      <div class="type-row"><span class="type-label">H2 · 56 / 600 · -0.043em · lh 1.05</span><span class="type-sample" style="font-size:clamp(32px,5vw,56px);font-weight:600;letter-spacing:-0.043em;line-height:1.05">Dunning that recovers</span></div>
+      <div class="type-row"><span class="type-label">H3 · 32 / 600 · -0.015em</span><span class="type-sample" style="font-size:32px;font-weight:600;letter-spacing:-0.015em;line-height:1.15">Reconciliation, automatic</span></div>
+      <div class="type-row"><span class="type-label">Section deck · 24 / 400 · muted</span><span class="type-sample" style="font-size:24px;font-weight:400;letter-spacing:-0.01em;color:var(--muted-foreground);max-width:46ch">One line under the title. It sets up the section, then gets out of the way.</span></div>
+      <div class="type-row"><span class="type-label">Body · 400 · 1.6 · product UI</span><span class="type-sample" style="font-size:16px;font-weight:400;color:var(--muted-foreground);max-width:52ch;letter-spacing:-0.006em">Card, transfer, mandate, or crypto. One subscription object, every rail, with automatic fallback and a ledger that never loses a kobo.</span></div>
       <div class="type-row"><span class="type-label">Small · 400</span><span class="type-sample" style="font-size:14px;color:var(--muted-foreground)">Payday-timed retries and cross-account recovery.</span></div>
       <div class="type-row"><span class="type-label">Mono · caption · .06em</span><span class="type-sample mono" style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--subtle-foreground)">invoice.payment_recovered</span></div>
       <div class="type-row"><span class="type-label">Mono · code · 400</span><span class="type-sample mono" style="font-size:14px;color:var(--foreground)">await nomba.charge(sub.token)</span></div>
     </div>
+    <p class="hint" style="margin-top:16px">Product UI holds the denser Body and Small sizes above. On the marketing site, body copy runs 18 to 24 and lead paragraphs run 20 to 24, matched to the bigger headline scale.</p>
   </section>
 
   <section class="block reveal">
     <div class="sec-head"><span class="sec-num">03</span><h2>Space &amp; radius</h2></div>
-    <p class="sec-desc">A 4px base grid keeps rhythm consistent. Radii are gentle and consistent — nothing sharp, nothing bubbly.</p>
+    <p class="sec-desc">A 4px base grid keeps rhythm consistent. Radii are gentle and consistent, nothing sharp, nothing bubbly.</p>
     <div class="sub">Spacing scale</div>
     <div class="scale-list" id="spaceList"></div>
     <div class="sub">Radius</div>
@@ -433,7 +435,7 @@ footer .mono{font-size:12px}
 
   <section class="block reveal">
     <div class="sec-head"><span class="sec-num">04</span><h2>Surfaces &amp; elevation</h2></div>
-    <p class="sec-desc">On dark, elevation is carried by surface lightness and a hairline border — not heavy shadow. Shadows stay whisper-soft and do the work light mode needs.</p>
+    <p class="sec-desc">On dark, elevation is carried by surface lightness and a hairline border, not heavy shadow. Shadows stay whisper-soft and do the work light mode needs.</p>
     <div class="sub">Surfaces</div>
     <div class="surface-stack">
       <div class="surface-demo" style="background:var(--background)">--background</div>
@@ -451,7 +453,7 @@ footer .mono{font-size:12px}
 
   <section class="block reveal">
     <div class="sec-head"><span class="sec-num">05</span><h2>Motion</h2></div>
-    <p class="sec-desc">The site should feel alive without feeling busy. Motion is tokenised — a few durations, three easing curves — so every interaction shares one physical language. Hover or replay each demo.</p>
+    <p class="sec-desc">The site should feel alive without feeling busy. Motion is tokenised: a few durations, three easing curves, so every interaction shares one physical language. Hover or replay each demo.</p>
 
     <div class="sub">Easing curves</div>
     <div class="motion-grid">
@@ -475,7 +477,7 @@ footer .mono{font-size:12px}
 
   <section class="block reveal">
     <div class="sec-head"><span class="sec-num">06</span><h2>Components</h2></div>
-    <p class="sec-desc">Specimens, not screenshots — every one reads the same tokens above, so they all flip with the theme. This is the vocabulary the site and the product console share.</p>
+    <p class="sec-desc">Specimens, not screenshots. Every one reads the same tokens above, so they all flip with the theme. This is the vocabulary the site and the product console share.</p>
 
     <div class="spec">
       <div class="spec-title">Buttons</div>
@@ -553,7 +555,7 @@ footer .mono{font-size:12px}
           <div class="cc-top">rail: transfer</div>
           <div class="cc-body">
             <h4>Reconciliation engine</h4>
-            <p>Every inbound transfer matched to the right invoice — automatically, to the kobo.</p>
+            <p>Every inbound transfer matched to the right invoice, automatically, to the kobo.</p>
             <div style="margin-top:14px"><a class="link-accent"><span class="u">Learn more</span> →</a></div>
           </div>
         </div>
@@ -575,14 +577,51 @@ footer .mono{font-size:12px}
       <div class="spec-title">Callout</div>
       <div class="callout">
         <span class="ci">◆</span>
-        <span class="ct"><b>One accent, held back.</b> Emerald appears only on the primary action, links, focus, and the moment a payment recovers — so when you see it, it means something.</span>
+        <span class="ct"><b>One accent, held back.</b> Emerald appears only on the primary action, links, focus, and the moment a payment recovers, so when you see it, it means something.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block reveal">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Patterns</h2></div>
+    <p class="sec-desc">The layout laws the marketing site holds to. Tokens and components above are the vocabulary; these are the grammar. Big type and generous space are the signal, the calm confidence of a team that is sure of what it built.</p>
+
+    <div class="sub">Layout</div>
+    <div class="col" style="max-width:none;gap:14px">
+      <div class="callout" style="max-width:none">
+        <span class="ci">◆</span>
+        <span class="ct"><b>Whitespace, never dividers.</b> Sections are separated by generous whitespace, with section vertical padding of 128px and up, never by hairline rules. A divider reads as a document; open space reads as a product.</span>
+      </div>
+      <div class="callout" style="max-width:none">
+        <span class="ci">◆</span>
+        <span class="ct"><b>No eyebrows.</b> A section header is a title plus one short deck, and nothing else. The mono-uppercase eyebrow is retired across the site.</span>
+      </div>
+    </div>
+
+    <div class="sub">Hero glow: a background fill, not a floating ellipse</div>
+    <div class="row" style="align-items:stretch;gap:18px">
+      <div style="flex:1;min-width:280px;min-height:150px;border:0.5px solid var(--border);border-radius:var(--r-lg);background:radial-gradient(120% 120% at 50% 30%, oklch(0.320 0.070 165) 0%, oklch(0.180 0.030 165) 40%, var(--background) 80%);display:flex;align-items:flex-end;padding:16px">
+        <span class="mono" style="font-size:11.5px;color:var(--muted-foreground)">radial-gradient · dark-emerald center to near-black edge</span>
+      </div>
+      <div class="callout" style="max-width:360px">
+        <span class="ci">◆</span>
+        <span class="ct"><b>Paint it as a background.</b> The emerald glow is a background radial-gradient fill on the hero frame, dark-emerald at the center fading to near-black at the edge. It is never an absolute or floating ellipse. Overlay elements paint above content in both Pencil and CSS stacking, so a glow laid over the headline would wash it out. This is a build note, not a preference.</span>
+      </div>
+    </div>
+
+    <div class="sub">Accent gradient: the dynamic hero word</div>
+    <div class="row" style="align-items:center;gap:20px">
+      <span style="display:inline-block;font-size:clamp(40px,6vw,64px);font-weight:600;letter-spacing:-0.03em;background:linear-gradient(90deg,#7deabd,#0bdfa3,#00c38b);-webkit-background-clip:text;background-clip:text;color:transparent">developer</span>
+      <div class="col" style="gap:6px">
+        <span class="mono" style="font-size:12px;color:var(--muted-foreground)">linear-gradient(#7deabd, #0bdfa3, #00c38b)</span>
+        <span style="font-size:13px;color:var(--subtle-foreground);max-width:38ch">The rotating audience word in the hero. Reserved for that one animated word, never for body copy.</span>
       </div>
     </div>
   </section>
 
   <footer>
     <div class="mono" style="margin-bottom:8px;color:var(--muted-foreground)">nomba one · design system</div>
-    Pure-neutral OKLCH · electric emerald · Geist · dark-first. Built to be inherited by the marketing site and the product console alike — change a token here, and it changes everywhere.
+    Pure-neutral OKLCH · electric emerald · Geist · dark-first. Built to be inherited by the marketing site and the product console alike: change a token here, and it changes everywhere.
   </footer>
 </div>
 
