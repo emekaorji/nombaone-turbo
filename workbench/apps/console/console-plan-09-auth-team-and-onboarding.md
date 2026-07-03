@@ -214,7 +214,7 @@ An org can require two-factor for every member. The policy toggle lives in Setti
 
 ## 5. Roles and what each one can do
 
-Roles come from `org_users.role`, an enum of `owner`, `admin`, `developer`, `viewer`, defaulting to `owner` for the founding user. Authorization is the static capability matrix in `auth/rbac.ts`. Handlers ask `can(role, capability)` and never branch on the role name, so the console mirrors the exact same matrix to decide which controls render.
+Roles come from `org_users.role`, an enum of `owner`, `admin`, `developer`, `viewer`, defaulting to `owner` for the founding user. Authorization is the static capability matrix in `auth/rbac.ts`. Handlers ask `can(role, capability)` and never branch on the role name, so the console mirrors the exact same matrix to decide which controls render. The matrix below is a design contract for the not-yet-built console-auth layer: today `rbac.ts` grants only `owner` a wildcard, and the `admin`, `developer`, and `viewer` capability sets land when that layer ships.
 
 | Capability | owner | admin | developer | viewer |
 |---|---|---|---|---|
@@ -226,14 +226,18 @@ Roles come from `org_users.role`, an enum of `owner`, `admin`, `developer`, `vie
 | `webhooks:read` | yes | yes | yes | yes |
 | `webhooks:manage` | yes | yes | yes | no |
 | `ledger:read` | yes | yes | yes | yes |
-| everything else (billing settings writes, org deletion, danger-zone) | yes (`*`) | no | no | no |
+| `settlements:payout` (create a payout) | yes | yes | no | no |
+| `settlements:refund` (refund a settlement) | yes | yes | no | no |
+| `credit:grant` (grant customer credit) | yes | yes | no | no |
+| `billing:write` (billing settings writes) | yes | yes | no | no |
+| destructive org-level (delete the organization, transfer ownership, wipe or rotate all API keys) | yes (`*`) | no | no | no |
 
 Read this table exactly as the code reads it. `owner` holds the wildcard `*` and passes every check by construction. The one line worth stating out loud, because the mandate calls for it: **a viewer cannot mint keys.** A viewer holds `apiKeys:read` but not `apiKeys:manage`, so the "Create key" action in the Developers area is absent for a viewer, not merely disabled, and the server returns `AUTH_FORBIDDEN_ROLE` if a request reaches it anyway. Two enforcement layers, one matrix.
 
 **What each role sees, from the user's side of the screen:**
-- **Owner.** Everything, including billing policy, the Nomba connection, danger-zone actions, and org deletion.
-- **Admin.** Runs the org day to day: manages members, keys, and webhooks. Cannot delete the org or write billing policy.
-- **Developer.** Builds against the platform: mints and scopes keys, manages webhooks, reads members and the ledger. Cannot manage members.
+- **Owner.** Everything, including billing policy, the Nomba connection, and the destructive org-level actions reserved to the owner: deleting the organization, transferring ownership, and wiping or rotating all API keys.
+- **Admin.** Runs the org day to day: manages members, keys, webhooks, and billing policy, and performs money-out actions (create a payout, refund a settlement, grant customer credit). Cannot run the destructive org-level actions reserved to the owner: deleting the organization, transferring ownership, or wiping or rotating all API keys.
+- **Developer.** Builds against the platform: mints and scopes keys, manages webhooks, reads members and the ledger. Cannot manage members or perform money-out actions (create a payout, refund a settlement, grant customer credit).
 - **Viewer.** Read-only. Sees the org, members, keys (metadata, never secrets), webhooks, and the ledger, and changes nothing.
 
 **Server gating.** Every mutating console-auth and console route runs `can(role, capability)` first and returns `AUTH_FORBIDDEN_ROLE` on a miss. **UI gating.** The console hides actions the role lacks rather than showing dead buttons, and any action that slips through renders the `AUTH_FORBIDDEN_ROLE` hint from doc 08.
@@ -466,7 +470,7 @@ Steps 2 through 7 are the existing public `/v1` surface, driven from the console
 │      ● Recovered                            │
 │  Your first subscription billed and paid,   │
 │  in test.                                   │
-│  Invoice INV_… · ₦2,500.00 · paid           │
+│  Invoice nbo749201835566inv · ₦2,500.00 · paid │
 │  Next:                                      │
 │   [ Invite your team ]                      │
 │   [ Connect Nomba to settle ]               │
@@ -484,7 +488,7 @@ Steps 2 through 7 are the existing public `/v1` surface, driven from the console
 
 ## 10. Auth and onboarding error catalog
 
-Every auth failure resolves to a real, public code with a `hint` and a `docUrl`, rendered by the doc 08 contract. This is the errors-are-a-feature bar applied to the sign-in surface, where a person is most stuck.
+Every auth failure resolves to a real code with a `hint` and a `docUrl` on the console-auth surface, which is distinct from the public `/v1` error gate, rendered by the doc 08 contract. This is the errors-are-a-feature bar applied to the sign-in surface, where a person is most stuck.
 
 | Code | Where it fires | How the console renders it |
 |---|---|---|

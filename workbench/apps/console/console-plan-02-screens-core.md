@@ -555,7 +555,7 @@ Errors surface inline on the discount field: `COUPON_NOT_FOUND`, `COUPON_EXPIRED
 - `GET /v1/invoices/:id` returns `InvoiceResponseData`.
 - `POST /v1/invoices/:id/void`, optional `Idempotency-Key`, body `voidInvoiceBody` with an optional `comment` (max 500 chars).
 
-**Status is derived, never stored.** The console renders the same precedence the API uses in `deriveInvoiceStatus`, in this exact order:
+**Status is server-derived. The console reads it.** The server derives status with the precedence below in `deriveInvoiceStatus` and returns the result on the `status` field. The console renders that server-provided `status` (`draft`, `open`, `partially_paid`, `paid`, `void`, or `uncollectible`) as the source of truth and never recomputes it on the client. `InvoiceResponseData` serializes only `finalizedAt`, `paidAt`, and `voidedAt`, not `uncollectibleAt`, so the client cannot detect `uncollectible` without the server status. The precedence the server applies, in this exact order:
 
 1. `voidedAt` set, so `void`.
 2. `uncollectibleAt` set, so `uncollectible`.
@@ -565,7 +565,7 @@ Errors surface inline on the discount field: `COUPON_NOT_FOUND`, `COUPON_EXPIRED
 6. `amountPaidInKobo` greater than 0, so `partially_paid`.
 7. otherwise `open`.
 
-The console computes the badge from the timestamps and amounts, matching the server, so it never displays a stored status column that could drift.
+The console maps the server `status` straight to its badge, so the badge always matches the server and never drifts from a client recompute.
 
 **Money fields shown (all `InKobo`, rendered by section 1.2).** `subtotalInKobo`, `discountTotalInKobo`, `creditTotalInKobo`, `totalInKobo`, `amountDueInKobo`, `amountPaidInKobo`, and `amountRemainingInKobo`. The breakdown reads: subtotal, minus discount total, minus credit total, gives total, gives amount due, and amount paid and amount remaining track collection.
 

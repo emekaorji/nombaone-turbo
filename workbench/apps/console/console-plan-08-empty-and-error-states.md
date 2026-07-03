@@ -276,11 +276,11 @@ Four status values are interim by construction. Each gets a distinct, honest bad
 | Value | DTO | What it truly means | Badge | Console copy |
 |---|---|---|---|---|
 | `pending` | `SettlementStatus`, `RefundStatus`, `PayoutStatus` | Recorded, not yet confirmed anywhere | `--warning` | "Pending. Recorded, awaiting confirmation." |
-| `ledger_only` | `RefundStatus` | The refund is posted in our ledger; money has not left to the customer | `--info` | "Ledger only. Booked in your ledger. The money return is not confirmed at the bank." |
-| `ledger_posted` | `PayoutStatus` | The payout debit is posted in our ledger; the bank transfer leg is flag-gated and not confirmed | `--info` | "Ledger posted. Booked in your ledger. The bank transfer is not confirmed." |
+| `ledger_only` | `RefundStatus` | The refund is posted in our ledger; money has not left to the customer | `--warning` | "Ledger only. Booked in your ledger. The money return is not confirmed at the bank." |
+| `ledger_posted` | `PayoutStatus` | The payout debit is posted in our ledger; the bank transfer leg is flag-gated and not confirmed | `--warning` | "Ledger posted. Booked in your ledger. The bank transfer is not confirmed." |
 | `consent_pending` | payment method `status` (mandate) | The customer has not finished authorizing the mandate | `--warning`, live dot off | "Consent pending. The customer has not authorized this mandate yet." |
 
-Only `succeeded` (payout, refund) and `settled` or `reconciled` (settlement) render as success. `settled` is a `--success` badge; `reconciled` adds the live dot, because it is the strongest correctness signal the tenant has. `failed` renders `--danger` with the `failureReason` shown verbatim.
+Only `succeeded` (payout, refund) and `settled` or `reconciled` (settlement) render as success. `settled` and `reconciled` are both `--success` badges, with no live dot; the live-dot budget in doc 06 §6.1 does not include settlement states. `failed` renders `--danger` with the `failureReason` shown verbatim.
 
 ### 5.2 Payout: never say "paid to bank" on ledger_posted
 
@@ -288,7 +288,7 @@ The payout provider leg is flag-gated by `NOMBA_PAYOUT_ENABLED` and, until it is
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
-│  Payout  PAY-...                          [ Ledger posted ]    │
+│  Payout  nbo749201835566pay                [ Ledger posted ]    │
 │                                                               │
 │  ₦48,500.00  to  GTBank ****4417                              │
 │  Booked in your ledger. The bank transfer is not confirmed.   │
@@ -408,11 +408,11 @@ Each area declares its three states with the real endpoint and DTO behind it. Wi
 
 ### C9 · Developers (webhooks, events, test mode; keys gated on console-auth)
 
-- **Webhooks empty.** "No webhook endpoints yet. Add one to receive events." plus "Add endpoint." The event picker lists the 35-type catalog from `GET /v1/events/catalog` plus `*`.
+- **Webhooks empty.** "No webhook endpoints yet. Add one to receive events." plus "Add endpoint." The event picker lists the 34-type catalog from `GET /v1/events/catalog` plus `*`.
 - **Deliveries empty (filtered).** "No deliveries match `status=dead`." with a clear-filter action; `status` is one of `pending`, `succeeded`, `failed`, `dead`.
 - **Events empty.** "No events yet. Events appear as things happen in your account." A live-tailing feed (doc 04) renders new events as they arrive, aria-live.
 - **Keys (gated).** Until console-auth ships, the API keys panel renders the §5.5 gated state, not a broken form. `API_KEY_SCOPE_FORBIDDEN` and `API_KEY_ENVIRONMENT_MISMATCH` render with their hints and the switch or owner-contact action.
-- **Test mode (env-gated).** Mounted only when `INFRA_ENVIRONMENT=test`; the console hides it entirely on live. `WEBHOOK_ENDPOINT_NOT_FOUND` and `WEBHOOK_EVENT_NOT_FOUND` render as section errors with retry.
+- **Test mode (env-gated).** Mounted only when `INFRA_ENVIRONMENT=test`; the console hides it entirely on live. Because `WEBHOOK_ENDPOINT_NOT_FOUND` and `WEBHOOK_EVENT_NOT_FOUND` are not in `PUBLIC_ERROR_CODES`, they collapse to `SYSTEM_INTERNAL_ERROR` on the wire (§2.2), so inspecting a deleted endpoint or event surfaces the generic `SYSTEM_INTERNAL_ERROR` section error with the `requestId`, not a tenant-facing 404 carrying those codes. This is a known rough edge; promoting the two codes to public later would let the console render a targeted not-found here (doc 04 flags the same gap).
 - **Error.** Any deliveries or events read failure renders a section error with retry and `requestId`.
 
 ### C10 · Settings, org, team (`GET/PUT /v1/organization`, `GET/PUT /v1/organization/billing`)
@@ -420,7 +420,7 @@ Each area declares its three states with the real endpoint and DTO behind it. Wi
 - **Loading.** Skeleton form.
 - **Empty.** Settings are rarely empty; unset optional fields (branding `logoUrl`, `supportEmail`) render as clearly optional placeholders, not as errors.
 - **Team (gated).** Roles, TOTP, and invites depend on console-auth (doc 09) and render the gated state until it ships. Once live, `AUTH_FORBIDDEN_ROLE` and `MEMBER_LAST_OWNER` render with their hints (the last-owner guard is a form banner, not a silent failure), and a viewer sees the permission-empty state for API keys per §1.2.
-- **Error.** `DUNNING_SETTINGS_INVALID` on saving billing settings renders inline on the offending field (non-increasing retry offsets or an empty schedule) with its hint.
+- **Error.** The billing-settings write validates through zod (`updateBillingSettingsBody`, whose refine requires `dunningMaxWindowHours` to be at least the largest dunning interval), so a bad schedule surfaces as `CLIENT_VALIDATION_FAILED` (422 with a `fields` array), not the non-public `DUNNING_SETTINGS_INVALID`. The console renders `CLIENT_VALIDATION_FAILED` inline on the offending field (for example `dunningMaxWindowHours`) with its per-field message, per §2.4.
 
 ### C11 · Reconciliation (tenant-scoped only)
 
@@ -464,7 +464,7 @@ Each row is a real code from `packages/errors/src/codes.ts`. "What the console s
 | `REFUND_ALREADY_REFUNDED` | 409 | Refunding a fully refunded charge | Form banner; action "Inspect the existing refund" |
 | `COUPON_INVALID_DEFINITION` | 422 | Amount-off and percent-off both set, or non-positive | Inline on the definition fields with hint |
 | `CREDIT_INVALID_AMOUNT` | 422 | Non-integer or non-positive credit amount | Inline on the kobo field; hint names the smallest-currency-unit rule |
-| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 | Inspecting a deleted endpoint | Section error with retry; action "List endpoints" |
+| `WEBHOOK_ENDPOINT_NOT_FOUND` (non-public) | 500 | Inspecting a deleted endpoint | Not in `PUBLIC_ERROR_CODES`, so it collapses to `SYSTEM_INTERNAL_ERROR` on the wire (§2.2); the console renders the generic 500 section error with the `requestId`, not a tenant-facing 404 carrying this code. Known rough edge worth promoting to public later (see doc 04) |
 | `INVALID_CURSOR` | 400 | A malformed or expired pagination cursor | Silent reset to first page (drop the cursor), per the hint; no visible error for the reader |
 | `SYSTEM_UPSTREAM_ERROR` | 502 or 503 or 504 | Upstream dependency down or timed out | Section error or toast; hint says transient; prominent "Retry"; `requestId` |
 | `SYSTEM_INTERNAL_ERROR` | 500 | Any non-public internal failure (collapsed) | Honest 500 surface, `requestId` promoted and copyable, "Retry," `docUrl` (§2.2) |

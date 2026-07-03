@@ -1,0 +1,64 @@
+---
+title: "What to check before you trust a billing layer with your revenue"
+slug: what-to-check-before-you-trust-a-billing-layer
+problem: "The demo always works. The questions that decide whether you keep your money are the ones a demo hides."
+group: migration
+difficulty: foundational
+readingTime: 6
+updated: 2026-07-03
+---
+
+## The scenario
+
+You are choosing a subscriptions layer, or deciding whether to keep building your own. Every option demos
+beautifully: a plan, a checkout, a green success. The demo is not the thing that will page you at 2am. These
+are the questions that will.
+
+## The naive approach
+
+Judge it by the happy path. Watch a charge succeed, admire the dashboard, check that the SDK is pleasant, and
+move on. If it can bill a card in the demo, surely it can run your revenue.
+
+## Why it breaks
+
+Billing is defined by its failures, not its successes. A layer that has never been killed mid-run, never met a
+thin balance, never reconciled a short transfer, looks identical to one that has, right up until the month it
+costs you real money and real trust. The gap between "it charged a card once" and "it will not lose or double
+your money under load" is the entire product.
+
+## What to actually check
+
+Ask each of these, and require a mechanism, not a reassurance.
+
+- **Double-charge safety.** If the billing job is killed two-thirds of the way through and restarts, can the
+  same period be charged twice? The answer should be a database constraint you can name, not "we are careful."
+- **Involuntary churn.** When a charge fails, does the retry know why it failed and when the customer gets
+  paid? A fixed retry ladder in a thin-balance market is lost revenue by design.
+- **Push rails.** Can it bill a customer who can only pay by bank transfer, and does it confirm the money
+  actually landed before marking the invoice paid, or does it trust the notification?
+- **The ledger.** Is money integer-valued and the ledger immutable, or are there floats and in-place updates
+  waiting to drift a kobo at a time?
+- **Webhooks.** Are they signed, retried, and replayable, with delivery stated honestly as at-least-once so
+  your side can dedupe? Anyone promising "exactly-once" is promising something the network cannot give them.
+- **Isolation.** Is tenant isolation a property of the data model, enforced on every query, or a middleware
+  check that one forgotten route can bypass?
+
+## How Nomba One answers, plainly
+
+Double-charge safety is a unique constraint on the subscription and the period, not hopeful code. Dunning is
+payday-biased and classifies failures, so a thin balance is retried when money arrives and an expired card is
+not retried at all. Transfers verify-then-requery and match the exact amount before settling. The ledger is
+integer kobo, immutable, and append-only. Webhooks are signed, at-least-once, deduplicated, retried, and
+replayable, never exactly-once. Isolation is `organization_id` and `environment` on every row, enforced from a
+trusted key, not a middleware afterthought.
+
+And the honest part: direct-debit mandates, payouts, refunds, and escrow are built but still live-gated behind
+the payment provider. We describe them as capabilities we have implemented, not as things we have proven in
+production at scale. A billing layer that will not tell you which of its features are live yet is not one to
+trust with your revenue.
+
+## See it
+
+Read the exit criteria we hold ourselves to, or run the simulator and try to break it.
+
+[Open the simulator](/product#simulator) and [read the trust and reliability page](/trust).

@@ -407,7 +407,7 @@ Sits directly above a data table and drives its query. Every facet maps to a rea
 
 - **Layout:** a horizontal row of facet controls above the table, left aligned, that wraps at 900px and collapses to a single "Filter" button opening a sheet at 390px.
 - **Status facet:** a multi-select of the exact enum members for the resource, keyed to `?status=`. On subscriptions the options are the seven `SubscriptionStatus` members rendered with their section 6 badges. On webhook deliveries the options are the four `WebhookDeliveryStatus` members, keyed to the confirmed `GET /v1/webhooks/{id}/deliveries?status=` param.
-- **Type facet:** on the events feed, an event-type select keyed to `?type=`, sourced from the 35-entry catalog at `GET /v1/events/catalog`. On the deliveries inspector, `?eventType=`.
+- **Type facet:** on the events feed, an event-type select keyed to `?type=`, sourced from the 34-type catalog at `GET /v1/events/catalog`. On the deliveries inspector, `?eventType=`.
 - **Environment:** not a filter. The test or live ring is chosen once in the shell environment switcher (section 17); the filter bar never mixes rings.
 - **Date range:** a from and to control (section 14 date picker) keyed to the module's real range params (verify exact names per module, for example `?createdFrom=&createdTo=`).
 - **Search:** a free-text reference or email search where the module supports it (verify per module).
@@ -481,7 +481,7 @@ A vertical, status-dotted history. It renders a subscription's real lifecycle, a
 
 ### 10.1 Purpose and data
 
-For a subscription, `GET /v1/subscriptions/{id}/events` returns the append-only `domain_events` for that object. Each node is one event, rendered with its type in the exact catalog vocabulary, its `createdAt` (mono), and a dot colored by the event's meaning. The vocabulary is the 35-entry catalog: `invoice.created`, then `invoice.payment_failed`, then `invoice.action_required`, then `invoice.payment_recovered`, or the involuntary branch to `subscription.churned`. Voluntary `subscription.canceled` and involuntary `subscription.churned` render as visibly different nodes, matching the badge split in 6.3.
+For a subscription, `GET /v1/subscriptions/{id}/events` returns the append-only `domain_events` for that object. Each node is one event, rendered with its type in the exact catalog vocabulary, its `createdAt` (mono), and a dot colored by the event's meaning. The vocabulary is the 34-type catalog: `invoice.created`, then `invoice.payment_failed`, then `invoice.action_required`, then `invoice.payment_recovered`, or the involuntary branch to `subscription.churned`. Voluntary `subscription.canceled` and involuntary `subscription.churned` render as visibly different nodes, matching the badge split in 6.3.
 
 ### 10.2 Anatomy, variants, states
 
@@ -590,7 +590,7 @@ A live-tailing list that extends `WebhookTicker`, for the developer's webhook de
 ### 13.2 Anatomy, variants, states
 
 - **Row:** a compact line with the event type (mono), the status badge, the attempt count, the timestamp, and a chevron. A `pending` delivery shows the live dot.
-- **Expand:** the row expands to the raw signed delivery body, `{ id, type, event: { id, type, createdAt }, data }`, and the `x-nombaone-*` headers (`x-nombaone-signature` hex, `x-nombaone-event-type`, `x-nombaone-delivery`, `x-nombaone-delivery-guarantee: at-least-once`), rendered in the raw-JSON view (a `CodeBlock` with copy). The panel states the dedupe rule inline: dedupe on `event.event.id`, the stable event id, not the top-level delivery id which changes on replay.
+- **Expand:** the row expands to the raw signed delivery body, `{ id, type, event: { id, type, createdAt }, data }`, and the `x-nombaone-*` headers (`x-nombaone-signature` hex, `x-nombaone-event-type`, `x-nombaone-delivery`, `x-nombaone-delivery-guarantee: at-least-once`), rendered in the raw-JSON view (a `CodeBlock` with copy). The panel states the dedupe rule inline: dedupe on `event.event.id`, the stable event id, not the top-level delivery id. One event fans out to one delivery row per subscribed endpoint, and a replay re-arms the same delivery row in place, so its delivery id does not change.
 - **Replay:** a dead or failed delivery row carries a Replay action, `POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`, which increments `replayCount` and stamps `replayedAt`. The panel is honest that delivery is at-least-once and replayable, never exactly-once.
 - **aria-live:** the stream container is an `aria-live="polite"` region so a newly arrived delivery is announced. A pause control freezes autoscroll while the developer reads.
 - **Loading:** skeleton rows. **Empty:** "No deliveries yet. Deliveries appear here as events fire." **Error:** inline panel with `hint`, `docUrl`, `requestId`.
@@ -641,7 +641,7 @@ The design system ships only text `Input`, `select`, `textarea`, and the theme t
 ### 14.5 Multi-select (for `enabledEvents`)
 
 - **Anatomy:** a combobox that accepts many values, each selected value rendered as a removable `.chip` inside the field, the listbox showing checked rows.
-- **Use:** the webhook endpoint `enabledEvents[]`, sourced from the 35-entry catalog at `GET /v1/events/catalog`, plus the `*` (all events) option which, when chosen, disables the individual rows and shows a "Listening to all events" chip. This binds to `POST /v1/webhooks` and `PATCH /v1/webhooks/{id}`.
+- **Use:** the webhook endpoint `enabledEvents[]`, sourced from the 34-type catalog at `GET /v1/events/catalog`, plus the `*` (all events) option which, when chosen, disables the individual rows and shows a "Listening to all events" chip. This binds to `POST /v1/webhooks` and `PATCH /v1/webhooks/{id}`.
 
 ### 14.6 Date and time picker
 
@@ -750,7 +750,7 @@ The frame every screen mounts inside. It composes inherited chrome (`Header`, `N
 
 ### 17.1 Anatomy
 
-- **Left sidebar:** fixed `--app-sidebar` (248) at `--z-sidebar`, `--surface-1`, grouped `NavItem`s for the IA areas from doc 01 (Overview, Subscriptions, Customers, Plans and prices, Invoices, Payments and rails, Dunning and recovery, Settlements and payouts, Coupons and credits, Developers, Settings). The active item carries a subtle left indicator; accent is not used to tint the whole item, keeping accent scarce. Below 900px the sidebar collapses to the `--app-rail` (64) icon rail or the `NavSheet`.
+- **Left sidebar:** fixed `--app-sidebar` (248) at `--z-sidebar`, `--surface-1`, grouped `NavItem`s for the IA areas from doc 01 (Overview, Subscriptions, Customers, Plans and prices, Invoices, Payments and rails, Dunning and recovery, Settlements and payouts, Coupons and credits, Developers, Reconciliation, Settings). The active item carries a subtle left indicator; accent is not used to tint the whole item, keeping accent scarce. Below 900px the sidebar collapses to the `--app-rail` (64) icon rail or the `NavSheet`.
 - **Top bar:** the inherited `Header` chrome at `--z-topbar` (50): the wordmark, the current page title (`--app-title`), breadcrumbs, the environment switcher, the theme toggle, and the account menu.
 - **Breadcrumbs:** the path from area to object, for example Subscriptions then `nbo…4471sub`, each segment a link, the last segment plain. References render mono.
 - **Environment switcher:** a two-state control, Test and Live, bound to the session ring. It is the single source of the active `environment` and is visually unmistakable: the Test ring carries a persistent muted banner tint so no one confuses rings. Switching rings re-scopes every list and drawer to that `environment` and clears filters. Test-mode developer instruments (the test clock, mint-test-method, simulate-webhook) appear only when the deployment is `INFRA_ENVIRONMENT=test`, and the whole test area hides on live.

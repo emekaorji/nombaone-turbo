@@ -54,8 +54,8 @@ Four people are in the room, always. They are the MANIFESTO's four audiences. Th
 Comes to verify, integrate, and debug. The console is the control panel behind the SDK.
 
 1. **Mint, scope, and rotate API keys**, reading the key prefix and `last_used_at`. Backed by `api_keys` (environment baked into the `nbo_test_`/`nbo_live_` prefix, SHA-256 hash only, `scopes` array). Gated on the console-auth API (see section 5).
-2. **Register and debug webhook endpoints.** `POST /v1/webhooks` (signing secret shown once), `PATCH /v1/webhooks/{id}`, `POST /v1/webhooks/{id}/rotate-secret`, and the nested deliveries inspector `GET /v1/webhooks/{id}/deliveries?status=&eventType=` with `POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`. Dedupe guidance is explicit: dedupe on `event.id`, never on the delivery id, because delivery ids change on replay.
-3. **Tail the event stream and inspect payloads.** `GET /v1/events?type=`, `GET /v1/events/{id}`, and the catalog at `GET /v1/events/catalog` (the frozen 35-type set).
+2. **Register and debug webhook endpoints.** `POST /v1/webhooks` (signing secret shown once), `PATCH /v1/webhooks/{id}`, `POST /v1/webhooks/{id}/rotate-secret`, and the nested deliveries inspector `GET /v1/webhooks/{id}/deliveries?status=&eventType=` with `POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`. Dedupe guidance is explicit: dedupe on the stable nested event id `event.event.id`, never on the delivery id. Replaying a delivery re-arms the same delivery row in place, so its delivery id does not change, and one event fans out to one delivery row per subscribed endpoint.
+3. **Tail the event stream and inspect payloads.** `GET /v1/events?type=`, `GET /v1/events/{id}`, and the catalog at `GET /v1/events/catalog` (the frozen 34-type catalog).
 4. **Run the core loop without real money**, on a test deployment only. `POST /v1/test/payment-methods` (behavior one of `success`, `decline_insufficient_funds`, `decline_expired_card`, `decline_do_not_honor`, `requires_otp`), `POST /v1/test/subscriptions/{id}/advance-cycle` (the test clock), and `POST /v1/test/webhooks/simulate`.
 5. **Branch on real errors.** Every error envelope carries `code`, `message`, `hint`, `docUrl`, optional `fields`, and `meta.requestId`. The developer wants these verbatim.
 6. **Read the machine spec.** `GET /v1/openapi.json`, generated from the live router so the spec cannot drift from what the server enforces.
@@ -67,7 +67,7 @@ Comes to stand up billing end to end and watch it run.
 1. **Zero to first subscription in test.** Create a customer (`POST /v1/customers`), a plan and price (`POST /v1/plans`, `POST /v1/plans/{id}/prices`), attach a method, then `POST /v1/subscriptions`. This is the onboarding flow the console owns (doc 09).
 2. **See MRR, active count, and churn at a glance.** `GET /v1/metrics/billing` returns `BillingMetricsData`: `mrrInKobo`, `activeCount`, the voluntary and involuntary churn split, `failedChargeRate`, `dunningRecoveryRate`, and `dunningFunnel`.
 3. **Watch a subscription bill, fail, and recover.** The per-subscription timeline from `GET /v1/subscriptions/{id}/events` plus its invoices and `GET /v1/subscriptions/{id}/dunning`.
-4. **Configure dunning and proration policy once.** `PUT /v1/billing-settings`.
+4. **Configure dunning and proration policy once.** `PUT /v1/organization/billing`.
 5. **Get paid out.** `GET /v1/settlements`, `GET /v1/settlements/escrow`, and `POST /v1/settlements/payout` (the provider leg is live-gated; see section 5).
 
 ### 3.3 The merchant without an engineer (Tenet 7, a hard requirement)
@@ -152,39 +152,44 @@ The console is designed in the **same** Pencil file, `workbench/NOMBAONE.pen`, b
 
 ## 11. The app shell (the one frame this doc owns)
 
-Docs 01 through 05 own the individual screens. This doc owns the global shell they all sit inside. The shell is a sticky header carrying the invertible logo and wordmark, a **mandatory test/live environment switch** (backed by `org_sessions.environment`; one user maps to one organization, so there is no org switcher), and the account menu. The left nav is grouped by area (Overview, Subscriptions, Customers, Plans and Prices, Invoices, Payments, Settlements, Coupons and Credits, Recovery, Developers, Settings). The main region holds the active screen. Every list is cursor-paginated (`pagination.nextCursor` and `hasMore`, no totals and no page numbers). Test-mode nav entries appear only when the deployment environment is test. RBAC gates visibility: a `viewer` cannot mint keys.
+Docs 01 through 05 own the individual screens. This doc owns the global shell they all sit inside. The shell is a sticky header carrying the invertible logo and wordmark, a **mandatory test/live environment switch** (backed by `org_sessions.environment`; one user maps to one organization, so there is no org switcher), and the account menu. The left nav mirrors doc 01, the canonical owner of the shell: a standalone Overview; a BILLING group (Subscriptions, Customers, Plans and prices, Invoices); a MONEY group (Payments and rails, Dunning and recovery, Settlements and payouts, Coupons and credits); a BUILD group with Developers nested (API keys, Webhooks, Events, Test mode, API reference); a standalone Reconciliation; and a pinned Settings footer (Organization, Billing settings, Team, Nomba connection). The main region holds the active screen. Every list is cursor-paginated (`pagination.nextCursor` and `hasMore`, no totals and no page numbers). Test-mode nav entries appear only when the deployment environment is test. RBAC gates visibility: a `viewer` cannot mint keys.
 
 Phase A pencil starting point:
 
 ```
-+--------------------------------------------------------------------------+
-|  [logo] Nomba One            [ Test | Live ]        [ ? ]  [ account v ]  |  sticky header, hairline base
-+------------------+-------------------------------------------------------+
-|  OVERVIEW        |                                                       |
-|  Subscriptions   |   Screen title                       [ primary btn ]  |
-|  Customers       |   one-line deck                                       |
-|  Plans & Prices  |                                                       |
-|  Invoices        |   +-----------------------------------------------+   |
-|                  |   | filter bar  [status v] [date v] [search...]   |   |
-|  MONEY           |   +-----------------------------------------------+   |
-|  Payments        |   | data table (cursor-paginated)                 |   |
-|  Settlements     |   |  ref            status     amount     when    |   |
-|  Coupons&Credits |   |  nbo...sub      [Active]   NGN 5,000   2d ago  |   |
-|                  |   |  nbo...sub      [Past due]  NGN 2,500   5h ago |   |
-|  RECOVERY        |   |  ...                                          |   |
-|  Dunning         |   |                         [ Load more ]         |   |
-|                  |   +-----------------------------------------------+   |
-|  DEVELOPERS      |                                                       |
-|  API keys        |   (detail opens in a right slide-over drawer,         |
-|  Webhooks        |    with a "reproduce this" curl / SDK panel)          |
-|  Events          |                                                       |
-|  Test mode *     |                                                       |
-|                  |                                                       |
-|  SETTINGS        |                                                       |
-|  Organization    |                                                       |
-|  Billing policy  |                                                       |
-|  Team            |                                                       |
-+------------------+-------------------------------------------------------+
++------------------------------------------------------------------------------------+
+|  [logo] Nomba One            [ Test | Live ]        [ ? ]  [ account v ]           |  sticky header, hairline base
++----------------------------+-------------------------------------------------------+
+|  Overview                  |                                                       |
+|                            |   Screen title                       [ primary btn ]  |
+|  BILLING                   |   one-line deck                                       |
+|  Subscriptions             |                                                       |
+|  Customers                 |   +-----------------------------------------------+   |
+|  Plans and prices          |   | filter bar  [status v] [date v] [search...]   |   |
+|  Invoices                  |   +-----------------------------------------------+   |
+|                            |   | data table (cursor-paginated)                 |   |
+|  MONEY                     |   |  ref            status     amount     when    |   |
+|  Payments and rails        |   |  nbo...sub      [Active]   NGN 5,000   2d ago |   |
+|  Dunning and recovery      |   |  nbo...sub      [Past due] NGN 2,500   5h ago |   |
+|  Settlements and payouts   |   |  ...                                          |   |
+|  Coupons and credits       |   |                        [ Load more ]          |   |
+|                            |   +-----------------------------------------------+   |
+|  BUILD                     |                                                       |
+|  Developers                |   (detail opens in a right slide-over drawer,         |
+|    · API keys              |    with a "reproduce this" curl / SDK panel)          |
+|    · Webhooks              |                                                       |
+|    · Events                |                                                       |
+|    · Test mode *           |                                                       |
+|    · API reference         |                                                       |
+|                            |                                                       |
+|  Reconciliation            |                                                       |
+|  ------------------------  |                                                       |
+|  SETTINGS                  |                                                       |
+|    · Organization          |                                                       |
+|    · Billing settings      |                                                       |
+|    · Team                  |                                                       |
+|    · Nomba connection      |                                                       |
++----------------------------+-------------------------------------------------------+
    * Test mode entries render only when the deployment environment is test.
 ```
 

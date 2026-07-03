@@ -309,7 +309,7 @@ Customer detail
 - **Data.** `GET /v1/plans/:id` returns `PlanResponseData`. Prices from `GET /v1/plans/:id/prices` returning `PriceResponseData[]`: `unitAmountInKobo`, `currency`, `interval` (`day`, `week`, `month`, `year`), `intervalCount`, `usageType` (`licensed`, `metered`), `billingScheme` (`per_unit`, `tiered`), `trialPeriodDays`, `active`.
 - **Actions.** Edit plan metadata: `PATCH /v1/plans/:id`. Archive: `POST /v1/plans/:id/archive`. Add a price version: `POST /v1/plans/:id/prices`. Deactivate a price: `POST /v1/prices/:id/deactivate`.
 - **Gating.** A plan is archived, never deleted; there is no delete route. `PLAN_HAS_ACTIVE_SUBSCRIBERS` and `PLAN_ALREADY_ARCHIVED` gate the archive action. `PLAN_NAME_TAKEN` renders inline on the name field.
-- **Immutability model.** The UI never shows a price edit form. A "change price" action creates a new price version and deactivates the old one, with a plain note that existing subscribers keep their price. `PRICE_IMMUTABLE` and `PRICE_ALREADY_INACTIVE` back this. `PRICE_TIERED_NOT_SUPPORTED` gates tiered and metered creation, so the price form may hide those options until they ship.
+- **Immutability model.** The UI never shows a price edit form. A "change price" action creates a new price version and deactivates the old one, with a plain note that existing subscribers keep their price. Immutability is structural, enforced by the absence of an edit route: there is only create-under-plan plus deactivate, so a price can never be mutated once created. `PRICE_IMMUTABLE` is not a tenant-facing code (it collapses to `SYSTEM_INTERNAL_ERROR` and no route returns it); the missing edit route is what guarantees immutability. `PRICE_ALREADY_INACTIVE` backs the double-deactivation guard. `PRICE_TIERED_NOT_SUPPORTED` gates tiered and metered creation, so the price form may hide those options until they ship.
 - **Money.** `unitAmountInKobo` renders as naira by division by 100. The price form takes a naira amount and stores kobo. This is the first place the 100x risk bites, because a plan priced wrong overcharges every subscriber.
 
 **Screen: Prices (global read).**
@@ -363,7 +363,7 @@ Invoice detail
 - **Data.** `GET /v1/payment-methods` returns `PaymentMethodResponseData[]`: `id`, `customerId`, `kind` (`card`, `mandate`, `virtual_account`), `status` (`setup_pending`, `consent_pending`, `active`, `removed`, `expired`), `isDefault`, and card display only (`brand`, `last4`, `expMonth`, `expYear`, all null for mandate and virtual account). Filter: `customerRef`.
 
 **Screen: Add card (hosted setup).**
-- **Action.** `POST /v1/payment-methods/setup` (`customerRef`, `amountInKobo`, `callbackUrl`). Idempotency-Key required. Returns `CheckoutSetupResponseData` (`reference`, `checkoutLink`). The id is not returned here; the method is captured asynchronously and confirmed by the `payment_method.attached` event. The console redirects to `checkoutLink`, then awaits the event or polls the method by reference.
+- **Action.** `POST /v1/payment-methods/setup` (`customerRef`, `amountInKobo`, `callbackUrl`). Idempotency-Key required. Returns `CheckoutSetupResponseData` (`reference`, `checkoutLink`). Per doc 03 section 3 (verified in `packages/sara/src/payment-methods/attach.ts`), `setupCard` mints the payment-method `reference` (an `nbo…pmt` id) up front and inserts the payment-method row immediately with `kind` `card` and `status` `setup_pending`, so the method already exists and shows in the methods list right away. Only the capture of `brand` and `last4` is asynchronous, confirmed by the `payment_method.attached` event. The console redirects to `checkoutLink`, then awaits the event or polls the method by reference.
 - **Money.** `amountInKobo` is the validation charge and is entered in naira, stored in kobo. This is a charge boundary, so the unit is pinned.
 
 **Screen: Issue virtual account.**
@@ -421,8 +421,8 @@ Dunning cockpit (subscription scope)
 - **Money.** The console renders the `gross = platformFee + net` split visually, all as naira by division by 100.
 
 **Screen: Escrow and withdrawal.**
-- **Data.** `GET /v1/settlements/escrow` returns `EscrowResponseData`: `lockedInKobo`, `since`, `balanceInKobo`, `minWithdrawableInKobo`, `availableInKobo`. The balance is the Nomba sub-account truth.
-- **Rule.** Withdrawable equals sub-account balance minus the rolling 3-hour locked amount minus the minimum withdrawal buffer. The console clamps or rejects a withdrawal that violates it, in plain language, not as a raw error.
+- **Data.** `GET /v1/settlements/escrow` returns `EscrowResponseData`: `lockedInKobo`, `since`, `balanceInKobo`, `minWithdrawableInKobo`, `availableInKobo`. `balanceInKobo` is `apps/api`'s own ledger-derived `tenant_settlement` balance; the Nomba sub-account reconciles out of band, matching doc 03 section 1.6 and doc 05.
+- **Rule.** Withdrawable equals this ledger balance minus the rolling 3-hour locked amount minus the minimum withdrawal buffer. The console clamps or rejects a withdrawal that violates it, in plain language, not as a raw error.
 - **Action.** Withdraw: `POST /v1/settlements/payout` returns `PayoutResponseData` (`subAccountRef`, `amountInKobo`, `bankCode`, `accountNumber`, `resolvedAccountName`, `status` `pending`, `ledger_posted`, `succeeded`, or `failed`, `providerReference`, `failureReason`). Idempotency-Key required.
 - **Honesty.** `ledger_posted` is not bank-confirmed `succeeded`. The provider leg is flag-gated (`NOMBA_PAYOUT_ENABLED`), so the console shows `PayoutStatus` truthfully and never claims money reached the bank on a `ledger_posted` row. `ESCROW_LOCKED` and `PAYOUT_EXCEEDS_AVAILABLE` are distinct errors and render as distinct explanations.
 
@@ -629,7 +629,7 @@ List footer states
 
 ## 5. RBAC-gated visibility
 
-The console user role comes from `org_users.role`: `owner`, `admin`, `developer`, or `viewer`. This role governs what a person sees and can do in the console UI. It is distinct from the API-key `scopes` (`ApiKeyScope`), which govern a machine key. The console enforces role gating in the UI, and doc 09's console-auth API enforces it on the server. Until console-auth ships, this matrix is a design contract.
+The console user role comes from `org_users.role`: `owner`, `admin`, `developer`, or `viewer`. This role governs what a person sees and can do in the console UI. It is distinct from the API-key `scopes` (`ApiKeyScope`), which govern a machine key. The console enforces role gating in the UI, and doc 09's console-auth API enforces it on the server. Until console-auth ships, this matrix is a design contract for the not-yet-built console-auth layer; today `rbac.ts` grants only `owner` a wildcard.
 
 The principle: read is broad, write narrows by role, money-out and governance are narrowest. Nav items and actions a role cannot use are absent, not merely disabled, except where a disabled state teaches an FSM rule (section 2).
 
@@ -669,8 +669,8 @@ Notes:
 
 - **Viewer** is strictly read-only across every area, including test mode. A viewer can switch environments to read either ring but cannot write in either.
 - **Developer** owns the Build cluster in full and can drive the whole billing lifecycle in both environments, but is withheld money-out (payout, refund, credit grant and void) and governance (organization and billing settings, Nomba connection, team). This matches the manifesto's developer-first stance without handing a developer the treasury.
-- **Admin** does everything except owner-reserved acts that doc 09 defines (for example transferring ownership or deleting the organization). For nav and screen visibility, admin equals owner in this matrix.
-- **Owner** sees everything.
+- **Admin** performs every money-out action alongside owner (create payout, refund a settlement, grant customer credit), and does everything except the destructive org-level acts reserved to owner: deleting the organization, transferring ownership, and wiping or rotating all API keys. For nav and screen visibility, admin equals owner in this matrix.
+- **Owner** sees everything and additionally holds the owner-only destructive org-level acts: deleting the organization, transferring ownership, and wiping or rotating all API keys.
 - The API-key scope model is orthogonal and stricter per key. A key minted with only `subscriptions:read` cannot write regardless of the minting user's role. The console surfaces `API_KEY_SCOPE_FORBIDDEN` when a key lacks a scope the action needs.
 
 ---

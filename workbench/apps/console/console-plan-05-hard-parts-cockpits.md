@@ -81,7 +81,7 @@ The branch is the story. Render each attempt with its branch made explicit, beca
 │ │        "Insufficient funds"  ·  rail: card                       │  │
 │ │ #2  ✗ failed      insufficient_funds     reschedule    4 Sep     │  │
 │ │        "Insufficient funds"  ·  rescheduled → 26 Sep             │  │
-│ │ #3  ⏳ scheduled   —                       reschedule    26 Sep    │  │
+│ │ #3  ⏳ scheduled   -                       reschedule    26 Sep    │  │
 │ │        next attempt timed for payday                             │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────────────────┘
@@ -147,7 +147,7 @@ The console shows the tenant's own settlement `status` and its own ledger-derive
 
 The engine never trusts a webhook. `confirmInvoiceFromWebhook` re-queries Nomba and settles only when the transaction `status === 'settled'` and the settled amount equals the amount due. The match key is our own reference, never Nomba's rotating `orderReference`. The console renders this verification as a small provenance line on each settled invoice: "Matched by your reference, verified against Nomba, settled amount equals amount due." That single line is the honesty. It tells a skeptical CTO the settle was earned, not assumed.
 
-The tenant-scoped ledger integrity comes from `reconcileLedger`, which re-sums every entry and returns a `ReconciliationReport` (`balanced`, `totalDebits`, `totalCredits`, `drift`, where `drift = totalDebits - totalCredits` and a healthy ledger has `drift === 0`). A non-zero drift throws `RECONCILIATION_DRIFT_DETECTED`, which the console surfaces as a hard integrity banner, not a soft warning, because a drifting ledger is the one thing Tenet 1 forbids.
+The `reconcileLedger` re-sum that would prove tenant ledger integrity, returning a `ReconciliationReport` (`balanced`, `totalDebits`, `totalCredits`, `drift`, where `drift = totalDebits - totalCredits` and a healthy ledger has `drift === 0`), has no tenant surface today. No tenant `/v1` endpoint exposes `reconcileLedger` or a ledger-drift report, and `RECONCILIATION_DRIFT_DETECTED` is not a public error code; it collapses to `SYSTEM_INTERNAL_ERROR` before a tenant could ever read it. So the console does not surface a tenant-facing drift banner. A drifting ledger is the one thing Tenet 1 forbids, but detecting it for the tenant is a backend and admin concern in `apps/admin`, not a capability this surface can honestly claim. It is a named dependency and gap, the same way section 3.8 names the join-field caveat.
 
 ### 3.4 The double-entry receipt
 
@@ -178,7 +178,7 @@ Each `SettlementResponseData` carries the split: `grossInKobo`, `platformFeeInKo
 
 ### 3.6 Data, actions, gating
 
-- **Reads.** `GET /v1/settlements` (cursor-paginated, filter by `status`), `GET /v1/settlements/{id}`. Ledger integrity from the tenant's `reconcileLedger` report, surfaced as a status line.
+- **Reads.** `GET /v1/settlements` (cursor-paginated, filter by `status`), `GET /v1/settlements/{id}`. There is no tenant read for ledger integrity: `reconcileLedger` has no `/v1` endpoint and stays a backend and admin concern (section 3.3).
 - **Actions.** This surface is mostly read. The one adjacent write, refund, lives on the money screens (doc 03) and is cross-referenced here because a `refunded` settlement shows its refund provenance.
 - **Gating.** Show the "verified against Nomba" line only when `status` is `settled` or `reconciled`. A `pending` settlement shows "Awaiting settlement confirmation from Nomba," a `failed` shows the failure honestly, and a `refunded` shows the reversed tenant leg with the fee retained.
 
