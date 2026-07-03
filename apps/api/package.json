@@ -11,7 +11,8 @@
     "lint": "eslint . --max-warnings 0",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "seed:dev": "tsx scripts/seed-dev.ts"
+    "seed:dev": "tsx scripts/seed-dev.ts",
+    "gen:openapi": "tsx --env-file=.env scripts/gen-openapi.ts"
   },
   "dependencies": {
     "@nombaone/core-contracts": "workspace:*",
