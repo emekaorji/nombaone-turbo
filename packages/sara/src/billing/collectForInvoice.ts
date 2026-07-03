@@ -13,7 +13,7 @@ import { ensureAccount, postTransaction } from '../ledger';
 import { coerceFailureReason } from '../nomba/failure-taxonomy';
 import { getOrgBillingSettings } from '../org';
 import { resolvePartialCollection } from '../proration';
-import { getRail } from '../rails';
+import { getRail, maybeSimulateTestCollect } from '../rails';
 import { findTenantSubAccount, recordSettlement } from '../settlement';
 import { enterPastDue } from '../subscriptions';
 import { mintInvoiceCheckoutLink } from './actionLink';
@@ -55,12 +55,16 @@ export async function collectForInvoice(
   await ensureAccount(txDb, ctx, { key: 'accounts_receivable', kind: 'asset' });
   const platformRevenue = await ensureAccount(txDb, ctx, { key: 'platform_revenue', kind: 'revenue' });
 
-  const result = await getRail(railKeyForMethod(method.kind)).collect({
-    ...ctx,
-    reference: invoice.reference,
-    amountKobo: invoice.amountDue,
-    metadata: { invoice: invoice.reference, paymentMethod: method.reference },
-  });
+  // TEST-MODE ONLY: a seeded test method short-circuits to a deterministic outcome
+  // (null on live ⇒ the real rail runs, unchanged).
+  const result =
+    maybeSimulateTestCollect(ctx.environment, method, invoice.amountDue) ??
+    (await getRail(railKeyForMethod(method.kind)).collect({
+      ...ctx,
+      reference: invoice.reference,
+      amountKobo: invoice.amountDue,
+      metadata: { invoice: invoice.reference, paymentMethod: method.reference },
+    }));
 
   if (result.status === 'succeeded') {
     const collected = result.collectedKobo ?? invoice.amountDue;

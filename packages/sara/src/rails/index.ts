@@ -8,6 +8,7 @@ export * from './card';
 export * from './mandate';
 export * from './transfer';
 export * from './register';
+export * from './test-sim';
 
 /** Register the mock rails at import. Delete with the example slice; register
  * your real adapters here (or wherever you boot the API). */

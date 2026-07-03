@@ -851,6 +851,39 @@ const local = new Nombaone({
 const health = await nomba.health.live(); // { status: "ok" }
 ```
 
+### Test-mode instruments — drive the engine deterministically
+
+On a **test** key, `nomba.test.*` lets you make renewals, declines, OTP step-ups, and webhook
+deliveries happen on demand — no cron wait, no real card. (These throw on a live key.)
+
+```ts
+// 1. Mint a deterministic test payment method. `behavior` fixes what every charge does.
+const card = await nomba.test.paymentMethods.create({
+  customerId: customer.id,
+  behavior: 'success', // | 'decline_insufficient_funds' | 'decline_expired_card'
+  //         | 'decline_do_not_honor' | 'requires_otp'
+});
+
+// 2. Use it like any method — the first charge settles synchronously.
+const sub = await nomba.subscriptions.create({
+  customerId: customer.id,
+  priceId: price.id,
+  paymentMethodId: card.id,
+});
+// sub.status === 'active'  (a decline_* method would leave it past_due, driving dunning)
+
+// 3. Fast-forward billing: force the next cycle now (idempotent per period — no double charge).
+const { outcome, invoice } = await nomba.test.subscriptions.advanceCycle(sub.id);
+// outcome === 'paid';  invoice.status === 'paid';  invoice.amountPaidInKobo === price.unitAmountInKobo
+
+// 4. Trigger a real, signed webhook delivery to your endpoints on demand.
+const sim = await nomba.test.webhooks.simulate({ type: 'invoice.paid' });
+console.log(sim.event, sim.deliveredCount); // "nbo…EVT", 1
+```
+
+The `requires_otp` behavior exercises the full recovery path — the invoice stays open and an
+`invoice.action_required` event fires — so you can test your OTP/dunning handling end to end.
+
 ---
 
 ## 18. End-to-end: new customer → active subscription → renewal → refund → payout

@@ -390,4 +390,32 @@ _(The deep **readiness** probe — DB / Redis / Nomba-token — is an admin/ops 
 
 ---
 
-_Machine-readable spec: `GET /v1/openapi.json`. Amounts are kobo; references are the public ids._
+## Test-mode instruments `/v1/test/*`
+
+Available **only on a test deployment** (a `nbo_test_…` key on a test host) — the routes don't exist
+on live. They let you drive the billing engine deterministically: no cron wait, no real card, no
+waiting on Nomba.
+
+| Method | Path | Description | Scope | Body |
+|---|---|---|---|---|
+| POST | `/test/payment-methods` | Mint a deterministic, chargeable test payment method | payment_methods:write | `{ customerId, behavior?, kind? }` → `PaymentMethodResponseData` |
+| POST | `/test/subscriptions/{id}/advance-cycle` | Force the subscription's next billing cycle now (a "test clock") | subscriptions:write | → `{ domain:"advance_cycle_result", subscriptionId, outcome, invoice }` |
+| POST | `/test/webhooks/simulate` | Emit + deliver a real catalog event to your endpoints | webhooks:write | `{ type, payload? }` → `{ domain:"webhook_simulation", event, type, deliveredCount }` |
+
+**A test method's `behavior`** fixes what every charge of it does — deterministically, every time
+(`kind` is `card` by default, or `mandate`):
+
+- `success` — the charge succeeds and the invoice is paid.
+- `decline_insufficient_funds` / `decline_expired_card` / `decline_do_not_honor` — the charge fails
+  with that exact reason (drives dunning down the matching branch).
+- `requires_otp` — the charge needs customer OTP/3DS: the invoice stays open and an
+  `invoice.action_required` event fires, exactly like a live bank step-up.
+
+Attach a test method to a subscription, then `advance-cycle` to bill the next period on demand.
+Advancing is **idempotent per period** — re-calling returns the same invoice, never a second charge —
+and applies only to `active`/`trialing` subscriptions (else `422`).
+
+---
+
+_Machine-readable spec: `GET /v1/openapi.json`. Money is integer kobo (every money field is named
+`*InKobo`); references are the public ids._

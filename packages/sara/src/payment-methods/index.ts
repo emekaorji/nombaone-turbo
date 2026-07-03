@@ -5,4 +5,5 @@ export * from './queries';
 export * from './remove';
 export * from './settle';
 export * from './serialize';
+export * from './test-methods';
 export * from './types';

@@ -15,3 +15,4 @@ export * from './endpoints';
 export * from './deliver';
 export * from './deliveries';
 export * from './serialize';
+export * from './simulate';

@@ -14,7 +14,7 @@ import { emitEvent } from '../events';
 import { claimInvoicePaid, linkInvoiceLedgerTransaction, markInvoiceUncollectible } from '../invoices';
 import { ensureAccount, postTransaction } from '../ledger';
 import { coerceFailureReason, type PaymentFailureReason } from '../nomba/failure-taxonomy';
-import { getRail } from '../rails';
+import { getRail, maybeSimulateTestCollect } from '../rails';
 import { mintReference } from '../reference';
 import { churnFromPastDue, recoverFromPastDue } from '../subscriptions';
 import { mintInvoiceCheckoutLink } from '../billing/actionLink';
@@ -197,17 +197,21 @@ async function chargeDunningAttempt(
   const cash = await ensureAccount(txDb, ctx, { key: 'cash', kind: 'asset' });
   const platformRevenue = await ensureAccount(txDb, ctx, { key: 'platform_revenue', kind: 'revenue' });
 
-  const result = await getRail(railKeyForMethod(method.kind)).collect({
-    ...ctx,
-    reference: attemptRef,
-    amountKobo: outstanding,
-    metadata: {
-      invoice: invoice.reference,
-      paymentMethod: method.reference,
-      tokenKey: method.tokenKey ?? undefined,
-      customerId: method.customerId,
-    },
-  });
+  // TEST-MODE ONLY: a seeded test method short-circuits to a deterministic outcome
+  // (null on live ⇒ the real rail runs, unchanged).
+  const result =
+    maybeSimulateTestCollect(ctx.environment, method, outstanding) ??
+    (await getRail(railKeyForMethod(method.kind)).collect({
+      ...ctx,
+      reference: attemptRef,
+      amountKobo: outstanding,
+      metadata: {
+        invoice: invoice.reference,
+        paymentMethod: method.reference,
+        tokenKey: method.tokenKey ?? undefined,
+        customerId: method.customerId,
+      },
+    }));
 
   if (result.status === 'succeeded') {
     const claim = await claimInvoicePaid(txDb, ctx, invoice);

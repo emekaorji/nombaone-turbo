@@ -22,3 +22,4 @@ export * from './example';
 export * from './settlement';
 export * from './settings';
 export * from './metrics';
+export * from './test';

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { env } from '@shared/config/env';
 import { buildOpenApiDocument } from '@shared/openapi/build';
 import { billingSettingsRouter } from '@modules/billing-settings';
 import { couponsRouter } from '@modules/coupons';
@@ -17,6 +18,7 @@ import { pricesRouter } from '@modules/prices';
 import { settingsRouter } from '@modules/settings';
 import { settlementsRouter } from '@modules/settlements';
 import { subscriptionsRouter } from '@modules/subscriptions';
+import { testRouter } from '@modules/test';
 import { webhooksRouter } from '@modules/webhooks';
 
 /**
@@ -45,6 +47,12 @@ v1Router.use(settlementsRouter);
 v1Router.use(settingsRouter);
 v1Router.use(metricsRouter);
 v1Router.use(exampleRouter);
+
+// Test-mode simulation instruments — mounted ONLY on a test deployment, so the
+// `/v1/test/*` helpers cannot exist on (and cannot be reached in) a live process.
+if (env.INFRA_ENVIRONMENT === 'test') {
+  v1Router.use(testRouter);
+}
 
 // The generated OpenAPI 3.1 document (L ⚠) — public (codegen tools fetch it),
 // served RAW (not the platform envelope), paths walked from THIS mounted router so
