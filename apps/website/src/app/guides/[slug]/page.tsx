@@ -19,7 +19,21 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const article = getArticle(slug);
-  return { title: article?.frontmatter.title ?? "Guide" };
+  if (!article) return { title: "Guide" };
+  const { title, problem, updated } = article.frontmatter;
+  return {
+    title,
+    description: problem,
+    alternates: { canonical: `/guides/${slug}` },
+    openGraph: {
+      type: "article",
+      title,
+      description: problem,
+      url: `/guides/${slug}`,
+      modifiedTime: updated,
+    },
+    twitter: { card: "summary_large_image", title, description: problem },
+  };
 }
 
 function formatMonthYear(iso: string) {

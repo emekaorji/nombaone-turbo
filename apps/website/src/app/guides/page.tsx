@@ -2,7 +2,11 @@ import { Container } from "@/components/layout/Container";
 import { GuideCard } from "@/components/primitives/GuideCard";
 import { getArticlesByGroup } from "@/lib/content";
 
-export const metadata = { title: "Guides" };
+export const metadata = {
+  title: "Guides",
+  description:
+    "The hard parts of recurring billing, written down: double-charges, dunning for thin balances, push-vs-pull reconciliation, and multi-tenant billing, for how Nigeria pays.",
+};
 
 export default function GuidesPage() {
   // Show the full roster (the .pen lists drafts too, as "coming soon" entries).

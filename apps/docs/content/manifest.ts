@@ -20,6 +20,9 @@ export type Badge = "new" | "beta" | "updated";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
+/** Diátaxis mode of a section (never mixed within one section). */
+export type DiataxisMode = "tutorial" | "how-to" | "reference" | "explanation";
+
 export interface ManifestItem {
   /** URL path, leading slash, no extension. `''` for home. */
   slug: string;
@@ -27,6 +30,8 @@ export interface ManifestItem {
   title: string;
   /** Optional pill rendered next to the label. */
   badge?: Badge;
+  /** One-line summary (section-landing cards + search snippet + `<meta>`). */
+  summary?: string;
   /** HTTP method, for API operation rows (renders a method chip). */
   method?: HttpMethod;
   /** Per-operation child pages, for an API resource row. */
@@ -40,6 +45,8 @@ export interface ManifestSection {
   key: string;
   /** `"api"` rows get tighter density and the API-section treatment. */
   kind?: "docs" | "api";
+  /** Diátaxis mode — the section's single active reader-need (never mixed). */
+  mode?: DiataxisMode;
   items: ManifestItem[];
 }
 
@@ -49,22 +56,158 @@ export interface ManifestSection {
  */
 export const HOME: ManifestItem = { slug: "", title: "Home" };
 
+/**
+ * The full Diátaxis information architecture (docs-plan-02 §5). Order is
+ * intentional. Pages whose `.mdx` is not yet authored render a "coming soon"
+ * stub (content layer) until their owning phase writes the body — so the whole
+ * map is navigable now and no route 404s.
+ */
 export const MANIFEST: ManifestSection[] = [
   {
-    title: "Getting started",
-    key: "getting-started",
+    title: "Get started",
+    key: "get-started",
+    mode: "tutorial",
     items: [
-      { slug: "/getting-started/quickstart", title: "Quickstart", badge: "new" },
-      { slug: "/getting-started/authentication", title: "Authentication" },
-      { slug: "/getting-started/environments", title: "Environments" },
+      { slug: "/getting-started/quickstart", title: "Quickstart", badge: "new", summary: "Get a sandbox key and reach your first real subscription in minutes." },
+      { slug: "/getting-started/authentication", title: "Authentication", summary: "The per-organization nbo_test_ / nbo_live_ secret key, and how it works." },
+      { slug: "/getting-started/environments", title: "Environments", summary: "Test vs live, and how a key pins every request to one environment." },
+      { slug: "/getting-started/your-first-subscription", title: "Your first subscription", summary: "Create a plan, a price, and a subscription that bills — end to end." },
+      { slug: "/getting-started/verify-in-your-devtools", title: "Verify us in your devtools", summary: "Fire a real signed webhook and watch it land in your own logs." },
+    ],
+  },
+  {
+    title: "Guides",
+    key: "guides",
+    mode: "how-to",
+    items: [
+      { slug: "/guides/create-plans-and-prices", title: "Create plans and prices", summary: "Model your pricing: plans, prices, intervals, and trials." },
+      { slug: "/guides/start-a-subscription", title: "Start a subscription", summary: "Subscribe a customer on any rail — card, direct debit, transfer." },
+      { slug: "/guides/handle-webhooks", title: "Handle webhooks", summary: "Receive, verify, and dedupe events; keep one correct balance." },
+      { slug: "/guides/dunning-and-recovery", title: "Dunning and recovery", summary: "Recover a failed charge on a thin balance — the Nigerian way." },
+      { slug: "/guides/refunds-payouts-settlement", title: "Refunds, payouts & settlement", summary: "Move money back out: refunds, escrow, and payouts to a bank." },
+      { slug: "/guides/proration-and-plan-changes", title: "Proration and plan changes", summary: "Upgrade, downgrade, and switch intervals mid-cycle, correctly." },
+      { slug: "/guides/coupons-and-credits", title: "Coupons and credits", summary: "Discounts, credit grants, and how they resolve on an invoice." },
+      { slug: "/guides/going-live", title: "Going live", summary: "The checklist to move from a test key to real money." },
+    ],
+  },
+  {
+    title: "Concepts",
+    key: "concepts",
+    mode: "explanation",
+    items: [
+      { slug: "/concepts/how-billing-works", title: "How billing works", summary: "Cycles, invoices, collection, and the state machine underneath." },
+      { slug: "/concepts/money-is-integer-kobo", title: "Money is integer kobo", summary: "Why every amount is integer kobo, and the 100× naira trap." },
+      { slug: "/concepts/the-ledger", title: "The double-entry ledger", summary: "The source of truth: every leg of every movement, debits and credits." },
+      { slug: "/concepts/multi-rail-push-and-pull", title: "Multi-rail: push and pull", summary: "Card and mandate pull; transfer pushes. Why the asymmetry matters." },
+      { slug: "/concepts/settlement-and-sub-accounts", title: "Settlement & sub-accounts", summary: "How a collection splits and settles to a merchant's Nomba sub-account." },
+      {
+        slug: "/concepts/hard-parts",
+        title: "The hard parts",
+        summary: "The truths most payments docs hide — told in the open, each runnable.",
+        children: [
+          { slug: "/concepts/hard-parts/the-double-charge-bug", title: "The double-charge trap", badge: "new" },
+          { slug: "/concepts/hard-parts/dunning-for-thin-balances", title: "Dunning for thin balances" },
+          { slug: "/concepts/hard-parts/bank-transfer-is-not-just-another-method", title: "Bank transfer isn't a 'method'" },
+          { slug: "/concepts/hard-parts/card-tokens-expire", title: "Card tokens expire" },
+          { slug: "/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice", title: "When a transfer doesn't match the invoice" },
+          { slug: "/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge", title: "Retrying the webhook ≠ retrying the charge" },
+          { slug: "/concepts/hard-parts/mandates-and-consent", title: "Mandates and consent" },
+          { slug: "/concepts/hard-parts/proration-is-a-ledger-problem", title: "Proration is a ledger problem" },
+          { slug: "/concepts/hard-parts/the-end-of-month-billing-trap", title: "The end-of-month billing trap" },
+          { slug: "/concepts/hard-parts/voluntary-vs-involuntary-churn", title: "Voluntary vs involuntary churn" },
+          { slug: "/concepts/hard-parts/settlement-without-spreadsheets", title: "Settlement without spreadsheets" },
+          { slug: "/concepts/hard-parts/scheduler-that-survives-a-crash", title: "A scheduler that survives a crash" },
+          { slug: "/concepts/hard-parts/isolation-is-a-data-model-property", title: "Isolation is a data-model property" },
+          { slug: "/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer", title: "What to check before you trust a billing layer" },
+        ],
+      },
     ],
   },
   {
     title: "API reference",
     key: "api",
     kind: "api",
+    mode: "reference",
     items: [
-      { slug: "/reference/examples", title: "Create an example", method: "POST" },
+      { slug: "/reference/glossary", title: "Glossary", summary: "One word, one meaning — the canonical vocabulary." },
+      { slug: "/reference/customers", title: "Customers", summary: "Create and manage customers, credit, and discounts." },
+      { slug: "/reference/plans", title: "Plans", summary: "Product plans and their lifecycle." },
+      { slug: "/reference/prices", title: "Prices", summary: "Recurring prices, intervals, and versioning." },
+      { slug: "/reference/subscriptions", title: "Subscriptions", summary: "The engine's lifecycle surface." },
+      { slug: "/reference/payment-methods", title: "Payment methods", summary: "Cards, mandates, and virtual accounts." },
+      { slug: "/reference/mandates", title: "Mandates", summary: "Direct-debit consent and status." },
+      { slug: "/reference/invoices", title: "Invoices", summary: "Generated invoices and their state." },
+      { slug: "/reference/coupons", title: "Coupons", summary: "Discount definitions." },
+      { slug: "/reference/credits", title: "Credits", summary: "Customer credit grants and balance." },
+      { slug: "/reference/dunning", title: "Dunning", summary: "Recovery attempts and state." },
+      { slug: "/reference/settlements", title: "Settlements", summary: "Refunds, payouts, and escrow." },
+      { slug: "/reference/webhooks", title: "Webhook endpoints", summary: "Register, rotate, and inspect endpoints + deliveries." },
+      { slug: "/reference/events", title: "Events", summary: "The domain-event stream + catalog." },
+      { slug: "/reference/organization", title: "Organization", summary: "Your organization config + billing settings." },
+      { slug: "/reference/metrics", title: "Metrics", summary: "Billing metrics: MRR, churn, dunning funnel." },
+      { slug: "/reference/examples", title: "Example", method: "POST", summary: "The deletable worked example (removed with the scaffold)." },
+    ],
+  },
+  {
+    title: "Webhooks",
+    key: "webhooks",
+    mode: "reference",
+    items: [
+      { slug: "/webhooks/overview", title: "Overview", summary: "How outbound events reach your endpoints." },
+      { slug: "/webhooks/event-catalog", title: "Event catalog", summary: "Every event type, when it fires, and its payload." },
+      { slug: "/webhooks/signing-and-verification", title: "Signing & verification", summary: "Verify a delivery's signature and timestamp." },
+      { slug: "/webhooks/retries-and-replay", title: "Retries & replay", summary: "The retry cadence, dead-letters, and replay." },
+      { slug: "/webhooks/delivery-guarantee", title: "Delivery guarantee", summary: "At least once, deduped on event id — never exactly once." },
+      { slug: "/webhooks/simulate", title: "Simulate an event", badge: "new", summary: "Fire a real signed event to your endpoint on demand (test)." },
+    ],
+  },
+  {
+    title: "Errors",
+    key: "errors",
+    mode: "reference",
+    items: [
+      { slug: "/errors", title: "Error reference", summary: "Every error code, what triggers it, and exactly how to fix it." },
+    ],
+  },
+  {
+    title: "Test toolkit",
+    key: "test-toolkit",
+    mode: "reference",
+    items: [
+      { slug: "/test-toolkit/overview", title: "Overview", summary: "Drive the engine deterministically — no real card, no cron wait." },
+      { slug: "/test-toolkit/test-payment-methods", title: "Test payment methods", summary: "Deterministic success / decline / OTP methods." },
+      { slug: "/test-toolkit/test-clock", title: "The test clock", summary: "Advance a subscription's next cycle on demand." },
+      { slug: "/test-toolkit/simulate-webhooks", title: "Simulate webhooks", summary: "Emit and deliver any catalog event on demand." },
+    ],
+  },
+  {
+    title: "Changelog",
+    key: "changelog",
+    mode: "reference",
+    items: [{ slug: "/changelog", title: "Changelog", summary: "Every API change, dated, with migration notes." }],
+  },
+  {
+    title: "Migrate",
+    key: "migrate",
+    mode: "how-to",
+    items: [
+      { slug: "/migrate/overview", title: "Overview", summary: "Move to Nomba One from another processor." },
+      { slug: "/migrate/from-paystack", title: "Coming from Paystack", summary: "Map Paystack's subscription gotchas to our clean equivalents." },
+      { slug: "/migrate/from-stripe", title: "Coming from Stripe Billing", summary: "Move a Stripe Billing integration to Nomba One." },
+      { slug: "/migrate/from-flutterwave", title: "Coming from Flutterwave", summary: "Map Flutterwave's tx_ref/flw_ref tangle to one reference." },
+      { slug: "/migrate/generic", title: "From any processor", summary: "A zero-downtime parallel-run playbook." },
+    ],
+  },
+  {
+    title: "For merchants",
+    key: "merchants",
+    mode: "how-to",
+    items: [
+      { slug: "/merchants/overview", title: "Overview", summary: "Run subscriptions without an engineer." },
+      { slug: "/merchants/create-a-plan", title: "Create a plan", summary: "Set up a plan and price from the console." },
+      { slug: "/merchants/share-a-payment-link", title: "Share a payment link", summary: "Collect a subscription with a link — no code." },
+      { slug: "/merchants/set-up-dunning-messages", title: "Set up dunning messages", summary: "What your customer sees when a charge fails." },
+      { slug: "/merchants/read-a-settlement", title: "Read a settlement", summary: "Understand a payout and where your money is." },
     ],
   },
 ];

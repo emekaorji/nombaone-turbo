@@ -13,6 +13,7 @@
   "dependencies": {
     "@nombaone/core-contracts": "workspace:*",
     "@nombaone/docs-db": "workspace:*",
+    "@nombaone/errors": "workspace:*",
     "@nombaone/sara": "workspace:*",
     "@nombaone/ui": "workspace:*",
     "@nombaone/utils": "workspace:*",

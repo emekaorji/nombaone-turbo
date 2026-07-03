@@ -3,7 +3,11 @@ import { CheckCheck, ImageIcon, Plus } from "lucide-react";
 import { AskModal } from "@/components/sections/AskModal";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "The Hall" };
+export const metadata = {
+  title: "The Hall",
+  description:
+    "Every hard question builders have hit on Nomba One, answered in the open by the team — real questions, real code, real answers.",
+};
 
 const FILTERS = ["All", "Rails", "Dunning", "Reconciliation", "Multi-tenant", "Migration"];
 

@@ -4,6 +4,17 @@
 
 ---
 
+> **⚡ STATUS (build, loop):** the CORE museum is **LIVE + green** — `content/errors.mdx`
+> renders `<ErrorReference>` (`src/components/mdx/error-reference.tsx`), which reads
+> `ERROR_CODE_META` + `PUBLIC_ERROR_CODES` from `@nombaone/errors` **at runtime** and emits
+> one entry per public code, `id={code}` (= the `docUrl#CODE` fragment by construction, so it
+> can never drift), grouped by domain. This is a simpler realization than the scripted
+> generator below (no generated module to keep in sync — it reads the live registry).
+> **Remaining (enrich toward this plan):** per-code HTTP `status` badge, a `triggers` sentence,
+> a sample JSON `envelope`, the live **Reproduce this** button (needs the Phase-03 proxy +
+> `/test/*` methods), the `<ErrorExplorer>` paste-and-jump, the error-code auto-link rehype
+> transformer, and the CI check that every `docUrl` resolves.
+
 ## Goal
 
 Turn the error registry into the most useful page in the docs. Today every failure the API returns carries `error.docUrl = https://docs.nombaone.com/errors#<CODE>` (`packages/errors/src/codes.ts` → `ERROR_CODE_META`, `DOCS_ERRORS_BASE`), and **that page returns 404** — a promise the API makes on every error, unkept. Phase 04 ships it as a *failure museum*:

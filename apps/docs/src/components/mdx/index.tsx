@@ -8,8 +8,11 @@ import { Callout } from "./callout";
 import { Card, CardGroup } from "./card";
 import { InlineCode, Pre } from "./code-block";
 import { EndpointHeader } from "./endpoint-header";
+import { ErrorReference } from "./error-reference";
+import { EventCatalog } from "./event-catalog";
 import { FeeBreakdown } from "./fee-breakdown";
 import { ParamField, ResponseField } from "./fields";
+import { Glossary } from "./glossary";
 import { LifecycleStateMachine } from "./lifecycle-state-machine";
 import { MoneyFlow } from "./money-flow";
 import { Quickstart } from "./quickstart";
@@ -133,6 +136,9 @@ export const mdxComponents: MDXComponents = {
   EndpointHeader,
   Card,
   CardGroup,
+  ErrorReference,
+  EventCatalog,
+  Glossary,
   RequestExample,
   Variant,
   ResponseExample,

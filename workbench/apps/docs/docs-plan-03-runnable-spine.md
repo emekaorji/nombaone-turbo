@@ -60,7 +60,7 @@ This phase writes **no content pages** — it hands 04–09 a spine they can lea
 
 ### A · Build-time OpenAPI snapshot (the single source both the gate and the snippet engine consume)
 
-- [ ] **Expose the OpenAPI builder + router to the docs build without a network hop.** Add a package export
+- [x] **Expose the OpenAPI builder + router to the docs build without a network hop. · ✅ DONE via apps/api/scripts/gen-openapi.ts (+ `gen:openapi` script): walks v1Router+testRouter, writes apps/docs/src/generated/openapi.json (62 paths incl 3 /test/*). Generator lives in apps/api (not docs) because core-db eagerly creates the pool at import — the docs read the committed snapshot, zero side-effects.  ORIG:** Add a package export
   so the docs can import `buildOpenApiDocument` and `v1Router`: edit `apps/api/package.json` to add an
   `"./openapi"` subpath export resolving to a tiny `apps/api/src/shared/openapi/public.ts` that re-exports
   `buildOpenApiDocument` (from `./build`) and a **`buildFullOpenApiDocument()`** helper that constructs a
@@ -68,7 +68,7 @@ This phase writes **no content pages** — it hands 04–09 a spine they can lea
   are always in the snapshot. *Accept:* `import { buildFullOpenApiDocument } from "@nombaone/api/openapi"`
   type-checks from `apps/docs`; the returned `paths` include `/v1/test/payment-methods`,
   `/v1/test/subscriptions/{id}/advance-cycle`, `/v1/test/webhooks/simulate`.
-- [ ] **Write `apps/docs/scripts/build-openapi-snapshot.ts`** — imports `buildFullOpenApiDocument()`
+- [x] **Write `apps/docs/scripts/build-openapi-snapshot.ts`** — imports `buildFullOpenApiDocument()`
   (no `fetch`, no live server), writes the doc to `apps/docs/src/generated/openapi.json` and a typed
   `apps/docs/src/generated/openapi.d.ts` (operationId → method/path/params/requestBody/responses). Add
   `"openapi:snapshot": "tsx scripts/build-openapi-snapshot.ts"` to `apps/docs/package.json` scripts and make
@@ -82,21 +82,21 @@ This phase writes **no content pages** — it hands 04–09 a spine they can lea
 
 ### B · Proxy → `/v1/test/*`, schema-driven allowlist, test-base-only guard, SSE variant
 
-- [ ] **Replace the hand-maintained `ALLOWED_PATH_PREFIXES`** in `apps/docs/src/app/api/playground/route.ts`
+- [x] **Replace the hand-maintained `ALLOWED_PATH_PREFIXES`** in `apps/docs/src/app/api/playground/route.ts`
   (currently the stale `/wallets`,`/payments`,`/payouts`,`/health` at `:33-38`) with a **schema-driven
   allowlist**: `apps/docs/src/lib/playground-allowlist.ts` reads `src/generated/openapi.json` at module load
   and produces a `Set<"METHOD /path-template">` of every operation, **including** the three `/v1/test/*` ops.
   Match incoming `method`+`path` against the templates (convert `{param}`→matcher). *Accept:* a request to a
   path absent from the snapshot returns the existing `403 PATH_NOT_ALLOWED`; a documented op passes; adding an
   endpoint to the API and re-snapshotting auto-allows it with no edit to `route.ts`.
-- [ ] **Add the test-base-only guard.** In `route.ts`, before forwarding any `/v1/test/*` (or, defensively,
+- [x] **Add the test-base-only guard.** In `route.ts`, before forwarding any `/v1/test/*` (or, defensively,
   any) path, assert `INFRA_API_BASE` resolves to a **sandbox/test host** (env `NEXT_PUBLIC_INFRA_API_BASE`
   must match an allowlisted test-host pattern, e.g. `sandbox.` prefix or an explicit
   `INFRA_TEST_BASE_ONLY=true`); refuse with `403 TEST_BASE_ONLY` if a `/test/*` path is ever paired with a
   non-test base. *Accept:* with a fabricated live base env, a `/v1/test/webhooks/simulate` request is rejected
   server-side and never fetched; a unit test in `apps/docs/src/app/api/playground/route.test.ts` proves it.
   Preserve the existing `nbo_live_` rejection (`:63-69`) unchanged.
-- [ ] **Keep the no-logging / curated-header posture.** Do not add request/body logging when extending the
+- [x] **Keep the no-logging / curated-header posture.** Do not add request/body logging when extending the
   proxy. The only new passthrough header for `/test/*` is the same curated set (Authorization, Content-Type,
   Idempotency-Key). *Accept:* code review confirms no `console.log`/telemetry of key or body; the header
   allowlist in `route.ts:95-103` is unchanged in shape.

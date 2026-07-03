@@ -7,7 +7,11 @@ import { CTABand } from "@/components/sections/CTABand";
 import { GuaranteeBand } from "@/components/sections/GuaranteeBand";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Trust & security" };
+export const metadata = {
+  title: "Trust & security",
+  description:
+    "Built so it can't quietly lose your money: an integer-kobo double-entry ledger, idempotent by construction, reconciled to the processor, with tenant isolation enforced at the schema level.",
+};
 
 const APP_URL = "https://app.nombaone.xyz";
 

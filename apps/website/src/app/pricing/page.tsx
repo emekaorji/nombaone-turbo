@@ -6,7 +6,11 @@ import { AskModal } from "@/components/sections/AskModal";
 import { CTABand } from "@/components/sections/CTABand";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Pricing" };
+export const metadata = {
+  title: "Pricing",
+  description:
+    "Pricing you can read without a sales call. A free, complete sandbox to build against, usage-based pricing when you go live, and you never pay to talk to us.",
+};
 
 const APP_URL = "https://app.nombaone.xyz";
 

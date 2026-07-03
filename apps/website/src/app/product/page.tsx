@@ -10,7 +10,11 @@ import { GuaranteeBand } from "@/components/sections/GuaranteeBand";
 import { LifecycleRail } from "@/components/sections/LifecycleRail";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Product" };
+export const metadata = {
+  title: "Product",
+  description:
+    "Every renewal, from signup to settlement: subscribe on any rail, bill idempotently so a crash never double-charges, recover with payday-timed dunning, reconcile inbound transfers, and settle to sub-accounts.",
+};
 
 // ── Stage 01 visual: tabbed code (.pen KAOgf) ──────────────────────────────
 const NODE_LINES: Line[] = [

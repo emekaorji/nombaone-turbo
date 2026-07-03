@@ -8,7 +8,11 @@ import { CodeBlock } from "@/components/sections/CodeBlock";
 import { com, kw, str, w, type Line } from "@/components/sections/code-tokens";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "School fees" };
+export const metadata = {
+  title: "School fees",
+  description:
+    "Termly fees, collected and reconciled. Nomba One turns each term into a subscription that collects itself over mandate and transfer, with payday-timed dunning.",
+};
 
 const APP_URL = "https://app.nombaone.xyz";
 
