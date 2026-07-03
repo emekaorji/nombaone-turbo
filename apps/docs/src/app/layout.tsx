@@ -45,6 +45,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       data-scroll-behavior="smooth"
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
+        <a
+          href="#content"
+          className="sr-only rounded-md focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-50 focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-foreground focus:shadow-md"
+        >
+          Skip to content
+        </a>
         <ThemeProvider>
           <SearchProvider>
             <Topbar />
