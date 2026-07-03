@@ -1,0 +1,20 @@
+---
+title: Plans
+description: Product plans and their lifecycle — create, update, archive, and the prices that hang off them. Generated from the live schema.
+section: reference
+order: 3
+toc: false
+---
+
+A **plan** is the product a customer subscribes to. It carries a name and holds
+one or more [prices](/reference/prices) — the money lives on the price, so one
+plan can offer monthly and yearly at once. See
+[create plans and prices](/guides/create-plans-and-prices) for the workflow.
+
+<ApiReference resource="plans" />
+
+<Callout type="note" title="Prices are created under a plan">
+  A plan's prices are managed at `/v1/plans/{id}/prices` (create and list) — the
+  operations above include them. Reading or deactivating an individual price is on
+  the [prices](/reference/prices) resource.
+</Callout>

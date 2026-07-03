@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn";
 
 import { ApiExplorer } from "./api-explorer";
 import { RequestExample, Response, ResponseExample, Variant } from "./api-examples";
+import { ApiReference } from "./api-reference";
 import { Callout } from "./callout";
 import { Card, CardGroup } from "./card";
 import { InlineCode, Pre } from "./code-block";
@@ -138,6 +139,7 @@ export const mdxComponents: MDXComponents = {
   CardGroup,
   ErrorReference,
   EventCatalog,
+  ApiReference,
   Glossary,
   RequestExample,
   Variant,
