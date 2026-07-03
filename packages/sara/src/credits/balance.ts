@@ -39,5 +39,5 @@ export async function getCreditBalanceResponse(
 ): Promise<CreditBalanceResponseData> {
   const grants = await listCreditGrants(db, ctx, customerRef);
   const balance = await getCreditBalance(db, ctx, customerRef);
-  return { customerId: customerRef, balance, grants };
+  return { domain: 'credit_balance', customerId: customerRef, balanceInKobo: balance, grants };
 }

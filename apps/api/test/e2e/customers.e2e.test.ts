@@ -113,15 +113,23 @@ describe('customers e2e', () => {
     expect(cross.body.error.code).toBe('CUSTOMER_NOT_FOUND');
   });
 
-  it('missing API key → 401; missing Idempotency-Key on write → 400', async () => {
+  it('missing API key → 401; idempotency optional on create, required on money', async () => {
     const noKey = await request(harness.app).get('/v1/customers');
     expect(noKey.status).toBe(401);
     expect(noKey.body.error.code).toBe('API_KEY_MISSING');
 
-    const noIdem = await asA(request(harness.app).post('/v1/customers')).send({
+    // create-customer: idempotency is OPTIONAL, so the write succeeds without a key.
+    const created = await asA(request(harness.app).post('/v1/customers')).send({
       email: 'x@acme.test',
       name: 'X',
     });
+    expect(created.status).toBe(201);
+
+    // Granting credit MOVES money → Idempotency-Key is REQUIRED. The check runs
+    // before body validation, so an empty body still surfaces the missing-key 400.
+    const noIdem = await asA(
+      request(harness.app).post(`/v1/customers/${created.body.data.id}/credit`)
+    ).send({});
     expect(noIdem.status).toBe(400);
     expect(noIdem.body.error.code).toBe('IDEMPOTENCY_KEY_MISSING');
   });

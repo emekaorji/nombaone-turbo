@@ -7,14 +7,15 @@ import type { InvoiceBillingReason, InvoiceLineItemData } from './invoice';
  * one applies next). Persists nothing.
  */
 export interface UpcomingInvoiceResponseData {
+  domain: 'upcoming_invoice'; // response object-type discriminator
   subscriptionId: string;
   periodIndex: number;
   periodStart: string;
   periodEnd: string;
   billingReason: InvoiceBillingReason;
-  subtotal: number;
-  total: number;
-  amountDue: number;
+  subtotalInKobo: number;
+  totalInKobo: number;
+  amountDueInKobo: number;
   currency: 'NGN';
   lineItems: InvoiceLineItemData[];
   environment: Environment;

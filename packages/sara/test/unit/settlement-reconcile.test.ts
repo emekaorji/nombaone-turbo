@@ -7,9 +7,9 @@ import { withTenantLog } from '@nombaone/sara/observability';
 describe('settlement/reconcile — J7 ★ settlement-leg diff', () => {
   it('matches by merchant_tx_ref and surfaces orphans / missing / drift', () => {
     const local = [
-      { merchantTxRef: 'nbo1inv', grossKobo: 100000 },
-      { merchantTxRef: 'nbo2inv', grossKobo: 50000 },
-      { merchantTxRef: 'nbo3inv', grossKobo: 30000 }, // no Nomba match → missingOnNomba
+      { merchantTxRef: 'nbo1inv', grossInKobo: 100000 },
+      { merchantTxRef: 'nbo2inv', grossInKobo: 50000 },
+      { merchantTxRef: 'nbo3inv', grossInKobo: 30000 }, // no Nomba match → missingOnNomba
     ];
     const nomba = [
       { merchantTxRef: 'nbo1inv', amountKobo: 100000 }, // matched

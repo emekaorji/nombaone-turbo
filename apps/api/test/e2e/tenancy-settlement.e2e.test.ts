@@ -42,7 +42,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
 
   const scopes = [
     'customers:read', 'customers:write', 'subscriptions:read', 'subscriptions:write',
-    'invoices:read', 'invoices:write', 'settlements:read', 'settings:read', 'settings:write',
+    'invoices:read', 'invoices:write', 'settlements:read', 'organizations:read', 'organizations:write',
     'webhooks:read', 'webhooks:write',
   ];
 
@@ -140,20 +140,20 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
   });
 
   // ── H4 config surface ───────────────────────────────────────────────────────
-  it('H4 — GET/PUT /v1/settings unifies config; branding updates; the webhook secret is never returned', async () => {
-    const get = await asA(request(harness.app).get('/v1/settings'));
+  it('H4 — GET/PUT /v1/organization unifies config; branding updates; the webhook secret is never returned', async () => {
+    const get = await asA(request(harness.app).get('/v1/organization'));
     expect(get.status).toBe(200);
     expect(get.body.data.nombaAccount.accountRef).toBe('acct_A');
     expect(get.body.data.billing.settlementMode).toBe('split_at_collection');
     expect(JSON.stringify(get.body.data)).not.toContain('signingSecret"'); // only prefix, never the secret
 
-    const put = await asA(request(harness.app).put('/v1/settings')).set('Idempotency-Key', `st-${uniq()}`)
+    const put = await asA(request(harness.app).put('/v1/organization')).set('Idempotency-Key', `st-${uniq()}`)
       .send({ branding: { displayName: 'Acme Billing' }, settlementMode: 'collect_then_payout' });
     expect(put.status).toBe(200);
     expect(put.body.data.billing.branding.displayName).toBe('Acme Billing');
     expect(put.body.data.billing.settlementMode).toBe('collect_then_payout');
     // no field exists to self-raise the rate limit → the body is rejected if it tries
-    const bad = await asA(request(harness.app).put('/v1/settings')).set('Idempotency-Key', `st-${uniq()}`).send({ rateLimitPerMinute: 100000 });
+    const bad = await asA(request(harness.app).put('/v1/organization')).set('Idempotency-Key', `st-${uniq()}`).send({ rateLimitPerMinute: 100000 });
     expect(bad.status).toBe(422); // refine: no settable field present
   });
 
@@ -161,7 +161,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
   it('H6 — a tenant past its monthly request quota gets 429 QUOTA_EXCEEDED', async () => {
     // A THROWAWAY tenant so exhausting the quota does not pollute A/B.
     const orgQ = await harness.seedOrg('Ten Q');
-    const bearerQ = (await harness.mintApiKey(orgQ.organizationId, 'test', ['settings:read'])).secret;
+    const bearerQ = (await harness.mintApiKey(orgQ.organizationId, 'test', ['organizations:read'])).secret;
     // Operator seam: set a tiny quota directly (the tenant API cannot).
     await harness.db.insert(orgBillingSettingsTable)
       .values({ organizationId: orgQ.organizationId, environment: 'test', monthlyRequestQuota: 2 })
@@ -169,7 +169,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
 
     let quotaHit = false;
     for (let i = 0; i < 6; i += 1) {
-      const r = await request(harness.app).get('/v1/settings').set('Authorization', `Bearer ${bearerQ}`);
+      const r = await request(harness.app).get('/v1/organization').set('Authorization', `Bearer ${bearerQ}`);
       if (r.status === 429 && r.body.error?.code === 'QUOTA_EXCEEDED') { quotaHit = true; break; }
     }
     expect(quotaHit).toBe(true);

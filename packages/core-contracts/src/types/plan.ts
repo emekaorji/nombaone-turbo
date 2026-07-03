@@ -7,6 +7,7 @@ import type { Environment } from './common';
 export type PlanStatus = 'active' | 'archived';
 
 export interface PlanResponseData {
+  domain: 'plan'; // response object-type discriminator
   id: string; // public reference, e.g. `nbo749201835566pln`
   name: string;
   description: string | null;

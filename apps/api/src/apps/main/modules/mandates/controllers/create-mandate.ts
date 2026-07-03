@@ -35,7 +35,7 @@ export const createMandateController: RequestHandler = jsonHandler<
     customerPhoneNumber: body.customerPhoneNumber,
     customerAddress: body.customerAddress,
     narration: body.narration,
-    maxAmount: body.maxAmount,
+    maxAmount: body.maxAmountInKobo,
     frequency: body.frequency,
     startDate: body.startDate,
     endDate: body.endDate,

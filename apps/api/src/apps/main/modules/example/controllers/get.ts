@@ -8,7 +8,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * GET /v1/examples/:reference — resolve one example within the caller's scope.
+ * GET /v1/examples/:id — resolve one example within the caller's scope.
  *
  * The route param is just a hint: sara re-resolves the reference against the
  * caller's pinned (org, env), so a reference from another tenant simply does not
@@ -25,7 +25,7 @@ export const getExampleController: RequestHandler = jsonHandler<
     environment: req.apiKey.environment,
   };
 
-  const example = await getExampleByReference(db, ctx, req.params.reference ?? '');
+  const example = await getExampleByReference(db, ctx, req.params.id ?? '');
 
   return { data: example };
 });

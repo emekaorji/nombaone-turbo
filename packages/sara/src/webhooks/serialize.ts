@@ -7,6 +7,7 @@ import type {
 export const serializeWebhookEndpoint = (
   row: WebhookEndpointRow
 ): WebhookEndpointResponseData => ({
+  domain: 'webhook',
   id: row.reference,
   url: row.url,
   enabledEvents: row.enabledEvents,
@@ -20,6 +21,7 @@ export const serializeWebhookDelivery = (
   endpointRef: string,
   eventRef: string
 ): WebhookDeliveryResponseData => ({
+  domain: 'webhook_delivery',
   id: row.reference,
   eventType: row.eventType,
   endpointId: endpointRef,

@@ -14,7 +14,13 @@ import {
 } from '@nombaone/core-contracts/validations';
 
 import { validate } from '@shared/http';
-import { apiKeyAuth, idempotency, rateLimit, requireScope } from '@shared/middlewares';
+import {
+  apiKeyAuth,
+  idempotency,
+  idempotencyOptional,
+  rateLimit,
+  requireScope,
+} from '@shared/middlewares';
 
 import {
   applySubscriptionDiscountController,
@@ -38,9 +44,11 @@ import {
 /**
  * Subscriptions — the engine's lifecycle surface. Create kicks the first cycle;
  * lifecycle changes are dedicated action endpoints (pause/resume/cancel/
- * resubscribe), not generic PATCH. Same fixed per-route chain
+ * resubscribe), not generic PATCH. Fixed per-route chain
  * (auth → rate-limit → scope → idempotency → validate → handler); reads skip
- * idempotency.
+ * idempotency. Idempotency is REQUIRED (`idempotency`) on the money-moving
+ * actions — create/change/resubscribe/cancel — and OPTIONAL
+ * (`idempotencyOptional`) on the rest (update/pause/resume/schedule/discount).
  */
 export const subscriptionsRouter: Router = Router();
 
@@ -57,7 +65,7 @@ subscriptionsRouter.post(
 
 // ── reads ────────────────────────────────────────────────────────────────────
 subscriptionsRouter.get(
-  '/subscriptions/:reference',
+  '/subscriptions/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:read'),
@@ -73,7 +81,7 @@ subscriptionsRouter.get(
 );
 // The per-subscription audit trail (M) — its full domain-event history.
 subscriptionsRouter.get(
-  '/subscriptions/:reference/events',
+  '/subscriptions/:id/events',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:read'),
@@ -82,36 +90,36 @@ subscriptionsRouter.get(
 
 // ── generic update (default method / metadata only) ──────────────────────────
 subscriptionsRouter.patch(
-  '/subscriptions/:reference',
+  '/subscriptions/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: updateSubscriptionBody }),
   updateSubscriptionController
 );
 
 // ── lifecycle actions ────────────────────────────────────────────────────────
 subscriptionsRouter.post(
-  '/subscriptions/:reference/pause',
+  '/subscriptions/:id/pause',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: pauseSubscriptionBody }),
   pauseSubscriptionController
 );
 subscriptionsRouter.post(
-  '/subscriptions/:reference/resume',
+  '/subscriptions/:id/resume',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: resumeSubscriptionBody }),
   resumeSubscriptionController
 );
 subscriptionsRouter.post(
-  '/subscriptions/:reference/cancel',
+  '/subscriptions/:id/cancel',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
@@ -120,7 +128,7 @@ subscriptionsRouter.post(
   cancelSubscriptionController
 );
 subscriptionsRouter.post(
-  '/subscriptions/:reference/resubscribe',
+  '/subscriptions/:id/resubscribe',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
@@ -130,7 +138,7 @@ subscriptionsRouter.post(
 );
 // Proration-triggering change (price swap / interval / quantity) — distinct from PATCH.
 subscriptionsRouter.post(
-  '/subscriptions/:reference/change',
+  '/subscriptions/:id/change',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
@@ -141,52 +149,52 @@ subscriptionsRouter.post(
 
 // ── Billing schedules & upcoming invoice ─────────────────────────────────────
 subscriptionsRouter.get(
-  '/subscriptions/:reference/upcoming-invoice',
+  '/subscriptions/:id/upcoming-invoice',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:read'),
   getUpcomingInvoiceController
 );
 subscriptionsRouter.post(
-  '/subscriptions/:reference/schedule',
+  '/subscriptions/:id/schedule',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: scheduleChangeBody }),
   createScheduleController
 );
 subscriptionsRouter.get(
-  '/subscriptions/:reference/schedule',
+  '/subscriptions/:id/schedule',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:read'),
   getScheduleController
 );
 subscriptionsRouter.delete(
-  '/subscriptions/:reference/schedule',
+  '/subscriptions/:id/schedule',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
-  idempotency,
+  idempotencyOptional,
   cancelScheduleController
 );
 
 // ── Discounts ────────────────────────────────────────────────────────────────
 subscriptionsRouter.post(
-  '/subscriptions/:reference/discount',
+  '/subscriptions/:id/discount',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: applyDiscountBody }),
   applySubscriptionDiscountController
 );
 subscriptionsRouter.delete(
-  '/subscriptions/:reference/discount',
+  '/subscriptions/:id/discount',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
-  idempotency,
+  idempotencyOptional,
   removeSubscriptionDiscountController
 );

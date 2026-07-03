@@ -7,7 +7,7 @@ import { jsonHandler } from '@shared/http';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/payment-methods/:reference — resolve one within the caller's scope. */
+/** GET /v1/payment-methods/:id — resolve one within the caller's scope. */
 export const getPaymentMethodController: RequestHandler = jsonHandler<
   Awaited<ReturnType<typeof getPaymentMethodByReference>>
 >(async (req) => {
@@ -19,7 +19,7 @@ export const getPaymentMethodController: RequestHandler = jsonHandler<
     environment: req.apiKey.environment,
   };
 
-  const method = await getPaymentMethodByReference(db, ctx, req.params.reference ?? '');
+  const method = await getPaymentMethodByReference(db, ctx, req.params.id ?? '');
 
   return { data: method };
 });

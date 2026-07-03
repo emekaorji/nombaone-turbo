@@ -8,7 +8,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/plans/:reference/archive — retire a plan (an explicit named action,
+ * POST /v1/plans/:id/archive — retire a plan (an explicit named action,
  * never a `DELETE`; the O1 guard blocks archiving a plan with active subscribers).
  */
 export const archivePlanController: RequestHandler = jsonHandler<
@@ -22,7 +22,7 @@ export const archivePlanController: RequestHandler = jsonHandler<
     environment: req.apiKey.environment,
   };
 
-  const plan = await archivePlan(db, ctx, req.params.reference ?? '');
+  const plan = await archivePlan(db, ctx, req.params.id ?? '');
 
   return { data: plan };
 });

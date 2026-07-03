@@ -37,6 +37,10 @@ export interface ApiError {
   error: {
     code: NombaoneErrorCode;
     message: string;
+    /** Actionable, plain-English guidance on exactly what to do next. Always present. */
+    hint: string;
+    /** Deep link to this code's entry in the public error reference. Always present. */
+    docUrl: string;
     /** Per-field validation errors, present on 422 validation failures. */
     fields?: ApiFieldErrors;
   };

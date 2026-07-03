@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const grantCreditBody = z.object({
-  amount: z.coerce.number().int().positive(), // kobo
+  amountInKobo: z.coerce.number().int().positive(), // kobo
   source: z.enum(['manual', 'goodwill']).default('manual'),
   sourceReference: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),

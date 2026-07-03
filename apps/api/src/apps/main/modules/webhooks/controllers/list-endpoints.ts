@@ -8,7 +8,7 @@ import type { WebhookEndpointResponseData } from '@nombaone/core-contracts/types
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/webhook-endpoints. */
+/** GET /v1/webhooks. */
 export const listWebhookEndpointsController: RequestHandler = jsonHandler<
   WebhookEndpointResponseData[]
 >(async (req) => {

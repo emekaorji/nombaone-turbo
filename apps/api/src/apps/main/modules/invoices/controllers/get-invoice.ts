@@ -8,7 +8,7 @@ import type { InvoiceResponseData } from '@nombaone/core-contracts/types';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/invoices/:reference — fetch one within scope (status derived). */
+/** GET /v1/invoices/:id — fetch one within scope (status derived). */
 export const getInvoiceController: RequestHandler = jsonHandler<InvoiceResponseData>(async (req) => {
   if (!req.apiKey) {
     throw AppError.Unauthorized('API key required');
@@ -17,6 +17,6 @@ export const getInvoiceController: RequestHandler = jsonHandler<InvoiceResponseD
     organizationId: req.apiKey.organizationId,
     environment: req.apiKey.environment,
   };
-  const data = await getInvoiceByReference(db, ctx, (req.params.reference ?? ''));
+  const data = await getInvoiceByReference(db, ctx, (req.params.id ?? ''));
   return { data };
 });

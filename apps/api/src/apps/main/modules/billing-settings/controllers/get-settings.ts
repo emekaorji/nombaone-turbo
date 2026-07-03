@@ -8,7 +8,7 @@ import type { BillingSettingsResponseData } from '@nombaone/core-contracts/types
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/billing-settings — the tenant's current billing + dunning policy. */
+/** GET /v1/organization/billing — the tenant's current billing + dunning policy. */
 export const getBillingSettingsController: RequestHandler =
   jsonHandler<BillingSettingsResponseData>(async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');

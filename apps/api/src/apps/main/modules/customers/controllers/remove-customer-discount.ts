@@ -8,7 +8,7 @@ import type { DiscountResponseData } from '@nombaone/core-contracts/types';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** DELETE /v1/customers/:reference/discount — end the active discount. */
+/** DELETE /v1/customers/:id/discount — end the active discount. */
 export const removeCustomerDiscountController: RequestHandler = jsonHandler<DiscountResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -18,7 +18,7 @@ export const removeCustomerDiscountController: RequestHandler = jsonHandler<Disc
       organizationId: req.apiKey.organizationId,
       environment: req.apiKey.environment,
     };
-    const data = await removeDiscount(db, ctx, { customerRef: req.params.reference ?? '' });
+    const data = await removeDiscount(db, ctx, { customerRef: req.params.id ?? '' });
     return { data };
   }
 );

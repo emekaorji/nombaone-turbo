@@ -62,17 +62,11 @@ describe('observability + docs e2e (L/M)', () => {
     return res.body.data.id as string;
   }
 
-  // ── M readiness probe ────────────────────────────────────────────────────────
-  it('M — GET /v1/ready deep-checks DB + Redis and returns the per-dependency map', async () => {
-    const ready = await request(harness.app).get('/v1/ready'); // unauthenticated
-    expect(ready.status).toBe(200);
-    expect(ready.body.data.ready).toBe(true);
-    // The harness configures Nomba and injects a fake whose token is obtainable, so
-    // the (cheap, cached-token) Nomba sub-check runs and is green. A deployment with
-    // no Nomba env would instead report `nomba: 'skipped'` (non-blocking).
-    expect(ready.body.data.dependencies).toMatchObject({ db: 'ok', redis: 'ok', nomba: 'ok' });
+  // ── M liveness probe (readiness lives in the admin/ops surface, not the public API) ──
+  it('M — GET /v1/health is a cheap, unauthenticated liveness probe', async () => {
     const health = await request(harness.app).get('/v1/health');
-    expect(health.status).toBe(200); // liveness still cheap
+    expect(health.status).toBe(200);
+    expect(health.body.data.status).toBe('ok');
   });
 
   // ── L public event catalog ────────────────────────────────────────────────────
@@ -93,7 +87,7 @@ describe('observability + docs e2e (L/M)', () => {
 
     const m = await auth(request(harness.app).get('/v1/metrics/billing'));
     expect(m.status).toBe(200);
-    expect(m.body.data.mrrKobo).toBe(800000); // 500000 + 300000 monthly
+    expect(m.body.data.mrrInKobo).toBe(800000); // 500000 + 300000 monthly
     expect(m.body.data.activeCount).toBeGreaterThanOrEqual(2);
     expect(m.body.data.dunningFunnel).toBeTruthy();
     expect(typeof m.body.data.failedChargeRate).toBe('number');
@@ -111,7 +105,7 @@ describe('observability + docs e2e (L/M)', () => {
     // the ApiError envelope + PUBLIC_ERROR_CODES enum are declared
     expect(doc.components.schemas.ApiError.properties.error.properties.code.enum).toContain('SUBSCRIPTION_NOT_FOUND');
     // paths were WALKED from the real router (no drift) — a known mounted path is present
-    expect(Object.keys(doc.paths)).toContain('/v1/subscriptions/{reference}');
+    expect(Object.keys(doc.paths)).toContain('/v1/subscriptions/{id}');
     expect(Object.keys(doc.paths)).toContain('/v1/settlements');
     // a mutating op documents the Idempotency-Key header
     const createSub = doc.paths['/v1/subscriptions']?.post;
@@ -139,7 +133,7 @@ describe('observability + docs e2e (L/M)', () => {
     expect(listParams).toEqual(expect.arrayContaining(['email', 'limit', 'cursor']));
 
     // (c) a single-resource response `data` $refs the typed schema; the schema is present.
-    const getData = doc.paths['/v1/customers/{reference}'].get.responses['200'].content['application/json']
+    const getData = doc.paths['/v1/customers/{id}'].get.responses['200'].content['application/json']
       .schema.properties.data;
     expect(getData.$ref).toBe('#/components/schemas/Customer');
     expect(Object.keys(doc.components.schemas.Customer.properties)).toEqual(

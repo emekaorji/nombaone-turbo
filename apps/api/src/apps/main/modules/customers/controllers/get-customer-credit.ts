@@ -8,7 +8,7 @@ import type { CreditBalanceResponseData } from '@nombaone/core-contracts/types';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/customers/:reference/credit — the credit balance + grant audit list. */
+/** GET /v1/customers/:id/credit — the credit balance + grant audit list. */
 export const getCustomerCreditController: RequestHandler = jsonHandler<CreditBalanceResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -18,7 +18,7 @@ export const getCustomerCreditController: RequestHandler = jsonHandler<CreditBal
       organizationId: req.apiKey.organizationId,
       environment: req.apiKey.environment,
     };
-    const data = await getCreditBalanceResponse(db, ctx, req.params.reference ?? '');
+    const data = await getCreditBalanceResponse(db, ctx, req.params.id ?? '');
     return { data };
   }
 );

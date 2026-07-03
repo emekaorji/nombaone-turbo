@@ -29,7 +29,7 @@ export default async function OverviewPage() {
 
   const activeKeys = keys.filter((k) => !k.revokedAt).length;
   const activeEndpoints = endpoints.filter((e) => !e.disabledAt).length;
-  const exampleVolumeKobo = examples.data.reduce((sum, e) => sum + e.amount, 0);
+  const exampleVolumeKobo = examples.data.reduce((sum, e) => sum + e.amountInKobo, 0);
 
   return (
     <div className="space-y-6">

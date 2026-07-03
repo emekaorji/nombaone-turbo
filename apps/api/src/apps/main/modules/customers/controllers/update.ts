@@ -9,7 +9,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * PATCH /v1/customers/:reference — update a customer's mutable fields (email is
+ * PATCH /v1/customers/:id — update a customer's mutable fields (email is
  * immutable). Scoped, idempotent. sara re-resolves the reference within scope.
  */
 export const updateCustomerController: RequestHandler = jsonHandler<
@@ -24,7 +24,7 @@ export const updateCustomerController: RequestHandler = jsonHandler<
   };
   const body = req.body as UpdateCustomerBody;
 
-  const customer = await updateCustomer(db, ctx, req.params.reference ?? '', {
+  const customer = await updateCustomer(db, ctx, req.params.id ?? '', {
     name: body.name,
     phone: body.phone,
     metadata: body.metadata,

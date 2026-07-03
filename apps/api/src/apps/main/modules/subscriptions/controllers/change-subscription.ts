@@ -10,7 +10,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/subscriptions/:reference/change — a proration-triggering change (price
+ * POST /v1/subscriptions/:id/change — a proration-triggering change (price
  * swap / interval switch / quantity). Distinct from PATCH (metadata/default method).
  */
 export const changeSubscriptionController: RequestHandler = jsonHandler<SubscriptionResponseData>(
@@ -24,7 +24,7 @@ export const changeSubscriptionController: RequestHandler = jsonHandler<Subscrip
     };
     const body = req.body as ChangeSubscriptionBody;
 
-    const data = await changeSubscription(db, ctx, req.params.reference ?? '', {
+    const data = await changeSubscription(db, ctx, req.params.id ?? '', {
       priceRef: body.priceId,
       quantity: body.quantity,
       intervalSwitch: body.intervalSwitch,

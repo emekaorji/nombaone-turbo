@@ -8,7 +8,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/prices/:reference/deactivate — the only price mutation: a sellability
+ * POST /v1/prices/:id/deactivate — the only price mutation: a sellability
  * state change (`active=false`), never a money edit. New "versions" are created
  * under the plan (`POST /v1/plans/:ref/prices`); raising a price = create new +
  * deactivate old.
@@ -24,7 +24,7 @@ export const deactivatePriceController: RequestHandler = jsonHandler<
     environment: req.apiKey.environment,
   };
 
-  const price = await deactivatePrice(db, ctx, req.params.reference ?? '');
+  const price = await deactivatePrice(db, ctx, req.params.id ?? '');
 
   return { data: price };
 });

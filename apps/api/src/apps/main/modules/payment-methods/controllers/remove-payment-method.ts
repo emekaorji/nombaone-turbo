@@ -8,7 +8,7 @@ import { getNombaClient } from '@shared/config/nomba';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** DELETE /v1/payment-methods/:reference — revoke the token at Nomba, mark removed (E7). */
+/** DELETE /v1/payment-methods/:id — revoke the token at Nomba, mark removed (E7). */
 export const removePaymentMethodController: RequestHandler = jsonHandler<
   Awaited<ReturnType<typeof removePaymentMethod>>
 >(async (req) => {
@@ -21,7 +21,7 @@ export const removePaymentMethodController: RequestHandler = jsonHandler<
   };
 
   const method = await removePaymentMethod(getNombaClient(), db, ctx, {
-    reference: req.params.reference ?? '',
+    reference: req.params.id ?? '',
   });
 
   return { data: method };

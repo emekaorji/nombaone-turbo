@@ -9,7 +9,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * GET /v1/mandates/:reference — poll + surface the mandate's status, promoting it
+ * GET /v1/mandates/:id — poll + surface the mandate's status, promoting it
  * to `active` once `ACTIVE`+`ADVICE_SENT` (activation is poll-only — no webhook).
  */
 export const getMandateStatusController: RequestHandler = jsonHandler<
@@ -24,7 +24,7 @@ export const getMandateStatusController: RequestHandler = jsonHandler<
   };
 
   const method = await pollMandateActive(getNombaClient(), db, ctx, {
-    reference: req.params.reference ?? '',
+    reference: req.params.id ?? '',
   });
 
   return { data: method };

@@ -11,6 +11,7 @@ export const serializePaymentMethod = (
   row: PaymentMethodRow,
   customerRef: string
 ): PaymentMethodResponseData => ({
+  domain: 'payment_method',
   id: row.reference,
   customerId: customerRef,
   kind: row.kind,

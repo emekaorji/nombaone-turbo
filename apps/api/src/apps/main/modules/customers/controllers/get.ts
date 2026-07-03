@@ -8,7 +8,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * GET /v1/customers/:reference — resolve one customer within the caller's scope.
+ * GET /v1/customers/:id — resolve one customer within the caller's scope.
  * The route param is a hint; sara re-resolves against the pinned (org, env), so a
  * reference from another tenant simply does not exist for this caller (404).
  */
@@ -23,7 +23,7 @@ export const getCustomerController: RequestHandler = jsonHandler<
     environment: req.apiKey.environment,
   };
 
-  const customer = await getCustomerByReference(db, ctx, req.params.reference ?? '');
+  const customer = await getCustomerByReference(db, ctx, req.params.id ?? '');
 
   return { data: customer };
 });

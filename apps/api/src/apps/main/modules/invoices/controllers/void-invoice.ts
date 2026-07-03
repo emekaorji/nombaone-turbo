@@ -10,7 +10,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/invoices/:reference/void — void a draft/open invoice (J9). A paid
+ * POST /v1/invoices/:id/void — void a draft/open invoice (J9). A paid
  * invoice is corrected by a ledger reversal, not a void. No create/update invoice
  * endpoint exists — invoices are issued by the billing loop (J2 immutability).
  */
@@ -24,7 +24,7 @@ export const voidInvoiceController: RequestHandler = jsonHandler<InvoiceResponse
   };
   const body = (req.body ?? {}) as VoidInvoiceBody;
 
-  await voidInvoice(db, ctx, (req.params.reference ?? ''), body.comment);
-  const data = await getInvoiceByReference(db, ctx, (req.params.reference ?? ''));
+  await voidInvoice(db, ctx, (req.params.id ?? ''), body.comment);
+  const data = await getInvoiceByReference(db, ctx, (req.params.id ?? ''));
   return { data };
 });

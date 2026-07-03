@@ -1,5 +1,6 @@
 /** A tenant's billing + dunning policy (`org_billing_settings`), camelCased. */
 export interface BillingSettingsResponseData {
+  domain: 'billing_settings'; // response object-type discriminator
   partialCollectionEnabled: boolean;
   prorationCreditPolicy: 'credit_next_cycle' | 'none';
   dunningMaxAttempts: number;

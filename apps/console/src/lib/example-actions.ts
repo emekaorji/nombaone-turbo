@@ -40,7 +40,7 @@ export async function createExampleAction(raw: unknown): Promise<CreateExampleRe
       const ctx = await getOrgDomainCtx();
       const created = await createExample(txDb() as PoolDatabase, ctx, {
         kind: parsed.data.kind,
-        amount: parsed.data.amount,
+        amount: parsed.data.amountInKobo,
       });
       return ok({ reference: created.id });
     },

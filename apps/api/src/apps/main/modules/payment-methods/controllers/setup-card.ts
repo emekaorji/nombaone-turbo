@@ -27,7 +27,7 @@ export const setupCardController: RequestHandler = jsonHandler<Awaited<ReturnTyp
 
     const result = await setupCard(getNombaClient(), db, ctx, {
       customerRef: body.customerRef,
-      amount: body.amount,
+      amount: body.amountInKobo,
       callbackUrl: body.callbackUrl,
     });
 

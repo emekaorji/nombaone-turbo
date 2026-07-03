@@ -61,12 +61,12 @@ describe('catalog (plans & prices) e2e', () => {
     const price = await idem(
       asA(request(harness.app).post(`/v1/plans/${planRef}/prices`)),
       `prc-${Date.now()}`
-    ).send({ unitAmount: 500000, interval: 'month' });
+    ).send({ unitAmountInKobo: 500000, interval: 'month' });
     expect(price.status).toBe(201);
     expect(price.body.data.id).toMatch(/prc$/);
     expect(price.body.data).toMatchObject({
       planId: planRef,
-      unitAmount: 500000,
+      unitAmountInKobo: 500000,
       currency: 'NGN',
       interval: 'month',
       intervalCount: 1,
@@ -94,14 +94,14 @@ describe('catalog (plans & prices) e2e', () => {
     const p1 = await idem(
       asA(request(harness.app).post(`/v1/plans/${planRef}/prices`)),
       `p1-${Date.now()}`
-    ).send({ unitAmount: 500000, interval: 'month' });
+    ).send({ unitAmountInKobo: 500000, interval: 'month' });
     const p1Ref = p1.body.data.id as string;
 
     // "Raise": a new price row, then deactivate the old one.
     const p2 = await idem(
       asA(request(harness.app).post(`/v1/plans/${planRef}/prices`)),
       `p2-${Date.now()}`
-    ).send({ unitAmount: 700000, interval: 'month' });
+    ).send({ unitAmountInKobo: 700000, interval: 'month' });
     expect(p2.status).toBe(201);
 
     const deactivated = await idem(
@@ -113,7 +113,7 @@ describe('catalog (plans & prices) e2e', () => {
 
     // P1's money is byte-for-byte unchanged; only `active` flipped.
     const p1After = await asA(request(harness.app).get(`/v1/prices/${p1Ref}`));
-    expect(p1After.body.data.unitAmount).toBe(500000);
+    expect(p1After.body.data.unitAmountInKobo).toBe(500000);
     expect(p1After.body.data.active).toBe(false);
     const p2After = await asA(request(harness.app).get(`/v1/prices/${p2.body.data.id}`));
     expect(p2After.body.data.active).toBe(true);
@@ -133,7 +133,7 @@ describe('catalog (plans & prices) e2e', () => {
     });
     const planRef = plan.body.data.id as string;
     await idem(asA(request(harness.app).post(`/v1/plans/${planRef}/prices`)), `arcp-${Date.now()}`).send({
-      unitAmount: 300000,
+      unitAmountInKobo: 300000,
       interval: 'month',
     });
 
@@ -152,7 +152,7 @@ describe('catalog (plans & prices) e2e', () => {
     const blocked = await idem(
       asA(request(harness.app).post(`/v1/plans/${planRef}/prices`)),
       `arcp2-${Date.now()}`
-    ).send({ unitAmount: 100000, interval: 'month' });
+    ).send({ unitAmountInKobo: 100000, interval: 'month' });
     expect(blocked.status).toBe(409);
     expect(blocked.body.error.code).toBe('PLAN_ALREADY_ARCHIVED');
 
@@ -209,7 +209,7 @@ describe('catalog (plans & prices) e2e', () => {
     const tiered = await idem(
       asA(request(harness.app).post(`/v1/plans/${plan.body.data.id}/prices`)),
       `tier-${Date.now()}`
-    ).send({ unitAmount: 100000, interval: 'month', billingScheme: 'tiered' });
+    ).send({ unitAmountInKobo: 100000, interval: 'month', billingScheme: 'tiered' });
     expect(tiered.status).toBe(400);
     expect(tiered.body.error.code).toBe('PRICE_TIERED_NOT_SUPPORTED');
   });

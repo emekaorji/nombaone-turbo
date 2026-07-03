@@ -17,8 +17,7 @@ import { pricesRouter } from '@modules/prices';
 import { settingsRouter } from '@modules/settings';
 import { settlementsRouter } from '@modules/settlements';
 import { subscriptionsRouter } from '@modules/subscriptions';
-import { webhookDeliveriesRouter } from '@modules/webhook-deliveries';
-import { webhookEndpointsRouter } from '@modules/webhook-endpoints';
+import { webhooksRouter } from '@modules/webhooks';
 
 /**
  * The single versioned router. The `/v1` prefix is applied at EXACTLY ONE mount
@@ -40,9 +39,8 @@ v1Router.use(dunningRouter);
 v1Router.use(invoicesRouter);
 v1Router.use(couponsRouter);
 v1Router.use(billingSettingsRouter);
-v1Router.use(webhookEndpointsRouter);
+v1Router.use(webhooksRouter);
 v1Router.use(eventsRouter);
-v1Router.use(webhookDeliveriesRouter);
 v1Router.use(settlementsRouter);
 v1Router.use(settingsRouter);
 v1Router.use(metricsRouter);

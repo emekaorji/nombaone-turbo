@@ -23,7 +23,7 @@ mandatesRouter.post(
   createMandateController
 );
 mandatesRouter.get(
-  '/mandates/:reference',
+  '/mandates/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('payment_methods:read'),

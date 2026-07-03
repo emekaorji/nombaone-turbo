@@ -9,7 +9,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/plans/:reference/prices — create (a new version of) a price under a
+ * POST /v1/plans/:id/prices — create (a new version of) a price under a
  * plan. The `planRef` is bound from the path; a price exists only under its plan.
  */
 export const createPlanPriceController: RequestHandler = jsonHandler<
@@ -25,8 +25,8 @@ export const createPlanPriceController: RequestHandler = jsonHandler<
   const body = req.body as CreatePriceBody;
 
   const price = await createPrice(db, ctx, {
-    planRef: req.params.reference ?? '',
-    unitAmount: body.unitAmount,
+    planRef: req.params.id ?? '',
+    unitAmount: body.unitAmountInKobo,
     interval: body.interval,
     intervalCount: body.intervalCount,
     usageType: body.usageType,

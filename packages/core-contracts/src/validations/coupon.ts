@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const createCouponBody = z
   .object({
     code: z.string().min(1).max(64),
-    amountOff: z.coerce.number().int().positive().optional(), // kobo
+    amountOffInKobo: z.coerce.number().int().positive().optional(), // kobo
     percentOff: z.coerce.number().int().min(1).max(100).optional(),
     duration: z.enum(['once', 'repeating', 'forever']),
     durationInCycles: z.coerce.number().int().positive().optional(),
@@ -11,9 +11,9 @@ export const createCouponBody = z
     maxRedemptions: z.coerce.number().int().positive().optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
   })
-  .refine((d) => (d.amountOff != null) !== (d.percentOff != null), {
-    message: 'exactly one of amountOff or percentOff must be set',
-    path: ['amountOff'],
+  .refine((d) => (d.amountOffInKobo != null) !== (d.percentOff != null), {
+    message: 'exactly one of amountOffInKobo or percentOff must be set',
+    path: ['amountOffInKobo'],
   })
   .refine((d) => d.duration !== 'repeating' || d.durationInCycles != null, {
     message: 'durationInCycles is required when duration is repeating',

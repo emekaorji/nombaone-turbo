@@ -44,11 +44,12 @@ export async function getTenantSettings(
     .limit(1);
 
   return {
+    domain: 'organization',
     billing: {
       rateLimitPerMinute: s.rateLimitPerMinute,
       monthlyRequestQuota: s.monthlyRequestQuota,
       settlementMode: s.settlementMode,
-      platformFee: { bps: s.platformFeeBps, minKobo: s.platformFeeMinKobo, maxKobo: s.platformFeeMaxKobo },
+      platformFee: { bps: s.platformFeeBps, minInKobo: s.platformFeeMinKobo, maxInKobo: s.platformFeeMaxKobo },
       grace: { gracePeriodHours: s.gracePeriodHours, dunningMaxAttempts: s.dunningMaxAttempts },
       branding: s.branding,
     },

@@ -8,12 +8,12 @@ import type { WebhookEndpointResponseData } from '@nombaone/core-contracts/types
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** DELETE /v1/webhook-endpoints/:reference — soft-disable. */
+/** DELETE /v1/webhooks/:id — soft-disable. */
 export const deleteWebhookEndpointController: RequestHandler =
   jsonHandler<WebhookEndpointResponseData>(async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
-    const reference = req.params.reference ?? '';
+    const reference = req.params.id ?? '';
     await disableWebhookEndpoint(db, ctx, reference);
     return { data: serializeWebhookEndpoint(await getWebhookEndpoint(db, ctx, reference)) };
   });

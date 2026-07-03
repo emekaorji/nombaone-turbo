@@ -8,7 +8,7 @@ import type { SubscriptionScheduleResponseData } from '@nombaone/core-contracts/
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/subscriptions/:reference/schedule — the active schedule (or 404). */
+/** GET /v1/subscriptions/:id/schedule — the active schedule (or 404). */
 export const getScheduleController: RequestHandler = jsonHandler<SubscriptionScheduleResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -18,7 +18,7 @@ export const getScheduleController: RequestHandler = jsonHandler<SubscriptionSch
       organizationId: req.apiKey.organizationId,
       environment: req.apiKey.environment,
     };
-    const data = await getActiveScheduleForSubscription(db, ctx, req.params.reference ?? '');
+    const data = await getActiveScheduleForSubscription(db, ctx, req.params.id ?? '');
     return { data };
   }
 );

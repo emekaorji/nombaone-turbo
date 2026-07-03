@@ -13,6 +13,7 @@ export const serializeDiscount = (
   row: DiscountRow,
   refs: DiscountSerializeRefs
 ): DiscountResponseData => ({
+  domain: 'discount',
   id: row.reference,
   couponId: refs.couponRef,
   customerId: refs.customerRef,

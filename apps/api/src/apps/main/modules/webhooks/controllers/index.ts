@@ -4,3 +4,6 @@ export * from './get-endpoint';
 export * from './update-endpoint';
 export * from './delete-endpoint';
 export * from './rotate-secret';
+export * from './list-deliveries';
+export * from './get-delivery';
+export * from './replay-delivery';

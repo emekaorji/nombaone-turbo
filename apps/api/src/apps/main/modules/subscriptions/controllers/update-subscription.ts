@@ -9,7 +9,7 @@ import type { UpdateSubscriptionBody } from '@nombaone/core-contracts/validation
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** PATCH /v1/subscriptions/:reference — default payment method / metadata only. */
+/** PATCH /v1/subscriptions/:id — default payment method / metadata only. */
 export const updateSubscriptionController: RequestHandler = jsonHandler<SubscriptionResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -21,7 +21,7 @@ export const updateSubscriptionController: RequestHandler = jsonHandler<Subscrip
     };
     const body = req.body as UpdateSubscriptionBody;
 
-    const data = await updateSubscription(db, ctx, (req.params.reference ?? ''), {
+    const data = await updateSubscription(db, ctx, (req.params.id ?? ''), {
       defaultPaymentMethodRef: body.defaultPaymentMethodId,
       metadata: body.metadata,
     });

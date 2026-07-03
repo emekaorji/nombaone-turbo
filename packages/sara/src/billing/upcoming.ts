@@ -44,21 +44,22 @@ export async function getUpcomingInvoice(
     index === 0 ? 'subscription_create' : 'subscription_cycle';
 
   return {
+    domain: 'upcoming_invoice',
     subscriptionId: sub.reference,
     periodIndex: index,
     periodStart: start.toISOString(),
     periodEnd: end.toISOString(),
     billingReason,
-    subtotal: amount,
-    total: amount,
-    amountDue: amount,
+    subtotalInKobo: amount,
+    totalInKobo: amount,
+    amountDueInKobo: amount,
     currency: 'NGN',
     lineItems: [
       {
         id: 'upcoming',
         kind: 'subscription',
         description: `${price.reference} × ${quantity}`,
-        amount,
+        amountInKobo: amount,
         quantity,
       },
     ],

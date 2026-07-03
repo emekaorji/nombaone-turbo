@@ -6,6 +6,7 @@ import type { Environment } from './common';
  * is an opaque tenant-owned bag. Timestamps are ISO-8601 UTC.
  */
 export interface CustomerResponseData {
+  domain: 'customer'; // response object-type discriminator
   id: string; // public reference, e.g. `nbo749201835566cus`
   email: string;
   name: string;

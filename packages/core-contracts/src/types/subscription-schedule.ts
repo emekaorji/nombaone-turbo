@@ -15,6 +15,7 @@ export interface SubscriptionSchedulePhaseData {
  * applied at the next cycle boundary by the sweep (B10), not at API-call time.
  */
 export interface SubscriptionScheduleResponseData {
+  domain: 'subscription_schedule'; // response object-type discriminator
   id: string; // public reference, e.g. `nbo…sch`
   subscriptionId: string;
   status: SubscriptionScheduleStatus;

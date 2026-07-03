@@ -77,7 +77,7 @@ export async function setupCard(
     payload: { reference, kind: 'card', status: 'setup_pending' },
   });
 
-  return { reference, checkoutLink };
+  return { domain: 'checkout_setup', reference, checkoutLink };
 }
 
 /**
@@ -122,7 +122,7 @@ export async function createMandate(
       customerAddress: input.customerAddress,
       narration: input.narration,
       amount: koboToNombaAmount(input.maxAmount), // maxAmount kobo → naira decimal string (D.1)
-      frequency: input.frequency, // NIBSS uppercase vocabulary
+      frequency: input.frequency.toUpperCase(), // clean snake_case → NIBSS UPPERCASE at the wire
       startDate,
       endDate,
       merchantReference: reference,
@@ -157,7 +157,7 @@ export async function createMandate(
     payload: { reference, kind: 'mandate', status: 'consent_pending' },
   });
 
-  return { reference, mandateRef: mandateId, status: 'consent_pending', consentInstruction };
+  return { domain: 'mandate_setup', reference, mandateRef: mandateId, status: 'consent_pending', consentInstruction };
 }
 
 /**
@@ -208,6 +208,7 @@ export async function issueVirtualAccount(
   });
 
   return {
+    domain: 'virtual_account',
     reference,
     bankName: String(data.bankName ?? ''),
     accountNumber: String(data.bankAccountNumber ?? ''),

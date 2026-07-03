@@ -8,7 +8,7 @@ import type { UpcomingInvoiceResponseData } from '@nombaone/core-contracts/types
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/subscriptions/:reference/upcoming-invoice — preview the next invoice. */
+/** GET /v1/subscriptions/:id/upcoming-invoice — preview the next invoice. */
 export const getUpcomingInvoiceController: RequestHandler = jsonHandler<UpcomingInvoiceResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -18,7 +18,7 @@ export const getUpcomingInvoiceController: RequestHandler = jsonHandler<Upcoming
       organizationId: req.apiKey.organizationId,
       environment: req.apiKey.environment,
     };
-    const data = await getUpcomingInvoice(db, ctx, req.params.reference ?? '');
+    const data = await getUpcomingInvoice(db, ctx, req.params.id ?? '');
     return { data };
   }
 );

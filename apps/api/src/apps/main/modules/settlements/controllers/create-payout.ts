@@ -28,7 +28,7 @@ export const createPayoutController: RequestHandler = jsonHandler<PayoutResponse
   const merchantTxRef = (Array.isArray(headerKey) ? headerKey[0] : headerKey) ?? '';
   return {
     data: await payoutToTenant(db, ctx, {
-      amountKobo: body.amountKobo,
+      amountKobo: body.amountInKobo,
       bank: { code: body.bankCode, accountNumber: body.accountNumber },
       merchantTxRef,
       client: getNombaClient(),

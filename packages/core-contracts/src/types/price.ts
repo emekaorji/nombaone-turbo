@@ -10,9 +10,10 @@ export type PriceUsageType = 'licensed' | 'metered';
 export type PriceBillingScheme = 'per_unit' | 'tiered';
 
 export interface PriceResponseData {
+  domain: 'price'; // response object-type discriminator
   id: string; // public reference, e.g. `nbo749201835566prc`
   planId: string; // the plan's public reference (`nbo…pln`)
-  unitAmount: number; // kobo
+  unitAmountInKobo: number; // kobo
   currency: 'NGN';
   interval: PriceInterval;
   intervalCount: number;

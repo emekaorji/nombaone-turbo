@@ -72,8 +72,8 @@ export function ExamplesClient({
       },
       {
         header: 'Amount',
-        accessorKey: 'amount',
-        cell: ({ row }) => <MoneyAmount kobo={row.original.amount} />,
+        accessorKey: 'amountInKobo',
+        cell: ({ row }) => <MoneyAmount kobo={row.original.amountInKobo} />,
       },
       {
         header: 'Created',

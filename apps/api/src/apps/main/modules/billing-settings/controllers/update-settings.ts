@@ -9,7 +9,7 @@ import type { UpdateBillingSettingsBody } from '@nombaone/core-contracts/validat
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** PUT /v1/billing-settings — patch the tenant's billing + dunning policy. */
+/** PUT /v1/organization/billing — patch the tenant's billing + dunning policy. */
 export const updateBillingSettingsController: RequestHandler =
   jsonHandler<BillingSettingsResponseData>(async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');

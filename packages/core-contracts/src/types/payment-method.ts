@@ -14,6 +14,7 @@ export type PaymentMethodStatus =
   | 'expired';
 
 export interface PaymentMethodResponseData {
+  domain: 'payment_method'; // response object-type discriminator
   id: string; // public reference, e.g. `nbo749201835566pmt`
   customerId: string; // the customer's public reference (`nbo…cus`)
   kind: PaymentMethodKind;

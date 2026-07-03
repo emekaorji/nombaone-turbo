@@ -1,9 +1,30 @@
-# `@nombaone/node` — a sample Node.js SDK
+# `@nombaone/node` — usage guide
 
-A complete, idiomatic Node/TypeScript SDK for the nombaone billing API. This document
-is a **worked design** — every resource, the transport, pagination, typed errors, retries,
-idempotency, and webhook verification — so it can be lifted into a real package. It mirrors
-the surface in [`api-reference.md`](./api-reference.md) 1:1.
+How to actually **use** the `@nombaone/node` SDK — a scenario-by-scenario cookbook for the
+nombaone billing API (a Stripe-style subscription engine for Nigeria, settling on Nomba).
+Every snippet below is real application code you can copy, adapt, and run. It is **not** the
+SDK's internals — for the endpoints and payload shapes behind these calls, see
+[`api-reference.md`](./api-reference.md).
+
+A few things that hold everywhere:
+
+- **Money is always integer kobo** (₦1 = 100 kobo), currency `NGN`. `500_000` = ₦5,000.
+- **Every resource id is a `nbo…` reference** returned as `.id` (e.g. `nbo749201835566cus`).
+  You pass that `id` back into every method — `nomba.customers.retrieve(id)`.
+- **The environment is baked into the key** — a `nbo_test_…` key talks to test, `nbo_live_…`
+  to live. There is no runtime flag.
+
+Assume this shared client at the top of every example (create it once, reuse it):
+
+```ts
+import { Nombaone } from '@nombaone/node';
+
+const nomba = new Nombaone({ apiKey: process.env.NOMBAONE_API_KEY! });
+```
+
+---
+
+## 1. Install & first call
 
 ```
 npm install @nombaone/node
@@ -12,616 +33,909 @@ npm install @nombaone/node
 ```ts
 import { Nombaone } from '@nombaone/node';
 
-const nomba = new Nombaone({ apiKey: process.env.NOMBAONE_API_KEY! }); // env baked into the key
+const nomba = new Nombaone({ apiKey: process.env.NOMBAONE_API_KEY! });
 
+// Create a customer and read it back.
 const customer = await nomba.customers.create({ email: 'ada@acme.io', name: 'Ada Payer' });
+console.log(customer.id); // → "nbo749201835566cus"
+
+const again = await nomba.customers.retrieve(customer.id);
+console.log(again.email); // → "ada@acme.io"
+```
+
+---
+
+## 2. Client setup & configuration
+
+The only required option is `apiKey`. Everything else has a sane default; override what you need.
+
+```ts
+const nomba = new Nombaone({
+  apiKey: process.env.NOMBAONE_API_KEY!, // "nbo_test_…" or "nbo_live_…" (prefix picks the env)
+  baseUrl: 'https://api.nombaone.com/v1', // override to hit a self-hosted / local instance
+  timeoutMs: 30_000,                      // per-request timeout
+  maxRetries: 2,                          // auto-retry on 429 / 5xx / network (safe: same Idempotency-Key)
+});
+```
+
+Point at test vs live purely by swapping the key:
+
+```ts
+const test = new Nombaone({ apiKey: 'nbo_test_…' }); // sandbox
+const live = new Nombaone({ apiKey: 'nbo_live_…' }); // production
+```
+
+Bring your own `fetch` (e.g. `undici` on older Node, or an instrumented fetch), and your own
+idempotency-key generator for deterministic keys across a distributed system:
+
+```ts
+import { fetch as undiciFetch } from 'undici';
+import { randomUUID } from 'node:crypto';
+
+const nomba = new Nombaone({
+  apiKey: process.env.NOMBAONE_API_KEY!,
+  fetch: undiciFetch as unknown as typeof fetch,
+  idempotencyKeyGenerator: () => `svc-${randomUUID()}`,
+});
+```
+
+> The SDK auto-attaches an `Idempotency-Key` to every mutating call and reuses it across its own
+> retries, so a retried `POST` never double-charges. For cross-restart safety, pass **your own**
+> stable key (see §14).
+
+---
+
+## 3. Customers — CRUD, credit, discounts
+
+### Create, retrieve, update
+
+```ts
+const customer = await nomba.customers.create({
+  email: 'ada@acme.io',
+  name: 'Ada Payer',
+  phone: '+2348012345678',
+  metadata: { plan_intent: 'pro', signup_source: 'landing' },
+});
+
+await nomba.customers.retrieve(customer.id);
+
+await nomba.customers.update(customer.id, {
+  name: 'Ada N. Payer',
+  metadata: { ...customer.metadata, vip: true },
+});
+```
+
+### List, filter by email, auto-paginate
+
+```ts
+// Filter to a single email (returns a paginator; usually one match).
+const page = await nomba.customers.list({ email: 'ada@acme.io' }).page();
+const found = page.data[0];
+
+// Stream every customer across all pages — cursors are handled for you.
+for await (const c of nomba.customers.list({ limit: 100 })) {
+  console.log(c.id, c.email);
+}
+```
+
+### Account credit — grant, read balance, void
+
+Credit is applied to future invoices before charging the payment method. Amounts are kobo.
+
+```ts
+// Grant ₦2,000 of goodwill credit.
+const grant = await nomba.customers.grantCredit(customer.id, {
+  amountInKobo: 200_000,
+  source: 'goodwill',
+  sourceReference: 'support-ticket-8842',
+});
+
+// Read the running balance + the grants that make it up.
+const balance = await nomba.customers.creditBalance(customer.id);
+console.log(balance.balanceInKobo, balance.grants.length); // { customerId, balanceInKobo, grants[] }
+
+// Void the *unconsumed remainder* of a grant (already-applied credit is untouched).
+await nomba.customers.voidCredit(customer.id, grant.id);
+```
+
+### Discounts (coupons) on a customer
+
+Apply a coupon by its code or id; it then discounts the customer's subscriptions.
+
+```ts
+await nomba.customers.applyDiscount(customer.id, 'LAUNCH20');
+// …later
+await nomba.customers.removeDiscount(customer.id);
+```
+
+---
+
+## 4. Catalogue — plans & prices
+
+A **plan** is the product; **prices** are the billable variants (monthly, yearly, trial, metered).
+
+```ts
+const plan = await nomba.plans.create({
+  name: 'Pro',
+  description: 'Everything in Pro',
+  metadata: { tier: 'pro' },
+});
+
+// ₦5,000 / month
+const monthly = await nomba.plans.createPrice(plan.id, {
+  unitAmountInKobo: 500_000,
+  interval: 'month',
+});
+
+// ₦50,000 / year with a 14-day free trial
+const yearly = await nomba.plans.createPrice(plan.id, {
+  unitAmountInKobo: 5_000_000,
+  interval: 'year',
+  trialPeriodDays: 14,
+});
+
+// Metered: ₦10 per unit of usage, billed monthly
+const metered = await nomba.plans.createPrice(plan.id, {
+  unitAmountInKobo: 1_000,
+  interval: 'month',
+  usageType: 'metered',
+});
+```
+
+List and deactivate prices:
+
+```ts
+for await (const price of nomba.plans.listPrices(plan.id)) {
+  console.log(price.id, price.unitAmountInKobo, price.interval, price.active);
+}
+
+// Or list across all plans, active only:
+await nomba.prices.list({ active: true }).toArray();
+
+await nomba.prices.deactivate(monthly.id); // stops new subscriptions on this price
+```
+
+Archive a whole plan when it's retired:
+
+```ts
+await nomba.plans.archive(plan.id);
+```
+
+---
+
+## 5. Payment methods — card, virtual account, mandate
+
+Three kinds: hosted **card** (checkout token), **virtual_account** (bank transfer/push), and
+**mandate** (NIBSS direct debit). A `PaymentMethod` has `status`:
+`setup_pending | consent_pending | active | removed | expired` and never exposes a PAN.
+
+### Hosted card setup (redirect → captured via webhook)
+
+The SDK returns a `checkoutLink`; send the customer there. The card is captured asynchronously and
+arrives as a `payment_method.attached` webhook — you don't get the `id` back from this call.
+
+```ts
+const setup = await nomba.paymentMethods.setupCard({
+  customerId: customer.id,
+  amountInKobo: 500_000, // kobo — the verification/first charge (₦5,000)
+  callbackUrl: 'https://acme.io/billing/return',
+});
+
+// Redirect the browser to setup.checkoutLink …
+// … then wait for the `payment_method.attached` webhook to learn the payment method id (§12).
+```
+
+### Issue a virtual account (pay-in)
+
+```ts
+const va = await nomba.paymentMethods.issueVirtualAccount({
+  customerId: customer.id,
+  expectedAmount: 500_000, // optional
+});
+console.log(va.bankName, va.accountNumber, va.accountName);
+```
+
+### NIBSS mandate (consent flow → poll to active)
+
+Creating a mandate returns a `consentInstruction`; the customer completes the NIBSS ₦50 validation,
+then the mandate polls to `active`. Only then can you charge it.
+
+```ts
+const mandate = await nomba.mandates.create({
+  customerId: customer.id,
+  customerAccountNumber: '0123456789',
+  bankCode: '058',                 // CBN 3-digit
+  customerName: 'Ada Payer',
+  customerAccountName: 'ADA PAYER',
+  customerPhoneNumber: '+2348012345678',
+  customerAddress: '1 Marina, Lagos',
+  narration: 'Acme Pro subscription',
+  maxAmountInKobo: 1_000_000,            // per-debit ceiling, kobo (₦10,000)
+  frequency: 'monthly',
+});
+
+console.log(mandate.consentInstruction); // show this to the customer
+
+// Poll until the bank activates it.
+async function waitForActive(id: string, tries = 20): Promise<boolean> {
+  for (let i = 0; i < tries; i++) {
+    const pm = await nomba.mandates.retrieve(id);
+    if (pm.status === 'active') return true;
+    if (pm.status === 'removed' || pm.status === 'expired') return false;
+    await new Promise((r) => setTimeout(r, 15_000));
+  }
+  return false;
+}
+const active = await waitForActive(mandate.id);
+```
+
+### List, set default, remove
+
+```ts
+for await (const pm of nomba.paymentMethods.list({ customerId: customer.id })) {
+  console.log(pm.id, pm.kind, pm.status, pm.isDefault, pm.last4);
+}
+
+await nomba.paymentMethods.setDefault('nbo…pmt');
+await nomba.paymentMethods.remove('nbo…pmt');
+```
+
+---
+
+## 6. Subscriptions — the full lifecycle
+
+### Create — with a card, with a mandate, or trial-only
+
+Creating a subscription charges the first invoice immediately (unless it starts on a trial).
+
+```ts
+// With a saved card / mandate payment method:
 const sub = await nomba.subscriptions.create({
-  customerId: customer.id, priceId: 'nbo…prc', paymentMethodId: 'nbo…pmt',
+  customerId: customer.id,
+  priceId: monthly.id,
+  paymentMethodId: 'nbo…pmt',
+  quantity: 1,
+});
+
+// With a mandate (direct debit) — pass the mandate's payment method id:
+await nomba.subscriptions.create({
+  customerId: customer.id,
+  priceId: monthly.id,
+  paymentMethodId: mandate.id,
+});
+
+// Trial-only — no payment method needed while trialDays > 0:
+const trialing = await nomba.subscriptions.create({
+  customerId: customer.id,
+  priceId: monthly.id,
+  trialDays: 14,
+});
+console.log(trialing.status); // → "trialing"
+```
+
+### Retrieve & list (by status, by customer)
+
+Status: `incomplete | incomplete_expired | trialing | active | past_due | paused | canceled`.
+
+```ts
+await nomba.subscriptions.retrieve(sub.id);
+
+// Everything for one customer:
+await nomba.subscriptions.list({ customerId: customer.id }).toArray();
+
+// Stream all past-due subscriptions:
+for await (const s of nomba.subscriptions.list({ status: 'past_due' })) {
+  console.log(s.id, s.currentPeriodEnd);
+}
+```
+
+### Update the default payment method / metadata
+
+```ts
+await nomba.subscriptions.update(sub.id, {
+  defaultPaymentMethodId: 'nbo…pmt',
+  metadata: { seat_owner: 'ada' },
+});
+```
+
+### Pause & resume
+
+```ts
+await nomba.subscriptions.pause(sub.id, { maxDays: 30 });
+await nomba.subscriptions.resume(sub.id);
+```
+
+### Cancel — now or at period end — and resubscribe
+
+```ts
+await nomba.subscriptions.cancel(sub.id, { mode: 'at_period_end', comment: 'downgrading' });
+// or hard-cancel immediately:
+await nomba.subscriptions.cancel(sub.id, { mode: 'now' });
+
+// Bring a canceled subscription back:
+await nomba.subscriptions.resubscribe(sub.id, {
+  priceId: monthly.id,
+  paymentMethodId: 'nbo…pmt',
+});
+```
+
+### Change plan / quantity / interval (with proration)
+
+```ts
+// Upgrade to a different price, prorate the difference now:
+await nomba.subscriptions.change(sub.id, {
+  priceId: yearly.id,
+  prorationBehavior: 'create_prorations',
+});
+
+// Add seats:
+await nomba.subscriptions.change(sub.id, {
+  quantity: 5,
+  prorationBehavior: 'create_prorations',
+});
+
+// Switch monthly → yearly interval without proration:
+await nomba.subscriptions.change(sub.id, {
+  priceId: yearly.id,
+  intervalSwitch: true,
+  prorationBehavior: 'none',
+});
+```
+
+### Preview the upcoming invoice before you commit
+
+```ts
+const preview = await nomba.subscriptions.upcomingInvoice(sub.id);
+console.log(preview.totalInKobo, preview.lineItems); // nothing is charged — this is a dry run
+```
+
+### Schedule a change for the next cycle
+
+Defer a change so it takes effect at the next renewal instead of now.
+
+```ts
+await nomba.subscriptions.schedule(sub.id, {
+  priceId: yearly.id,
+  effectiveAt: 'next_cycle',
+});
+
+await nomba.subscriptions.getSchedule(sub.id);   // inspect the pending change
+await nomba.subscriptions.cancelSchedule(sub.id); // call it off
+```
+
+### Discounts on a subscription
+
+```ts
+await nomba.subscriptions.applyDiscount(sub.id, 'LAUNCH20');
+await nomba.subscriptions.removeDiscount(sub.id);
+```
+
+### Read the subscription's event audit trail
+
+```ts
+for await (const ev of nomba.subscriptions.events(sub.id)) {
+  console.log(ev.type, ev.createdAt); // subscription.created, invoice.paid, …
+}
+```
+
+---
+
+## 7. Invoices
+
+Status: `draft | open | partially_paid | paid | void | uncollectible`. Amounts are kobo.
+
+```ts
+// List / filter:
+await nomba.invoices.list({ customerId: customer.id, status: 'open' }).toArray();
+await nomba.invoices.list({ subscriptionId: sub.id }).toArray();
+
+const invoice = await nomba.invoices.retrieve('nbo…inv');
+console.log(invoice.totalInKobo, invoice.amountDueInKobo, invoice.amountRemainingInKobo);
+
+// Void an open invoice (cannot void a paid one — see §13):
+await nomba.invoices.void('nbo…inv', { comment: 'issued in error' });
+```
+
+---
+
+## 8. Coupons
+
+Create a fixed-amount or percentage coupon, with `once | repeating | forever` duration.
+
+```ts
+// ₦1,000 off, applied one time:
+const flat = await nomba.coupons.create({
+  code: 'NGN1000OFF',
+  amountOffInKobo: 100_000,
+  duration: 'once',
+});
+
+// 20% off for the first 3 cycles:
+const pct = await nomba.coupons.create({
+  code: 'LAUNCH20',
+  percentOff: 20,
+  duration: 'repeating',
+  durationInCycles: 3,
+  maxRedemptions: 500,
+  redeemBy: '2026-12-31T23:59:59Z',
+});
+
+await nomba.coupons.list().toArray();
+
+// Tighten limits later:
+await nomba.coupons.update(pct.id, { maxRedemptions: 200 });
+```
+
+Attach coupons to a customer or subscription via their `applyDiscount` methods (§3, §6).
+
+---
+
+## 9. Dunning & the OTP/3DS recovery flow
+
+When a renewal charge fails, the subscription enters dunning. Tokenized-card recharges can require
+customer **OTP/3DS** — those land in the `card_update_required` state and surface as an
+`invoice.action_required` webhook carrying a fresh `checkoutLink` the customer completes.
+
+### Read the dunning state and attempts
+
+```ts
+const state = await nomba.subscriptions.dunning(sub.id);
+console.log(state.status); // e.g. "card_update_required"
+
+// Attempt status: scheduled | attempting | succeeded | rescheduled | card_update_required | exhausted
+for await (const attempt of nomba.subscriptions.dunningAttempts(sub.id)) {
+  console.log(attempt.status, attempt.createdAt);
+}
+```
+
+### Swap the card mid-dunning and retry now
+
+Pass **either** a new payment method id **or** a fresh checkout token (never both):
+
+```ts
+// Customer picked an existing card:
+await nomba.subscriptions.updatePaymentMethod(sub.id, { paymentMethodId: 'nbo…pmt' });
+
+// …or they completed a fresh hosted checkout:
+await nomba.subscriptions.updatePaymentMethod(sub.id, { checkoutToken: 'chk_…' });
+```
+
+### Handle `invoice.action_required` by emailing the customer
+
+In your webhook receiver (§12), forward the fresh checkout link so the customer can finish OTP/3DS:
+
+```ts
+case 'invoice.action_required': {
+  const { id: invoiceId, reason, checkoutLink } = event.data as {
+    id: string; reason: string; checkoutLink: string;
+  };
+  await emailCustomer(invoiceId, {
+    subject: 'Action needed to keep your subscription active',
+    body: `Please confirm your payment: ${checkoutLink}`,
+  });
+  break;
+}
+```
+
+---
+
+## 10. Settlements, refunds, payouts & escrow
+
+A verified collection splits at collection: the organization's net share settles to their Nomba
+sub-account; the platform fee is the remainder. A rolling **3-hour escrow lock** reserves the net
+share so it can be clawed back for a refund before it's withdrawn.
+
+### List settlements
+
+Status: `pending | settled | reconciled | failed | refunded`.
+
+```ts
+for await (const s of nomba.settlements.list({ status: 'settled' })) {
+  console.log(s.id, s.grossInKobo, s.platformFeeInKobo, s.netToTenantInKobo, s.status);
+}
+
+const settlement = await nomba.settlements.retrieve('nbo…stl');
+```
+
+### Refund the organization's share (full or partial)
+
+Only the organization's leg is reversed — the platform fee is non-refundable. Omit `amountInKobo` for a full
+refund; partials are capped at `netToTenantInKobo`.
+
+```ts
+// Full organization-share refund:
+await nomba.settlements.refund('nbo…stl');
+
+// Partial ₦2,500 refund:
+await nomba.settlements.refund('nbo…stl', { amountInKobo: 250_000 });
+```
+
+### Check escrow, then pay out available funds
+
+`available = balance − lockedLast3h − minBuffer`. Withdraw only what's available.
+
+```ts
+const escrow = await nomba.settlements.escrow();
+console.log(escrow.lockedInKobo, escrow.availableInKobo, escrow.minWithdrawableInKobo);
+
+if (escrow.availableInKobo >= escrow.minWithdrawableInKobo) {
+  await nomba.settlements.payout({
+    amountInKobo: escrow.availableInKobo,
+    bankCode: '058',
+    accountNumber: '0123456789',
+  });
+}
+```
+
+### Handle the money-movement errors
+
+```ts
+import { NombaoneError } from '@nombaone/node';
+
+try {
+  await nomba.settlements.payout({ amountInKobo: 5_000_000, bankCode: '058', accountNumber: '0123456789' });
+} catch (err) {
+  if (err instanceof NombaoneError) {
+    if (err.code === 'ESCROW_LOCKED')            { /* funds still in the 3h window — retry later */ }
+    else if (err.code === 'PAYOUT_EXCEEDS_AVAILABLE') { /* lower the amount to escrow.availableInKobo */ }
+    else if (err.code === 'REFUND_ALREADY_REFUNDED')  { /* settlement was already refunded */ }
+    else throw err;
+  } else throw err;
+}
+```
+
+---
+
+## 11. Organizations — settings, branding, settlement mode
+
+`nomba.organizations` is your org's configuration (formerly "settings"). The webhook signing
+secret is never returned in full — only a prefix.
+
+```ts
+const org = await nomba.organizations.retrieve();
+console.log(org.settlementMode, org.branding);
+
+await nomba.organizations.update({
+  settlementMode: 'auto',
+  monthlyRequestQuota: 1_000_000,
+  branding: { displayName: 'Acme', primaryColor: '#0F5EFF', logoUrl: 'https://acme.io/logo.png' },
+});
+```
+
+Dunning / proration policy lives in billing settings:
+
+```ts
+await nomba.billingSettings.retrieve();
+await nomba.billingSettings.update({
+  dunningMaxAttempts: 6,
+  dunningIntervalsHours: [10, 24, 72],
+  gracePeriodHours: 48,
+  defaultCollectionMethod: 'charge_automatically',
 });
 ```
 
 ---
 
-## 1. Layout
+## 12. Webhooks — register, rotate, inspect, replay & receive
 
-```
-@nombaone/node
-├── src/
-│   ├── index.ts              // export { Nombaone, NombaoneError, … }
-│   ├── client.ts             // Nombaone: config + resource namespaces
-│   ├── http.ts               // transport: fetch, envelope, retries, idempotency
-│   ├── errors.ts             // NombaoneError + typed subclasses
-│   ├── pagination.ts         // Page<T> + async auto-pager
-│   ├── webhooks.ts           // signature verify + typed event construction
-│   ├── types.ts              // all response DTOs + param shapes
-│   └── resources/
-│       ├── customers.ts  plans.ts  prices.ts  subscriptions.ts  invoices.ts
-│       ├── coupons.ts  paymentMethods.ts  mandates.ts  settlements.ts
-│       ├── settings.ts  webhookEndpoints.ts  events.ts  webhookDeliveries.ts
-│       └── metrics.ts  health.ts
-```
-
----
-
-## 2. Configuration & client (`client.ts`)
+### Register an endpoint (the signing secret is shown once)
 
 ```ts
-import { HttpClient } from './http';
-import { Webhooks } from './webhooks';
-import * as R from './resources';
-
-export interface NombaoneOptions {
-  /** Secret key `nbo_test_…` / `nbo_live_…`. Its prefix selects the environment. */
-  apiKey: string;
-  /** Override the API host. Default: https://api.nombaone.com/v1 */
-  baseUrl?: string;
-  /** Per-request timeout (ms). Default 30_000. */
-  timeoutMs?: number;
-  /** Automatic retries for 429/5xx/network (idempotent + POST-with-key). Default 2. */
-  maxRetries?: number;
-  /** Supply your own fetch (e.g. undici) or Idempotency-Key generator (default randomUUID). */
-  fetch?: typeof fetch;
-  idempotencyKeyGenerator?: () => string;
-}
-
-export class Nombaone {
-  readonly customers: R.Customers;
-  readonly plans: R.Plans;
-  readonly prices: R.Prices;
-  readonly subscriptions: R.Subscriptions;
-  readonly invoices: R.Invoices;
-  readonly coupons: R.Coupons;
-  readonly paymentMethods: R.PaymentMethods;
-  readonly mandates: R.Mandates;
-  readonly settlements: R.Settlements;
-  readonly settings: R.Settings;
-  readonly billingSettings: R.BillingSettings;
-  readonly webhookEndpoints: R.WebhookEndpoints;
-  readonly events: R.Events;
-  readonly webhookDeliveries: R.WebhookDeliveries;
-  readonly metrics: R.Metrics;
-  readonly health: R.Health;
-  readonly webhooks: Webhooks;
-
-  constructor(opts: NombaoneOptions) {
-    if (!opts.apiKey) throw new Error('Nombaone: apiKey is required');
-    const http = new HttpClient({
-      apiKey: opts.apiKey,
-      baseUrl: opts.baseUrl ?? 'https://api.nombaone.com/v1',
-      timeoutMs: opts.timeoutMs ?? 30_000,
-      maxRetries: opts.maxRetries ?? 2,
-      fetchImpl: opts.fetch ?? globalThis.fetch,
-      newIdempotencyKey: opts.idempotencyKeyGenerator ?? (() => crypto.randomUUID()),
-    });
-
-    this.customers = new R.Customers(http);
-    this.plans = new R.Plans(http);
-    this.prices = new R.Prices(http);
-    this.subscriptions = new R.Subscriptions(http);
-    this.invoices = new R.Invoices(http);
-    this.coupons = new R.Coupons(http);
-    this.paymentMethods = new R.PaymentMethods(http);
-    this.mandates = new R.Mandates(http);
-    this.settlements = new R.Settlements(http);
-    this.settings = new R.Settings(http);
-    this.billingSettings = new R.BillingSettings(http);
-    this.webhookEndpoints = new R.WebhookEndpoints(http);
-    this.events = new R.Events(http);
-    this.webhookDeliveries = new R.WebhookDeliveries(http);
-    this.metrics = new R.Metrics(http);
-    this.health = new R.Health(http);
-    this.webhooks = new Webhooks();
-  }
-}
+const endpoint = await nomba.webhooks.create({
+  url: 'https://acme.io/nombaone/webhooks',
+  enabledEvents: ['invoice.paid', 'invoice.action_required', 'subscription.churned',
+                  'settlement.created', 'payment_method.attached'],
+});
+console.log(endpoint.signingSecret); // store this now — it is never returned again
 ```
 
----
-
-## 3. Transport (`http.ts`)
-
-Handles auth, the success/error/paginated envelopes, idempotency, timeouts, and retries.
+### Rotate the secret, list & update endpoints
 
 ```ts
-import { toNombaoneError } from './errors';
+const rotated = await nomba.webhooks.rotateSecret(endpoint.id);
+console.log(rotated.signingSecret, rotated.signingSecretPrefix);
 
-interface HttpConfig {
-  apiKey: string; baseUrl: string; timeoutMs: number; maxRetries: number;
-  fetchImpl: typeof fetch; newIdempotencyKey: () => string;
-}
-
-export interface RequestOptions {
-  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  path: string;
-  query?: Record<string, string | number | boolean | undefined>;
-  body?: unknown;
-  /** Override/set the Idempotency-Key. Auto-generated for mutating verbs if omitted. */
-  idempotencyKey?: string;
-}
-
-const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-
-export class HttpClient {
-  constructor(private readonly cfg: HttpConfig) {}
-
-  /** Single resource → the unwrapped `data`. */
-  async request<T>(opts: RequestOptions): Promise<T> {
-    const { body } = await this.send<T>(opts);
-    return body.data;
-  }
-
-  /** List → `data[]` + pagination cursor. */
-  async requestPage<T>(opts: RequestOptions): Promise<{ data: T[]; hasMore: boolean; nextCursor: string | null; limit: number }> {
-    const { body } = await this.send<T[]>(opts);
-    const p = (body as any).pagination ?? { hasMore: false, nextCursor: null, limit: 20 };
-    return { data: body.data as unknown as T[], ...p };
-  }
-
-  private async send<T>(opts: RequestOptions): Promise<{ status: number; body: any }> {
-    const url = new URL(this.cfg.baseUrl + opts.path);
-    for (const [k, v] of Object.entries(opts.query ?? {})) if (v !== undefined) url.searchParams.set(k, String(v));
-
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${this.cfg.apiKey}`,
-      Accept: 'application/json',
-    };
-    if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
-    // Idempotency-Key is REQUIRED on mutating verbs; stable across retries.
-    const idemKey = MUTATING.has(opts.method) ? (opts.idempotencyKey ?? this.cfg.newIdempotencyKey()) : undefined;
-    if (idemKey) headers['Idempotency-Key'] = idemKey;
-
-    let attempt = 0;
-    for (;;) {
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), this.cfg.timeoutMs);
-      try {
-        const res = await this.cfg.fetchImpl(url.toString(), {
-          method: opts.method,
-          headers,
-          body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
-          signal: ctl.signal,
-        });
-        const json = await res.json().catch(() => ({}));
-        if (res.ok && json.success) return { status: res.status, body: json };
-        // Retry transient failures (same Idempotency-Key makes POST safe to repeat).
-        if (this.retryable(res.status) && attempt < this.cfg.maxRetries) {
-          await sleep(backoff(attempt++, res.headers.get('retry-after')));
-          continue;
-        }
-        throw toNombaoneError(res.status, json, res.headers.get('x-request-id'));
-      } catch (err) {
-        if (isNetworkError(err) && attempt < this.cfg.maxRetries) { await sleep(backoff(attempt++)); continue; }
-        throw err instanceof Error && err.name === 'NombaoneError' ? err : toNombaoneError(0, { error: { code: 'NETWORK', message: String(err) } });
-      } finally { clearTimeout(timer); }
-    }
-  }
-
-  private retryable(status: number) { return status === 429 || (status >= 500 && status < 600); }
-}
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const backoff = (n: number, retryAfter?: string | null) =>
-  retryAfter ? Number(retryAfter) * 1000 : Math.min(500 * 2 ** n, 8000) + Math.random() * 250;
-const isNetworkError = (e: unknown) => e instanceof Error && ['AbortError', 'FetchError', 'TypeError'].includes(e.name);
+await nomba.webhooks.list().toArray();
+await nomba.webhooks.retrieve(endpoint.id);
+await nomba.webhooks.update(endpoint.id, { enabledEvents: ['*'] });
+await nomba.webhooks.del(endpoint.id);
 ```
 
----
-
-## 4. Typed errors (`errors.ts`)
-
-The API's `error.code` is exposed on a discriminable error, plus HTTP-status subclasses.
+### Inspect deliveries (nested under the endpoint) and replay a dead one
 
 ```ts
-export class NombaoneError extends Error {
-  override name = 'NombaoneError';
-  constructor(
-    readonly status: number,
-    readonly code: string,            // e.g. 'SUBSCRIPTION_NOT_FOUND'
-    message: string,
-    readonly fields?: Record<string, string[]>,
-    readonly requestId?: string | null,
-  ) { super(message); }
+// Failed deliveries for one endpoint:
+for await (const d of nomba.webhooks.deliveries.list(endpoint.id, { status: 'failed' })) {
+  console.log(d.id, d.eventType, d.status, d.attempts);
 }
-export class AuthenticationError extends NombaoneError {}   // 401
-export class PermissionError extends NombaoneError {}       // 403 (scope)
-export class NotFoundError extends NombaoneError {}         // 404
-export class ConflictError extends NombaoneError {}         // 409 (idempotency reuse)
-export class ValidationError extends NombaoneError {}       // 422
-export class RateLimitError extends NombaoneError {}        // 429 (RATE_LIMIT_EXCEEDED / QUOTA_EXCEEDED)
-export class ServerError extends NombaoneError {}           // 5xx
 
-export function toNombaoneError(status: number, json: any, requestId?: string | null): NombaoneError {
-  const e = json?.error ?? {};
-  const args = [status, e.code ?? 'SYSTEM_INTERNAL_ERROR', e.message ?? 'Request failed', e.fields, requestId ?? json?.meta?.requestId] as const;
-  switch (status) {
-    case 401: return new AuthenticationError(...args);
-    case 403: return new PermissionError(...args);
-    case 404: return new NotFoundError(...args);
-    case 409: return new ConflictError(...args);
-    case 422: return new ValidationError(...args);
-    case 429: return new RateLimitError(...args);
-    default:  return status >= 500 ? new ServerError(...args) : new NombaoneError(...args);
-  }
-}
+const delivery = await nomba.webhooks.deliveries.retrieve(endpoint.id, 'nbo…whd');
+
+// Re-enqueue a dead-lettered delivery:
+await nomba.webhooks.deliveries.replay(endpoint.id, delivery.id);
 ```
 
-```ts
-try { await nomba.subscriptions.cancel('nbo…sub', { mode: 'now' }); }
-catch (err) {
-  if (err instanceof NotFoundError) { /* gone */ }
-  else if (err instanceof RateLimitError) { /* back off */ }
-  else if (err instanceof ValidationError) console.error(err.fields);
-  else throw err;
-}
-```
+### Verify & receive (Express, raw body)
 
----
-
-## 5. Pagination (`pagination.ts`)
-
-Cursor-based, with a lazy async iterator so callers never manage cursors.
+Delivery is **at-least-once** — verify the signature, then dedupe on the domain event id
+(`event.event.id`, stable across redeliveries; the top-level `event.id` is the delivery id, which
+changes on replay). Mount a **raw** body parser on the webhook route.
 
 ```ts
-export interface Page<T> { data: T[]; hasMore: boolean; nextCursor: string | null; }
+import express from 'express';
+import { Nombaone } from '@nombaone/node';
 
-export class Paginator<T> implements AsyncIterable<T> {
-  constructor(private readonly fetchPage: (cursor?: string) => Promise<Page<T>>) {}
+const nomba = new Nombaone({ apiKey: process.env.NOMBAONE_API_KEY! });
+const app = express();
 
-  /** One page. */
-  async page(cursor?: string): Promise<Page<T>> { return this.fetchPage(cursor); }
-
-  /** `for await (const item of nomba.customers.list())` — streams every item across pages. */
-  async *[Symbol.asyncIterator](): AsyncIterator<T> {
-    let cursor: string | undefined;
-    do {
-      const p = await this.fetchPage(cursor);
-      for (const item of p.data) yield item;
-      cursor = p.nextCursor ?? undefined;
-    } while (cursor);
-  }
-
-  /** Collect all pages (guard the total for large sets). */
-  async toArray(max = 10_000): Promise<T[]> {
-    const out: T[] = [];
-    for await (const item of this) { out.push(item); if (out.length >= max) break; }
-    return out;
-  }
-}
-```
-
----
-
-## 6. A base resource + the full namespaces (`resources/*.ts`)
-
-```ts
-// resources/base.ts
-import { HttpClient } from '../http';
-import { Page, Paginator } from '../pagination';
-
-export abstract class Resource {
-  constructor(protected readonly http: HttpClient) {}
-  protected paginate<T>(path: string, query: Record<string, unknown> = {}): Paginator<T> {
-    return new Paginator<T>(async (cursor) => {
-      const p = await this.http.requestPage<T>({ method: 'GET', path, query: { ...query, cursor } as any });
-      return { data: p.data, hasMore: p.hasMore, nextCursor: p.nextCursor } as Page<T>;
-    });
-  }
-}
-```
-
-### Customers (+ discounts, credit)
-
-```ts
-import type * as T from '../types';
-export class Customers extends Resource {
-  create(body: T.CreateCustomer, idempotencyKey?: string) {
-    return this.http.request<T.Customer>({ method: 'POST', path: '/customers', body, idempotencyKey });
-  }
-  retrieve(ref: string) { return this.http.request<T.Customer>({ method: 'GET', path: `/customers/${ref}` }); }
-  update(ref: string, body: T.UpdateCustomer, idempotencyKey?: string) {
-    return this.http.request<T.Customer>({ method: 'PATCH', path: `/customers/${ref}`, body, idempotencyKey });
-  }
-  list(query: T.ListCustomers = {}) { return this.paginate<T.Customer>('/customers', query); }
-
-  applyDiscount(ref: string, coupon: string, idempotencyKey?: string) {
-    return this.http.request<T.Discount>({ method: 'POST', path: `/customers/${ref}/discount`, body: { coupon }, idempotencyKey });
-  }
-  removeDiscount(ref: string, idempotencyKey?: string) {
-    return this.http.request<void>({ method: 'DELETE', path: `/customers/${ref}/discount`, idempotencyKey });
-  }
-  grantCredit(ref: string, body: T.GrantCredit, idempotencyKey?: string) {
-    return this.http.request<T.CreditGrant>({ method: 'POST', path: `/customers/${ref}/credit`, body, idempotencyKey });
-  }
-  creditBalance(ref: string) { return this.http.request<T.CreditBalance>({ method: 'GET', path: `/customers/${ref}/credit` }); }
-  voidCredit(ref: string, grantRef: string, idempotencyKey?: string) {
-    return this.http.request<T.CreditGrant>({ method: 'DELETE', path: `/customers/${ref}/credit/${grantRef}`, idempotencyKey });
-  }
-}
-```
-
-### Plans & Prices
-
-```ts
-export class Plans extends Resource {
-  create(b: T.CreatePlan, k?: string) { return this.http.request<T.Plan>({ method: 'POST', path: '/plans', body: b, idempotencyKey: k }); }
-  retrieve(ref: string) { return this.http.request<T.Plan>({ method: 'GET', path: `/plans/${ref}` }); }
-  update(ref: string, b: T.UpdatePlan, k?: string) { return this.http.request<T.Plan>({ method: 'PATCH', path: `/plans/${ref}`, body: b, idempotencyKey: k }); }
-  list(q: T.ListPlans = {}) { return this.paginate<T.Plan>('/plans', q); }
-  archive(ref: string, k?: string) { return this.http.request<T.Plan>({ method: 'POST', path: `/plans/${ref}/archive`, idempotencyKey: k }); }
-  createPrice(planRef: string, b: T.CreatePrice, k?: string) { return this.http.request<T.Price>({ method: 'POST', path: `/plans/${planRef}/prices`, body: b, idempotencyKey: k }); }
-  listPrices(planRef: string) { return this.paginate<T.Price>(`/plans/${planRef}/prices`); }
-}
-export class Prices extends Resource {
-  retrieve(ref: string) { return this.http.request<T.Price>({ method: 'GET', path: `/prices/${ref}` }); }
-  list(q: T.ListPrices = {}) { return this.paginate<T.Price>('/prices', q); }
-  deactivate(ref: string, k?: string) { return this.http.request<T.Price>({ method: 'POST', path: `/prices/${ref}/deactivate`, idempotencyKey: k }); }
-}
-```
-
-### Subscriptions (+ lifecycle, change, schedule, discount, dunning, upcoming, events)
-
-```ts
-export class Subscriptions extends Resource {
-  create(b: T.CreateSubscription, k?: string) { return this.http.request<T.Subscription>({ method: 'POST', path: '/subscriptions', body: b, idempotencyKey: k }); }
-  retrieve(ref: string) { return this.http.request<T.Subscription>({ method: 'GET', path: `/subscriptions/${ref}` }); }
-  list(q: T.ListSubscriptions = {}) { return this.paginate<T.Subscription>('/subscriptions', q); }
-  update(ref: string, b: T.UpdateSubscription, k?: string) { return this.http.request<T.Subscription>({ method: 'PATCH', path: `/subscriptions/${ref}`, body: b, idempotencyKey: k }); }
-
-  pause(ref: string, b: T.PauseSubscription = {}, k?: string) { return this.http.request<T.Subscription>({ method: 'POST', path: `/subscriptions/${ref}/pause`, body: b, idempotencyKey: k }); }
-  resume(ref: string, k?: string) { return this.http.request<T.Subscription>({ method: 'POST', path: `/subscriptions/${ref}/resume`, body: {}, idempotencyKey: k }); }
-  cancel(ref: string, b: T.CancelSubscription, k?: string) { return this.http.request<T.Subscription>({ method: 'POST', path: `/subscriptions/${ref}/cancel`, body: b, idempotencyKey: k }); }
-  resubscribe(ref: string, b: T.Resubscribe = {}, k?: string) { return this.http.request<T.Subscription>({ method: 'POST', path: `/subscriptions/${ref}/resubscribe`, body: b, idempotencyKey: k }); }
-  change(ref: string, b: T.ChangeSubscription, k?: string) { return this.http.request<T.Subscription>({ method: 'POST', path: `/subscriptions/${ref}/change`, body: b, idempotencyKey: k }); }
-
-  upcomingInvoice(ref: string) { return this.http.request<T.UpcomingInvoice>({ method: 'GET', path: `/subscriptions/${ref}/upcoming-invoice` }); }
-  events(ref: string) { return this.paginate<T.DomainEvent>(`/subscriptions/${ref}/events`); }
-
-  applyDiscount(ref: string, coupon: string, k?: string) { return this.http.request<T.Discount>({ method: 'POST', path: `/subscriptions/${ref}/discount`, body: { coupon }, idempotencyKey: k }); }
-  removeDiscount(ref: string, k?: string) { return this.http.request<void>({ method: 'DELETE', path: `/subscriptions/${ref}/discount`, idempotencyKey: k }); }
-
-  // schedule (deferred change at next cycle)
-  schedule(ref: string, b: T.ScheduleChange, k?: string) { return this.http.request<T.SubscriptionSchedule>({ method: 'POST', path: `/subscriptions/${ref}/schedule`, body: b, idempotencyKey: k }); }
-  getSchedule(ref: string) { return this.http.request<T.SubscriptionSchedule>({ method: 'GET', path: `/subscriptions/${ref}/schedule` }); }
-  cancelSchedule(ref: string, k?: string) { return this.http.request<void>({ method: 'DELETE', path: `/subscriptions/${ref}/schedule`, idempotencyKey: k }); }
-
-  // dunning
-  dunning(ref: string) { return this.http.request<T.DunningState>({ method: 'GET', path: `/subscriptions/${ref}/dunning` }); }
-  dunningAttempts(ref: string) { return this.paginate<T.DunningAttempt>(`/subscriptions/${ref}/dunning/attempts`); }
-  /** Swap the card mid-dunning (paymentMethodReference XOR checkoutToken) and retry now. */
-  updatePaymentMethod(ref: string, b: T.UpdateSubscriptionCard, k?: string) { return this.http.request<T.Subscription>({ method: 'POST', path: `/subscriptions/${ref}/payment-method`, body: b, idempotencyKey: k }); }
-}
-```
-
-### Invoices · Coupons
-
-```ts
-export class Invoices extends Resource {
-  retrieve(ref: string) { return this.http.request<T.Invoice>({ method: 'GET', path: `/invoices/${ref}` }); }
-  list(q: T.ListInvoices = {}) { return this.paginate<T.Invoice>('/invoices', q); }
-  void(ref: string, b: { comment?: string } = {}, k?: string) { return this.http.request<T.Invoice>({ method: 'POST', path: `/invoices/${ref}/void`, body: b, idempotencyKey: k }); }
-}
-export class Coupons extends Resource {
-  create(b: T.CreateCoupon, k?: string) { return this.http.request<T.Coupon>({ method: 'POST', path: '/coupons', body: b, idempotencyKey: k }); }
-  retrieve(ref: string) { return this.http.request<T.Coupon>({ method: 'GET', path: `/coupons/${ref}` }); }
-  list(q: T.ListCoupons = {}) { return this.paginate<T.Coupon>('/coupons', q); }
-  update(ref: string, b: T.UpdateCoupon, k?: string) { return this.http.request<T.Coupon>({ method: 'PATCH', path: `/coupons/${ref}`, body: b, idempotencyKey: k }); }
-}
-```
-
-### Payment methods & Mandates
-
-```ts
-export class PaymentMethods extends Resource {
-  /** Hosted-checkout card setup → send the customer to `checkoutLink`; captured via webhook. */
-  setupCard(b: T.SetupCard, k?: string) { return this.http.request<T.CheckoutSetup>({ method: 'POST', path: '/payment-methods/setup', body: b, idempotencyKey: k }); }
-  issueVirtualAccount(b: T.IssueVirtualAccount, k?: string) { return this.http.request<T.VirtualAccount>({ method: 'POST', path: '/payment-methods/virtual-account', body: b, idempotencyKey: k }); }
-  retrieve(ref: string) { return this.http.request<T.PaymentMethod>({ method: 'GET', path: `/payment-methods/${ref}` }); }
-  list(q: T.ListPaymentMethods = {}) { return this.paginate<T.PaymentMethod>('/payment-methods', q); }
-  setDefault(ref: string, k?: string) { return this.http.request<T.PaymentMethod>({ method: 'POST', path: `/payment-methods/${ref}/default`, idempotencyKey: k }); }
-  remove(ref: string, k?: string) { return this.http.request<void>({ method: 'DELETE', path: `/payment-methods/${ref}`, idempotencyKey: k }); }
-}
-export class Mandates extends Resource {
-  create(b: T.CreateMandate, k?: string) { return this.http.request<T.MandateSetup>({ method: 'POST', path: '/mandates', body: b, idempotencyKey: k }); }
-  /** Poll status — flips to `active` once NIBSS advice is sent. */
-  retrieve(ref: string) { return this.http.request<T.PaymentMethod>({ method: 'GET', path: `/mandates/${ref}` }); }
-}
-```
-
-### Settlements, Refunds & Payouts
-
-```ts
-export class Settlements extends Resource {
-  list(q: T.ListSettlements = {}) { return this.paginate<T.Settlement>('/settlements', q); }
-  retrieve(ref: string) { return this.http.request<T.Settlement>({ method: 'GET', path: `/settlements/${ref}` }); }
-  escrow() { return this.http.request<T.Escrow>({ method: 'GET', path: '/settlements/escrow' }); }
-  /** Refund the tenant share (fee non-refundable). Omit amountKobo for a full refund. */
-  refund(ref: string, b: { amountKobo?: number } = {}, k?: string) { return this.http.request<T.Refund>({ method: 'POST', path: `/settlements/${ref}/refund`, body: b, idempotencyKey: k }); }
-  /** Tenant withdrawal, honouring the 3h escrow lock. */
-  payout(b: T.CreatePayout, k?: string) { return this.http.request<T.Payout>({ method: 'POST', path: '/settlements/payout', body: b, idempotencyKey: k }); }
-}
-```
-
-### Settings · Webhooks · Events · Deliveries · Metrics · Health
-
-```ts
-export class Settings extends Resource {
-  retrieve() { return this.http.request<T.TenantSettings>({ method: 'GET', path: '/settings' }); }
-  update(b: T.UpdateTenantSettings, k?: string) { return this.http.request<T.TenantSettings>({ method: 'PUT', path: '/settings', body: b, idempotencyKey: k }); }
-}
-export class BillingSettings extends Resource {
-  retrieve() { return this.http.request<T.BillingSettings>({ method: 'GET', path: '/billing-settings' }); }
-  update(b: T.UpdateBillingSettings, k?: string) { return this.http.request<T.BillingSettings>({ method: 'PUT', path: '/billing-settings', body: b, idempotencyKey: k }); }
-}
-export class WebhookEndpoints extends Resource {
-  create(b: T.CreateWebhookEndpoint, k?: string) { return this.http.request<T.WebhookEndpoint>({ method: 'POST', path: '/webhook-endpoints', body: b, idempotencyKey: k }); }
-  list() { return this.paginate<T.WebhookEndpoint>('/webhook-endpoints'); }
-  retrieve(ref: string) { return this.http.request<T.WebhookEndpoint>({ method: 'GET', path: `/webhook-endpoints/${ref}` }); }
-  update(ref: string, b: T.UpdateWebhookEndpoint, k?: string) { return this.http.request<T.WebhookEndpoint>({ method: 'PATCH', path: `/webhook-endpoints/${ref}`, body: b, idempotencyKey: k }); }
-  del(ref: string, k?: string) { return this.http.request<void>({ method: 'DELETE', path: `/webhook-endpoints/${ref}`, idempotencyKey: k }); }
-  rotateSecret(ref: string, k?: string) { return this.http.request<T.RotatedSecret>({ method: 'POST', path: `/webhook-endpoints/${ref}/rotate-secret`, idempotencyKey: k }); }
-}
-export class Events extends Resource {
-  list(q: T.ListEvents = {}) { return this.paginate<T.DomainEvent>('/events', q); }
-  retrieve(ref: string) { return this.http.request<T.DomainEvent>({ method: 'GET', path: `/events/${ref}` }); }
-  catalog() { return this.http.request<Record<string, { when: string; payload: string[] }>>({ method: 'GET', path: '/events/catalog' }); }
-}
-export class WebhookDeliveries extends Resource {
-  list(q: T.ListWebhookDeliveries = {}) { return this.paginate<T.WebhookDelivery>('/webhook-deliveries', q); }
-  retrieve(ref: string) { return this.http.request<T.WebhookDelivery>({ method: 'GET', path: `/webhook-deliveries/${ref}` }); }
-  replay(ref: string, k?: string) { return this.http.request<T.WebhookDelivery>({ method: 'POST', path: `/webhook-deliveries/${ref}/replay`, idempotencyKey: k }); }
-}
-export class Metrics extends Resource {
-  billing(q: { from?: string; to?: string } = {}) { return this.http.request<T.BillingMetrics>({ method: 'GET', path: '/metrics/billing', query: q }); }
-}
-export class Health extends Resource {
-  live() { return this.http.request<{ status: string }>({ method: 'GET', path: '/health' }); }
-  ready() { return this.http.request<{ status: string }>({ method: 'GET', path: '/ready' }); }
-}
-```
-
----
-
-## 7. Webhooks (`webhooks.ts`)
-
-Verify the `x-nombaone-signature` and get a typed event. Keeps the raw body for signing.
-
-```ts
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-
-export interface NombaoneEvent<D = Record<string, unknown>> {
-  id: string;               // delivery ref (nbo…whd) — DEDUPE on event.id
-  type: string;             // 'invoice.paid', 'invoice.action_required', …
-  event: { id: string | null; type: string; createdAt: string | null };
-  data: D;
-}
-
-export class SignatureVerificationError extends Error {}
-
-export class Webhooks {
-  /**
-   * Verify a delivery. `payload` MUST be the raw request body (string/Buffer), not the
-   * parsed object. `secret` is the plaintext signing secret shown once at endpoint create.
-   */
-  constructEvent<D = Record<string, unknown>>(payload: string | Buffer, signature: string, secret: string): NombaoneEvent<D> {
-    const raw = typeof payload === 'string' ? payload : payload.toString('utf8');
-    const key = createHash('sha256').update(secret).digest('hex');
-    const expected = createHmac('sha256', key).update(raw, 'utf8').digest('hex');
-    const a = Buffer.from(expected); const b = Buffer.from(signature ?? '');
-    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new SignatureVerificationError('signature mismatch');
-    return JSON.parse(raw) as NombaoneEvent<D>;
-  }
-}
-```
-
-Express handler (note: mount a **raw** body parser on the webhook route):
-
-```ts
-app.post('/nombaone/webhooks', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/nombaone/webhooks', express.raw({ type: 'application/json' }), async (req, res) => {
   let event;
   try {
-    event = nomba.webhooks.constructEvent(req.body, req.header('x-nombaone-signature')!, process.env.NOMBAONE_WEBHOOK_SECRET!);
-  } catch { return res.status(400).send('bad signature'); }
+    event = nomba.webhooks.constructEvent(
+      req.body,                                     // raw Buffer — NOT a parsed object
+      req.header('x-nombaone-signature')!,
+      process.env.NOMBAONE_WEBHOOK_SECRET!,         // the plaintext secret from create/rotate
+    );
+  } catch {
+    return res.status(400).send('bad signature');
+  }
 
-  if (alreadyHandled(event.id)) return res.sendStatus(200); // at-least-once → dedupe on event.id
+  // Idempotent handling: dedupe on the domain event id.
+  if (await alreadyProcessed(event.event.id)) return res.sendStatus(200);
+
   switch (event.type) {
-    case 'invoice.paid': /* grant access */ break;
-    case 'invoice.action_required': {
-      const { reference, checkoutLink } = event.data as { reference: string; checkoutLink: string };
-      emailCustomer(reference, checkoutLink); // customer completes OTP/3DS
+    case 'invoice.paid': {
+      const { id: invoiceId } = event.data as { id: string };
+      await grantAccessForInvoice(invoiceId);
       break;
     }
-    case 'subscription.churned': /* revoke access */ break;
-    case 'settlement.created': /* reconcile payout ledger */ break;
+    case 'invoice.action_required': {
+      const { id: invoiceId, checkoutLink } = event.data as { id: string; checkoutLink: string };
+      await emailCustomer(invoiceId, { body: `Confirm your payment: ${checkoutLink}` });
+      break;
+    }
+    case 'subscription.churned': {
+      const { id: subscriptionId } = event.data as { id: string };
+      await revokeAccess(subscriptionId);
+      break;
+    }
+    case 'settlement.created': {
+      const { id: settlementId } = event.data as { id: string };
+      await reconcileLedger(settlementId);
+      break;
+    }
+    case 'payment_method.attached': {
+      const { id: paymentMethodId } = event.data as { id: string };
+      await onCardCaptured(paymentMethodId); // e.g. finish an in-flight signup
+      break;
+    }
   }
+
+  await markProcessed(event.event.id);
   res.sendStatus(200);
 });
 ```
 
+The signature scheme, if you ever need to verify without the SDK: the key is
+`sha256(plaintextSecret)` (hex) and the signature is `HMAC-SHA256(key, rawBody)` (hex),
+constant-time compared. Prefer `constructEvent` — it does exactly this.
+
 ---
 
-## 8. Types (`types.ts`, excerpt)
+## 13. Error handling — typed errors
 
-All response DTOs and param shapes mirror the API 1:1. Amounts are kobo.
+Every failure throws a `NombaoneError` (with `.status`, `.code`, `.message`, `.hint`,
+`.docUrl`, `.fields`, `.requestId`) or one of its subclasses. `.hint` is a plain-English
+"what to do next" and `.docUrl` links straight to that code's docs — surface them in your
+logs so a failure explains itself. Catch the specific type you care about.
 
 ```ts
-export type Environment = 'test' | 'live';
+import {
+  NombaoneError, NotFoundError, ValidationError,
+  RateLimitError, ConflictError,
+} from '@nombaone/node';
 
-export interface Customer { id: string; email: string; name: string; phone: string | null; metadata: Record<string, unknown>; environment: Environment; createdAt: string; updatedAt: string; }
-export interface CreateCustomer { email: string; name: string; phone?: string; metadata?: Record<string, unknown>; }
-export interface UpdateCustomer { name?: string; phone?: string | null; metadata?: Record<string, unknown>; }
-export interface ListCustomers { email?: string; limit?: number; cursor?: string; }
+try {
+  await nomba.subscriptions.cancel('nbo…sub', { mode: 'now' });
+} catch (err) {
+  if (err instanceof NotFoundError) {
+    // 404 — already gone / wrong id
+  } else if (err instanceof ValidationError) {
+    console.error(err.fields); // 422 — { email: ["Invalid email"], … }
+  } else if (err instanceof RateLimitError) {
+    // 429 — the SDK already retried maxRetries times; back off further
+  } else if (err instanceof ConflictError) {
+    // 409 — Idempotency-Key reused with a different body
+  } else if (err instanceof NombaoneError) {
+    console.error(err.status, err.code, err.hint, err.requestId); // anything else — hint says what to do, requestId is for support
+  } else {
+    throw err;
+  }
+}
+```
 
-export interface Price { id: string; planId: string; unitAmount: number; currency: 'NGN'; interval: 'day'|'week'|'month'|'year'; intervalCount: number; usageType: 'licensed'|'metered'; billingScheme: 'per_unit'|'tiered'; trialPeriodDays: number; active: boolean; metadata: Record<string, unknown>; environment: Environment; createdAt: string; }
-export interface CreatePrice { unitAmount: number; interval: Price['interval']; intervalCount?: number; usageType?: Price['usageType']; billingScheme?: Price['billingScheme']; trialPeriodDays?: number; metadata?: Record<string, unknown>; }
+You can also branch on the raw `code` when several map to one HTTP status:
 
-export interface Subscription { id: string; customerId: string; priceId: string; status: 'incomplete'|'incomplete_expired'|'trialing'|'active'|'past_due'|'paused'|'canceled'; collectionMethod: 'charge_automatically'|'send_invoice'; currentPeriodIndex: number; currentPeriodStart: string | null; currentPeriodEnd: string | null; trialStart: string | null; trialEnd: string | null; cancelAtPeriodEnd: boolean; canceledAt: string | null; endedAt: string | null; cancellationReason: 'voluntary'|'involuntary'|null; defaultPaymentMethodId: string | null; items: { id: string; priceId: string; quantity: number }[]; latestInvoiceId: string | null; currency: 'NGN'; environment: Environment; createdAt: string; }
-export interface CreateSubscription { customerId: string; priceId: string; paymentMethodId?: string; collectionMethod?: 'charge_automatically'|'send_invoice'; trialDays?: number; quantity?: number; metadata?: Record<string, unknown>; }
-export interface ChangeSubscription { priceId?: string; quantity?: number; intervalSwitch?: boolean; prorationBehavior?: 'create_prorations'|'none'; }
-export interface CancelSubscription { mode: 'now'|'at_period_end'; comment?: string; }
-
-export interface Invoice { id: string; customerId: string; subscriptionId: string | null; status: 'draft'|'open'|'partially_paid'|'paid'|'void'|'uncollectible'; billingReason: 'subscription_create'|'subscription_cycle'|'subscription_update'|'manual'; subtotal: number; discountTotal: number; creditTotal: number; total: number; amountDue: number; amountPaid: number; amountRemaining: number; currency: 'NGN'; periodStart: string | null; periodEnd: string | null; dueDate: string | null; lineItems: { id: string; kind: string; description: string; amount: number; quantity: number }[]; finalizedAt: string | null; paidAt: string | null; voidedAt: string | null; environment: Environment; createdAt: string; }
-
-export interface PaymentMethod { id: string; customerId: string; kind: 'card'|'mandate'|'virtual_account'; status: 'setup_pending'|'consent_pending'|'active'|'removed'|'expired'; isDefault: boolean; brand: string | null; last4: string | null; expMonth: number | null; expYear: number | null; environment: Environment; createdAt: string; updatedAt: string; }
-export interface CheckoutSetup { reference: string; checkoutLink: string; }
-export interface MandateSetup { reference: string; mandateRef: string; status: string; consentInstruction: string; }
-export interface VirtualAccount { reference: string; bankName: string; accountNumber: string; accountName: string; accountRef: string; }
-export interface CreateMandate { customerRef: string; customerAccountNumber: string; bankCode: string; customerName: string; customerAccountName: string; customerPhoneNumber: string; customerAddress: string; narration: string; maxAmount: number; frequency?: 'VARIABLE'|'WEEKLY'|'EVERY_TWO_WEEKS'|'MONTHLY'|'EVERY_TWO_MONTHS'|'EVERY_THREE_MONTHS'|'EVERY_FOUR_MONTHS'|'EVERY_SIX_MONTHS'|'EVERY_TWELVE_MONTHS'; startDate?: string; endDate?: string; }
-
-export interface Settlement { id: string; invoiceReference: string | null; subAccountRef: string; splitReference: string | null; merchantTxRef: string; grossKobo: number; platformFeeKobo: number; netToTenantKobo: number; status: 'pending'|'settled'|'reconciled'|'failed'|'refunded'; createdAt: string; }
-export interface Refund { id: string; settlementReference: string; subAccountRef: string; amountKobo: number; status: 'pending'|'ledger_only'|'succeeded'|'failed'; providerReference: string | null; createdAt: string; }
-export interface Payout { id: string; subAccountRef: string; amountKobo: number; bankCode: string; accountNumber: string; resolvedAccountName: string | null; status: 'pending'|'ledger_posted'|'succeeded'|'failed'; providerReference: string | null; failureReason: string | null; createdAt: string; }
-export interface Escrow { lockedKobo: number; since: string; balanceKobo: number; minWithdrawableKobo: number; availableKobo: number; }
-export interface CreatePayout { amountKobo: number; bankCode: string; accountNumber: string; }
-
-// …Plan, Coupon, Discount, CreditGrant, CreditBalance, DunningState, DunningAttempt,
-//   UpcomingInvoice, DomainEvent, WebhookEndpoint, WebhookDelivery, RotatedSecret,
-//   TenantSettings, BillingSettings, BillingMetrics + their param shapes follow the same 1:1 pattern.
+```ts
+try {
+  await nomba.invoices.void('nbo…inv');
+} catch (err) {
+  if (err instanceof NombaoneError && err.code === 'INVOICE_ALREADY_PAID') {
+    // nothing to void
+  } else throw err;
+}
 ```
 
 ---
 
-## 9. End-to-end example
+## 14. Idempotency — your own stable keys on money-moving calls
+
+For calls that move money, pass a **stable, deterministic** key derived from your domain (order id,
+signup id). Replaying it returns the original result instead of charging again — safe across process
+restarts, retries, and duplicate queue messages. The key is the last argument on mutating methods.
 
 ```ts
-import { Nombaone, RateLimitError } from '@nombaone/node';
+// Same signup retried after a crash → one subscription, one charge.
+const sub = await nomba.subscriptions.create(
+  { customerId: customer.id, priceId: monthly.id, paymentMethodId: 'nbo…pmt' },
+  `signup:${signupId}`,
+);
+
+// Refund keyed to the order — a duplicate webhook won't double-refund.
+await nomba.settlements.refund('nbo…stl', { amountInKobo: 250_000 }, `refund:${orderId}`);
+
+// Payout keyed to a payout run:
+await nomba.settlements.payout(
+  { amountInKobo: 500_000, bankCode: '058', accountNumber: '0123456789' },
+  `payout:${payoutRunId}`,
+);
+```
+
+> Reusing a key with a **different** body throws `ConflictError` (409). Keep the key ↔ payload
+> mapping 1:1.
+
+---
+
+## 15. Pagination — three ways
+
+Every `list(...)` (and nested list) returns a lazy paginator. Pick the style that fits:
+
+```ts
+// (a) A single page — you manage the cursor:
+const first = await nomba.customers.list({ limit: 50 }).page();
+console.log(first.data.length, first.hasMore, first.nextCursor);
+const next = await nomba.customers.list({ limit: 50 }).page(first.nextCursor ?? undefined);
+
+// (b) Stream every item across all pages (cursors handled for you):
+for await (const c of nomba.customers.list({ limit: 100 })) {
+  await process(c);
+}
+
+// (c) Collect everything into an array (guarded — pass a cap for large sets):
+const all = await nomba.subscriptions.list({ status: 'active' }).toArray(5_000);
+```
+
+---
+
+## 16. Metrics
+
+Fetch billing metrics (MRR, churn, dunning funnel) for a window:
+
+```ts
+const metrics = await nomba.metrics.billing({
+  from: '2026-06-01T00:00:00Z',
+  to: '2026-07-01T00:00:00Z',
+});
+console.log(metrics); // MRR (kobo), active subscriptions, churn rate, dunning funnel
+```
+
+---
+
+## 17. Testing — point the SDK at a test key or a local server
+
+Use a `nbo_test_…` key for the sandbox, and override `baseUrl` to hit a locally running instance.
+
+```ts
+// Sandbox:
+const nomba = new Nombaone({ apiKey: process.env.NOMBAONE_TEST_KEY! }); // "nbo_test_…"
+
+// Local dev server (short timeout, no retries so failures surface immediately):
+const local = new Nombaone({
+  apiKey: 'nbo_test_local',
+  baseUrl: 'http://localhost:4000/v1',
+  timeoutMs: 5_000,
+  maxRetries: 0,
+});
+
+// Liveness probe:
+const health = await nomba.health.live(); // { status: "ok" }
+```
+
+---
+
+## 18. End-to-end: new customer → active subscription → renewal → refund → payout
+
+Ties the pieces together. Steps 1–3 run in your signup flow; step 4 happens in your webhook
+receiver on the next cycle; steps 5–6 run in an ops/back-office job.
+
+```ts
+import { Nombaone, NombaoneError } from '@nombaone/node';
+
 const nomba = new Nombaone({ apiKey: process.env.NOMBAONE_API_KEY! });
 
-// 1. Catalogue
+// 1. Catalogue (once, at setup time)
 const plan = await nomba.plans.create({ name: 'Pro' });
-const price = await nomba.plans.createPrice(plan.id, { unitAmount: 500_000, interval: 'month' }); // ₦5,000/mo
+const price = await nomba.plans.createPrice(plan.id, { unitAmountInKobo: 500_000, interval: 'month' }); // ₦5,000/mo
 
-// 2. Customer + a saved card (hosted checkout)
+// 2. Customer + hosted card setup — redirect, capture via webhook
 const customer = await nomba.customers.create({ email: 'ada@acme.io', name: 'Ada Payer' });
-const setup = await nomba.paymentMethods.setupCard({ customerRef: customer.id, amount: 5_000, callbackUrl: 'https://acme.io/return' });
-//   → redirect the customer to setup.checkoutLink; the card is captured via `payment_method.attached`.
+const setup = await nomba.paymentMethods.setupCard({
+  customerId: customer.id,
+  amountInKobo: 500_000,
+  callbackUrl: 'https://acme.io/return',
+});
+// → send the customer to setup.checkoutLink; on `payment_method.attached`, grab the payment method id.
 
-// 3. Subscribe (once the card is active)
-const sub = await nomba.subscriptions.create({ customerId: customer.id, priceId: price.id, paymentMethodId: /* captured pmt ref */ 'nbo…pmt' });
+// 3. Subscribe once the card is active (idempotent on the signup id)
+const sub = await nomba.subscriptions.create(
+  { customerId: customer.id, priceId: price.id, paymentMethodId: 'nbo…pmt' },
+  `signup:${customer.id}`,
+);
+console.log(sub.status); // → "active"
 
-// 4. Stream all past-due subscriptions
-for await (const s of nomba.subscriptions.list({ status: 'past_due' })) {
-  const dunning = await nomba.subscriptions.dunning(s.id);
-  if (dunning.status === 'card_update_required') {/* prompt the customer to re-auth */}
+// 4. Next cycle: your webhook receiver gets `invoice.paid` → keep access on.
+//    If a recharge needs OTP/3DS you get `invoice.action_required` → email the checkoutLink (§9, §12).
+
+// 5. A customer disputes a charge — refund their share of the settlement
+const settlement = (await nomba.settlements.list({ status: 'settled' }).page()).data[0];
+if (settlement) {
+  await nomba.settlements.refund(settlement.id, {}, `refund:${settlement.id}`); // full organization-share refund
 }
 
-// 5. Refund a settlement's tenant share, then withdraw
-const stl = (await nomba.settlements.list({ status: 'settled' }).page()).data[0];
-if (stl) await nomba.settlements.refund(stl.id);          // full tenant-share refund, idempotent
+// 6. Sweep available funds to the bank, respecting the escrow lock
 const escrow = await nomba.settlements.escrow();
-if (escrow.availableKobo > 0) {
-  await nomba.settlements.payout({ amountKobo: escrow.availableKobo, bankCode: '058', accountNumber: '0123456789' });
+if (escrow.availableInKobo >= escrow.minWithdrawableInKobo) {
+  try {
+    await nomba.settlements.payout(
+      { amountInKobo: escrow.availableInKobo, bankCode: '058', accountNumber: '0123456789' },
+      `payout:${new Date().toISOString().slice(0, 10)}`,
+    );
+  } catch (err) {
+    if (err instanceof NombaoneError && err.code === 'ESCROW_LOCKED') {
+      // funds still within the 3h window — retry on the next sweep
+    } else throw err;
+  }
 }
 ```
 
 ---
 
-## Notes on parity & guarantees
+## Cheat sheet — every namespace at a glance
 
-- **Idempotency is automatic** for every mutating call — the SDK generates a stable
-  `Idempotency-Key` and reuses it across retries, so a retried `POST` never double-charges.
-  Pass your own key to make it idempotent across process restarts.
-- **Retries** cover 429 (honouring `Retry-After`), 5xx, and network errors, with jittered
-  backoff, bounded by `maxRetries`.
-- **All amounts are integer kobo**; there is no floating-point money in the SDK.
-- **Pagination** is lazy — `for await (…)` fetches pages on demand; `.toArray()` collects
-  (guarded). Never construct cursors by hand.
-- **Webhooks are at-least-once** — always `constructEvent` to verify, then dedupe on `event.id`.
+```ts
+nomba.customers      .create · retrieve · update · list · applyDiscount · removeDiscount
+                     · grantCredit · creditBalance · voidCredit
+nomba.plans          .create · retrieve · update · list · archive · createPrice · listPrices
+nomba.prices         .retrieve · list · deactivate
+nomba.subscriptions  .create · retrieve · list · update · pause · resume · cancel · resubscribe
+                     · change · upcomingInvoice · events · applyDiscount · removeDiscount
+                     · schedule · getSchedule · cancelSchedule
+                     · dunning · dunningAttempts · updatePaymentMethod
+nomba.invoices       .retrieve · list · void
+nomba.coupons        .create · retrieve · list · update
+nomba.paymentMethods .setupCard · issueVirtualAccount · retrieve · list · setDefault · remove
+nomba.mandates       .create · retrieve
+nomba.settlements    .list · retrieve · escrow · refund · payout
+nomba.organizations  .retrieve · update
+nomba.billingSettings.retrieve · update
+nomba.webhooks       .create · list · retrieve · update · del · rotateSecret
+                     · deliveries.list · deliveries.retrieve · deliveries.replay
+                     · constructEvent (signature verification)
+nomba.events         .list · retrieve · catalog
+nomba.metrics        .billing
+nomba.health         .live
+```
+
+All amounts are integer kobo. Every id is the `nbo…` reference returned as `.id`. Idempotency is
+automatic; pass your own key for cross-restart safety on money-moving calls. Webhooks are
+at-least-once — always `constructEvent` to verify, then dedupe on `event.event.id`.

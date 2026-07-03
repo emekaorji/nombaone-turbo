@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { listPriceQuery } from '@nombaone/core-contracts/validations';
 
 import { validate } from '@shared/http';
-import { apiKeyAuth, idempotency, rateLimit, requireScope } from '@shared/middlewares';
+import { apiKeyAuth, idempotencyOptional, rateLimit, requireScope } from '@shared/middlewares';
 
 import {
   deactivatePriceController,
@@ -21,7 +21,7 @@ import {
 export const pricesRouter: Router = Router();
 
 pricesRouter.get(
-  '/prices/:reference',
+  '/prices/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('prices:read'),
@@ -36,10 +36,10 @@ pricesRouter.get(
   listPricesController
 );
 pricesRouter.post(
-  '/prices/:reference/deactivate',
+  '/prices/:id/deactivate',
   apiKeyAuth,
   rateLimit,
   requireScope('prices:write'),
-  idempotency,
+  idempotencyOptional,
   deactivatePriceController
 );

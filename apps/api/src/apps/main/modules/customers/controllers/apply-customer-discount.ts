@@ -9,7 +9,7 @@ import type { ApplyDiscountBody } from '@nombaone/core-contracts/validations';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** POST /v1/customers/:reference/discount — apply a coupon to the customer. */
+/** POST /v1/customers/:id/discount — apply a coupon to the customer. */
 export const applyCustomerDiscountController: RequestHandler = jsonHandler<DiscountResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -23,7 +23,7 @@ export const applyCustomerDiscountController: RequestHandler = jsonHandler<Disco
 
     const data = await applyDiscount(db, ctx, {
       couponRefOrCode: body.coupon,
-      customerRef: req.params.reference ?? '',
+      customerRef: req.params.id ?? '',
     });
     return { data, statusCode: 201 };
   }

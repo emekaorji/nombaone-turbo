@@ -7,6 +7,7 @@ import type { CustomerResponseData } from './types';
  * PK; timestamps are emitted as ISO-8601 UTC.
  */
 export const serializeCustomer = (row: CustomerRow): CustomerResponseData => ({
+  domain: 'customer',
   id: row.reference,
   email: row.email,
   name: row.name,

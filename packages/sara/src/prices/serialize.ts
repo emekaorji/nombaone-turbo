@@ -8,9 +8,10 @@ import type { PriceResponseData } from './types';
  * it). Append-only, so only `createdAt` is exposed.
  */
 export const serializePrice = (row: PriceRow, planRef: string): PriceResponseData => ({
+  domain: 'price',
   id: row.reference,
   planId: planRef,
-  unitAmount: row.unitAmount,
+  unitAmountInKobo: row.unitAmount,
   currency: 'NGN',
   interval: row.interval,
   intervalCount: row.intervalCount,

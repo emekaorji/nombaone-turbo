@@ -9,7 +9,7 @@ import {
 } from '@nombaone/core-contracts/validations';
 
 import { validate } from '@shared/http';
-import { apiKeyAuth, idempotency, rateLimit, requireScope } from '@shared/middlewares';
+import { apiKeyAuth, idempotencyOptional, rateLimit, requireScope } from '@shared/middlewares';
 
 import {
   archivePlanController,
@@ -24,7 +24,7 @@ import {
 /**
  * The catalog: plans + the immutable prices nested under them. Same fixed
  * per-route stack as every scoped resource (auth → rate-limit → scope →
- * idempotency → validate → handler); reads skip idempotency. A plan is retired by
+ * idempotencyOptional → validate → handler); reads skip idempotencyOptional. A plan is retired by
  * the explicit `…/archive` action — there is intentionally **no DELETE route**
  * (O1: a plan with subscribers must not be orphaned).
  */
@@ -36,11 +36,11 @@ plansRouter.post(
   apiKeyAuth,
   rateLimit,
   requireScope('plans:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: createPlanBody }),
   createPlanController
 );
-plansRouter.get('/plans/:reference', apiKeyAuth, rateLimit, requireScope('plans:read'), getPlanController);
+plansRouter.get('/plans/:id', apiKeyAuth, rateLimit, requireScope('plans:read'), getPlanController);
 plansRouter.get(
   '/plans',
   apiKeyAuth,
@@ -50,37 +50,37 @@ plansRouter.get(
   listPlansController
 );
 plansRouter.patch(
-  '/plans/:reference',
+  '/plans/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('plans:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: updatePlanBody }),
   updatePlanController
 );
 
 // ── plan lifecycle (archive, never delete) ───────────────────────────────────
 plansRouter.post(
-  '/plans/:reference/archive',
+  '/plans/:id/archive',
   apiKeyAuth,
   rateLimit,
   requireScope('plans:write'),
-  idempotency,
+  idempotencyOptional,
   archivePlanController
 );
 
 // ── prices under a plan (create = new version; list) ─────────────────────────
 plansRouter.post(
-  '/plans/:reference/prices',
+  '/plans/:id/prices',
   apiKeyAuth,
   rateLimit,
   requireScope('prices:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: createPriceBody }),
   createPlanPriceController
 );
 plansRouter.get(
-  '/plans/:reference/prices',
+  '/plans/:id/prices',
   apiKeyAuth,
   rateLimit,
   requireScope('prices:read'),

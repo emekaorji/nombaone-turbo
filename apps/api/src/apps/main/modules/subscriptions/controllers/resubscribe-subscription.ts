@@ -10,7 +10,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/subscriptions/:reference/resubscribe — mint a NEW subscription from a
+ * POST /v1/subscriptions/:id/resubscribe — mint a NEW subscription from a
  * canceled one (the source row is never mutated, A2).
  */
 export const resubscribeSubscriptionController: RequestHandler = jsonHandler<SubscriptionResponseData>(
@@ -24,7 +24,7 @@ export const resubscribeSubscriptionController: RequestHandler = jsonHandler<Sub
     };
     const body = (req.body ?? {}) as ResubscribeBody;
 
-    const data = await resubscribe(db, ctx, (req.params.reference ?? ''), {
+    const data = await resubscribe(db, ctx, (req.params.id ?? ''), {
       priceRef: body.priceId,
       paymentMethodRef: body.paymentMethodId,
     });

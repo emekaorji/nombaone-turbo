@@ -7,7 +7,7 @@ import { jsonHandler } from '@shared/http';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** POST /v1/payment-methods/:reference/default — make it the customer's default. */
+/** POST /v1/payment-methods/:id/default — make it the customer's default. */
 export const setDefaultPaymentMethodController: RequestHandler = jsonHandler<
   Awaited<ReturnType<typeof setDefaultPaymentMethod>>
 >(async (req) => {
@@ -19,7 +19,7 @@ export const setDefaultPaymentMethodController: RequestHandler = jsonHandler<
     environment: req.apiKey.environment,
   };
 
-  const method = await setDefaultPaymentMethod(db, ctx, req.params.reference ?? '');
+  const method = await setDefaultPaymentMethod(db, ctx, req.params.id ?? '');
 
   return { data: method };
 });

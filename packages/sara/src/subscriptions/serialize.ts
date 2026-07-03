@@ -20,6 +20,7 @@ export const serializeSubscription = (
   items: SubscriptionItemData[],
   latestInvoiceId: string | null
 ): SubscriptionResponseData => ({
+  domain: 'subscription',
   id: row.reference,
   customerId: refs.customerRef,
   priceId: refs.priceRef,

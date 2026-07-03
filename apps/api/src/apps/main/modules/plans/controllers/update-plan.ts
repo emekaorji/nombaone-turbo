@@ -8,7 +8,7 @@ import type { UpdatePlanBody } from '@nombaone/core-contracts/validations';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** PATCH /v1/plans/:reference — update a plan's descriptive fields. */
+/** PATCH /v1/plans/:id — update a plan's descriptive fields. */
 export const updatePlanController: RequestHandler = jsonHandler<
   Awaited<ReturnType<typeof updatePlan>>
 >(async (req) => {
@@ -21,7 +21,7 @@ export const updatePlanController: RequestHandler = jsonHandler<
   };
   const body = req.body as UpdatePlanBody;
 
-  const plan = await updatePlan(db, ctx, req.params.reference ?? '', {
+  const plan = await updatePlan(db, ctx, req.params.id ?? '', {
     name: body.name,
     description: body.description,
     metadata: body.metadata,

@@ -4,10 +4,11 @@ import type { CouponResponseData } from './types';
 const iso = (d: Date | null): string | null => (d ? new Date(d).toISOString() : null);
 
 export const serializeCoupon = (row: CouponRow): CouponResponseData => ({
+  domain: 'coupon',
   id: row.reference,
   code: row.code,
   duration: row.duration,
-  amountOff: row.amountOff,
+  amountOffInKobo: row.amountOff,
   percentOff: row.percentOff,
   durationInCycles: row.durationInCycles,
   redeemBy: iso(row.redeemBy),

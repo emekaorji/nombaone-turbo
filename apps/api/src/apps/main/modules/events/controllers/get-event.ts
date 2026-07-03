@@ -11,7 +11,7 @@ import type { DomainEventResponseData } from '@nombaone/core-contracts/types';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/events/:reference. */
+/** GET /v1/events/:id. */
 export const getEventController: RequestHandler = jsonHandler<DomainEventResponseData>(async (req) => {
   if (!req.apiKey) throw AppError.Unauthorized('API key required');
   const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
@@ -20,12 +20,12 @@ export const getEventController: RequestHandler = jsonHandler<DomainEventRespons
     .from(domainEventsTable)
     .where(
       and(
-        eq(domainEventsTable.reference, req.params.reference ?? ''),
+        eq(domainEventsTable.reference, req.params.id ?? ''),
         eq(domainEventsTable.organizationId, ctx.organizationId),
         eq(domainEventsTable.environment, ctx.environment)
       )
     )
     .limit(1);
-  if (!row) throw AppError.NotFound('Event not found', { reference: req.params.reference }, NOMBAONE_ERROR_CODES.SYSTEM_INTERNAL_ERROR);
+  if (!row) throw AppError.NotFound('Event not found', { reference: req.params.id }, NOMBAONE_ERROR_CODES.SYSTEM_INTERNAL_ERROR);
   return { data: serializeDomainEvent(row) };
 });

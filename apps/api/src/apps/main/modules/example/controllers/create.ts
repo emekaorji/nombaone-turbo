@@ -29,7 +29,7 @@ export const createExampleController: RequestHandler = jsonHandler<
     };
     const body = req.body as CreateExampleBody;
 
-    const example = await createExample(db, ctx, { kind: body.kind, amount: body.amount });
+    const example = await createExample(db, ctx, { kind: body.kind, amount: body.amountInKobo });
 
     return { data: example, statusCode: 201 };
   }

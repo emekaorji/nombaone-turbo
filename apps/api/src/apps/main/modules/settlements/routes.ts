@@ -19,11 +19,11 @@ import {
 
 export const settlementsRouter: Router = Router();
 
-// Literal paths MUST be declared before `/settlements/:reference` so 'escrow' /
+// Literal paths MUST be declared before `/settlements/:id` so 'escrow' /
 // 'payout' are not captured as a settlement reference.
 settlementsRouter.get('/settlements/escrow', apiKeyAuth, rateLimit, requireScope('settlements:read'), getEscrowController);
 settlementsRouter.post('/settlements/payout', apiKeyAuth, rateLimit, requireScope('settlements:write'), idempotency, validate({ body: createPayoutBody }), createPayoutController);
 
 settlementsRouter.get('/settlements', apiKeyAuth, rateLimit, requireScope('settlements:read'), validate({ query: listSettlementsQuery }), listSettlementsController);
-settlementsRouter.get('/settlements/:reference', apiKeyAuth, rateLimit, requireScope('settlements:read'), getSettlementController);
-settlementsRouter.post('/settlements/:reference/refund', apiKeyAuth, rateLimit, requireScope('settlements:write'), idempotency, validate({ body: refundSettlementBody }), refundSettlementController);
+settlementsRouter.get('/settlements/:id', apiKeyAuth, rateLimit, requireScope('settlements:read'), getSettlementController);
+settlementsRouter.post('/settlements/:id/refund', apiKeyAuth, rateLimit, requireScope('settlements:write'), idempotency, validate({ body: refundSettlementBody }), refundSettlementController);

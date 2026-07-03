@@ -88,7 +88,7 @@ export default async function CheckoutPage({
             </div>
             <div className="flex items-baseline gap-2">
               <MoneyAmount
-                kobo={example.amount}
+                kobo={example.amountInKobo}
                 className="text-3xl font-semibold tracking-tight text-foreground"
               />
               <span className="text-sm text-muted-foreground">{example.currency}</span>
@@ -121,11 +121,11 @@ function AmountBreakdown({ example }: { example: ExampleResponseData }) {
   return (
     <dl className="flex flex-col gap-2 text-sm">
       <Row label="Amount">
-        <MoneyAmount kobo={example.amount} />
+        <MoneyAmount kobo={example.amountInKobo} />
       </Row>
       <Separator />
       <Row label="Total" emphasis>
-        <MoneyAmount kobo={example.amount} className="font-semibold text-foreground" />
+        <MoneyAmount kobo={example.amountInKobo} className="font-semibold text-foreground" />
       </Row>
     </dl>
   );
@@ -164,7 +164,7 @@ function SettledBody({
       <div className="flex flex-col gap-1">
         <p className="text-sm font-semibold text-success-700">Payment successful</p>
         <p className="text-sm text-success-700/80">
-          Your payment of <MoneyAmount kobo={example.amount} className="font-medium" /> to{' '}
+          Your payment of <MoneyAmount kobo={example.amountInKobo} className="font-medium" /> to{' '}
           {merchantName} is complete.
         </p>
         <p className="text-xs text-success-700/70">Created {absoluteDate(example.createdAt)}</p>

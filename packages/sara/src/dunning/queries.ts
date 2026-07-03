@@ -168,6 +168,7 @@ export async function buildDunningState(
   const firstFailedAt = attempts[0]?.createdAt ?? null;
 
   return {
+    domain: 'dunning_state',
     subscriptionRef: subscription.reference,
     invoiceRef: invoice?.reference ?? null,
     status: latest?.status ?? 'none',

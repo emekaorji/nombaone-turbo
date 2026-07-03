@@ -7,7 +7,7 @@ import {
 } from '@nombaone/core-contracts/validations';
 
 import { validate } from '@shared/http';
-import { apiKeyAuth, idempotency, rateLimit, requireScope } from '@shared/middlewares';
+import { apiKeyAuth, idempotencyOptional, rateLimit, requireScope } from '@shared/middlewares';
 
 import {
   createCouponController,
@@ -18,8 +18,8 @@ import {
 
 /**
  * Coupons — reusable discount definitions. Same fixed per-route chain
- * (auth → rate-limit → scope → idempotency → validate → handler); reads skip
- * idempotency.
+ * (auth → rate-limit → scope → idempotencyOptional → validate → handler); reads skip
+ * idempotencyOptional.
  */
 export const couponsRouter: Router = Router();
 
@@ -28,12 +28,12 @@ couponsRouter.post(
   apiKeyAuth,
   rateLimit,
   requireScope('coupons:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: createCouponBody }),
   createCouponController
 );
 couponsRouter.get(
-  '/coupons/:reference',
+  '/coupons/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('coupons:read'),
@@ -48,11 +48,11 @@ couponsRouter.get(
   listCouponsController
 );
 couponsRouter.patch(
-  '/coupons/:reference',
+  '/coupons/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('coupons:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: updateCouponBody }),
   updateCouponController
 );

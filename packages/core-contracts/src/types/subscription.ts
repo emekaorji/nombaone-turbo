@@ -22,6 +22,7 @@ export interface SubscriptionItemData {
  * ledger). `id`/refs are public references, never UUIDs. Money fields are kobo.
  */
 export interface SubscriptionResponseData {
+  domain: 'subscription'; // response object-type discriminator
   id: string; // public reference, e.g. `nbo…sub`
   customerId: string;
   priceId: string;

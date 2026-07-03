@@ -23,7 +23,7 @@ export interface CreateMandateInput {
   customerAddress: string;
   narration: string;
   maxAmount: number; // kobo
-  frequency: string; // Nomba NIBSS vocabulary (UPPERCASE), e.g. MONTHLY
+  frequency: string; // Billing cadence, snake_case (e.g. monthly); mapped to NIBSS UPPERCASE at the wire
   /** LocalDateTime (no zone). Defaulted to [tomorrow, +1yr] when omitted. */
   startDate?: string;
   endDate?: string;

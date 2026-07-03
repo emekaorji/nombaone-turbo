@@ -14,9 +14,9 @@ describe('catalog domain', () => {
   });
 
   it('createPriceBody fills the L5 defaults from a minimal body', () => {
-    const parsed = createPriceBody.parse({ unitAmount: 500000, interval: 'month' });
+    const parsed = createPriceBody.parse({ unitAmountInKobo: 500000, interval: 'month' });
     expect(parsed).toMatchObject({
-      unitAmount: 500000,
+      unitAmountInKobo: 500000,
       interval: 'month',
       intervalCount: 1,
       usageType: 'licensed',

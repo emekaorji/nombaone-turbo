@@ -8,7 +8,7 @@ import type { SubscriptionResponseData } from '@nombaone/core-contracts/types';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** POST /v1/subscriptions/:reference/resume — paused → active, next bill recomputed (A10). */
+/** POST /v1/subscriptions/:id/resume — paused → active, next bill recomputed (A10). */
 export const resumeSubscriptionController: RequestHandler = jsonHandler<SubscriptionResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -18,7 +18,7 @@ export const resumeSubscriptionController: RequestHandler = jsonHandler<Subscrip
       organizationId: req.apiKey.organizationId,
       environment: req.apiKey.environment,
     };
-    const data = await resumeSubscription(db, ctx, (req.params.reference ?? ''));
+    const data = await resumeSubscription(db, ctx, (req.params.id ?? ''));
     return { data };
   }
 );

@@ -275,12 +275,12 @@ describe('dunning & recovery e2e (★ D/E)', () => {
 
   // ── D2 config: schedule is per-tenant configurable ─────────────────────────
   it('D2 — billing-settings round-trips and a reduced max-attempts exhausts sooner', async () => {
-    const put = await asA(request(harness.app).put('/v1/billing-settings'))
+    const put = await asA(request(harness.app).put('/v1/organization/billing'))
       .set('Idempotency-Key', `bs-${uniq()}`)
       .send({ dunningMaxAttempts: 1, dunningIntervalsHours: [1], dunningMaxWindowHours: 1, paydayBiasEnabled: false });
     expect(put.status).toBe(200);
     expect(put.body.data.dunningMaxAttempts).toBe(1);
-    const get = await asA(request(harness.app).get('/v1/billing-settings'));
+    const get = await asA(request(harness.app).get('/v1/organization/billing'));
     expect(get.body.data.dunningMaxAttempts).toBe(1);
 
     // With maxAttempts=1, the first executed retry that fails exhausts → churn.
@@ -298,12 +298,12 @@ describe('dunning & recovery e2e (★ D/E)', () => {
   it('N4 — dunning + billing-settings routes reject missing key / wrong scope', async () => {
     const { subRef } = await seedActiveCardSub();
     expect((await request(harness.app).get(`/v1/subscriptions/${subRef}/dunning`)).status).toBe(401);
-    expect((await request(harness.app).get('/v1/billing-settings')).status).toBe(401);
+    expect((await request(harness.app).get('/v1/organization/billing')).status).toBe(401);
 
     const orgC = await harness.seedOrg('Dun RO');
     const ro = (await harness.mintApiKey(orgC.organizationId, 'test', ['subscriptions:read'])).secret;
     const forbidden = await request(harness.app)
-      .put('/v1/billing-settings')
+      .put('/v1/organization/billing')
       .set('Authorization', `Bearer ${ro}`)
       .set('Idempotency-Key', `bs-${uniq()}`)
       .send({ dunningMaxAttempts: 3 });
@@ -313,7 +313,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
   // ── item 9: async card-charge → dunning bridge ──────────────────────────────
   async function pendingRetry(): Promise<{ subRef: string; subId: string; attemptRef: string; invRef: string; amountDue: number }> {
     // Reset the tenant's dunning policy to defaults (an earlier test lowered maxAttempts).
-    await asA(request(harness.app).put('/v1/billing-settings')).set('Idempotency-Key', `rst-${uniq()}`)
+    await asA(request(harness.app).put('/v1/organization/billing')).set('Idempotency-Key', `rst-${uniq()}`)
       .send({ dunningMaxAttempts: 4, dunningMaxWindowHours: 336, dunningIntervalsHours: [24, 72, 120, 168] });
     const { subRef, subId } = await seedActiveCardSub();
     await failRenewal(subRef, 'insufficient_funds'); // → past_due

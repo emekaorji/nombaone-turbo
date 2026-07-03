@@ -8,7 +8,7 @@ import type { DunningStateResponseData } from '@nombaone/core-contracts/types';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/subscriptions/:reference/dunning — inspect the dunning state + attempts. */
+/** GET /v1/subscriptions/:id/dunning — inspect the dunning state + attempts. */
 export const getDunningStateController: RequestHandler = jsonHandler<DunningStateResponseData>(
   async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
@@ -16,7 +16,7 @@ export const getDunningStateController: RequestHandler = jsonHandler<DunningStat
       organizationId: req.apiKey.organizationId,
       environment: req.apiKey.environment,
     };
-    const data = await buildDunningState(db, ctx, req.params.reference ?? '');
+    const data = await buildDunningState(db, ctx, req.params.id ?? '');
     return { data };
   }
 );

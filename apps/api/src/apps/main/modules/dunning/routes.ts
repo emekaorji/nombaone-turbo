@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { updateSubscriptionCardBody } from '@nombaone/core-contracts/validations';
 
 import { validate } from '@shared/http';
-import { apiKeyAuth, idempotency, rateLimit, requireScope } from '@shared/middlewares';
+import { apiKeyAuth, idempotencyOptional, rateLimit, requireScope } from '@shared/middlewares';
 
 import {
   getDunningStateController,
@@ -13,31 +13,31 @@ import {
 
 /**
  * Dunning inspection + the mid-dunning card-update flow. Mounted on the
- * subscriptions resource. Reads skip idempotency; the card-update write carries the
- * full chain (auth → rate-limit → scope → idempotency → validate → handler).
+ * subscriptions resource. Reads skip idempotencyOptional; the card-update write carries the
+ * full chain (auth → rate-limit → scope → idempotencyOptional → validate → handler).
  */
 export const dunningRouter: Router = Router();
 
 dunningRouter.get(
-  '/subscriptions/:reference/dunning',
+  '/subscriptions/:id/dunning',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:read'),
   getDunningStateController
 );
 dunningRouter.get(
-  '/subscriptions/:reference/dunning/attempts',
+  '/subscriptions/:id/dunning/attempts',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:read'),
   listDunningAttemptsController
 );
 dunningRouter.post(
-  '/subscriptions/:reference/payment-method',
+  '/subscriptions/:id/payment-method',
   apiKeyAuth,
   rateLimit,
   requireScope('subscriptions:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: updateSubscriptionCardBody }),
   updateSubscriptionCardController
 );

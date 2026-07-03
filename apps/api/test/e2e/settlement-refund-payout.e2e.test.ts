@@ -111,7 +111,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     const key = `rf-${uniq()}`;
     const r = await asA(request(harness.app).post(`/v1/settlements/${stl.reference}/refund`)).set('Idempotency-Key', key).send({});
     expect([200, 201]).toContain(r.status);
-    expect(r.body.data.amountKobo).toBe(net);
+    expect(r.body.data.amountInKobo).toBe(net);
     expect(r.body.data.status).toBe('ledger_only');
 
     // tenant leg reversed, platform fee NOT touched
@@ -142,7 +142,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
   it('refund over the tenant net is rejected (fee is never refundable)', async () => {
     const stl = await seedSettlement(300000);
     const r = await asA(request(harness.app).post(`/v1/settlements/${stl.reference}/refund`))
-      .set('Idempotency-Key', `rf-${uniq()}`).send({ amountKobo: stl.netToTenantKobo + 1 });
+      .set('Idempotency-Key', `rf-${uniq()}`).send({ amountInKobo: stl.netToTenantKobo + 1 });
     expect(r.status).toBe(422);
     expect(r.body.error.code).toBe('REFUND_AMOUNT_EXCEEDS_NET');
   });
@@ -154,12 +154,12 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     // A fresh settlement is inside the 3h lock → fully locked, nothing available.
     const esc = await asA(request(harness.app).get('/v1/settlements/escrow'));
     expect(esc.status).toBe(200);
-    expect(esc.body.data.lockedKobo).toBeGreaterThanOrEqual(net);
-    expect(esc.body.data.balanceKobo).toBeGreaterThanOrEqual(net);
-    expect(esc.body.data.availableKobo).toBe(0);
+    expect(esc.body.data.lockedInKobo).toBeGreaterThanOrEqual(net);
+    expect(esc.body.data.balanceInKobo).toBeGreaterThanOrEqual(net);
+    expect(esc.body.data.availableInKobo).toBe(0);
 
     const locked = await asA(request(harness.app).post('/v1/settlements/payout'))
-      .set('Idempotency-Key', `po-${uniq()}`).send({ amountKobo: net, bankCode: '044', accountNumber: '0123456789' });
+      .set('Idempotency-Key', `po-${uniq()}`).send({ amountInKobo: net, bankCode: '044', accountNumber: '0123456789' });
     expect(locked.status).toBe(422);
     expect(locked.body.error.code).toBe('ESCROW_LOCKED');
     expect(bankTransferCalls).toBe(0);
@@ -174,7 +174,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     const balanceBefore = await accountBalance('tenant_settlement:acct_A');
     const key = `po-${uniq()}`;
     const r = await asA(request(harness.app).post('/v1/settlements/payout'))
-      .set('Idempotency-Key', key).send({ amountKobo: net, bankCode: '044', accountNumber: '0123456789' });
+      .set('Idempotency-Key', key).send({ amountInKobo: net, bankCode: '044', accountNumber: '0123456789' });
     expect([200, 201]).toContain(r.status);
     expect(r.body.data.status).toBe('ledger_posted'); // provider transfer flag off
     expect(r.body.data.resolvedAccountName).toBe('Ada Payer'); // bankLookup ran
@@ -183,13 +183,13 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
 
     // idempotent replay
     const replay = await asA(request(harness.app).post('/v1/settlements/payout'))
-      .set('Idempotency-Key', key).send({ amountKobo: net, bankCode: '044', accountNumber: '0123456789' });
+      .set('Idempotency-Key', key).send({ amountInKobo: net, bankCode: '044', accountNumber: '0123456789' });
     expect(replay.status).toBe(200);
     expect(await accountBalance('tenant_settlement:acct_A')).toBe(balanceBefore - net); // no double debit
 
     // exceeding the now-drained available balance is rejected
     const over = await asA(request(harness.app).post('/v1/settlements/payout'))
-      .set('Idempotency-Key', `po-${uniq()}`).send({ amountKobo: net, bankCode: '044', accountNumber: '0123456789' });
+      .set('Idempotency-Key', `po-${uniq()}`).send({ amountInKobo: net, bankCode: '044', accountNumber: '0123456789' });
     expect(over.status).toBe(422);
     expect(['PAYOUT_EXCEEDS_AVAILABLE', 'ESCROW_LOCKED']).toContain(over.body.error.code);
   });

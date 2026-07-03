@@ -11,7 +11,7 @@ export type ListPaymentMethodQuery = z.infer<typeof listPaymentMethodQuery>;
 /** Initiate hosted-checkout card tokenization (returns a `checkoutLink`). */
 export const setupCardBody = z.object({
   customerRef: z.string(),
-  amount: z.coerce.number().int().positive(), // kobo — the validation charge
+  amountInKobo: z.coerce.number().int().positive(), // kobo — the validation charge
   callbackUrl: z.string().url(),
 });
 export type SetupCardBody = z.infer<typeof setupCardBody>;
@@ -27,21 +27,21 @@ export const createMandateBody = z.object({
   customerPhoneNumber: z.string().min(1),
   customerAddress: z.string().min(1).max(500),
   narration: z.string().min(1).max(255),
-  maxAmount: z.coerce.number().int().positive(), // kobo — hard per-debit ceiling
-  // Nomba NIBSS frequency vocabulary (UPPERCASE — the lowercase set was rejected).
+  maxAmountInKobo: z.coerce.number().int().positive(), // kobo — hard per-debit ceiling
+  // Billing cadence (snake_case). Mapped to NIBSS's UPPERCASE at the Nomba boundary.
   frequency: z
     .enum([
-      'VARIABLE',
-      'WEEKLY',
-      'EVERY_TWO_WEEKS',
-      'MONTHLY',
-      'EVERY_TWO_MONTHS',
-      'EVERY_THREE_MONTHS',
-      'EVERY_FOUR_MONTHS',
-      'EVERY_SIX_MONTHS',
-      'EVERY_TWELVE_MONTHS',
+      'variable',
+      'weekly',
+      'every_two_weeks',
+      'monthly',
+      'every_two_months',
+      'every_three_months',
+      'every_four_months',
+      'every_six_months',
+      'every_twelve_months',
     ])
-    .default('MONTHLY'),
+    .default('monthly'),
   // LocalDateTime (no zone), present/future; sara normalizes + defaults [tomorrow,+1yr].
   startDate: z.string().optional(),
   endDate: z.string().optional(),

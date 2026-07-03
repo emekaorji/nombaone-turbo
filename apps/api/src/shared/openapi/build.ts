@@ -185,10 +185,12 @@ export function buildOpenApiDocument(v1Router: Router, baseUrl = 'http://localho
             statusCode: { type: 'integer' },
             error: {
               type: 'object',
-              required: ['code', 'message'],
+              required: ['code', 'message', 'hint', 'docUrl'],
               properties: {
                 code: { type: 'string', enum: PUBLIC_ERROR_CODES_LIST },
                 message: { type: 'string' },
+                hint: { type: 'string', description: 'Actionable, plain-English guidance on exactly what to do next.' },
+                docUrl: { type: 'string', description: "Deep link to this code's entry in the public error reference." },
                 fields: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } } },
               },
             },

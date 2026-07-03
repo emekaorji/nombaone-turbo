@@ -9,7 +9,7 @@ import type { ListPriceQuery } from '@nombaone/core-contracts/validations';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/plans/:reference/prices — keyset-paginated prices under one plan. */
+/** GET /v1/plans/:id/prices — keyset-paginated prices under one plan. */
 export const listPlanPricesController: RequestHandler = paginatedHandler<PriceResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -21,7 +21,7 @@ export const listPlanPricesController: RequestHandler = paginatedHandler<PriceRe
     };
     const query = req.query as unknown as ListPriceQuery;
 
-    const page = await listPricesForPlan(db, ctx, req.params.reference ?? '', {
+    const page = await listPricesForPlan(db, ctx, req.params.id ?? '', {
       active: query.active,
       limit: query.limit,
       cursor: query.cursor,

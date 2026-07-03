@@ -3,7 +3,7 @@ import { z } from 'zod';
 /** PRICE input schemas. A create needs only `{ unitAmount, interval }`; every
  * other field has a safe default (L5). Money is positive integer kobo. */
 export const createPriceBody = z.object({
-  unitAmount: z.coerce.number().int().positive(), // kobo
+  unitAmountInKobo: z.coerce.number().int().positive(), // kobo
   interval: z.enum(['day', 'week', 'month', 'year']),
   intervalCount: z.coerce.number().int().positive().default(1),
   usageType: z.enum(['licensed', 'metered']).default('licensed'),

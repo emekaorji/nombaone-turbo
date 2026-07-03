@@ -9,7 +9,7 @@ import type { PauseSubscriptionBody } from '@nombaone/core-contracts/validations
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** POST /v1/subscriptions/:reference/pause — active → paused (A10). */
+/** POST /v1/subscriptions/:id/pause — active → paused (A10). */
 export const pauseSubscriptionController: RequestHandler = jsonHandler<SubscriptionResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -21,7 +21,7 @@ export const pauseSubscriptionController: RequestHandler = jsonHandler<Subscript
     };
     const body = (req.body ?? {}) as PauseSubscriptionBody;
 
-    const data = await pauseSubscription(db, ctx, (req.params.reference ?? ''), { maxDays: body.maxDays });
+    const data = await pauseSubscription(db, ctx, (req.params.id ?? ''), { maxDays: body.maxDays });
     return { data };
   }
 );

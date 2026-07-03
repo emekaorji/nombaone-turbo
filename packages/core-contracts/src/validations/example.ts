@@ -4,7 +4,7 @@ import { z } from 'zod';
  * already-typed, already-coerced input. */
 export const createExampleBody = z.object({
   kind: z.enum(['standard', 'priority']).default('standard'),
-  amount: z.coerce.number().int().positive(), // kobo
+  amountInKobo: z.coerce.number().int().positive(), // kobo
 });
 export type CreateExampleBody = z.infer<typeof createExampleBody>;
 

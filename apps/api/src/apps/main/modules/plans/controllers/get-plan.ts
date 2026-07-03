@@ -7,7 +7,7 @@ import { jsonHandler } from '@shared/http';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/plans/:reference — resolve one plan within the caller's scope. */
+/** GET /v1/plans/:id — resolve one plan within the caller's scope. */
 export const getPlanController: RequestHandler = jsonHandler<
   Awaited<ReturnType<typeof getPlanByReference>>
 >(async (req) => {
@@ -19,7 +19,7 @@ export const getPlanController: RequestHandler = jsonHandler<
     environment: req.apiKey.environment,
   };
 
-  const plan = await getPlanByReference(db, ctx, req.params.reference ?? '');
+  const plan = await getPlanByReference(db, ctx, req.params.id ?? '');
 
   return { data: plan };
 });

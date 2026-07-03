@@ -8,7 +8,7 @@ import type { SubscriptionScheduleResponseData } from '@nombaone/core-contracts/
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** DELETE /v1/subscriptions/:reference/schedule — release the active schedule. */
+/** DELETE /v1/subscriptions/:id/schedule — release the active schedule. */
 export const cancelScheduleController: RequestHandler = jsonHandler<SubscriptionScheduleResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -18,7 +18,7 @@ export const cancelScheduleController: RequestHandler = jsonHandler<Subscription
       organizationId: req.apiKey.organizationId,
       environment: req.apiKey.environment,
     };
-    const data = await cancelSchedule(db, ctx, req.params.reference ?? '');
+    const data = await cancelSchedule(db, ctx, req.params.id ?? '');
     return { data };
   }
 );

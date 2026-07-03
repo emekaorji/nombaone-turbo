@@ -197,7 +197,7 @@ describe('subscriptions + billing e2e', () => {
 
     const inv = await asA(request(harness.app).get(`/v1/invoices/${invRef}`));
     expect(inv.body.data.status).toBe('paid');
-    expect(inv.body.data.amountPaid).toBe(500000);
+    expect(inv.body.data.amountPaidInKobo).toBe(500000);
     expect(await countKind(invRef, 'charge')).toBe(1);
 
     // A redelivered settle webhook on the already-paid invoice posts NOTHING (J6).
@@ -538,7 +538,7 @@ describe('subscriptions + billing e2e', () => {
 
     // upcoming-invoice now reflects the (applied) new price.
     const upcoming = await asA(request(harness.app).get(`/v1/subscriptions/${sub.id}/upcoming-invoice`));
-    expect(upcoming.body.data.total).toBe(300000);
+    expect(upcoming.body.data.totalInKobo).toBe(300000);
   });
 
   // ── lifecycle sweep (A6 expiry + trial notice idempotency) ─────────────────
@@ -599,7 +599,7 @@ describe('subscriptions + billing e2e', () => {
     const fetched = await asA(request(harness.app).get(`/v1/coupons/${created.body.data.id}`));
     expect(fetched.body.data.code).toBe(code);
 
-    const limited = await newCoupon({ code: `ONE${uniq()}`, amountOff: 50000, duration: 'once', maxRedemptions: 1 });
+    const limited = await newCoupon({ code: `ONE${uniq()}`, amountOffInKobo: 50000, duration: 'once', maxRedemptions: 1 });
     const limitedRef = limited.body.data.id as string;
     const s1 = await freshActiveSub();
     const s2 = await freshActiveSub();
@@ -666,7 +666,7 @@ describe('subscriptions + billing e2e', () => {
     expect(invoices).toHaveLength(0);
 
     const balance = await asA(request(harness.app).get(`/v1/customers/${customerRef}/credit`));
-    expect(balance.body.data.balance).toBeGreaterThan(0); // banked (C2)
+    expect(balance.body.data.balanceInKobo).toBeGreaterThan(0); // banked (C2)
     expect(balance.body.data.grants[0].source).toBe('downgrade_proration');
   });
 
@@ -730,7 +730,7 @@ describe('subscriptions + billing e2e', () => {
     const invoices = await harness.db.select({ id: invoicesTable.id }).from(invoicesTable).where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.billingReason, 'subscription_update')));
     expect(invoices).toHaveLength(0);
     const balance = await asA(request(harness.app).get(`/v1/customers/${customer.id}/credit`));
-    expect(balance.body.data.balance).toBeGreaterThan(0);
+    expect(balance.body.data.balanceInKobo).toBeGreaterThan(0);
     // now billing monthly: next bill is ~a month out, not a year.
     const after = await loadSubscriptionRow(harness.db, ctxA, subRef);
     expect(after.nextBillingAt!.getTime()).toBeLessThan(Date.now() + 60 * 24 * 3600 * 1000);
@@ -739,15 +739,15 @@ describe('subscriptions + billing e2e', () => {
   it('credit grant → ledger-backed balance + oldest-first grant audit (C8)', async () => {
     const customer = await createCustomer(harness.db, ctxA, { email: `cr${uniq()}@acme.test`, name: 'C' });
     const ref = customer.id;
-    const g1 = await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amount: 100000, source: 'manual' });
+    const g1 = await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amountInKobo: 100000, source: 'manual' });
     expect(g1.status).toBe(201);
-    expect(g1.body.data).toMatchObject({ amount: 100000, remaining: 100000, source: 'manual' });
-    await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amount: 50000, source: 'goodwill' });
+    expect(g1.body.data).toMatchObject({ amountInKobo: 100000, remainingInKobo: 100000, source: 'manual' });
+    await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amountInKobo: 50000, source: 'goodwill' });
 
     const balance = await asA(request(harness.app).get(`/v1/customers/${ref}/credit`));
-    expect(balance.body.data.balance).toBe(150000); // ledger account, O(1)
+    expect(balance.body.data.balanceInKobo).toBe(150000); // ledger account, O(1)
     expect(balance.body.data.grants).toHaveLength(2);
-    expect(balance.body.data.grants[0].amount).toBe(100000); // oldest-first
+    expect(balance.body.data.grants[0].amountInKobo).toBe(100000); // oldest-first
   });
 
   // ── credit-void (item 8): reverses only the UNCONSUMED remainder ────────────
@@ -756,27 +756,27 @@ describe('subscriptions + billing e2e', () => {
     const ref = customer.id;
     const [c] = await harness.db.select({ id: customersTable.id }).from(customersTable).where(and(eq(customersTable.organizationId, ctxA.organizationId), eq(customersTable.reference, ref))).limit(1);
 
-    const g = await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amount: 100000, source: 'manual' });
+    const g = await asA(request(harness.app).post(`/v1/customers/${ref}/credit`)).set('Idempotency-Key', `cr-${uniq()}`).send({ amountInKobo: 100000, source: 'manual' });
     const grantRef = g.body.data.id as string;
 
     // Consume ₦300 of the ₦1,000 grant (leaves ₦700 unconsumed).
     await applyCreditsOldestFirst(harness.db, ctxA, { customerId: c!.id, customerRef: ref, amountDue: 30000 });
     let bal = await asA(request(harness.app).get(`/v1/customers/${ref}/credit`));
-    expect(bal.body.data.balance).toBe(70000);
+    expect(bal.body.data.balanceInKobo).toBe(70000);
 
     // Void → reverses ONLY the ₦700 remainder (NOT the full ₦1,000 → no over-reversal). Balance → 0.
     const voided = await asA(request(harness.app).delete(`/v1/customers/${ref}/credit/${grantRef}`)).set('Idempotency-Key', `vd-${uniq()}`);
     expect(voided.status).toBe(200);
-    expect(voided.body.data.remaining).toBe(0);
+    expect(voided.body.data.remainingInKobo).toBe(0);
     expect(voided.body.data.voidedAt).toBeTruthy();
     bal = await asA(request(harness.app).get(`/v1/customers/${ref}/credit`));
-    expect(bal.body.data.balance).toBe(0); // consumed 30k + voided remainder 70k = the full 100k, exactly
+    expect(bal.body.data.balanceInKobo).toBe(0); // consumed 30k + voided remainder 70k = the full 100k, exactly
 
     // Double-void is an idempotent no-op (no second reversal → balance stays 0).
     const again = await asA(request(harness.app).delete(`/v1/customers/${ref}/credit/${grantRef}`)).set('Idempotency-Key', `vd-${uniq()}`);
     expect(again.status).toBe(200);
     bal = await asA(request(harness.app).get(`/v1/customers/${ref}/credit`));
-    expect(bal.body.data.balance).toBe(0);
+    expect(bal.body.data.balanceInKobo).toBe(0);
   });
 
   // ── C5 seat/quantity proration ─────────────────────────────────────────────
@@ -957,7 +957,7 @@ describe('subscriptions + billing e2e', () => {
     await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/change`)).set('Idempotency-Key', `dg-${uniq()}`).send({ priceId: cheap });
 
     const before = await asA(request(harness.app).get(`/v1/customers/${customerRef}/credit`));
-    const bankedBalance = before.body.data.balance as number;
+    const bankedBalance = before.body.data.balanceInKobo as number;
     expect(bankedBalance).toBeGreaterThan(0); // downgrade banked a credit (C2)
 
     await setDue(subRef);
@@ -981,6 +981,6 @@ describe('subscriptions + billing e2e', () => {
 
     // the ledger-backed balance dropped by exactly what was consumed (oldest-first).
     const after = await asA(request(harness.app).get(`/v1/customers/${customerRef}/credit`));
-    expect(after.body.data.balance).toBe(bankedBalance - inv!.creditTotal);
+    expect(after.body.data.balanceInKobo).toBe(bankedBalance - inv!.creditTotal);
   });
 });

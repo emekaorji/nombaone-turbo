@@ -42,12 +42,12 @@ describe('api e2e', () => {
     const idempotencyKey = `it-create-${Date.now()}`;
     const created = await auth(request(harness.app).post('/v1/examples'))
       .set('Idempotency-Key', idempotencyKey)
-      .send({ kind: 'standard', amount: 5000 });
+      .send({ kind: 'standard', amountInKobo: 5000 });
 
     expect(created.status).toBe(201);
     expect(created.body.success).toBe(true);
     expect(created.body.data.id).toMatch(/exa$/);
-    expect(created.body.data.amount).toBe(5000);
+    expect(created.body.data.amountInKobo).toBe(5000);
     expect(created.body.data.currency).toBe('NGN');
     const reference = created.body.data.id as string;
 
@@ -67,12 +67,12 @@ describe('api e2e', () => {
     const idempotencyKey = `it-replay-${Date.now()}`;
     const first = await auth(request(harness.app).post('/v1/examples'))
       .set('Idempotency-Key', idempotencyKey)
-      .send({ kind: 'priority', amount: 7000 });
+      .send({ kind: 'priority', amountInKobo: 7000 });
     expect(first.status).toBe(201);
 
     const replay = await auth(request(harness.app).post('/v1/examples'))
       .set('Idempotency-Key', idempotencyKey)
-      .send({ kind: 'priority', amount: 7000 });
+      .send({ kind: 'priority', amountInKobo: 7000 });
     // Replay re-serves the cached inner data verbatim — same resource id.
     expect(replay.body.success).toBe(true);
     expect(replay.body.data.id).toBe(first.body.data.id);
@@ -82,11 +82,11 @@ describe('api e2e', () => {
     const idempotencyKey = `it-mismatch-${Date.now()}`;
     await auth(request(harness.app).post('/v1/examples'))
       .set('Idempotency-Key', idempotencyKey)
-      .send({ kind: 'standard', amount: 100 });
+      .send({ kind: 'standard', amountInKobo: 100 });
 
     const mismatch = await auth(request(harness.app).post('/v1/examples'))
       .set('Idempotency-Key', idempotencyKey)
-      .send({ kind: 'standard', amount: 999 });
+      .send({ kind: 'standard', amountInKobo: 999 });
     expect(mismatch.status).toBe(422);
     expect(mismatch.body.error.code).toBe('IDEMPOTENCY_KEY_REUSED');
   });
@@ -111,7 +111,7 @@ describe('api e2e', () => {
       .post('/v1/examples')
       .set('Authorization', `Bearer ${readOnly.secret}`)
       .set('Idempotency-Key', `it-scope-${Date.now()}`)
-      .send({ kind: 'standard', amount: 100 });
+      .send({ kind: 'standard', amountInKobo: 100 });
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('API_KEY_SCOPE_FORBIDDEN');
   });
@@ -128,7 +128,7 @@ describe('api e2e', () => {
   it('POST without Idempotency-Key → 400', async () => {
     const res = await auth(request(harness.app).post('/v1/examples')).send({
       kind: 'standard',
-      amount: 100,
+      amountInKobo: 100,
     });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('IDEMPOTENCY_KEY_MISSING');
@@ -138,5 +138,11 @@ describe('api e2e', () => {
     const res = await auth(request(harness.app).get('/v1/nope'));
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('CLIENT_ROUTE_NOT_FOUND');
+    // Tenet 9: every error carries actionable guidance + a docs deep link.
+    expect(typeof res.body.error.hint).toBe('string');
+    expect(res.body.error.hint.length).toBeGreaterThan(0);
+    expect(res.body.error.docUrl).toBe(
+      'https://docs.nombaone.com/errors#CLIENT_ROUTE_NOT_FOUND'
+    );
   });
 });

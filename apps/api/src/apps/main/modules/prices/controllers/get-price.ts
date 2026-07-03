@@ -7,7 +7,7 @@ import { jsonHandler } from '@shared/http';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/prices/:reference — resolve one price within the caller's scope. */
+/** GET /v1/prices/:id — resolve one price within the caller's scope. */
 export const getPriceController: RequestHandler = jsonHandler<
   Awaited<ReturnType<typeof getPriceByReference>>
 >(async (req) => {
@@ -19,7 +19,7 @@ export const getPriceController: RequestHandler = jsonHandler<
     environment: req.apiKey.environment,
   };
 
-  const price = await getPriceByReference(db, ctx, req.params.reference ?? '');
+  const price = await getPriceByReference(db, ctx, req.params.id ?? '');
 
   return { data: price };
 });

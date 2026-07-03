@@ -37,9 +37,9 @@ exampleRouter.post(
   createExampleController
 );
 
-// GET /examples/:reference — fetch one (scoped read).
+// GET /examples/:id — fetch one (scoped read).
 exampleRouter.get(
-  '/examples/:reference',
+  '/examples/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('example:read'),

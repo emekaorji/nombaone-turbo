@@ -5,10 +5,11 @@ export const serializeCreditGrant = (
   row: CreditGrantRow,
   customerRef: string
 ): CreditGrantResponseData => ({
+  domain: 'credit_grant',
   id: row.reference,
   customerId: customerRef,
-  amount: row.amount,
-  remaining: row.remaining,
+  amountInKobo: row.amount,
+  remainingInKobo: row.remaining,
   source: row.source,
   sourceReference: row.sourceReference,
   environment: row.environment,

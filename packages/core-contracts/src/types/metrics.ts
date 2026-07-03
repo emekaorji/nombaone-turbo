@@ -9,7 +9,8 @@ export interface DunningFunnelData {
 
 /** Derived billing metrics (M ★) — computed from the ledger/events, never a counter. */
 export interface BillingMetricsData {
-  mrrKobo: number;
+  domain: 'billing_metrics'; // response object-type discriminator
+  mrrInKobo: number;
   activeCount: number;
   voluntaryChurn: number;
   involuntaryChurn: number;

@@ -68,7 +68,7 @@ describe('outbound webhooks e2e (G)', () => {
       .update(webhookEndpointsTable)
       .set({ disabledAt: new Date() })
       .where(eq(webhookEndpointsTable.organizationId, ctxA.organizationId));
-    const res = await asA(request(harness.app).post('/v1/webhook-endpoints'))
+    const res = await asA(request(harness.app).post('/v1/webhooks'))
       .set('Idempotency-Key', `we-${uniq()}`)
       .send({ url: receiverUrl, enabledEvents: ['*'] });
     expect(res.status).toBe(201);
@@ -135,7 +135,7 @@ describe('outbound webhooks e2e (G)', () => {
   it('G3/G6 — repeated non-2xx retries then dead-letters, and the dead row is listable', async () => {
     received = [];
     receiverStatus = 500;
-    await createEndpoint();
+    const { reference: whRef } = await createEndpoint();
     const evtRef = await emit(`nbo${uniq().replace(/\D/g, '')}inv`);
 
     // Drain MAX_ATTEMPTS times, forcing each retry due (bypassing the backoff wait).
@@ -144,7 +144,7 @@ describe('outbound webhooks e2e (G)', () => {
       await makeDue();
     }
 
-    const dead = await asA(request(harness.app).get('/v1/webhook-deliveries').query({ status: 'dead' }));
+    const dead = await asA(request(harness.app).get(`/v1/webhooks/${whRef}/deliveries`).query({ status: 'dead' }));
     expect(dead.status).toBe(200);
     const row = dead.body.data.find((d: { eventId: string }) => d.eventId === evtRef);
     expect(row).toBeTruthy();
@@ -156,20 +156,20 @@ describe('outbound webhooks e2e (G)', () => {
   it('G6 ★ — replaying a dead delivery re-arms the same row; event.id is unchanged across replay', async () => {
     received = [];
     receiverStatus = 500;
-    const { secret } = await createEndpoint();
+    const { reference: whRef, secret } = await createEndpoint();
     const evtRef = await emit(`nbo${uniq().replace(/\D/g, '')}inv`);
     for (let i = 0; i < 6; i += 1) {
       await deliverPending(harness.db, { limit: 50 });
       await makeDue();
     }
-    const deadList = await asA(request(harness.app).get('/v1/webhook-deliveries').query({ status: 'dead' }));
+    const deadList = await asA(request(harness.app).get(`/v1/webhooks/${whRef}/deliveries`).query({ status: 'dead' }));
     const deadRow = deadList.body.data.find((d: { eventId: string }) => d.eventId === evtRef);
     expect(deadRow.status).toBe('dead');
 
     // The receiver recovers; replay the dead row.
     receiverStatus = 200;
     received = [];
-    const replay = await asA(request(harness.app).post(`/v1/webhook-deliveries/${deadRow.id}/replay`)).set('Idempotency-Key', `rp-${uniq()}`);
+    const replay = await asA(request(harness.app).post(`/v1/webhooks/${whRef}/deliveries/${deadRow.id}/replay`)).set('Idempotency-Key', `rp-${uniq()}`);
     expect(replay.status).toBe(200);
     expect(replay.body.data.id).toBe(deadRow.id); // SAME delivery reference, no new WHD
     expect(replay.body.data.replayCount).toBe(1);
@@ -180,7 +180,7 @@ describe('outbound webhooks e2e (G)', () => {
     expect(JSON.parse(got!.rawBody).event.id).toBe(evtRef); // event.id stable across replay (consumer dedupe holds)
     expect(got!.headers['x-nombaone-signature']).toBe(tenantSignature(secret, got!.rawBody));
 
-    const after = await asA(request(harness.app).get(`/v1/webhook-deliveries/${deadRow.id}`));
+    const after = await asA(request(harness.app).get(`/v1/webhooks/${whRef}/deliveries/${deadRow.id}`));
     expect(after.body.data.status).toBe('succeeded');
   });
 
@@ -189,7 +189,7 @@ describe('outbound webhooks e2e (G)', () => {
     received = [];
     receiverStatus = 200;
     const { reference, secret: oldSecret } = await createEndpoint();
-    const rot = await asA(request(harness.app).post(`/v1/webhook-endpoints/${reference}/rotate-secret`)).set('Idempotency-Key', `rot-${uniq()}`);
+    const rot = await asA(request(harness.app).post(`/v1/webhooks/${reference}/rotate-secret`)).set('Idempotency-Key', `rot-${uniq()}`);
     expect(rot.status).toBe(200);
     const newSecret = rot.body.data.signingSecret as string;
     expect(newSecret).not.toBe(oldSecret);
@@ -212,12 +212,12 @@ describe('outbound webhooks e2e (G)', () => {
   // ── N4 auth + isolation ─────────────────────────────────────────────────────
   it('N4 — routes reject missing key / wrong scope; cross-tenant is NotFound', async () => {
     const { reference } = await createEndpoint();
-    expect((await request(harness.app).get('/v1/webhook-endpoints')).status).toBe(401);
+    expect((await request(harness.app).get('/v1/webhooks')).status).toBe(401);
 
     const orgC = await harness.seedOrg('WH RO');
     const ro = (await harness.mintApiKey(orgC.organizationId, 'test', ['webhooks:read'])).secret;
     const forbidden = await request(harness.app)
-      .post('/v1/webhook-endpoints')
+      .post('/v1/webhooks')
       .set('Authorization', `Bearer ${ro}`)
       .set('Idempotency-Key', `we-${uniq()}`)
       .send({ url: receiverUrl, enabledEvents: ['*'] });
@@ -225,7 +225,7 @@ describe('outbound webhooks e2e (G)', () => {
 
     // Tenant B cannot read tenant A's endpoint.
     const cross = await request(harness.app)
-      .get(`/v1/webhook-endpoints/${reference}`)
+      .get(`/v1/webhooks/${reference}`)
       .set('Authorization', `Bearer ${bearerB}`);
     expect(cross.status).toBe(404);
   });

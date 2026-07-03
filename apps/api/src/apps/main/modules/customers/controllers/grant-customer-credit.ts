@@ -9,7 +9,7 @@ import type { GrantCreditBody } from '@nombaone/core-contracts/validations';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** POST /v1/customers/:reference/credit — grant the customer credit. */
+/** POST /v1/customers/:id/credit — grant the customer credit. */
 export const grantCustomerCreditController: RequestHandler = jsonHandler<CreditGrantResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -22,8 +22,8 @@ export const grantCustomerCreditController: RequestHandler = jsonHandler<CreditG
     const body = req.body as GrantCreditBody;
 
     const data = await grantCredit(db, ctx, {
-      customerRef: req.params.reference ?? '',
-      amount: body.amount,
+      customerRef: req.params.id ?? '',
+      amount: body.amountInKobo,
       source: body.source,
       sourceReference: body.sourceReference,
       metadata: body.metadata,

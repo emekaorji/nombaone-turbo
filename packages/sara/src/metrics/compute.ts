@@ -132,7 +132,8 @@ export async function computeBillingMetrics(
   const dunningRecoveryRate = pastDue > 0 ? recovered / pastDue : 0;
 
   return {
-    mrrKobo,
+    domain: 'billing_metrics',
+    mrrInKobo: mrrKobo,
     activeCount,
     voluntaryChurn,
     involuntaryChurn,

@@ -2,6 +2,7 @@ import {
   AppError,
   HTTP_STATUS_CODES,
   NOMBAONE_ERROR_CODES,
+  errorMetaFor,
   getDefaultNombaoneErrorCodeForStatus,
   toPublicErrorCode,
 } from '@nombaone/errors';
@@ -12,12 +13,15 @@ import type { ApiError } from '@nombaone/core-contracts/types';
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
 export const notFoundHandler: RequestHandler = (req, res) => {
+  const meta = errorMetaFor(NOMBAONE_ERROR_CODES.CLIENT_ROUTE_NOT_FOUND);
   const body: ApiError = {
     success: false,
     statusCode: HTTP_STATUS_CODES.NOT_FOUND,
     error: {
       code: NOMBAONE_ERROR_CODES.CLIENT_ROUTE_NOT_FOUND,
       message: `Route not found: ${req.method} ${req.path}`,
+      hint: meta.hint,
+      docUrl: meta.docUrl,
     },
     meta: { requestId: req.requestId },
   };
@@ -42,6 +46,7 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
     logger.warn(tag);
   }
 
+  const meta = errorMetaFor(publicCode);
   const body: ApiError = {
     success: false,
     statusCode: status,
@@ -51,6 +56,8 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
         publicCode === NOMBAONE_ERROR_CODES.SYSTEM_INTERNAL_ERROR
           ? 'Internal server error'
           : (appError?.message ?? 'Request failed'),
+      hint: meta.hint,
+      docUrl: meta.docUrl,
       fields: appError?.fieldErrors,
     },
     meta: { requestId: req.requestId },

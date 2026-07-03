@@ -8,7 +8,7 @@ import type { CouponResponseData } from '@nombaone/core-contracts/types';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/coupons/:reference — fetch one within scope. */
+/** GET /v1/coupons/:id — fetch one within scope. */
 export const getCouponController: RequestHandler = jsonHandler<CouponResponseData>(async (req) => {
   if (!req.apiKey) {
     throw AppError.Unauthorized('API key required');
@@ -17,6 +17,6 @@ export const getCouponController: RequestHandler = jsonHandler<CouponResponseDat
     organizationId: req.apiKey.organizationId,
     environment: req.apiKey.environment,
   };
-  const data = await getCouponByReference(db, ctx, req.params.reference ?? '');
+  const data = await getCouponByReference(db, ctx, req.params.id ?? '');
   return { data };
 });

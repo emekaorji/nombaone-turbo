@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { updateBillingSettingsBody } from '@nombaone/core-contracts/validations';
 
 import { validate } from '@shared/http';
-import { apiKeyAuth, idempotency, rateLimit, requireScope } from '@shared/middlewares';
+import { apiKeyAuth, idempotencyOptional, rateLimit, requireScope } from '@shared/middlewares';
 
 import { getBillingSettingsController, updateBillingSettingsController } from './controllers';
 
@@ -11,18 +11,18 @@ import { getBillingSettingsController, updateBillingSettingsController } from '.
 export const billingSettingsRouter: Router = Router();
 
 billingSettingsRouter.get(
-  '/billing-settings',
+  '/organization/billing',
   apiKeyAuth,
   rateLimit,
   requireScope('billing_settings:read'),
   getBillingSettingsController
 );
 billingSettingsRouter.put(
-  '/billing-settings',
+  '/organization/billing',
   apiKeyAuth,
   rateLimit,
   requireScope('billing_settings:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: updateBillingSettingsBody }),
   updateBillingSettingsController
 );

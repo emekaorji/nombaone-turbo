@@ -10,6 +10,7 @@ export const serializeSchedule = (
   subscriptionRef: string,
   priceRefs: Map<string, string>
 ): SubscriptionScheduleResponseData => ({
+  domain: 'subscription_schedule',
   id: row.reference,
   subscriptionId: subscriptionRef,
   status: row.status,

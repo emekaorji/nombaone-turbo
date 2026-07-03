@@ -21,7 +21,7 @@ export interface ReconcileResult {
  * facet. The nightly cron feeds `selectSettlementsForReconcile` + a Nomba query in.
  */
 export function reconcileSettlements(
-  localSettlements: Pick<SettlementResponseData, 'merchantTxRef' | 'grossKobo'>[],
+  localSettlements: Pick<SettlementResponseData, 'merchantTxRef' | 'grossInKobo'>[],
   nombaTransactions: NombaTransaction[]
 ): ReconcileResult {
   const byRefLocal = new Map(localSettlements.map((s) => [s.merchantTxRef, s]));
@@ -32,8 +32,8 @@ export function reconcileSettlements(
   for (const local of localSettlements) {
     const nomba = byRefNomba.get(local.merchantTxRef);
     if (!nomba) continue;
-    if (nomba.amountKobo === local.grossKobo) matched += 1;
-    else amountDrift.push({ merchantTxRef: local.merchantTxRef, localKobo: local.grossKobo, nombaKobo: nomba.amountKobo });
+    if (nomba.amountKobo === local.grossInKobo) matched += 1;
+    else amountDrift.push({ merchantTxRef: local.merchantTxRef, localKobo: local.grossInKobo, nombaKobo: nomba.amountKobo });
   }
 
   const orphansOnNomba = nombaTransactions.filter((t) => !byRefLocal.has(t.merchantTxRef)).map((t) => t.merchantTxRef);

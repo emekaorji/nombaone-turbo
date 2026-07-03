@@ -7,7 +7,13 @@ import {
 } from '@nombaone/core-contracts/validations';
 
 import { validate } from '@shared/http';
-import { apiKeyAuth, idempotency, rateLimit, requireScope } from '@shared/middlewares';
+import {
+  apiKeyAuth,
+  idempotency,
+  idempotencyOptional,
+  rateLimit,
+  requireScope,
+} from '@shared/middlewares';
 
 import {
   getPaymentMethodController,
@@ -20,9 +26,12 @@ import {
 
 /**
  * Payment methods — a customer's rail instances. Capture (setup-card /
- * virtual-account) initiates a flow at Nomba; the rest is management. Same fixed
+ * virtual-account) initiates a flow at Nomba; the rest is management. Fixed
  * per-route chain (auth → rate-limit → scope → idempotency → validate → handler);
- * reads skip idempotency. **N1: nothing here ever returns a token/PAN.**
+ * reads skip idempotency. Idempotency is REQUIRED (`idempotency`) on card setup
+ * (it initiates a charge) and OPTIONAL (`idempotencyOptional`) on the management
+ * routes (virtual-account/default/delete). **N1: nothing here ever returns a
+ * token/PAN.**
  */
 export const paymentMethodsRouter: Router = Router();
 
@@ -41,14 +50,14 @@ paymentMethodsRouter.post(
   apiKeyAuth,
   rateLimit,
   requireScope('payment_methods:write'),
-  idempotency,
+  idempotencyOptional,
   validate({ body: issueVirtualAccountBody }),
   issueVirtualAccountController
 );
 
 // ── reads ────────────────────────────────────────────────────────────────────
 paymentMethodsRouter.get(
-  '/payment-methods/:reference',
+  '/payment-methods/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('payment_methods:read'),
@@ -65,18 +74,18 @@ paymentMethodsRouter.get(
 
 // ── management ───────────────────────────────────────────────────────────────
 paymentMethodsRouter.post(
-  '/payment-methods/:reference/default',
+  '/payment-methods/:id/default',
   apiKeyAuth,
   rateLimit,
   requireScope('payment_methods:write'),
-  idempotency,
+  idempotencyOptional,
   setDefaultPaymentMethodController
 );
 paymentMethodsRouter.delete(
-  '/payment-methods/:reference',
+  '/payment-methods/:id',
   apiKeyAuth,
   rateLimit,
   requireScope('payment_methods:write'),
-  idempotency,
+  idempotencyOptional,
   removePaymentMethodController
 );

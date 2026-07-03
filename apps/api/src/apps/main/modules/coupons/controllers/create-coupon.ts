@@ -22,7 +22,7 @@ export const createCouponController: RequestHandler = jsonHandler<CouponResponse
 
   const data = await createCoupon(db, ctx, {
     code: body.code,
-    amountOff: body.amountOff,
+    amountOff: body.amountOffInKobo,
     percentOff: body.percentOff,
     duration: body.duration,
     durationInCycles: body.durationInCycles,

@@ -11,7 +11,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/subscriptions/:reference/payment-method — swap the card mid-dunning
+ * POST /v1/subscriptions/:id/payment-method — swap the card mid-dunning
  * (atomic token swap) and prompt an immediate re-attempt (D10 / E6 ★).
  */
 export const updateSubscriptionCardController: RequestHandler =
@@ -23,7 +23,7 @@ export const updateSubscriptionCardController: RequestHandler =
     };
     const body = req.body as UpdateSubscriptionCardBody;
     const { method, customerRef } = await updateCardOnSubscription(db, ctx, {
-      subscriptionRef: req.params.reference ?? '',
+      subscriptionRef: req.params.id ?? '',
       paymentMethodReference: body.paymentMethodReference,
       checkoutToken: body.checkoutToken,
     });

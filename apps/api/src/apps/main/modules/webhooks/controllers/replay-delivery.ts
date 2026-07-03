@@ -8,10 +8,10 @@ import type { WebhookDeliveryResponseData } from '@nombaone/core-contracts/types
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** POST /v1/webhook-deliveries/:reference/replay — re-arm a dead/failed delivery (G6). */
+/** POST /v1/webhooks/:id/deliveries/:deliveryId/replay — re-arm a dead/failed delivery (G6). */
 export const replayWebhookDeliveryController: RequestHandler =
   jsonHandler<WebhookDeliveryResponseData>(async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
-    return { data: await replayDelivery(db, ctx, req.params.reference ?? '') };
+    return { data: await replayDelivery(db, ctx, req.params.deliveryId ?? '') };
   });

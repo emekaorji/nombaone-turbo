@@ -8,13 +8,13 @@ import type { RotatedWebhookSecretResponseData } from '@nombaone/core-contracts/
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** POST /v1/webhook-endpoints/:reference/rotate-secret — new secret returned ONCE. */
+/** POST /v1/webhooks/:id/rotate-secret — new secret returned ONCE. */
 export const rotateWebhookSecretController: RequestHandler =
   jsonHandler<RotatedWebhookSecretResponseData>(async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
     const { reference, signingSecret, signingSecretPrefix } = await rotateWebhookSecret(
-      db, ctx, req.params.reference ?? ''
+      db, ctx, req.params.id ?? ''
     );
-    return { data: { id: reference, signingSecret, signingSecretPrefix } };
+    return { data: { domain: 'webhook_secret', id: reference, signingSecret, signingSecretPrefix } };
   });

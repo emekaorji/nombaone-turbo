@@ -146,4 +146,5 @@ export async function upsertOrgBillingSettings(
 /** Serialize settings to the public DTO (already camelCased 1:1). */
 export const serializeBillingSettings = (
   settings: EffectiveBillingSettings
-): BillingSettingsResponseData => ({ ...settings });
+): BillingSettingsResponseData => ({
+  domain: 'billing_settings', ...settings });

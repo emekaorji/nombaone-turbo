@@ -10,7 +10,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/settlements/:reference/refund — refund the tenant share of a settlement
+ * POST /v1/settlements/:id/refund — refund the tenant share of a settlement
  * (the platform fee is non-refundable). The `Idempotency-Key` header (required by the
  * idempotency middleware) is passed as the sara-level `merchantTxRef` so the durable
  * DB `unique(merchant_tx_ref)` claim backs the Redis idempotency layer.
@@ -27,8 +27,8 @@ export const refundSettlementController: RequestHandler = jsonHandler<RefundResp
     const merchantTxRef = (Array.isArray(headerKey) ? headerKey[0] : headerKey) ?? '';
     return {
       data: await refundSettlement(db, ctx, {
-        reference: req.params.reference ?? '',
-        amountKobo: body.amountKobo,
+        reference: req.params.id ?? '',
+        amountKobo: body.amountInKobo,
         merchantTxRef,
       }),
       statusCode: 201,

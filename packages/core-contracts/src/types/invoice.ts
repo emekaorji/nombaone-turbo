@@ -18,7 +18,7 @@ export interface InvoiceLineItemData {
   id: string; // line reference
   kind: InvoiceLineKind;
   description: string;
-  amount: number; // signed kobo
+  amountInKobo: number; // signed kobo
   quantity: number;
 }
 
@@ -27,18 +27,19 @@ export interface InvoiceLineItemData {
  * integer kobo; line `amount`s are signed.
  */
 export interface InvoiceResponseData {
+  domain: 'invoice'; // response object-type discriminator
   id: string; // public reference, e.g. `nbo…inv`
   customerId: string;
   subscriptionId: string | null;
   status: InvoiceStatus;
   billingReason: InvoiceBillingReason;
-  subtotal: number;
-  discountTotal: number;
-  creditTotal: number;
-  total: number;
-  amountDue: number;
-  amountPaid: number;
-  amountRemaining: number;
+  subtotalInKobo: number;
+  discountTotalInKobo: number;
+  creditTotalInKobo: number;
+  totalInKobo: number;
+  amountDueInKobo: number;
+  amountPaidInKobo: number;
+  amountRemainingInKobo: number;
   currency: 'NGN';
   periodStart: string | null;
   periodEnd: string | null;

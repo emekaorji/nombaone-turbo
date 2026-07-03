@@ -8,7 +8,7 @@ import type { SubscriptionResponseData } from '@nombaone/core-contracts/types';
 import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
-/** GET /v1/subscriptions/:reference — fetch one within scope. */
+/** GET /v1/subscriptions/:id — fetch one within scope. */
 export const getSubscriptionController: RequestHandler = jsonHandler<SubscriptionResponseData>(
   async (req) => {
     if (!req.apiKey) {
@@ -18,7 +18,7 @@ export const getSubscriptionController: RequestHandler = jsonHandler<Subscriptio
       organizationId: req.apiKey.organizationId,
       environment: req.apiKey.environment,
     };
-    const data = await getSubscriptionByReference(db, ctx, (req.params.reference ?? ''));
+    const data = await getSubscriptionByReference(db, ctx, (req.params.id ?? ''));
     return { data };
   }
 );

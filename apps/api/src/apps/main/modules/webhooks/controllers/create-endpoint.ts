@@ -14,7 +14,7 @@ const ctxOf = (req: Parameters<RequestHandler>[0]): DomainContext => {
   return { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
 };
 
-/** POST /v1/webhook-endpoints — the signing secret escapes ONCE. */
+/** POST /v1/webhooks — the signing secret escapes ONCE. */
 export const createWebhookEndpointController: RequestHandler = jsonHandler<
   WebhookEndpointResponseData & { signingSecret: string }
 >(async (req) => {

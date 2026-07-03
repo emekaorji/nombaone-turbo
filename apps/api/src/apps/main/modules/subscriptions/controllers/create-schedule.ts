@@ -10,7 +10,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/subscriptions/:reference/schedule — schedule a price change to take
+ * POST /v1/subscriptions/:id/schedule — schedule a price change to take
  * effect at the next cycle boundary (B10), not immediately.
  */
 export const createScheduleController: RequestHandler = jsonHandler<SubscriptionScheduleResponseData>(
@@ -25,7 +25,7 @@ export const createScheduleController: RequestHandler = jsonHandler<Subscription
     const body = req.body as ScheduleChangeBody;
 
     const data = await createSchedule(db, ctx, {
-      subscriptionRef: req.params.reference ?? '',
+      subscriptionRef: req.params.id ?? '',
       priceRef: body.priceId,
       quantity: body.quantity,
       effectiveAt: body.effectiveAt,

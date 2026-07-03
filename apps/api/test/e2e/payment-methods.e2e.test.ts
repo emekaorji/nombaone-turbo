@@ -67,7 +67,7 @@ describe('payment methods + inbound pipeline e2e', () => {
 
     const setup = await idem(asA(request(harness.app).post('/v1/payment-methods/setup')), `pm-${Date.now()}`).send({
       customerRef,
-      amount: 250000,
+      amountInKobo: 250000,
       callbackUrl: 'https://acme.test/return',
     });
     expect(setup.status).toBe(201);
@@ -165,8 +165,8 @@ describe('payment methods + inbound pipeline e2e', () => {
       customerPhoneNumber: '08012345678',
       customerAddress: 'Lagos, Nigeria',
       narration: 'nombaone mandate',
-      maxAmount: 5000000,
-      frequency: 'MONTHLY',
+      maxAmountInKobo: 5000000,
+      frequency: 'monthly',
     });
     expect(created.status).toBe(201);
     expect(created.body.data.status).toBe('consent_pending');
@@ -191,7 +191,7 @@ describe('payment methods + inbound pipeline e2e', () => {
     const setupKey = `pm-mng-${Date.now()}`;
     const setup = await idem(asA(request(harness.app).post('/v1/payment-methods/setup')), setupKey).send({
       customerRef,
-      amount: 100000,
+      amountInKobo: 100000,
       callbackUrl: 'https://acme.test/return',
     });
     const pmtRef = setup.body.data.reference as string;
@@ -199,7 +199,7 @@ describe('payment methods + inbound pipeline e2e', () => {
     // K: idempotent replay → same reference, no second method.
     const replay = await idem(asA(request(harness.app).post('/v1/payment-methods/setup')), setupKey).send({
       customerRef,
-      amount: 100000,
+      amountInKobo: 100000,
       callbackUrl: 'https://acme.test/return',
     });
     expect(replay.body.data.reference).toBe(pmtRef);

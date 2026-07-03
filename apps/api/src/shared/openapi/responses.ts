@@ -41,6 +41,7 @@ const allRequired = (properties: Record<string, JsonSchema>, optional: string[] 
 
 export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   Customer: allRequired({
+    domain: enm('customer'),
     id: str(),
     email: str(),
     name: str(),
@@ -52,6 +53,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   Plan: allRequired({
+    domain: enm('plan'),
     id: str(),
     name: str(),
     description: nstr(),
@@ -63,9 +65,10 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   Price: allRequired({
+    domain: enm('price'),
     id: str(),
     planId: str(),
-    unitAmount: int(),
+    unitAmountInKobo: int(),
     currency: ngn(),
     interval: enm('day', 'week', 'month', 'year'),
     intervalCount: int(),
@@ -80,6 +83,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
 
   SubscriptionItem: allRequired({ id: str(), priceId: str(), quantity: int() }),
   Subscription: allRequired({
+    domain: enm('subscription'),
     id: str(),
     customerId: str(),
     priceId: str(),
@@ -106,22 +110,23 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     id: str(),
     kind: enm('subscription', 'proration', 'discount', 'credit', 'adjustment'),
     description: str(),
-    amount: int(),
+    amountInKobo: int(),
     quantity: int(),
   }),
   Invoice: allRequired({
+    domain: enm('invoice'),
     id: str(),
     customerId: str(),
     subscriptionId: nstr(),
     status: enm('draft', 'open', 'partially_paid', 'paid', 'void', 'uncollectible'),
     billingReason: enm('subscription_create', 'subscription_cycle', 'subscription_update', 'manual'),
-    subtotal: int(),
-    discountTotal: int(),
-    creditTotal: int(),
-    total: int(),
-    amountDue: int(),
-    amountPaid: int(),
-    amountRemaining: int(),
+    subtotalInKobo: int(),
+    discountTotalInKobo: int(),
+    creditTotalInKobo: int(),
+    totalInKobo: int(),
+    amountDueInKobo: int(),
+    amountPaidInKobo: int(),
+    amountRemainingInKobo: int(),
     currency: ngn(),
     periodStart: ndt(),
     periodEnd: ndt(),
@@ -135,10 +140,11 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   Coupon: allRequired({
+    domain: enm('coupon'),
     id: str(),
     code: str(),
     duration: enm('once', 'repeating', 'forever'),
-    amountOff: nint(),
+    amountOffInKobo: nint(),
     percentOff: nint(),
     durationInCycles: nint(),
     redeemBy: ndt(),
@@ -149,6 +155,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   Discount: allRequired({
+    domain: enm('discount'),
     id: str(),
     couponId: str(),
     customerId: nstr(),
@@ -162,10 +169,11 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   CreditGrant: allRequired({
+    domain: enm('credit_grant'),
     id: str(),
     customerId: str(),
-    amount: int(),
-    remaining: int(),
+    amountInKobo: int(),
+    remainingInKobo: int(),
     source: enm('downgrade_proration', 'manual', 'goodwill', 'coupon'),
     sourceReference: nstr(),
     environment: env(),
@@ -173,12 +181,14 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     createdAt: dt(),
   }),
   CreditBalance: allRequired({
+    domain: enm('credit_balance'),
     customerId: str(),
-    balance: int(),
+    balanceInKobo: int(),
     grants: arr(ref('CreditGrant')),
   }),
 
   PaymentMethod: allRequired({
+    domain: enm('payment_method'),
     id: str(),
     customerId: str(),
     kind: enm('card', 'mandate', 'virtual_account'),
@@ -194,19 +204,21 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   Settlement: allRequired({
+    domain: enm('settlement'),
     id: str(),
     invoiceReference: nstr(),
     subAccountRef: str(),
     splitReference: nstr(),
     merchantTxRef: str(),
-    grossKobo: int(),
-    platformFeeKobo: int(),
-    netToTenantKobo: int(),
+    grossInKobo: int(),
+    platformFeeInKobo: int(),
+    netToTenantInKobo: int(),
     status: enm('pending', 'settled', 'reconciled', 'failed', 'refunded'),
     createdAt: dt(),
   }),
 
   WebhookEndpoint: allRequired({
+    domain: enm('webhook'),
     id: str(),
     url: str(),
     enabledEvents: arr(str()),
@@ -215,6 +227,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     createdAt: dt(),
   }),
   WebhookDelivery: allRequired({
+    domain: enm('webhook_delivery'),
     id: str(),
     eventType: str(),
     endpointId: str(),
@@ -229,11 +242,13 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     createdAt: dt(),
   }),
   RotatedWebhookSecret: allRequired({
+    domain: enm('webhook_secret'),
     id: str(),
     signingSecret: str(),
     signingSecretPrefix: str(),
   }),
   DomainEvent: allRequired({
+    domain: enm('event'),
     id: str(),
     type: str(),
     payload: bag(),
@@ -241,6 +256,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   DunningAttempt: allRequired({
+    domain: enm('dunning_attempt'),
     id: str(),
     attemptNumber: int(),
     status: enm('scheduled', 'attempting', 'succeeded', 'rescheduled', 'card_update_required', 'exhausted'),
@@ -255,6 +271,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     createdAt: dt(),
   }),
   DunningState: allRequired({
+    domain: enm('dunning_state'),
     subscriptionRef: str(),
     invoiceRef: nstr(),
     status: enm('scheduled', 'attempting', 'succeeded', 'rescheduled', 'card_update_required', 'exhausted', 'none'),
@@ -266,6 +283,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   BillingSettings: allRequired({
+    domain: enm('billing_settings'),
     partialCollectionEnabled: bool(),
     prorationCreditPolicy: enm('credit_next_cycle', 'none'),
     dunningMaxAttempts: int(),
@@ -280,12 +298,13 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   TenantSettings: allRequired({
+    domain: enm('organization'),
     billing: obj(
       {
         rateLimitPerMinute: nint(),
         monthlyRequestQuota: nint(),
         settlementMode: enm('split_at_collection', 'collect_then_payout'),
-        platformFee: obj({ bps: nint(), minKobo: nint(), maxKobo: nint() }, ['bps', 'minKobo', 'maxKobo']),
+        platformFee: obj({ bps: nint(), minInKobo: nint(), maxInKobo: nint() }, ['bps', 'minInKobo', 'maxInKobo']),
         grace: obj({ gracePeriodHours: int(), dunningMaxAttempts: int() }, ['gracePeriodHours', 'dunningMaxAttempts']),
         branding: obj(
           { displayName: str(), supportEmail: str(), logoUrl: str(), primaryColorHex: str() },
@@ -307,7 +326,8 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     exhausted: int(),
   }),
   BillingMetrics: allRequired({
-    mrrKobo: int(),
+    domain: enm('billing_metrics'),
+    mrrInKobo: int(),
     activeCount: int(),
     voluntaryChurn: int(),
     involuntaryChurn: int(),
@@ -323,6 +343,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     ['quantity']
   ),
   SubscriptionSchedule: allRequired({
+    domain: enm('subscription_schedule'),
     id: str(),
     subscriptionId: str(),
     status: enm('active', 'released', 'canceled'),
@@ -333,32 +354,35 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   }),
 
   UpcomingInvoice: allRequired({
+    domain: enm('upcoming_invoice'),
     subscriptionId: str(),
     periodIndex: int(),
     periodStart: dt(),
     periodEnd: dt(),
     billingReason: enm('subscription_create', 'subscription_cycle', 'subscription_update', 'manual'),
-    subtotal: int(),
-    total: int(),
-    amountDue: int(),
+    subtotalInKobo: int(),
+    totalInKobo: int(),
+    amountDueInKobo: int(),
     currency: ngn(),
     lineItems: arr(ref('InvoiceLineItem')),
     environment: env(),
   }),
 
   Example: allRequired({
+    domain: enm('example'),
     id: str(),
     kind: enm('standard', 'priority'),
     status: enm('pending', 'settled', 'failed'),
-    amount: int(),
+    amountInKobo: int(),
     currency: ngn(),
     environment: env(),
     createdAt: dt(),
   }),
 
-  CheckoutSetup: allRequired({ reference: str(), checkoutLink: str() }),
-  MandateSetup: allRequired({ reference: str(), mandateRef: str(), status: str(), consentInstruction: str() }),
+  CheckoutSetup: allRequired({ domain: enm('checkout_setup'), reference: str(), checkoutLink: str() }),
+  MandateSetup: allRequired({ domain: enm('mandate_setup'), reference: str(), mandateRef: str(), status: str(), consentInstruction: str() }),
   VirtualAccount: allRequired({
+    domain: enm('virtual_account'),
     reference: str(),
     bankName: str(),
     accountNumber: str(),
@@ -376,97 +400,97 @@ export interface RouteDataMapping {
 export const RESPONSE_DATA_BY_ROUTE: Record<string, RouteDataMapping> = {
   // Customers
   'get /v1/customers': { ref: 'Customer', list: true },
-  'get /v1/customers/{reference}': { ref: 'Customer' },
+  'get /v1/customers/{id}': { ref: 'Customer' },
   'post /v1/customers': { ref: 'Customer' },
-  'patch /v1/customers/{reference}': { ref: 'Customer' },
-  'get /v1/customers/{reference}/credit': { ref: 'CreditBalance' },
-  'post /v1/customers/{reference}/credit': { ref: 'CreditGrant' },
-  'delete /v1/customers/{reference}/credit/{grantReference}': { ref: 'CreditGrant' },
-  'post /v1/customers/{reference}/discount': { ref: 'Discount' },
+  'patch /v1/customers/{id}': { ref: 'Customer' },
+  'get /v1/customers/{id}/credit': { ref: 'CreditBalance' },
+  'post /v1/customers/{id}/credit': { ref: 'CreditGrant' },
+  'delete /v1/customers/{id}/credit/{grantId}': { ref: 'CreditGrant' },
+  'post /v1/customers/{id}/discount': { ref: 'Discount' },
 
   // Plans
   'get /v1/plans': { ref: 'Plan', list: true },
-  'get /v1/plans/{reference}': { ref: 'Plan' },
+  'get /v1/plans/{id}': { ref: 'Plan' },
   'post /v1/plans': { ref: 'Plan' },
-  'patch /v1/plans/{reference}': { ref: 'Plan' },
-  'post /v1/plans/{reference}/archive': { ref: 'Plan' },
-  'get /v1/plans/{reference}/prices': { ref: 'Price', list: true },
-  'post /v1/plans/{reference}/prices': { ref: 'Price' },
+  'patch /v1/plans/{id}': { ref: 'Plan' },
+  'post /v1/plans/{id}/archive': { ref: 'Plan' },
+  'get /v1/plans/{id}/prices': { ref: 'Price', list: true },
+  'post /v1/plans/{id}/prices': { ref: 'Price' },
 
   // Prices
   'get /v1/prices': { ref: 'Price', list: true },
-  'get /v1/prices/{reference}': { ref: 'Price' },
-  'post /v1/prices/{reference}/deactivate': { ref: 'Price' },
+  'get /v1/prices/{id}': { ref: 'Price' },
+  'post /v1/prices/{id}/deactivate': { ref: 'Price' },
 
   // Subscriptions
   'get /v1/subscriptions': { ref: 'Subscription', list: true },
-  'get /v1/subscriptions/{reference}': { ref: 'Subscription' },
+  'get /v1/subscriptions/{id}': { ref: 'Subscription' },
   'post /v1/subscriptions': { ref: 'Subscription' },
-  'patch /v1/subscriptions/{reference}': { ref: 'Subscription' },
-  'post /v1/subscriptions/{reference}/cancel': { ref: 'Subscription' },
-  'post /v1/subscriptions/{reference}/pause': { ref: 'Subscription' },
-  'post /v1/subscriptions/{reference}/resume': { ref: 'Subscription' },
-  'post /v1/subscriptions/{reference}/resubscribe': { ref: 'Subscription' },
-  'post /v1/subscriptions/{reference}/change': { ref: 'Subscription' },
-  'post /v1/subscriptions/{reference}/payment-method': { ref: 'Subscription' },
-  'post /v1/subscriptions/{reference}/discount': { ref: 'Discount' },
-  'get /v1/subscriptions/{reference}/schedule': { ref: 'SubscriptionSchedule' },
-  'post /v1/subscriptions/{reference}/schedule': { ref: 'SubscriptionSchedule' },
-  'delete /v1/subscriptions/{reference}/schedule': { ref: 'SubscriptionSchedule' },
-  'get /v1/subscriptions/{reference}/upcoming-invoice': { ref: 'UpcomingInvoice' },
-  'get /v1/subscriptions/{reference}/dunning': { ref: 'DunningState' },
-  'get /v1/subscriptions/{reference}/dunning/attempts': { ref: 'DunningAttempt', list: true },
-  'get /v1/subscriptions/{reference}/events': { ref: 'DomainEvent', list: true },
+  'patch /v1/subscriptions/{id}': { ref: 'Subscription' },
+  'post /v1/subscriptions/{id}/cancel': { ref: 'Subscription' },
+  'post /v1/subscriptions/{id}/pause': { ref: 'Subscription' },
+  'post /v1/subscriptions/{id}/resume': { ref: 'Subscription' },
+  'post /v1/subscriptions/{id}/resubscribe': { ref: 'Subscription' },
+  'post /v1/subscriptions/{id}/change': { ref: 'Subscription' },
+  'post /v1/subscriptions/{id}/payment-method': { ref: 'Subscription' },
+  'post /v1/subscriptions/{id}/discount': { ref: 'Discount' },
+  'get /v1/subscriptions/{id}/schedule': { ref: 'SubscriptionSchedule' },
+  'post /v1/subscriptions/{id}/schedule': { ref: 'SubscriptionSchedule' },
+  'delete /v1/subscriptions/{id}/schedule': { ref: 'SubscriptionSchedule' },
+  'get /v1/subscriptions/{id}/upcoming-invoice': { ref: 'UpcomingInvoice' },
+  'get /v1/subscriptions/{id}/dunning': { ref: 'DunningState' },
+  'get /v1/subscriptions/{id}/dunning/attempts': { ref: 'DunningAttempt', list: true },
+  'get /v1/subscriptions/{id}/events': { ref: 'DomainEvent', list: true },
 
   // Invoices
   'get /v1/invoices': { ref: 'Invoice', list: true },
-  'get /v1/invoices/{reference}': { ref: 'Invoice' },
-  'post /v1/invoices/{reference}/void': { ref: 'Invoice' },
+  'get /v1/invoices/{id}': { ref: 'Invoice' },
+  'post /v1/invoices/{id}/void': { ref: 'Invoice' },
 
   // Coupons
   'get /v1/coupons': { ref: 'Coupon', list: true },
-  'get /v1/coupons/{reference}': { ref: 'Coupon' },
+  'get /v1/coupons/{id}': { ref: 'Coupon' },
   'post /v1/coupons': { ref: 'Coupon' },
-  'patch /v1/coupons/{reference}': { ref: 'Coupon' },
+  'patch /v1/coupons/{id}': { ref: 'Coupon' },
 
   // Payment methods
   'get /v1/payment-methods': { ref: 'PaymentMethod', list: true },
-  'get /v1/payment-methods/{reference}': { ref: 'PaymentMethod' },
+  'get /v1/payment-methods/{id}': { ref: 'PaymentMethod' },
   'post /v1/payment-methods/setup': { ref: 'CheckoutSetup' },
   'post /v1/payment-methods/virtual-account': { ref: 'VirtualAccount' },
-  'post /v1/payment-methods/{reference}/default': { ref: 'PaymentMethod' },
-  'delete /v1/payment-methods/{reference}': { ref: 'PaymentMethod' },
+  'post /v1/payment-methods/{id}/default': { ref: 'PaymentMethod' },
+  'delete /v1/payment-methods/{id}': { ref: 'PaymentMethod' },
 
   // Mandates
   'post /v1/mandates': { ref: 'MandateSetup' },
 
   // Settlements
   'get /v1/settlements': { ref: 'Settlement', list: true },
-  'get /v1/settlements/{reference}': { ref: 'Settlement' },
+  'get /v1/settlements/{id}': { ref: 'Settlement' },
 
   // Billing settings / settings / metrics
-  'get /v1/billing-settings': { ref: 'BillingSettings' },
-  'put /v1/billing-settings': { ref: 'BillingSettings' },
-  'get /v1/settings': { ref: 'TenantSettings' },
-  'put /v1/settings': { ref: 'TenantSettings' },
+  'get /v1/organization/billing': { ref: 'BillingSettings' },
+  'put /v1/organization/billing': { ref: 'BillingSettings' },
+  'get /v1/organization': { ref: 'TenantSettings' },
+  'put /v1/organization': { ref: 'TenantSettings' },
   'get /v1/metrics/billing': { ref: 'BillingMetrics' },
 
   // Events
   'get /v1/events': { ref: 'DomainEvent', list: true },
-  'get /v1/events/{reference}': { ref: 'DomainEvent' },
+  'get /v1/events/{id}': { ref: 'DomainEvent' },
 
   // Webhook endpoints / deliveries
-  'get /v1/webhook-endpoints': { ref: 'WebhookEndpoint', list: true },
-  'get /v1/webhook-endpoints/{reference}': { ref: 'WebhookEndpoint' },
-  'post /v1/webhook-endpoints': { ref: 'WebhookEndpoint' },
-  'patch /v1/webhook-endpoints/{reference}': { ref: 'WebhookEndpoint' },
-  'post /v1/webhook-endpoints/{reference}/rotate-secret': { ref: 'RotatedWebhookSecret' },
-  'get /v1/webhook-deliveries': { ref: 'WebhookDelivery', list: true },
-  'get /v1/webhook-deliveries/{reference}': { ref: 'WebhookDelivery' },
-  'post /v1/webhook-deliveries/{reference}/replay': { ref: 'WebhookDelivery' },
+  'get /v1/webhooks': { ref: 'WebhookEndpoint', list: true },
+  'get /v1/webhooks/{id}': { ref: 'WebhookEndpoint' },
+  'post /v1/webhooks': { ref: 'WebhookEndpoint' },
+  'patch /v1/webhooks/{id}': { ref: 'WebhookEndpoint' },
+  'post /v1/webhooks/{id}/rotate-secret': { ref: 'RotatedWebhookSecret' },
+  'get /v1/webhooks/{id}/deliveries': { ref: 'WebhookDelivery', list: true },
+  'get /v1/webhooks/{id}/deliveries/{deliveryId}': { ref: 'WebhookDelivery' },
+  'post /v1/webhooks/{id}/deliveries/{deliveryId}/replay': { ref: 'WebhookDelivery' },
 
   // Example (reference resource)
   'get /v1/examples': { ref: 'Example', list: true },
-  'get /v1/examples/{reference}': { ref: 'Example' },
+  'get /v1/examples/{id}': { ref: 'Example' },
   'post /v1/examples': { ref: 'Example' },
 };

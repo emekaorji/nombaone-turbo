@@ -1,4 +1,5 @@
 export interface WebhookEndpointResponseData {
+  domain: 'webhook'; // response object-type discriminator
   id: string; // public reference
   url: string;
   /** Event types this endpoint subscribes to (`*` = all). */
@@ -12,6 +13,7 @@ export interface WebhookEndpointResponseData {
 export type WebhookDeliveryStatus = 'pending' | 'succeeded' | 'failed' | 'dead';
 
 export interface WebhookDeliveryResponseData {
+  domain: 'webhook_delivery'; // response object-type discriminator
   id: string;
   eventType: string;
   endpointId: string;
@@ -28,6 +30,7 @@ export interface WebhookDeliveryResponseData {
 
 /** A domain event as listed by `GET /v1/events`. */
 export interface DomainEventResponseData {
+  domain: 'event'; // response object-type discriminator
   id: string; // EVT reference — the dedupe key
   type: string;
   payload: Record<string, unknown>;
@@ -36,6 +39,7 @@ export interface DomainEventResponseData {
 
 /** The one-time signing secret returned by create + rotate (never on read). */
 export interface RotatedWebhookSecretResponseData {
+  domain: 'webhook_secret'; // response object-type discriminator
   id: string;
   signingSecret: string;
   signingSecretPrefix: string;

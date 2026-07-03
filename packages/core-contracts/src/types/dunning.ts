@@ -10,6 +10,7 @@ export type DunningBranch = 'reschedule' | 'card_update_required' | 'short_path'
 
 /** One retry of a `past_due` invoice — the audit unit (D11). No PII. */
 export interface DunningAttemptResponseData {
+  domain: 'dunning_attempt'; // response object-type discriminator
   id: string; // DUN reference
   attemptNumber: number;
   status: DunningAttemptStatus;
@@ -26,6 +27,7 @@ export interface DunningAttemptResponseData {
 
 /** The rolled-up dunning view for a subscription + its open invoice (D11 inspect). */
 export interface DunningStateResponseData {
+  domain: 'dunning_state'; // response object-type discriminator
   subscriptionRef: string;
   invoiceRef: string | null;
   status: DunningAttemptStatus | 'none';
