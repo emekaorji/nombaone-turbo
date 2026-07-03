@@ -25,6 +25,8 @@ export interface Frontmatter {
   /** Ordering hint within a section; manifest order is canonical. */
   order?: number;
   badge?: Badge;
+  /** Set `false` to suppress the on-this-page TOC rail (default: shown when the page has h2/h3). */
+  toc?: boolean;
 }
 
 export interface TocHeading {
@@ -132,6 +134,7 @@ export async function getPage(slug: string): Promise<DocPage | null> {
     section: typeof data.section === "string" ? data.section : findSection(slug)?.key,
     order: typeof data.order === "number" ? data.order : undefined,
     badge: isBadge(data.badge) ? data.badge : navItem?.badge,
+    toc: typeof data.toc === "boolean" ? data.toc : undefined,
   };
 
   return {

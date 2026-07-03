@@ -83,7 +83,7 @@ export default async function DocPage({ params }: PageProps) {
         tabIndex={-1}
         className="min-w-0 flex-1 px-5 py-8 outline-none lg:px-10 xl:px-12"
       >
-        <article className="mx-auto w-full max-w-[var(--doc-shell-max)]">
+        <article className="mx-auto w-full max-w-(--doc-shell-max)">
           {!isHome && <Breadcrumbs slug={resolvedSlug} title={page.frontmatter.title} />}
 
           <header className="mb-2">
