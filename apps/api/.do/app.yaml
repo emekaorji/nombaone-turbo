@@ -4,7 +4,7 @@ region: fra
 services:
   - name: api
     github:
-      repo: emekaorji/nombaone-turbo
+      repo: emekaorji/nombaone
       branch: main
       deploy_on_push: false
 
