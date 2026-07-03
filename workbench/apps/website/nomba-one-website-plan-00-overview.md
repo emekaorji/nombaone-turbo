@@ -54,6 +54,8 @@ The name helps: "Nomba One" reads as *the one subscriptions layer* every Nomba t
 2. **Best-in-class DX: "anywhere, anything, anyhow."** Usable in any stack, any language, any way, plus the ability to *try the core thing* before committing. (Detail: doc 01 §Integrations, and the simulator.)
 3. **Honesty about the hard parts**: dunning, reconciliation, Nigerian-rail realities. Naming the real bottlenecks of building billing yourself, with clarity, is both the argument against DIY and the trust signal. (Detail: doc 04.)
 
+**Honesty extends to support: answering in public.** The FAQ is not dead. Questions go to the Ask modal and surface in a curated public Hall (`/hall`), approved and opted-in only, so real builders' hardest questions and the team's answers live in the open. That is a deliberate trust and honesty play in the Vercel/Resend lineage: we answer where everyone can read it, never careless.
+
 **The signature** that carries all three: the live, sandbox-backed, time-compressed **subscription simulator**: pick a rail, subscribe, watch cycles tick, trigger a failure, watch dunning recover it, see the webhook fire. It collapses "can I use this?" into "I just did." (Full spec: doc 02.)
 
 ## 6. Design language: inherit, don't reinvent
@@ -97,6 +99,8 @@ Draft copy for key moments is in doc 01. Where copy isn't specified, write to th
 **Header**: sticky, `backdrop-filter` blur over a translucent `--background`, hairline bottom border.
 - Left: invertible logo + wordmark "Nomba One".
 - Center/left nav: `Product`, `Integrations`, `Use cases`, `Docs ↗` (→ `docs.nombaone.xyz`), `Pricing`. A `Guides`/`Hard parts` entry can live here or under Resources.
+- **Active nav.** Each page highlights its own primary-nav item: `Product` on `/product`, `Integrations` on `/integrations`, `Use cases` on `/use-cases`, `Pricing` on `/pricing`. Pages outside the primary nav (`/trust`, `/guides`, `/changelog`, `/hall`) and the home highlight nothing.
+- **Rainbow Integrations.** The `Integrations` nav item carries a permanent, richly colorful animated rainbow gradient on its text fill (a slow hue cycle or gradient-position drift, ~6 to 8s loop, subtle and GPU-friendly). It is the one deliberately playful flourish in the otherwise-restrained chrome, drawing the eye to the DX breadth. Under `prefers-reduced-motion`, the gradient is static.
 - Right: `Log in` (→ console), `Start building` (accent, → console signup / quickstart). Optional theme toggle.
 - Mobile: collapses to a sheet; nav becomes a full-height menu. Keyboard-navigable, focus-visible.
 

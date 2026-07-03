@@ -113,4 +113,19 @@ The simulator talks to a **public, rate-limited sandbox endpoint** owned by the 
 
 The simulator appears on the **home page** (full-width stage in the bigger type scale, §3.3 of doc 01) and can be embedded, in a compacted form, on **/product** and relevant **/guides** articles ("see this exact failure recover" deep-links into the simulator with `failureMode` pre-set). Build it as a self-contained, prop-driven component so those placements are trivial.
 
+## 12. As designed (Pencil)
+
+Designed as the standalone **"Simulator · doc 02" board** in `workbench/NOMBAONE.pen` (frame `vpYGM`), the canonical spec artifact Phase B builds the live component against. Home §3.5 keeps its shipping `SimulatorStage` (`D5rg1S`) and inherits any component polish. Eight sections, all in the canonical dark language (status-color pills, raw-JSON console, emerald spent only at the peak, zero em dashes, verified in dark and light):
+
+- **§1 Canonical stage** reuses `D5rg1S` at full width (the home hero state).
+- **§2 State filmstrip** is the core loop as six compact stage cards: idle · cycle 1 charged · cycle 2 failed · dunning retry · recovered · run complete.
+- **§3 Rail variants** show each rail's distinct mechanics in its timeline and console: card (`payment_failed` → `action_required` OTP → checkout link → `payment_recovered`), bank transfer (push, `virtual_account.funded` → reconcile, cannot be pulled), direct debit (`mandate.consent_pending` → `mandate.active`, the silent NIBSS rail), crypto (distinct settlement, labeled).
+- **§4 Failure reasons** are a reason selector over three branches: `insufficient_funds` (payday retry, recovers), `expired_card` (no blind retry, `card.update_requested`, recovers), `hard_decline` (`dunning.exhausted` → `subscription.canceled`, the honest involuntary-cancel sad path).
+- **§5 Recovery moment** is the emerald peak: the `--ease-spring` scale-in (the only spring) and the card OTP to checkout-link step, with the reduced-motion note.
+- **§6 Mobile 390** stacks the timeline vertically, wraps the tabs, and makes the controls full-width buttons, shown mid-run and recovered.
+- **§7 Recorded-run fallback** carries the "sandbox busy, showing a recorded run" badge.
+- **§8 Annotation rail** captures the sandbox contract (§6), motion (§7), accessibility (§9), and the honesty labels ("1 cycle ≈ 2s"; webhooks signed, at-least-once, deduped, retried, replayable, never exactly-once).
+
+Status-color mapping (build against these): pending `surface-2`/`muted-foreground`, active/recovered `accent-muted`/`accent`, done `success-bg`/`success`, failed `danger-bg`/`danger`, dunning `warning-bg`/`warning`, action_required (card OTP) `info-bg`/`info`.
+
 Proceed to doc 03 for motion.

@@ -18,10 +18,11 @@ nombaone.xyz
 ├─ /guides              The Hard Parts library index   (content model → doc 04)
 │   └─ /guides/[slug]    Individual hard-parts article
 ├─ /changelog           Shipping cadence (credibility signal)
+├─ /hall                The Hall: curated, public question gallery (footer + /pricing, not primary nav)
 └─ ↗ docs.nombaone.xyz  Developer docs (separate app; linked, not rebuilt)
 ```
 
-Primary nav surfaces: Product, Integrations, Use cases, Docs↗, Pricing. Guides + Changelog + Status live in the footer and contextually inline.
+Primary nav surfaces: Product, Integrations, Use cases, Docs↗, Pricing. Guides, Changelog, Status, and the Hall live in the footer and contextually inline.
 
 ## 2. Global page grammar
 
@@ -30,6 +31,8 @@ Primary nav surfaces: Product, Integrations, Use cases, Docs↗, Pricing. Guides
 - **Type scale (bigger, confident):** hero display **96px / 600 / ls ≈ -4.4 / lh 1.03**; section title H2 **56px / 600 / ls ≈ -2.4 / lh 1.05**; section deck **24px / 400**, muted; hero lede 27px; section body and paragraphs 20–24px; card titles 24–26px; card body 17–18px; list, trust, and feature items 18px; large stat numerals ≈ 76px; small and caption 15–16px; mono code 14, mono caption 12–13. Big type plus generous space reads as the calm confidence of a team sure of what it built. It is a deliberate signal, not decoration.
 - **Numbered markers (01/02/03):** only where content is genuinely a sequence. The **lifecycle** section is a real sequence → number it. Do **not** number the feature grid, integrations, or use-cases. That would be decoration, not information.
 - **The accent budget:** emerald appears per section at most once or twice (a CTA, a link, a live dot, a highlighted code token). If a section has emerald in three places, remove one.
+- **Active nav:** each page highlights its own primary-nav item: Product on /product, Integrations on /integrations, Use cases on /use-cases (and its slug pages), Pricing on /pricing. Pages outside the primary nav (/trust, /guides, /changelog, /hall) highlight none, and the home highlights none.
+- **Inner-page header:** every inner page (not the home) opens with a calm **page header**: a big H1 (~72px, ls ≈ -3, lh 1.03), a one-line deck (24px muted), left-aligned, with ~120px top padding. It has **no** rotating-audience word and **no** hero glow (those are home-hero-only); inner pages are calmer and more confident. It may carry two CTAs (Start building + Read the docs) as larger buttons, EXCEPT /product, whose header has no CTAs (its call to action lives in the closing CTABand; two CTAs there were redundant). Detail and slug pages (a use-case, a guide article) lead with a small accent kicker or tag before the H1, and a guide article adds a meta line (reading time, updated).
 
 ---
 
@@ -253,6 +256,8 @@ Global chrome (doc 00 §8).
 
 Expands home §3.6 into a full page. Each of the five stages gets a section: the problem, how Nomba One does it, a real code sample or small diagram, and the linked hard-part. End with the trust band and a CTA. This is where a developer who's "interested" goes deep. Reuse the lifecycle progress-line motion.
 
+**As built:** page header "Every renewal, from signup to settlement." (no CTAs) then a LifecycleRail overview (numbered pipeline, the hard-part chips removed) then FIVE stage sections, each a 2-col that alternates side, carrying the stage number + title + the problem (muted) + how Nomba One does it (foreground) + a linked guide, with a signature visual per stage: Subscribe renders a create-subscription CodeBlock; Bill renders an idempotency panel (POST charge + an Idempotency-Key + the unique (subscription, period) note); Recover renders a dunning timeline (payment_failed to retry_scheduled at payday+1 to action_required with a checkout link to payment_recovered); Reconcile renders a transfer-to-invoice match panel (matched by reference, verified against Nomba); Settle renders the settlement split diagram. Close with a StatBand (guarantees) and a CTABand.
+
 ## 5. /integrations: the DX matrix
 
 The home of "anywhere, anything, anyhow."
@@ -274,15 +279,23 @@ The home of "anywhere, anything, anyhow."
 - Each SDK/framework tile → its quickstart. Migration guides double as competitive SEO (and live in the content library, doc 04).
 - **Crypto note for the build:** present crypto as a first-class rail but know it's architecturally distinct (own settlement/on-off-ramp, own compliance). Don't imply it settles identically to the Nomba rails.
 
+**As built:** page header "Integrate anywhere." then a "Reach us from anywhere in your stack" section rendering the matrix as a MatrixTile grid grouped by SDKs (Node, Python, Go, PHP, Ruby, .NET, Java), Frameworks (Next.js, Laravel, Django), Mobile (React Native, Flutter), No-code (Zapier, Make, n8n), and API and CLI (REST + OpenAPI, CLI) then a LangTabs code showcase ("The same call, in your framework") then a rails Tag row plus a crypto-is-distinct Callout then drop-in Cards (Checkout embed, Accounting exports) then migration GuideCards (Stripe Billing, Paystack) then a CTABand.
+
 ## 6. /use-cases + /use-cases/[slug]
 
 - Index: the five cards from home §3.11, each with a one-line pain statement.
 - Template per vertical: the vertical's specific pain (e.g. school fees paid in installments, chased manually) → how Nomba One solves it (rails + installments + dunning + reconciliation) → a tailored code/flow snippet → a CTA. These pages are where founders and merchants convert, and they're strong SEO targets.
 
+**As built:** the index is the page header "Built for how your business bills." plus a grid of five UseCaseCards and a CTABand. The [slug] template (built as School fees) is: a page header with an accent kicker (the vertical) + H1 + deck then a "The manual way" 2-col (the pain narrative beside an installment-schedule visual: Term 1 paid, Term 2 due and nudged, Term 3 scheduled) then a "One subscription per student" section with four solution mini-cards (Any rail, Installments, Payday dunning, Auto-reconciled) then an "In code" tailored CodeBlock (create the subscription with installments) then a CTABand.
+
 ## 7. /pricing: transparent, self-serve-first
 
 - Clear tiers with real numbers; a free/sandbox tier front and center. No "Contact us" wall on the self-serve tier. A developer must be able to understand cost without talking to anyone. An enterprise/volume tier can have "Talk to us."
-- State the pricing model plainly (see doc 00, where the pricing model itself is a business decision to confirm; the page just presents it honestly). Include a short FAQ on fees, currency (NGN), and how settlement/payout costs work.
+- State the pricing model plainly (see doc 00, where the pricing model itself is a business decision to confirm; the page just presents it honestly).
+- **FAQ block, "Questions, answered.":** a short FAQ on fees, currency (NGN), and how settlement and payout costs work. The heading carries a bare **emerald-gradient up-right arrow, underlined like a link** (no circle or button chrome), that links to `/hall`, the public question gallery; on hover it lifts and rotates slightly (doc 03).
+- **"Add your question":** below the FAQ, the line "Not here? Ask us. We answer in the open, in the Hall." with an **Add your question** button that opens the shared Ask modal (§12). It turns a dead-end FAQ into a way in: ask, get helped as you type, and maybe become an exhibit in the Hall.
+
+**As built:** a centered page header then three PricingTiers: Sandbox (Free, everything to build), Self-serve (usage-based, marked "illustrative, final pricing TBD", the featured tier with an accent border), and Enterprise (Custom, "Talk to us") then the centered FAQItem list (the "Questions, answered." block already documented) then the "Add your question" entry then a CTABand.
 
 ## 8. /trust: the page that closes leaders
 
@@ -292,17 +305,91 @@ The home of "anywhere, anything, anyhow."
 - Uptime / status page link, incident posture, data protection (NDPR) and PCI posture (card entry stays on Nomba's hosted page).
 - **Reasoning:** for billing infra, this page does real sales work. Write it plainly and specifically. Vagueness reads as risk.
 
+**As built:** page header "Built so it can't quietly lose your money." then "Every kobo, accounted for twice" (a 2-col: the double-entry ledger-receipt visual beside a TrustItem list of integer kobo, immutable invoices, idempotency, signature-verified webhooks, and two-step verify) then "Isolation is a property of the schema" (three tenant vault cards over a scoped-query mono line, WHERE organization_id = $tenant) then "Money that arrives is verified, not trusted" (a horizontal flow: webhook in, verify signature, requery Nomba, match by reference, post ledger) then a StatBand then a "Compliance, plainly" FAQItem list (no raw card data, NDPR, uptime posture, and direct-debit, payouts, and escrow stated as built but live-gated) then a CTABand.
+
 ## 9. /guides: the Hard Parts library
 
 Index + article pages. The content model, article template, starting roster, and one worked example are in **doc 04.** The index groups by theme (Reliability & correctness · The Nigerian payment reality · Billing mechanics · Multi-tenant & infra · Migration guides) and each article ends with a "see it live" exit into the simulator or docs.
+
+**As built:** the index is the page header "The hard parts of recurring billing, written down." plus FIVE grouped GuideCard clusters (each a group heading over a 3-up card grid), roster from doc 04. The article template (built as "The double-charge bug") is a centered ~760px reading column: a group Pill tag + H1 + problem line + a meta line (reading time, updated) then five ArticleBeats (scenario, naive approach, why it breaks, how Nomba One handles it with a CodeBlock for the unique index plus idempotency key, and see it live) then an "Open the simulator" button then a "Related" list then a CTABand.
 
 ## 10. /changelog
 
 - A reverse-chronological, plainly-written list of shipped changes. Quiet but powerful credibility: it proves the thing is alive and shipping. Author from the same MDX pipeline as guides. Link it in the footer and from the header's Resources.
 
+**As built:** page header "Shipping, in the open." then a reverse-chron ChangelogEntry list (date + a version Pill + title + description), seeded from the real build history: card OTP to checkout-link dunning fallback; settlement, refunds, and payouts; mandate activation sweep; byte-confirmed Nomba webhooks; and kobo and naira at the boundary.
+
+## 11. /hall: The Hall (answer in public)
+
+Radical transparency for support. Instead of a dead FAQ or a hidden ticket queue, the Hall is a **curated, public gallery** of the hardest real questions builders have asked on Nomba One and the team's answers. It is "build in public" applied to support: a trust asset, an SEO asset, and a marketing asset at once. Reachable from the footer and from /pricing, never a primary-nav item.
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│ The Hall.                                                      │
+│ Every hard question builders have hit on Nomba One, answered   │
+│ in the open. Real questions, real code, real answers.          │
+│ Curated, never careless.                                       │
+│ ● 1,204 answered, in public          [ Add your question ]     │
+│                                                                │
+│ [All][Rails][Dunning][Reconciliation][Multi-tenant][Migration] │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐            │
+│  │ @midnight_…  │ │ ships_at_3am │ │ kudi_gremlin │            │
+│  │ #Dunning     │ │ #Reconcile   │ │ #Multi-tenant│            │
+│  │ question…    │ │ question…    │ │ question…    │            │
+│  │ ` code `     │ │              │ │ ` code `     │            │
+│  │ ───────────  │ │ ───────────  │ │ ───────────  │            │
+│  │ ✓ Nomba One  │ │ ✓ Nomba One  │ │ ✓ Nomba One  │            │
+│  │   team: …    │ │   team: …    │ │   team: …    │            │
+│  └──────────────┘ └──────────────┘ └──────────────┘            │
+└───────────────────────────────────────────────────────────────┘
+```
+
+- **Hero (editorial):** a massive "The Hall." title, a deck "Every hard question builders have hit on Nomba One, answered in the open. Real questions, real code, real answers. Curated, never careless.", a live count "1,204 answered, in public", and an **Add your question** button that opens the Ask modal (§12).
+- **Filter chips:** All, Rails, Dunning, Reconciliation, Multi-tenant, Migration. Selecting one re-lays the wall.
+- **The exhibit wall:** a **masonry** of exhibits of varying height. Each exhibit: the asker (a funky handle + monogram avatar) and a theme tag, the question (with an optional real code snippet or screenshot), a hairline, then the team's answer led by a green **"Nomba One team" check-seal**.
+- **Truthfulness holds in the answers:** card is best-effort with OTP-to-link fallback, direct debit is the silent rail, webhooks are at-least-once, and live-gated rails are described as capabilities. The Hall never overclaims to look good.
+- **Curated, not a forum:** no login, no voting, no unanswered noise. Only admin-approved AND opted-in questions ever appear (the toggle in §12). Every exhibit is solved and approved.
+- **Reasoning (why it is disruptive):** no fintech or infrastructure company runs public, curated support. Publishing the real hard questions and answering them in the open proves the product is used, the problems are real, and the team stands behind its answers. It deflects the same question for the next reader (SEO plus support load), and it is safe because nothing is public without review.
+- **Motion & nuance:** exhibits reveal on scroll with a masonry stagger, the filter chips animate the grid on filter, the live count ticks up, and the "answered" check-seal lands with a small emphasis. Respect prefers-reduced-motion. (doc 03)
+
+## 12. The Ask modal (shared)
+
+A shared component opened by any "Add your question" affordance (the /pricing FAQ, the Hall hero, and anywhere else we invite a question). It opens with a scale-and-fade over a backdrop blur.
+
+```
+┌──────────── Ask the Hall ────────────────┐
+│ @midnight_debugger         (tap to rename)│
+│ ┌──────────────────────────────────────┐ │
+│ │ What are you stuck on?               │ │
+│ └──────────────────────────────────────┘ │
+│ ┌─ snippet.ts      TypeScript ▾     ✕ ─┐ │
+│ │ 1  const res = await nomba.charge(…) │ │
+│ │ 2  // returns action_required + link │ │
+│ └──────────────────────────────────────┘ │
+│ [ + Add image ]                           │
+│ ┌── Might help, before you even ask ────┐ │
+│ │ ▸ Dunning for thin balances    GUIDE │ │
+│ │ ▸ invoice.payment_failed       DOCS  │ │
+│ │ ▸ Break a card cycle           LIVE  │ │
+│ └───────────────────────────────────────┘ │
+│ (●) Feature my question in the Hall ↗     │
+│ Nothing goes live without review.         │
+│                               [   Ask   ] │
+└───────────────────────────────────────────┘
+```
+
+- **Name field, prefilled:** a funky, gen-z handle generated client-side on open (e.g. @midnight_debugger, ships_at_3am, kudi_gremlin), editable ("tap to rename"). Personality lowers the bar to ask.
+- **Problem:** a textarea, "What are you stuck on?".
+- **Code editor (under the textarea):** a real inline code editor sits directly beneath the problem textarea, with a filename tab, a language selector (e.g. TypeScript), line numbers, and syntax highlighting, so a snippet can be pasted and read cleanly. It replaces the old "Add code" chip. **Add image** (a screenshot) is the one remaining attachment chip. Both animate in.
+- **Feature-in-the-Hall toggle (a switch):** ON reads "Feature my question in the Hall ↗" at full opacity, with **Hall ↗** rendered as an underlined inline link to /hall (no button chrome, just an underlined accent link with the up-right arrow). OFF reads "Do not feature my question in the Hall", label slightly greyed and switch off. It controls whether the approved question may ever appear publicly. The switch animates and the label cross-fades between the ON and OFF copy.
+- **Footer note (follows the toggle) plus submit:** ON = "Nothing goes live without review."; OFF = "Private. Only our team will see this." Plus an accent **Ask** button.
+- **"Might help, before you even ask" panel:** as the user types, a debounced search over guides plus docs plus the event catalog surfaces matched suggestions that fade and slide in. Each is an icon + title + a small type tag (**GUIDE / DOCS / LIVE**, LIVE being a simulator deep-link). This deflects and helps in one move.
+- **Approval pipeline:** submissions go to the admin surface; only questions that are **approved AND opted-in** reach the Hall. Never careless.
+- **Motion & nuance:** scale-and-fade open over backdrop blur, the handle generates on open, the "Might help" suggestions debounce-search and fade/slide in, the toggle animates and cross-fades its label, and attachments animate in. Respect prefers-reduced-motion. (doc 03)
+
 ---
 
-## 11. Page → doc cross-reference
+## 13. Page → doc cross-reference
 
 - Every section's motion → **doc 03** (by section name).
 - The simulator (home §3.5, referenced on /product) → **doc 02.**
