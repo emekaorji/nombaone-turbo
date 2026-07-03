@@ -62,10 +62,10 @@ Attach a test method that fails, then watch the loop run:
 curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
   -H "Authorization: Bearer nbo_test_…" \
   -H "Content-Type: application/json" \
-  -d '{ "customerId": "{customerId}", "behavior": "test_decline_insufficient_funds" }'
+  -d '{ "customerId": "{customerId}", "behavior": "decline_insufficient_funds" }'
 ```
 
-Use `test_requires_otp` to rehearse the checkout-link branch, and
+Use `requires_otp` to rehearse the checkout-link branch, and
 [verify us in your devtools](/getting-started/verify-in-your-devtools) to fire the
 `invoice.action_required` event at your own endpoint.
 

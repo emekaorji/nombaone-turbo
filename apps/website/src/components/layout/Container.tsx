@@ -26,7 +26,7 @@ export function HomeSection({
   id,
   className,
   children,
-  divider = true,
+  divider = false,
 }: {
   id?: string;
   className?: string;

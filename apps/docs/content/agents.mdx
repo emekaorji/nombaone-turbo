@@ -1,0 +1,100 @@
+---
+title: Agent-native docs
+description: These docs are built to be read by machines as well as people — a clean Markdown mirror of every page, an llms.txt index, the full corpus in one file, and one-click copy-to-AI.
+section: agents
+order: 0
+---
+
+Nomba One's docs are **docs-as-data**. Everything a human reads here is also
+available as clean Markdown at a predictable URL, indexed for language models,
+and generated from the same in-repo sources as the site — so the agent view can
+never drift from the human view.
+
+## Markdown mirror — append `.md` to any URL
+
+Every page has a Markdown twin. Take any docs URL and add `.md`:
+
+```
+https://docs.nombaone.xyz/getting-started/your-first-subscription
+https://docs.nombaone.xyz/getting-started/your-first-subscription.md
+```
+
+The `.md` version has typed frontmatter (`title`, `type`, `summary`, `canonical`),
+the prose flattened to CommonMark, every code sample preserved verbatim, and each
+interactive widget reduced to a one-line descriptor pointing at the live page. It
+is the exact text an agent should ingest.
+
+<Callout type="tip" title="Copy this page to your AI">
+  The **Copy page** button at the top of every page copies that Markdown to your
+  clipboard, or opens the page directly in Claude or ChatGPT pre-loaded with the
+  mirror URL. One click from reading to asking.
+</Callout>
+
+## llms.txt — the curated index
+
+[`/llms.txt`](https://docs.nombaone.xyz/llms.txt) follows the
+[llms.txt convention](https://llmstxt.org): a short description of Nomba One, then
+every page grouped by section, each linking its `.md` mirror with a one-line
+summary. Point an agent at it to get an accurate map of the whole surface.
+
+## llms-full.txt — the whole corpus in one file
+
+[`/llms-full.txt`](https://docs.nombaone.xyz/llms-full.txt) is the entire
+documentation inlined into a single file: every page's Markdown, a compact
+rendering of **every API operation** (method, path, parameters), and **every
+public error code** with its fix. An agent given only this file can name the
+correct endpoint, the correct field, the correct unit (**integer kobo**), and the
+correct error code for a task — with nothing external to fetch.
+
+<Callout type="note" title="Generated, never hand-maintained">
+  All three artifacts are built from the content tree, the API's OpenAPI
+  snapshot, and the error registry at build time. Add a page or change the API,
+  and they regenerate — the machine-readable docs stay in lockstep with the human
+  ones.
+</Callout>
+
+## MCP — connect an agent directly
+
+Nomba One runs a read-only [Model Context Protocol](https://modelcontextprotocol.io)
+server so a coding agent can query the docs as tools, grounded in the same in-repo
+sources. Point your client at:
+
+```
+https://docs.nombaone.xyz/api/mcp
+```
+
+It exposes five read-only tools — and, deliberately, no write or action tools, so
+an agent can read but never move money:
+
+| Tool | What it does |
+|---|---|
+| `search_docs` | Full-text search across every page. |
+| `get_page` | Fetch a page as clean Markdown by slug. |
+| `list_operations` | Every API operation from the live schema. |
+| `lookup_error` | An error code's fix hint and docs URL. |
+| `list_test_methods` | The deterministic sandbox test behaviors. |
+
+<Callout type="note" title="Read-only by design">
+  The MCP server never executes API calls or moves money — running an endpoint
+  stays behind the test-keyed playground. The server is discoverable at
+  [`/.well-known/mcp.json`](https://docs.nombaone.xyz/.well-known/mcp.json).
+</Callout>
+
+## What's honest about this
+
+- **The same bytes.** The `.md` mirror is the same content the HTML renders, not a
+  summary — no drift, no second source of truth.
+- **Grounded, not generated.** The operation list and error codes come from the
+  real schema and registry, so an agent reading them won't invent an endpoint or
+  a field.
+- **Integer kobo everywhere.** Money is always integer kobo in these docs and in
+  the corpus — see [money is integer kobo](/concepts/money-is-integer-kobo).
+
+<CardGroup cols={2}>
+  <Card title="API reference" href="/reference/customers">
+    Per-endpoint reference, generated from the same schema as llms-full.txt.
+  </Card>
+  <Card title="Error reference" href="/errors">
+    Every error code and its fix — the grounding for agent answers.
+  </Card>
+</CardGroup>

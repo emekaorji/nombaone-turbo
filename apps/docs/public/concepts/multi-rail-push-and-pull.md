@@ -1,0 +1,51 @@
+---
+title: "Multi-rail: push and pull"
+type: explanation
+summary: "Why card and mandate rails are pulled but bank transfer is pushed, and how one subscription runs correctly over all of them."
+canonical: https://docs.nombaone.xyz/concepts/multi-rail-push-and-pull
+---
+
+# Multi-rail: push and pull
+
+Nomba One runs one subscription over every rail — card, direct debit, bank transfer, and
+crypto. But the rails are not interchangeable, and pretending they are is the most common
+way to get billing wrong here. The dividing line is **push vs pull**.
+
+## Pull rails: we initiate
+
+A **pull** rail lets the engine initiate the money movement on the billing date:
+
+- **Card** — charge a saved card token. In Nigeria a recurring card charge often hits a
+bank OTP/3-D Secure step-up, so it is not always silent — see
+[card tokens expire](/concepts/hard-parts/card-tokens-expire) and the OTP recovery model.
+- **Direct debit (mandate)** — pull from a bank account the customer has authorized with a
+[mandate](/concepts/hard-parts/mandates-and-consent). Reliable and silent once active.
+
+For a pull rail, "collect" means: attempt the debit, get an answer, record it.
+
+## Push rails: the customer initiates
+
+A **push** rail cannot be pulled. There is no API call that reaches into a customer's
+account and takes the money — **the customer has to send it**:
+
+- **Bank transfer** — the most common way money moves in Nigeria. On the billing date the
+engine exposes *where to pay* (a virtual account) and then waits for the money to arrive.
+
+For a push rail, "collect" means: expose the pay instructions, and settle when a verified
+inbound event confirms the transfer — never on the raw notification alone. This is why
+[a transfer that doesn't match the invoice](/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice)
+is a real case you must handle, not an edge.
+
+> **The rail abstraction**
+>
+> The core never learns a rail's name. It speaks one interface — "collect for this
+> reference" — and each rail adapts it. That is what lets the same subscription run over a
+> card, a mandate, or a transfer, with the push/pull difference handled beneath you.
+
+## Why the asymmetry shapes everything
+
+Because a transfer can't be pulled, a "charge on the billing date and mark it paid" model
+simply has nowhere to fit it. Nomba One is built around the asymmetry instead of hiding it:
+push rails settle asynchronously, thin balances mean a failed pull is *"not yet"* not *"no"*,
+and [dunning](/concepts/hard-parts/dunning-for-thin-balances) is tuned for recovery, not
+just retries.

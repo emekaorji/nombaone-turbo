@@ -1,0 +1,75 @@
+---
+title: "Webhooks overview"
+type: reference
+summary: "How outbound events reach your endpoints — what a delivery looks like, how to register, and the four rules that keep your handler correct."
+canonical: https://docs.nombaone.xyz/webhooks/overview
+---
+
+# Webhooks overview
+
+A webhook is how nombaone tells your server what happened without you polling.
+When an invoice is paid, a charge fails, or a card needs OTP, we `POST` a signed
+event to the endpoint you registered. Everything about the outbound side lives in
+this section; the handler pattern is in
+[handle webhooks](/guides/handle-webhooks).
+
+## What a delivery looks like
+
+Each delivery is an HTTP `POST` with a JSON body and a signature header:
+
+```http
+POST /your/endpoint HTTP/1.1
+Content-Type: application/json
+X-Nombaone-Signature: t=1719920092,v1=8f3c…
+X-Nombaone-Delivery-Guarantee: at-least-once
+
+{
+  "id": "evt_2a7e1b0d8c3a",
+  "type": "invoice.paid",
+  "reference": "nbo749201835566inv",
+  "createdAt": "2026-07-02T10:14:52.004Z",
+  "data": { "reference": "nbo749201835566inv" }
+}
+```
+
+The `type` names the event, `reference` is the resource's public id, and `id` is
+the unique event id you dedupe on.
+
+## Register an endpoint
+
+Point a webhook at a URL you control, choosing which events it should receive:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
+  -H "Authorization: Bearer nbo_test_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/nomba",
+    "enabledEvents": ["invoice.paid", "invoice.payment_failed", "invoice.action_required"]
+  }'
+```
+
+You get back a **signing secret** (`whsec_…`), shown once. Endpoints are
+per-environment — a test event only reaches your test endpoint.
+
+## The four rules
+
+A correct handler always does these four things, in order:
+
+1. **[Verify the signature](/webhooks/signing-and-verification)** over the raw
+body, before parsing.
+2. **[Dedupe on the event id](/webhooks/delivery-guarantee)** — delivery is
+at-least-once.
+3. **Respond `2xx` fast**, then do the work asynchronously.
+4. **Branch on the unhappy events**, not just `invoice.paid`.
+
+> **See it before you build it**
+>
+> The sandbox sends no organic webhooks, so
+> [verify us in your devtools](/getting-started/verify-in-your-devtools) hands you
+> a real signed event to fire at your own endpoint and watch verification pass.
+
+- **[Event catalog](/webhooks/event-catalog)** — 
+Every event, when it fires, and its payload.
+- **[Signing & verification](/webhooks/signing-and-verification)** — 
+The exact signature recipe and a reference implementation.

@@ -38,3 +38,8 @@ Because the ledger is the source of truth, idempotency is enforced against it: a
 movement claims its effect atomically, so a retried or replayed request resolves to exactly
 one posting. This is how "[retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)"
 stays true — the ledger only ever records the movement once.
+
+Send the same `Idempotency-Key` twice and you get one subscription back; change the key and
+you get a new one. Try it:
+
+<IdempotencyLab />

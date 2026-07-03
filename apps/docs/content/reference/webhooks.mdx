@@ -1,0 +1,20 @@
+---
+title: Webhook endpoints
+description: Register, rotate, and inspect webhook endpoints and their deliveries. Generated from the live schema.
+section: api
+order: 13
+toc: false
+---
+
+A **webhook endpoint** is a URL nombaone delivers signed events to. This resource
+manages endpoints and their delivery history: create, list, update, delete, rotate
+the signing secret, inspect deliveries, and replay one. For how deliveries work
+and how to handle them, see the [Webhooks](/webhooks/overview) section.
+
+<ApiReference resource="webhooks" />
+
+<Callout type="note" title="One secret per endpoint">
+  Each endpoint has its own `whsec_…` signing secret, shown once at creation and
+  rotatable without downtime. Verify every delivery against it —
+  [signing & verification](/webhooks/signing-and-verification).
+</Callout>

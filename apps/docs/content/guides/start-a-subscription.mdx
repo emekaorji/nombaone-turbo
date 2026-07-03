@@ -44,7 +44,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/virtual-account
 
 <Callout type="note" title="Rehearse deterministically in test">
   On the sandbox, skip the hosted step: `POST /v1/test/payment-methods` with a
-  `behavior` (`test_success`, `test_requires_otp`, `test_decline_insufficient_funds`)
+  `behavior` (`success`, `requires_otp`, `decline_insufficient_funds`)
   gives you a method with a known outcome, so you can rehearse both the happy and
   the unhappy paths before real money is involved.
 </Callout>

@@ -11,6 +11,8 @@ import { InlineCode, Pre } from "./code-block";
 import { EndpointHeader } from "./endpoint-header";
 import { ErrorReference } from "./error-reference";
 import { EventCatalog } from "./event-catalog";
+import { IdempotencyLab } from "./idempotency-lab";
+import { MoneyUnit } from "./money-unit";
 import { FeeBreakdown } from "./fee-breakdown";
 import { ParamField, ResponseField } from "./fields";
 import { Glossary } from "./glossary";
@@ -140,6 +142,8 @@ export const mdxComponents: MDXComponents = {
   ErrorReference,
   EventCatalog,
   ApiReference,
+  IdempotencyLab,
+  MoneyUnit,
   Glossary,
   RequestExample,
   Variant,

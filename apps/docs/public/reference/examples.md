@@ -1,0 +1,135 @@
+---
+title: "Create an example"
+type: reference
+summary: "A worked reference endpoint that records one money movement through the reference, the double-entry ledger, idempotency, and events."
+canonical: https://docs.nombaone.xyz/reference/examples
+---
+
+# Create an example
+
+Creates an **example** — the one deletable endpoint that demonstrates the whole
+money path end to end. Creating an example mints a public reference, posts a
+balanced double-entry transaction to the ledger, and emits a `example.created`
+event. The resource's `status` is **derived from the ledger**, never stored as a
+free-floating field.
+
+Use this as the template for your own resources, then delete the slice.
+
+> **A teaching endpoint**
+>
+> The example slice exists to show how the primitives compose — a reference as
+> the join key, a balanced ledger posting, idempotency, and an emitted event.
+> It carries no product meaning; the two kinds (`standard`, `priority`) differ
+> only as an enum illustration.
+
+## Request
+
+Authenticate with your organization's secret key, and send an `Idempotency-Key`
+so a retry never creates a second example.
+
+```bash
+# Record a ₦150.00 example (15000 kobo)
+curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
+  -H "Authorization: Bearer nbo_test_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 1c4e7a90-2b3d-4f56-8a9b-0c1d2e3f4a5b" \
+  -d '{
+    "kind": "standard",
+    "amount": 15000
+  }'
+```
+
+```ts
+const res = await fetch("https://sandbox.api.nombaone.xyz/v1/examples", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.NOMBAONE_SECRET_KEY}`,
+    "Content-Type": "application/json",
+    "Idempotency-Key": crypto.randomUUID(),
+  },
+  body: JSON.stringify({
+    kind: "standard",
+    amount: 15_000, // kobo → ₦150.00
+  }),
+});
+const { data } = await res.json();
+```
+
+## Request fields
+
+The amount to record, in integer kobo (NGN). Must be a positive integer —
+`15000` is ₦150.00. There are no floats or decimal strings.
+
+The example kind. An enum discriminator for illustration only; both kinds
+behave identically.
+
+## Response
+
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "id": "nbo749201835566exa",
+    "kind": "standard",
+    "status": "pending",
+    "amount": 15000,
+    "currency": "NGN",
+    "environment": "test",
+    "createdAt": "2026-06-29T10:14:52.004Z"
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+```json
+{
+  "success": false,
+  "statusCode": 422,
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "amount must be a positive integer.",
+    "fields": { "amount": "Expected a positive integer (kobo)." }
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+```json
+{
+  "success": false,
+  "statusCode": 401,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid or missing API key."
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+## Response fields
+
+The response is the standard success envelope: `success`, `statusCode`, the
+resource in `data`, and `meta.requestId`.
+
+The example's **reference** — its stable public id (`nbo…exa`). The same
+string joins the resource, its ledger postings, and its webhooks.
+
+The kind you created it with.
+
+The lifecycle status, **derived from the ledger** rather than stored. New
+examples start `pending`.
+
+The amount recorded, in kobo.
+
+Always `NGN`.
+
+The environment this resource belongs to, matching your key's prefix.
+
+When the example was created.
+
+> **The reference ties it together**
+>
+> Store the `id`. It is the idempotency-safe public id, the reconciliation join
+> key against the ledger, and the identifier that every webhook for this
+> resource will carry.

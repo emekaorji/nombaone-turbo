@@ -1,0 +1,59 @@
+---
+title: "The double-charge bug, and why idempotency keys aren't optional"
+type: explanation
+summary: "A retry or a crash turns one payment into two, and your customer notices before you do."
+canonical: https://docs.nombaone.xyz/concepts/hard-parts/the-double-charge-bug
+---
+
+# The double-charge bug, and why idempotency keys aren't optional
+
+## The scenario
+
+It is the 1st. Your billing job wakes up and starts charging the subscriptions that are due. Two-thirds of the
+way through, the process is killed by a deploy, an out-of-memory, or a dropped connection. It restarts and
+picks the run back up. Some of those subscriptions were already charged. A customer gets debited twice for the
+same month.
+
+## The naive approach
+
+Loop over the due subscriptions, call the charge API for each, mark it paid in your database. It passes every
+test you write, because your tests do not get killed halfway through.
+
+## Why it breaks
+
+The charge and the "mark as paid" write are not one atomic thing, and the process is not guaranteed to finish.
+On restart you cannot tell "already charged" from "never charged," so you charge again. In a market where
+balances are thin, a surprise double-debit is not just a refund. It is a support ticket, a chargeback, and a
+customer who now distrusts every future charge. One bad run can do this to thousands of subscriptions at once.
+
+## How Nomba One handles it
+
+The guard is not hopeful code, and it is not a clever reference string. It is the database.
+
+Every billing period is claimed exactly once. Before any money moves, the engine runs an insert that either
+wins the period or does nothing:
+
+```sql
+insert into subscription_periods (subscription_id, period_index, ...)
+values ($1, $2, ...)
+on conflict (subscription_id, period_index) do nothing
+returning id;
+```
+
+Two unique indexes make a duplicate structurally impossible: one on
+`subscription_periods (subscription_id, period_index)`, and a second on the invoice itself,
+`invoices (subscription_id, period_index)`. Either one alone means the Nth period can only ever produce one
+invoice, even if every advisory lock and cache above it fails.
+
+Crash-safety comes from splitting registration from execution. The scheduler registers exactly one repeatable
+job per task, keyed by the task id, so booting ten instances still yields one schedule, not ten. The sweep
+only enqueues one bill-job per due subscription; it never charges inline. The charge itself happens once, in
+the worker, behind the period claim. Kill the job anywhere and restart it, and it resolves to one charge and
+one ledger entry, every time. The double-charge is impossible by construction, not guarded by careful code.
+
+## See it
+
+Run the simulator with a mid-run interruption and watch it resolve to a single charge. Or read how the
+scheduler and the period claim enforce this.
+
+See [the ledger](/concepts/the-ledger#idempotency-lives-here-too) for how idempotency is enforced, and [a scheduler that survives a crash](/concepts/hard-parts/scheduler-that-survives-a-crash).

@@ -1,0 +1,111 @@
+# Nomba One
+
+> Nomba One is a subscription-billing engine on Nomba (Nigerian payments): plans, cycles, proration, dunning, and settlement over card, direct debit, bank transfer, and crypto. Money is integer kobo, recorded in a double-entry ledger; multi-tenant, with per-organization sub-account settlement. These docs are honest about the hard parts (thin balances, card OTP, push vs pull rails) and every runnable example hits the real sandbox.
+
+This is the agent index. Every link points at a clean Markdown mirror (append `.md` to any docs URL). For the full inlined corpus, see https://docs.nombaone.xyz/llms-full.txt
+
+## Get started
+
+- [Quickstart](https://docs.nombaone.xyz/getting-started/quickstart.md): Get a sandbox key and reach your first real subscription in minutes.
+- [Authentication](https://docs.nombaone.xyz/getting-started/authentication.md): The per-organization nbo_test_ / nbo_live_ secret key, and how it works.
+- [Environments](https://docs.nombaone.xyz/getting-started/environments.md): Test vs live, and how a key pins every request to one environment.
+- [Your first subscription](https://docs.nombaone.xyz/getting-started/your-first-subscription.md): Create a plan, a price, and a subscription that bills — end to end.
+- [Verify us in your devtools](https://docs.nombaone.xyz/getting-started/verify-in-your-devtools.md): Fire a real signed webhook and watch it land in your own logs.
+
+## Guides
+
+- [Create plans and prices](https://docs.nombaone.xyz/guides/create-plans-and-prices.md): Model your pricing: plans, prices, intervals, and trials.
+- [Start a subscription](https://docs.nombaone.xyz/guides/start-a-subscription.md): Subscribe a customer on any rail — card, direct debit, transfer.
+- [Handle webhooks](https://docs.nombaone.xyz/guides/handle-webhooks.md): Receive, verify, and dedupe events; keep one correct balance.
+- [Dunning and recovery](https://docs.nombaone.xyz/guides/dunning-and-recovery.md): Recover a failed charge on a thin balance — the Nigerian way.
+- [Refunds, payouts & settlement](https://docs.nombaone.xyz/guides/refunds-payouts-settlement.md): Move money back out: refunds, escrow, and payouts to a bank.
+- [Proration and plan changes](https://docs.nombaone.xyz/guides/proration-and-plan-changes.md): Upgrade, downgrade, and switch intervals mid-cycle, correctly.
+- [Coupons and credits](https://docs.nombaone.xyz/guides/coupons-and-credits.md): Discounts, credit grants, and how they resolve on an invoice.
+- [Going live](https://docs.nombaone.xyz/guides/going-live.md): The checklist to move from a test key to real money.
+
+## Concepts
+
+- [How billing works](https://docs.nombaone.xyz/concepts/how-billing-works.md): Cycles, invoices, collection, and the state machine underneath.
+- [Money is integer kobo](https://docs.nombaone.xyz/concepts/money-is-integer-kobo.md): Why every amount is integer kobo, and the 100× naira trap.
+- [The double-entry ledger](https://docs.nombaone.xyz/concepts/the-ledger.md): The source of truth: every leg of every movement, debits and credits.
+- [Multi-rail: push and pull](https://docs.nombaone.xyz/concepts/multi-rail-push-and-pull.md): Card and mandate pull; transfer pushes. Why the asymmetry matters.
+- [Settlement & sub-accounts](https://docs.nombaone.xyz/concepts/settlement-and-sub-accounts.md): How a collection splits and settles to a merchant's Nomba sub-account.
+- [The hard parts](https://docs.nombaone.xyz/concepts/hard-parts.md): The truths most payments docs hide — told in the open, each runnable.
+- [The double-charge trap](https://docs.nombaone.xyz/concepts/hard-parts/the-double-charge-bug.md)
+- [Dunning for thin balances](https://docs.nombaone.xyz/concepts/hard-parts/dunning-for-thin-balances.md)
+- [Bank transfer isn't a 'method'](https://docs.nombaone.xyz/concepts/hard-parts/bank-transfer-is-not-just-another-method.md)
+- [Card tokens expire](https://docs.nombaone.xyz/concepts/hard-parts/card-tokens-expire.md)
+- [When a transfer doesn't match the invoice](https://docs.nombaone.xyz/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice.md)
+- [Retrying the webhook ≠ retrying the charge](https://docs.nombaone.xyz/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge.md)
+- [Mandates and consent](https://docs.nombaone.xyz/concepts/hard-parts/mandates-and-consent.md)
+- [Proration is a ledger problem](https://docs.nombaone.xyz/concepts/hard-parts/proration-is-a-ledger-problem.md)
+- [The end-of-month billing trap](https://docs.nombaone.xyz/concepts/hard-parts/the-end-of-month-billing-trap.md)
+- [Voluntary vs involuntary churn](https://docs.nombaone.xyz/concepts/hard-parts/voluntary-vs-involuntary-churn.md)
+- [Settlement without spreadsheets](https://docs.nombaone.xyz/concepts/hard-parts/settlement-without-spreadsheets.md)
+- [A scheduler that survives a crash](https://docs.nombaone.xyz/concepts/hard-parts/scheduler-that-survives-a-crash.md)
+- [Isolation is a data-model property](https://docs.nombaone.xyz/concepts/hard-parts/isolation-is-a-data-model-property.md)
+- [What to check before you trust a billing layer](https://docs.nombaone.xyz/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer.md)
+
+## API reference
+
+- [Glossary](https://docs.nombaone.xyz/reference/glossary.md): One word, one meaning — the canonical vocabulary.
+- [Customers](https://docs.nombaone.xyz/reference/customers.md): Create and manage customers, credit, and discounts.
+- [Plans](https://docs.nombaone.xyz/reference/plans.md): Product plans and their lifecycle.
+- [Prices](https://docs.nombaone.xyz/reference/prices.md): Recurring prices, intervals, and versioning.
+- [Subscriptions](https://docs.nombaone.xyz/reference/subscriptions.md): The engine's lifecycle surface.
+- [Payment methods](https://docs.nombaone.xyz/reference/payment-methods.md): Cards, mandates, and virtual accounts.
+- [Mandates](https://docs.nombaone.xyz/reference/mandates.md): Direct-debit consent and status.
+- [Invoices](https://docs.nombaone.xyz/reference/invoices.md): Generated invoices and their state.
+- [Coupons](https://docs.nombaone.xyz/reference/coupons.md): Discount definitions.
+- [Credits](https://docs.nombaone.xyz/reference/credits.md): Customer credit grants and balance.
+- [Dunning](https://docs.nombaone.xyz/reference/dunning.md): Recovery attempts and state.
+- [Settlements](https://docs.nombaone.xyz/reference/settlements.md): Refunds, payouts, and escrow.
+- [Webhook endpoints](https://docs.nombaone.xyz/reference/webhooks.md): Register, rotate, and inspect endpoints + deliveries.
+- [Events](https://docs.nombaone.xyz/reference/events.md): The domain-event stream + catalog.
+- [Organization](https://docs.nombaone.xyz/reference/organization.md): Your organization config + billing settings.
+- [Metrics](https://docs.nombaone.xyz/reference/metrics.md): Billing metrics: MRR, churn, dunning funnel.
+- [Example](https://docs.nombaone.xyz/reference/examples.md): The deletable worked example (removed with the scaffold).
+
+## Webhooks
+
+- [Overview](https://docs.nombaone.xyz/webhooks/overview.md): How outbound events reach your endpoints.
+- [Event catalog](https://docs.nombaone.xyz/webhooks/event-catalog.md): Every event type, when it fires, and its payload.
+- [Signing & verification](https://docs.nombaone.xyz/webhooks/signing-and-verification.md): Verify a delivery's signature and timestamp.
+- [Retries & replay](https://docs.nombaone.xyz/webhooks/retries-and-replay.md): The retry cadence, dead-letters, and replay.
+- [Delivery guarantee](https://docs.nombaone.xyz/webhooks/delivery-guarantee.md): At least once, deduped on event id — never exactly once.
+- [Simulate an event](https://docs.nombaone.xyz/webhooks/simulate.md): Fire a real signed event to your endpoint on demand (test).
+
+## Errors
+
+- [Error reference](https://docs.nombaone.xyz/errors.md): Every error code, what triggers it, and exactly how to fix it.
+
+## Test toolkit
+
+- [Overview](https://docs.nombaone.xyz/test-toolkit/overview.md): Drive the engine deterministically — no real card, no cron wait.
+- [Test payment methods](https://docs.nombaone.xyz/test-toolkit/test-payment-methods.md): Deterministic success / decline / OTP methods.
+- [The test clock](https://docs.nombaone.xyz/test-toolkit/test-clock.md): Advance a subscription's next cycle on demand.
+- [Simulate webhooks](https://docs.nombaone.xyz/test-toolkit/simulate-webhooks.md): Emit and deliver any catalog event on demand.
+
+## Changelog
+
+- [Changelog](https://docs.nombaone.xyz/changelog.md): Every API change, dated, with migration notes.
+
+## Migrate
+
+- [Overview](https://docs.nombaone.xyz/migrate/overview.md): Move to Nomba One from another processor.
+- [Coming from Paystack](https://docs.nombaone.xyz/migrate/from-paystack.md): Map Paystack's subscription gotchas to our clean equivalents.
+- [Coming from Stripe Billing](https://docs.nombaone.xyz/migrate/from-stripe.md): Move a Stripe Billing integration to Nomba One.
+- [Coming from Flutterwave](https://docs.nombaone.xyz/migrate/from-flutterwave.md): Map Flutterwave's tx_ref/flw_ref tangle to one reference.
+- [From any processor](https://docs.nombaone.xyz/migrate/generic.md): A zero-downtime parallel-run playbook.
+
+## For agents
+
+- [Agent-native docs](https://docs.nombaone.xyz/agents.md): llms.txt, a Markdown mirror of every page, and one-click copy-to-AI.
+
+## For merchants
+
+- [Overview](https://docs.nombaone.xyz/merchants/overview.md): Run subscriptions without an engineer.
+- [Create a plan](https://docs.nombaone.xyz/merchants/create-a-plan.md): Set up a plan and price from the console.
+- [Share a payment link](https://docs.nombaone.xyz/merchants/share-a-payment-link.md): Collect a subscription with a link — no code.
+- [Set up dunning messages](https://docs.nombaone.xyz/merchants/set-up-dunning-messages.md): What your customer sees when a charge fails.
+- [Read a settlement](https://docs.nombaone.xyz/merchants/read-a-settlement.md): Understand a payout and where your money is.

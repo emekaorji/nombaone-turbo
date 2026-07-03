@@ -316,3 +316,24 @@
 .article-beats h2::before {
   content: counter(beat, decimal-leading-zero) " · ";
 }
+
+/* Rainbow gradient clipped to text (Integrations nav link + the "Integrate" title
+   word). The loop-back colour makes the flow seamless when animated. */
+.rainbow-text {
+  background-image: linear-gradient(90deg, #ff6b6b, #ffd93d, #0bdfa3, #4dabf7, #b197fc, #ff6b6b);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.rainbow-text--animate {
+  animation: rainbowFlow 4.5s linear infinite;
+}
+@keyframes rainbowFlow {
+  from { background-position: 0% center; }
+  to { background-position: 200% center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rainbow-text--animate { animation: none; }
+}

@@ -38,14 +38,13 @@ const MOBILE_EXTRA: NavItem[] = [
 ];
 
 /**
- * Rainbow gradient clipped to text (Integrations). Full spectrum spread across
- * the word, matching the static .pen fill (ff6b6b/ffd93d/0bdfa3/4dabf7/b197fc).
+ * Rainbow gradient clipped to text (Integrations). Animates by flowing the
+ * gradient; the animation stops once you're on the Integrations page (it only
+ * served to draw you in). See .rainbow-text in globals.css.
  */
-function RainbowText({ children }: { children: React.ReactNode }) {
+function RainbowText({ children, animate }: { children: React.ReactNode; animate: boolean }) {
   return (
-    <span className="bg-[linear-gradient(90deg,#ff6b6b_0%,#ffd93d_28%,#0bdfa3_55%,#4dabf7_80%,#b197fc_100%)] bg-clip-text text-transparent">
-      {children}
-    </span>
+    <span className={cn("rainbow-text", animate && "rainbow-text--animate")}>{children}</span>
   );
 }
 
@@ -74,7 +73,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
     item.rainbow ? "font-semibold" : "font-normal",
     active ? "text-foreground" : "text-muted-foreground"
   );
-  const content = item.rainbow ? <RainbowText>{label}</RainbowText> : label;
+  const content = item.rainbow ? <RainbowText animate={!active}>{label}</RainbowText> : label;
 
   return item.external ? (
     <a href={item.href} target="_blank" rel="noreferrer" className={className}>

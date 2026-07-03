@@ -4,11 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 8030",
-    "build": "pnpm run search:index && next build",
+    "build": "pnpm run check:frontmatter && pnpm run check:links && pnpm run check:openapi && pnpm run search:index && pnpm run agent:native && next build",
     "start": "next start --port 8030",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
-    "search:index": "tsx scripts/build-search-index.ts"
+    "check:frontmatter": "tsx scripts/check-frontmatter.ts",
+    "check:links": "tsx scripts/check-links.ts",
+    "check:openapi": "tsx scripts/check-openapi-honesty.ts",
+    "search:index": "tsx scripts/build-search-index.ts",
+    "agent:native": "tsx scripts/build-agent-native.ts"
   },
   "dependencies": {
     "@nombaone/core-contracts": "workspace:*",

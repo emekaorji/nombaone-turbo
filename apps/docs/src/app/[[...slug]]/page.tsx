@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import * as jsxRuntime from "react/jsx-runtime";
 
 import { Breadcrumbs } from "@/components/chrome/breadcrumbs";
+import { CopyPage } from "@/components/chrome/copy-page";
 import { Pager } from "@/components/chrome/pager";
 import { Toc } from "@/components/chrome/toc";
 import { mdxComponents } from "@/components/mdx";
@@ -84,7 +85,14 @@ export default async function DocPage({ params }: PageProps) {
         className="min-w-0 flex-1 px-5 py-8 outline-none lg:px-10 xl:px-12"
       >
         <article className="mx-auto w-full max-w-(--doc-shell-max)">
-          {!isHome && <Breadcrumbs slug={resolvedSlug} title={page.frontmatter.title} />}
+          <div className="mb-2 flex items-center justify-between gap-3">
+            {!isHome ? (
+              <Breadcrumbs slug={resolvedSlug} title={page.frontmatter.title} />
+            ) : (
+              <span />
+            )}
+            <CopyPage slug={resolvedSlug} />
+          </div>
 
           <header className="mb-2">
             <h1 className="text-[32px] font-bold leading-[40px] tracking-tight text-foreground">

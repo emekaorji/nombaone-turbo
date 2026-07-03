@@ -1,0 +1,84 @@
+---
+title: "Create plans and prices"
+type: how-to
+summary: "Model your pricing — plans hold the product, prices hold the money. Set intervals, trials, and multiple prices on one plan."
+canonical: https://docs.nombaone.xyz/guides/create-plans-and-prices
+---
+
+# Create plans and prices
+
+Pricing in nombaone is two resources: a **plan** is the product a customer
+subscribes to, and a **price** is how much and how often. Keeping them separate
+means one plan (say, "Pro") can carry a monthly price and a yearly price at once,
+and a customer moves between them without you re-modelling the product.
+
+## Create a plan
+
+A plan just needs a name. Description and metadata are optional.
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
+  -H "Authorization: Bearer nbo_test_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "name": "Pro", "description": "Everything in the Pro tier" }'
+```
+
+The `data.id` is the plan's reference — you post prices to it.
+
+## Add a price
+
+A price sets the amount (**integer kobo**) and the billing `interval`. Post it
+under the plan:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_test_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "unitAmountInKobo": 250000,
+    "interval": "month",
+    "intervalCount": 1
+  }'
+```
+
+`250000` is ₦2,500.00. `intervalCount` multiplies the interval — `interval:
+"month"` with `intervalCount: 3` bills quarterly.
+
+> **Money is integer kobo**
+>
+> Every money field ends in `InKobo`. Send `250000` for ₦2,500 — never `2500`.
+> This is the [100× trap](/concepts/money-is-integer-kobo).
+
+## Add a trial
+
+Set `trialPeriodDays` on the price. A subscription started on it enters
+`trialing` — no charge until the trial ends, then the first invoice is collected.
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_test_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "unitAmountInKobo": 250000, "interval": "month", "trialPeriodDays": 14 }'
+```
+
+## Multiple prices on one plan
+
+Create as many prices on a plan as you sell it — monthly and yearly, NGN tiers,
+a promotional rate. A subscription references a **price**, not a plan, so
+switching a customer from monthly to yearly is a
+[plan change](/guides/proration-and-plan-changes) to a different price on the
+same plan — proration handled for you.
+
+## Archiving
+
+Plans archive (`POST /v1/plans/{id}/archive`) and prices deactivate
+(`POST /v1/prices/{id}/deactivate`) so you stop new subscriptions on them without
+touching the ones already billing. Existing subscriptions keep their price;
+archiving only prevents new use.
+
+- **[Start a subscription](/guides/start-a-subscription)** — 
+Put a customer on a price, over any rail.
+- **[Proration and plan changes](/guides/proration-and-plan-changes)** — 
+Move a customer between prices mid-cycle, correctly.
