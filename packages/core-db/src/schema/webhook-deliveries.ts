@@ -35,11 +35,22 @@ export const webhookDeliveriesTable = pgTable(
     nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
     lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }),
     responseStatus: integer('response_status'),
+    // 07: replay audit — when a dead/failed delivery was last re-armed, and how
+    // many times (the ceiling that stops auto-replay retrying a dead endpoint).
+    replayedAt: timestamp('replayed_at', { withTimezone: true }),
+    replayCount: integer('replay_count').notNull().default(0),
     createdAt: createdAt(),
   },
   (table) => ({
     referenceUnique: uniqueIndex('webhook_deliveries_reference_unique').on(table.reference),
     dueIdx: index('webhook_deliveries_due_idx').on(table.status, table.nextAttemptAt),
+    // 07: the dead-letter / by-status list view (keyset, tenant-scoped).
+    statusListIdx: index('webhook_deliveries_status_list_idx').on(
+      table.organizationId,
+      table.status,
+      table.createdAt.desc(),
+      table.id.desc()
+    ),
   })
 );
 

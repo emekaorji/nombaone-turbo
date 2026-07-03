@@ -12,7 +12,7 @@ The developer documentation for the **nombaone public API** (`api.nombaone.xyz/v
 
 ## Local development
 ```bash
-pnpm -F @nombaone/docs dev      # http://localhost:9070  (search index builds on `build`, not `dev`)
+pnpm -F @nombaone/docs dev      # http://localhost:8030  (search index builds on `build`, not `dev`)
 ```
 No DB, no secrets. The `<ApiExplorer>` proxies to the sandbox via `/api/playground`; the user pastes their own `nbo_test_…` key (held client-side only, never persisted; live keys are hard-blocked).
 
@@ -36,7 +36,7 @@ pnpm -F @nombaone/docs type-check   # tsc --noEmit
 pnpm -F @nombaone/docs lint
 pnpm -F @nombaone/docs build        # search:index + next build (the /api/playground proxy is dynamic; everything else is SSG)
 ```
-Deploy to **Vercel** (root dir `apps/docs`, port 9070). All pages are SSG except the playground proxy.
+Deploy to **Vercel** (root dir `apps/docs`, port 8030). All pages are SSG except the playground proxy.
 
 ## Structure
 ```

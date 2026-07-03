@@ -122,7 +122,7 @@ export function FeeBreakdown({ defaultFlow = "example" }: { defaultFlow?: Flow }
               className={cn(
                 "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 selected
-                  ? "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
+                  ? "bg-accent-muted text-accent dark:bg-accent-muted dark:text-accent"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -152,7 +152,7 @@ export function FeeBreakdown({ defaultFlow = "example" }: { defaultFlow?: Flow }
           value={naira}
           aria-valuetext={`${nairaFromKobo(view.baseKobo)} base`}
           onChange={(event) => setNaira(Number(event.target.value))}
-          className="mt-2 w-full accent-purple-600 dark:accent-purple-400"
+          className="mt-2 w-full accent-accent dark:accent-accent"
         />
         <div className="mt-1 flex justify-between font-mono text-[10px] text-muted-foreground/60">
           <span>₦{MIN_NAIRA.toLocaleString()}</span>
@@ -166,7 +166,7 @@ export function FeeBreakdown({ defaultFlow = "example" }: { defaultFlow?: Flow }
         className="mt-5 flex h-9 w-full overflow-hidden rounded-lg border border-border bg-muted"
       >
         <span
-          className="h-full bg-purple-500/80 transition-[width] duration-300"
+          className="h-full bg-accent/80 transition-[width] duration-300"
           style={{ width: `${view.pct.base}%` }}
         />
         {view.nombaoneFee > 0 && (
@@ -185,7 +185,7 @@ export function FeeBreakdown({ defaultFlow = "example" }: { defaultFlow?: Flow }
 
       {/* The numbers (live region) */}
       <dl role="status" aria-live="polite" className="mt-4 grid gap-px overflow-hidden rounded-lg border border-border bg-border text-sm">
-        <Row swatch="bg-purple-500/80" label="Base amount" value={nairaFromKobo(view.baseKobo)} />
+        <Row swatch="bg-accent/80" label="Base amount" value={nairaFromKobo(view.baseKobo)} />
         <Row swatch="bg-magenta-500/80" label="Nombaone fee" value={nairaFromKobo(view.nombaoneFee)} />
         {config.payerPays ? (
           <Row
@@ -231,7 +231,7 @@ function Row({
     <div
       className={cn(
         "flex items-center gap-2 bg-card px-3 py-2",
-        emphasis && "bg-purple-50/60 dark:bg-purple-950/40",
+        emphasis && "bg-accent-muted dark:bg-accent-muted",
       )}
     >
       {swatch ? (

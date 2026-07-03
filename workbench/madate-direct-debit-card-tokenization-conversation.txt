@@ -1,0 +1,70 @@
+---
+
+Good day @Victor Shoaga @Glory E., in preparation for the build phase, we attempted to confirm that the documented APIs work correctly in sandbox.
+
+We tested the Direct Debit and Tokenized Card endpoints listed in the docs/OpenAPI, but the flows are currently blocked in sandbox.
+
+Tokenized Cards endpoints tested:
+- POST /v1/checkout/tokenized-card-payment
+- GET /v1/checkout/tokenized-card-data
+- POST /v1/checkout/tokenized-card-data
+- DELETE /v1/checkout/tokenized-card-data
+
+What happened:
+- GET /v1/checkout/tokenized-card-data is reachable.
+- After testing the save-card checkout flow, sandbox did not return a reusable token/tokenKey.
+- Because of that, we could not complete a real tokenized-card charge with POST /v1/checkout/tokenized-card-payment.
+
+Direct Debit endpoints tested:
+- GET /v1/direct-debits/mandates
+- POST /v1/direct-debits
+- GET /v1/direct-debits/status?mandateId=...
+- GET /v1/direct-debits/{mandateId}
+- PUT /v1/direct-debits/update-status
+- POST /v1/direct-debits/debit-mandate
+
+What happened:
+- All Direct Debit endpoints above returned 404 Resource not found in sandbox.
+- Because POST /v1/direct-debits returned 404, we could not create a mandate.
+- Without a mandateId, we could not complete mandate status, mandate detail, update-status, or debit-mandate testing.
+
+We also encountered 500 errors on these documented checkout endpoints:
+- POST /v1/checkout/confirm-transaction-receipt
+  - Returned 500: “An unexpected system error occurred”
+- POST /v1/checkout/order/cancel
+  - Returned 500: “An unexpected system error occurred”
+
+Can you please confirm whether these documented endpoints are enabled for our sandbox account, and what the expected sandbox flow is for tokenized cards and direct debit?
+
+---
+
+I'm not team, but i can confirm that they are... i used them and they work properly and as expected.
+
+@Divine Victor For tokenized cards, the key thing is that you do not call the tokenized card endpoints directly. The flow works through the hosted checkout.
+You create a checkout order with tokenizeCard: true in the request body. The customer completes payment on the Nomba hosted page. After that, Nomba fires a payment_success webhook to your server. Inside that webhook payload is a tokenizedCardData object containing the tokenKey. That is what you store and use for all future charges.
+Once you have the tokenKey, POST /v1/checkout/tokenized-card-payment works exactly as documented. We use it on every subscription renewal and every dunning retry in our billing engine.
+The reason the tokenKey was not showing up in your tests is likely because tokenizeCard: true was not included in the checkout order creation request. Without that flag, Nomba processes the payment but does not return a token.
+
+For direct debit, you are right that sandbox returns 404 on most endpoints. We confirmed this as well. The direct debit mandate API does not appear to be fully enabled in sandbox. We implemented the client code for it but do not rely on it for our core flow since tokenized cards handle recurring billing end to end.
+For the 500 errors on confirm-transaction-receipt and checkout/order/cancel, we hit those too. They appear to be sandbox environment issues, not problems with your implementation.
+The working sandbox flow for recurring payments is:
+
+1. Create checkout order with tokenizeCard: true.
+2. Customer pays on Nomba hosted page using test card "5434621074252808, PIN 0000, OTP 000000.
+3. Nomba fires payment_success webhook with tokenizedCardData.tokenKey in the payload.
+4. Store the tokenKey.
+5. Use POST /v1/checkout/tokenized-card-payment with that tokenKey for all future charges.
+THis is exactly what i did and it works in sandbox.
+
+---
+
+@thelimeskies For direct debit in sandbox, the honest answer is you probably cannot right now. All the direct debit endpoints return 404 in sandbox regardless of what you send. It is not a credentials or integration issue, the endpoints are just not enabled there.
+What I did was build the client code against the documented API contracts and test the logic in isolation, but I could not do a live end-to-end mandate flow in sandbox.
+If you want to move forward anyway, the flow on paper is:
+
+1. POST /v1/direct-debits with customer account number, bank code, amount, frequency, and date range creates the mandate.
+2. Customer receives a consent notification from their bank.
+3. GET /v1/direct-debits/{mandateId} to confirm mandate is active.
+4. POST /v1/direct-debits/debit-mandate with the mandateId to charge.
+The bankCode field uses CBN bank codes 058 for GTBank, 044 for Access, 033 for UBA, etc.
+My suggestion is to build the code against the documented contracts, skip sandbox validation for now, and flag it to the Nomba team to enable before judging. That is what I did. I might be wrong but i'm pretty confident.

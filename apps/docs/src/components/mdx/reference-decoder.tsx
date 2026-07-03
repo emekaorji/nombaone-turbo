@@ -183,7 +183,7 @@ export function ReferenceDecoder({
             key={sample}
             type="button"
             onClick={() => setValue(sample)}
-            className="rounded-md border border-border bg-muted/50 px-2 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-purple-300 hover:text-foreground dark:hover:border-purple-700"
+            className="rounded-md border border-border bg-muted/50 px-2 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-accent-border hover:text-foreground dark:hover:border-accent-border"
           >
             …{sample.slice(-3)}
           </button>
@@ -208,7 +208,7 @@ function Segment({
 }) {
   const tones: Record<typeof tone, string> = {
     prefix: "bg-muted text-muted-foreground",
-    body: "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+    body: "bg-accent-muted text-accent dark:bg-accent-muted dark:text-accent",
     suffix: "bg-magenta-100 text-magenta-700 dark:bg-magenta-900 dark:text-magenta-100",
   };
   return (

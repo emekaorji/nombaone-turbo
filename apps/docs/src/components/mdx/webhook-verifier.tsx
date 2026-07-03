@@ -110,8 +110,8 @@ export function WebhookVerifier() {
   return (
     <div className="not-prose my-8 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       {/* Branded header */}
-      <div className="flex items-center gap-2.5 border-b border-border bg-gradient-to-r from-purple-50 to-transparent px-4 py-3 dark:from-purple-950/40">
-        <span className="grid size-7 place-items-center rounded-md bg-purple-600 text-white shadow-sm">
+      <div className="flex items-center gap-2.5 border-b border-border bg-gradient-to-r from-accent-muted to-transparent px-4 py-3 dark:from-accent-muted">
+        <span className="grid size-7 place-items-center rounded-md bg-accent text-accent-foreground shadow-sm">
           <ShieldCheck size={16} aria-hidden />
         </span>
         <div>
@@ -171,7 +171,7 @@ export function WebhookVerifier() {
           type="button"
           onClick={onCompute}
           disabled={busy}
-          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
         >
           <CheckCircle2 size={15} aria-hidden />
           {busy ? "Computing…" : "Compute signature"}
@@ -189,7 +189,7 @@ export function WebhookVerifier() {
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Expected X-Nombaone-Signature
             </p>
-            <code className="block break-all font-mono text-[12px] text-purple-700 dark:text-purple-300">
+            <code className="block break-all font-mono text-[12px] text-accent dark:text-accent">
               t={timestamp.trim()},v1={expected}
             </code>
           </div>

@@ -2,8 +2,9 @@ import { sql } from 'drizzle-orm';
 import { pgEnum, timestamp, uuid, text } from 'drizzle-orm/pg-core';
 
 /**
- * Shared column conventions (see REPLICABLE_PARADIGMS → "Database / schema
- * conventions"). Reuse these so every table looks the same.
+ * Shared column conventions. Reuse these so every table looks the same:
+ * a UUID PK, a public `reference` (unique), a first-class `environment`, and
+ * append-only timestamps.
  */
 
 /** test | live — a first-class column on every tenant-scoped row. */

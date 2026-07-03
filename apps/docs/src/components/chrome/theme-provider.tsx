@@ -3,16 +3,17 @@
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 
 /**
- * Wraps `next-themes` for the docs site: `attribute="class"` so the Nombaone UI
- * `@custom-variant dark (&:where(.dark, .dark *))` (from
- * `packages/ui/src/globals.css`) flips on `<html class="dark">`. Shiki's dual
- * theme blocks key off the same `.dark` class via CSS.
+ * Wraps `next-themes` for the docs site. Dark is the default and the theme is
+ * expressed as `<html data-theme="dark|light">` — matching the website + console,
+ * whose emerald NOMBAONE.pen tokens (vendored into `globals.css`) key off
+ * `@custom-variant dark (&:where([data-theme="dark"], …))`. Shiki's dual-theme
+ * code blocks follow the same `[data-theme]` gating via CSS.
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider
-      attribute="class"
-      defaultTheme="system"
+      attribute="data-theme"
+      defaultTheme="dark"
       enableSystem
       disableTransitionOnChange
     >

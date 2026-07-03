@@ -211,13 +211,13 @@ export function ApiExplorer({
 
   return (
     <section
-      className="not-prose my-8 overflow-hidden rounded-xl border border-purple-200/70 bg-card shadow-sm dark:border-purple-900/60"
+      className="not-prose my-8 overflow-hidden rounded-xl border border-accent-border bg-card shadow-sm dark:border-accent-border"
       aria-label={`Try ${method} ${endpoint}`}
     >
       {/* Header: the playful "try it" invitation */}
-      <header className="flex flex-wrap items-center gap-2 border-b border-border bg-purple-50/60 px-4 py-2.5 dark:bg-purple-950/30">
-        <Play size={14} aria-hidden className="text-purple-600 dark:text-purple-300" />
-        <span className="text-sm font-semibold text-purple-800 dark:text-purple-200">
+      <header className="flex flex-wrap items-center gap-2 border-b border-border bg-accent-muted px-4 py-2.5 dark:bg-accent-muted">
+        <Play size={14} aria-hidden className="text-accent dark:text-accent" />
+        <span className="text-sm font-semibold text-accent dark:text-accent">
           Try it, for real
         </span>
         <code className="font-mono text-xs text-muted-foreground">
@@ -368,7 +368,7 @@ export function ApiExplorer({
         <details className="group rounded-lg border border-border bg-muted/30">
           <summary className="cursor-pointer select-none px-4 py-2.5 text-sm font-medium text-foreground marker:hidden">
             <span className="inline-flex items-center gap-2">
-              <span className="text-purple-600 transition-transform group-open:rotate-90 dark:text-purple-300">
+              <span className="text-accent transition-transform group-open:rotate-90 dark:text-accent">
                 ›
               </span>
               Equivalent request (curl / TypeScript)

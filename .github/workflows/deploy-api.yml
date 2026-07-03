@@ -1,0 +1,58 @@
+name: Deploy API
+
+on:
+  push:
+    branches: [main, staging]
+
+concurrency:
+  group: deploy-api-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  check-affected:
+    name: Check if @nombaone/api is affected
+    runs-on: ubuntu-latest
+    outputs:
+      affected: ${{ steps.check.outputs.affected }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check affected
+        id: check
+        run: |
+          AFFECTED=$(pnpm turbo run build --filter=@nombaone/api...[HEAD^1] --dry=json 2>/dev/null | jq '[.tasks[].taskId] | map(select(startswith("@nombaone/api#"))) | length > 0')
+          echo "affected=$AFFECTED" >> $GITHUB_OUTPUT
+          echo "API affected: $AFFECTED (branch: ${{ github.ref_name }})"
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+  deploy:
+    name: Deploy (${{ github.ref_name == 'main' && 'production' || 'staging' }})
+    runs-on: ubuntu-latest
+    needs: check-affected
+    if: needs.check-affected.outputs.affected == 'true'
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to DigitalOcean App Platform
+        uses: digitalocean/app_action/deploy@v2
+        with:
+          token: ${{ secrets.DO_ACCESS_TOKEN }}
+          app_name: ${{ secrets.DO_APP_NAME_API }}
+          print_build_logs: false

@@ -113,10 +113,10 @@ const TONE_STYLES: Record<
     dot: "bg-muted-foreground",
   },
   active: {
-    idle: "border-purple-200 bg-purple-50 text-purple-700 hover:border-purple-400 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-200",
+    idle: "border-accent-border bg-accent-muted text-accent hover:border-accent-border dark:border-accent-border dark:bg-accent-muted dark:text-accent",
     active:
-      "border-purple-500 bg-purple-100 text-purple-800 ring-2 ring-purple-300 dark:border-purple-400 dark:bg-purple-900 dark:text-purple-100 dark:ring-purple-700",
-    dot: "bg-purple-500",
+      "border-accent-border bg-accent-muted text-accent ring-2 ring-accent dark:border-accent-border dark:bg-accent-muted dark:text-accent dark:ring-accent",
+    dot: "bg-accent",
   },
   success: {
     idle: "border-success-200 bg-success-50 text-success-700 hover:border-success-400 dark:border-success-900 dark:bg-success-900/20 dark:text-success-300",
@@ -265,7 +265,7 @@ export function LifecycleStateMachine({
                     <code className="rounded bg-background px-1.5 py-0.5 text-foreground">
                       {labelFor(edge.from)}
                     </code>
-                    <ArrowRight size={13} aria-hidden className="text-purple-400" />
+                    <ArrowRight size={13} aria-hidden className="text-accent" />
                     <code className="rounded bg-background px-1.5 py-0.5 text-foreground">
                       {labelFor(edge.to)}
                     </code>
@@ -276,9 +276,9 @@ export function LifecycleStateMachine({
                   </p>
                   {edge.webhook && (
                     <p className="mt-1.5 flex items-center gap-1.5 text-[13px]">
-                      <Webhook size={13} aria-hidden className="shrink-0 text-purple-500" />
+                      <Webhook size={13} aria-hidden className="shrink-0 text-accent" />
                       <span className="text-muted-foreground">fires</span>
-                      <code className="rounded bg-purple-50 px-1.5 py-0.5 font-mono text-[11px] font-medium text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                      <code className="rounded bg-accent-muted px-1.5 py-0.5 font-mono text-[11px] font-medium text-accent dark:bg-accent-muted dark:text-accent">
                         {edge.webhook}
                       </code>
                     </p>

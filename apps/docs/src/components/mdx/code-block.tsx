@@ -105,7 +105,7 @@ export function InlineCode({
   return (
     <code
       className={cn(
-        "rounded-[5px] border border-purple-200/70 bg-purple-50 px-[0.4em] py-[0.15em] font-mono text-[0.85em] font-medium text-purple-700 dark:border-purple-800/60 dark:bg-purple-950/40 dark:text-purple-300",
+        "rounded-[5px] border border-accent-border bg-accent-muted px-[0.4em] py-[0.15em] font-mono text-[0.85em] font-medium text-accent dark:border-accent-border dark:bg-accent-muted dark:text-accent",
         className,
       )}
       {...rest}

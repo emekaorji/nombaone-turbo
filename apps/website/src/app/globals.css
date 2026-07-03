@@ -1,0 +1,318 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Dark is the default; the site keys off [data-theme] (next-themes attribute="data-theme"). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ============================================================================
+   Design language v2 tokens — sourced 1:1 from NOMBAONE.pen (get_variables).
+   Dark is the default (:root); light overrides under [data-theme="light"].
+   ============================================================================ */
+:root {
+  /* --- primitive ramps --- */
+  --white: #ffffff;
+  --black: #000000;
+
+  --gray-50: #fafafa;
+  --gray-100: #f0f0f0;
+  --gray-200: #dedede;
+  --gray-300: #cacaca;
+  --gray-400: #aeaeae;
+  --gray-500: #8f8f8f;
+  --gray-600: #717171;
+  --gray-700: #525252;
+  --gray-800: #383838;
+  --gray-850: #262626;
+  --gray-900: #171717;
+  --gray-950: #0d0d0d;
+  --gray-1000: #040404;
+
+  --emerald-50: #d4f9e7;
+  --emerald-100: #acefd1;
+  --emerald-200: #7deabd;
+  --emerald-300: #4ee6af;
+  --emerald-400: #0bdfa3;
+  --emerald-500: #00c38b;
+  --emerald-600: #00a473;
+  --emerald-700: #007e57;
+  --emerald-800: #005d40;
+  --emerald-900: #003e2a;
+
+  --red-400: #f14949;
+  --red-500: #cc3336;
+  --amber-400: #f6b84d;
+  --amber-500: #df9134;
+  --blue-400: #1899ec;
+  --blue-500: #0076d3;
+  --grn-400: #58cd78;
+  --grn-500: #0e8c41;
+
+  /* --- motion --- */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --dur-slower: 520ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.83, 0, 0.17, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --- radii --- */
+  --r-sm: 6px;
+  --r: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-full: 999px;
+
+  /* --- fonts (real Geist values arrive via next/font on <html>) --- */
+  --font-sans: var(--font-geist-sans), "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+
+  /* --- semantic tokens: DARK (default) --- */
+  --background: #040404;
+  --surface-1: #0d0d0d;
+  --surface-2: #171717;
+  --surface-3: #232323;
+  --foreground: #fafafa;
+  --muted-foreground: #9e9e9e;
+  --subtle-foreground: #696969;
+  --border: #262626;
+  --border-strong: #424242;
+
+  --primary: #fafafa;
+  --primary-foreground: #0a0a0a;
+  --primary-hover: #dedede;
+
+  --accent: #0bdfa3;
+  --accent-hover: #4ee6af;
+  --accent-foreground: #01110a;
+  --accent-muted: #0bdfa326;
+  --accent-border: #0bdfa36b;
+  --ring: #0bdfa3;
+
+  --success: #58cd78;
+  --success-bg: #58cd7829;
+  --warning: #f6b84d;
+  --warning-bg: #f6b84d29;
+  --danger: #f14949;
+  --danger-bg: #f1494929;
+  --info: #1899ec;
+  --info-bg: #1899ec29;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.62);
+  --logo-invert: 1;
+}
+
+[data-theme="light"] {
+  --background: #fcfcfc;
+  --surface-1: #ffffff;
+  --surface-2: #f6f6f6;
+  --surface-3: #ededed;
+  --foreground: #0d0d0d;
+  --muted-foreground: #525252;
+  --subtle-foreground: #7a7a7a;
+  --border: #dedede;
+  --border-strong: #bebebe;
+
+  --primary: #0d0d0d;
+  --primary-foreground: #fcfcfc;
+  --primary-hover: #2e2e2e;
+
+  --accent: #00a473;
+  --accent-hover: #007e57;
+  --accent-foreground: #fdfdfd;
+  --accent-muted: #00a4731f;
+  --accent-border: #00a47359;
+  --ring: #00c38b;
+
+  --success: #0e8c41;
+  --success-bg: #0e8c411f;
+  --warning: #df9134;
+  --warning-bg: #df913424;
+  --danger: #cc3336;
+  --danger-bg: #cc33361f;
+  --info: #0076d3;
+  --info-bg: #0076d31f;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
+  --logo-invert: 0;
+}
+
+/* ============================================================================
+   Tailwind v4 theme — utilities use the design-system token names.
+   NOTE ON `accent`: in this design `accent` is the emerald brand color, not
+   shadcn's neutral hover surface. Registry components installed from shadcn use
+   `bg-accent`/`text-accent-foreground` for neutral hovers; those are retuned to
+   `surface-2`/`foreground` when the component is tweaked to the .pen.
+   ============================================================================ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-border: var(--accent-border);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+
+  /* emerald ramp (for the accent-word + rainbow-adjacent gradients) */
+  --color-emerald-50: var(--emerald-50);
+  --color-emerald-100: var(--emerald-100);
+  --color-emerald-200: var(--emerald-200);
+  --color-emerald-300: var(--emerald-300);
+  --color-emerald-400: var(--emerald-400);
+  --color-emerald-500: var(--emerald-500);
+  --color-emerald-600: var(--emerald-600);
+  --color-emerald-700: var(--emerald-700);
+  --color-emerald-800: var(--emerald-800);
+  --color-emerald-900: var(--emerald-900);
+
+  /* shadcn/registry semantic aliases (so installed primitives compile) */
+  --color-card: var(--surface-1);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--surface-1);
+  --color-popover-foreground: var(--foreground);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--surface-2);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--foreground);
+  --color-input: var(--border);
+
+  /* radii */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-full: var(--r-full);
+  --radius: var(--r);
+
+  /* fonts */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ============================================================================
+   Named keyframes (doc 03 patterns). Ambient/interactive motion references
+   the --ease-* / --dur-* tokens above.
+   ============================================================================ */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.82);
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes rainbowShift {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Article beats: number each MDX <h2> as "01 · ", "02 · " (the .pen vf0Be eyebrow). */
+.article-beats {
+  counter-reset: beat;
+}
+.article-beats h2 {
+  counter-increment: beat;
+}
+.article-beats h2::before {
+  content: counter(beat, decimal-leading-zero) " · ";
+}

@@ -79,14 +79,14 @@ export function Quickstart() {
   return (
     <div className="not-prose my-8">
       {/* Hero band */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-purple-50 via-card to-card p-6 shadow-sm sm:p-8 dark:from-purple-950/40 dark:via-card dark:to-card">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-accent-muted via-card to-card p-6 shadow-sm sm:p-8 dark:from-accent-muted dark:via-card dark:to-card">
         {/* Decorative glow, purely cosmetic. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full bg-purple-400/20 blur-3xl dark:bg-purple-600/20"
+          className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full bg-accent/20 blur-3xl dark:bg-accent/20"
         />
         <div className="relative">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 font-mono text-[11px] font-medium text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-border bg-accent-muted px-2.5 py-1 font-mono text-[11px] font-medium text-accent dark:border-accent-border dark:bg-accent-muted dark:text-accent">
             <Terminal size={11} aria-hidden />
             Zero → first payment
           </span>
@@ -110,7 +110,7 @@ export function Quickstart() {
                   mounted ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
                 )}
               >
-                <span className="font-mono text-xs font-semibold text-purple-600 dark:text-purple-400">
+                <span className="font-mono text-xs font-semibold text-accent dark:text-accent">
                   {stop.n}
                 </span>
                 <p className="mt-1 text-sm font-semibold text-foreground">{stop.title}</p>
@@ -129,7 +129,7 @@ export function Quickstart() {
             </Link>
             <Link
               href="/introduction"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-purple-300 dark:hover:border-purple-700"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-accent-border dark:hover:border-accent-border"
             >
               The mental model
             </Link>
@@ -153,7 +153,7 @@ export function Quickstart() {
             type="button"
             onClick={sendHealthCheck}
             disabled={run.status === "loading"}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60 dark:bg-purple-500 dark:hover:bg-purple-400"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60 dark:bg-accent dark:hover:bg-accent"
           >
             {run.status === "loading" ? (
               <>

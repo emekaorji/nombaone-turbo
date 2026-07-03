@@ -64,7 +64,7 @@ export function Card({
         {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
         className={cn(
           base,
-          "group hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:hover:border-purple-700",
+          "group hover:-translate-y-0.5 hover:border-accent-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:hover:border-accent-border",
         )}
       >
         {inner}

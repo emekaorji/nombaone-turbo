@@ -5,7 +5,7 @@ import { redis } from '../config/redis';
 import { logger } from '../observability/logger';
 
 import type { ApiSuccess } from '@nombaone/core-contracts/types';
-import type { RequestHandler, Response } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 /**
  * ── idempotency — make a mutating POST safe to retry ───────────────────────
@@ -42,7 +42,12 @@ const isCacheableSuccess = (res: Response, body: unknown): body is ApiSuccess<un
   body !== null &&
   (body as { success?: unknown }).success === true;
 
-export const idempotency: RequestHandler = async (req, res, next) => {
+async function runIdempotency(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  required: boolean
+): Promise<void> {
   // Only mutating POSTs participate. Anything else flows straight through.
   if (req.method !== 'POST') {
     next();
@@ -53,13 +58,20 @@ export const idempotency: RequestHandler = async (req, res, next) => {
   const idempotencyKey = Array.isArray(headerKey) ? headerKey[0] : headerKey;
 
   if (!idempotencyKey || idempotencyKey.trim().length === 0) {
-    next(
-      AppError.BadRequest(
-        'Idempotency-Key header is required for this request',
-        undefined,
-        NOMBAONE_ERROR_CODES.IDEMPOTENCY_KEY_MISSING
-      )
-    );
+    // REQUIRED endpoints (money movement / charges): a missing key is a 400 — a
+    // retried charge without a key could double-move money. OPTIONAL endpoints
+    // proceed as a normal (non-deduped) request when no key is supplied.
+    if (required) {
+      next(
+        AppError.BadRequest(
+          'Idempotency-Key header is required for this request',
+          undefined,
+          NOMBAONE_ERROR_CODES.IDEMPOTENCY_KEY_MISSING
+        )
+      );
+      return;
+    }
+    next();
     return;
   }
 
@@ -154,4 +166,19 @@ export const idempotency: RequestHandler = async (req, res, next) => {
   });
 
   next();
-};
+}
+
+/**
+ * REQUIRED — money-movement & charge endpoints. A missing `Idempotency-Key` is a
+ * 400: a retried charge without a key could double-move money.
+ */
+export const idempotency: RequestHandler = (req, res, next) =>
+  runIdempotency(req, res, next, true);
+
+/**
+ * OPTIONAL (strongly encouraged) — non-money mutations. Dedupes when a key is
+ * present; without one it behaves as a normal request. Our SDKs auto-generate a
+ * key, so idempotency is on by default even here.
+ */
+export const idempotencyOptional: RequestHandler = (req, res, next) =>
+  runIdempotency(req, res, next, false);

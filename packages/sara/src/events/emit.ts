@@ -7,8 +7,9 @@ import {
   type WebhookEndpointRow,
 } from '@nombaone/core-db/schema';
 
-import type { InfraDb, InfraTxDb } from '../context';
 import { mintReference } from '../reference';
+
+import type { InfraDb, InfraTxDb } from '../context';
 import type { EmitEventInput, EmittedEvent } from './types';
 
 /**

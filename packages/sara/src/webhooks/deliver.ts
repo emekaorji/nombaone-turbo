@@ -8,9 +8,14 @@ import {
   type WebhookEndpointRow,
   type DomainEventRow,
 } from '@nombaone/core-db/schema';
+import {
+  WEBHOOK_DELIVERY_GUARANTEE,
+  WEBHOOK_DELIVERY_GUARANTEE_HEADER,
+} from '@nombaone/core-contracts/types';
+
+import { signWebhookPayload } from './sign';
 
 import type { InfraDb } from '../context';
-import { signWebhookPayload } from './sign';
 
 /**
  * PARADIGM — the at-least-once delivery drain with exponential backoff and a
@@ -37,7 +42,7 @@ import { signWebhookPayload } from './sign';
  */
 
 /** Retries after the first attempt; on the (MAX_ATTEMPTS)-th failure → `dead`. */
-const MAX_ATTEMPTS = 6;
+export const MAX_ATTEMPTS = 6;
 /** Per-request HTTP timeout — a hung receiver must not stall the whole drain. */
 const REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_BATCH_LIMIT = 50;
@@ -47,9 +52,9 @@ const DEFAULT_BATCH_LIMIT = 50;
  * ~10s, 1m, 5m, 30m, 2h. Capped/extended by the last entry. A retry overdue by
  * more than its slot fires on the next drain regardless.
  */
-const BACKOFF_MS = [10_000, 60_000, 300_000, 1_800_000, 7_200_000] as const;
+export const BACKOFF_MS = [10_000, 60_000, 300_000, 1_800_000, 7_200_000] as const;
 
-const backoffFor = (attempts: number): number => {
+export const backoffFor = (attempts: number): number => {
   const idx = Math.min(Math.max(attempts - 1, 0), BACKOFF_MS.length - 1);
   return BACKOFF_MS[idx] ?? BACKOFF_MS[BACKOFF_MS.length - 1]!;
 };
@@ -201,6 +206,8 @@ const attemptPost = async (
         'x-nombaone-signature': signature,
         'x-nombaone-event-type': delivery.eventType,
         'x-nombaone-delivery': delivery.reference,
+        // G5: the stated delivery guarantee — consumers dedupe on the body's event.id.
+        [WEBHOOK_DELIVERY_GUARANTEE_HEADER]: WEBHOOK_DELIVERY_GUARANTEE,
       },
       body: rawBody,
       signal: controller.signal,

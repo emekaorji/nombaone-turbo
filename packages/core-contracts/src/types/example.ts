@@ -9,11 +9,12 @@ export type ExampleKind = 'standard' | 'priority';
 export type ExampleStatus = 'pending' | 'settled' | 'failed';
 
 export interface ExampleResponseData {
+  domain: 'example'; // response object-type discriminator
   id: string; // public reference, e.g. `nbo749201835566exa`
   kind: ExampleKind;
   /** Status is DERIVED from the ledger, never a free-floating field. */
   status: ExampleStatus;
-  amount: number; // kobo
+  amountInKobo: number; // kobo
   currency: 'NGN';
   environment: Environment;
   createdAt: string;

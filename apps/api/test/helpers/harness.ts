@@ -4,6 +4,8 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
 
 import type { Express } from 'express';
+import type { InfraTxDb } from '@nombaone/sara/context';
+import type { NombaClient } from '@nombaone/sara/nomba';
 
 // This harness deliberately writes process.env at runtime to point the app's
 // singletons at throwaway containers — it never READS undeclared env, so the
@@ -43,6 +45,11 @@ export interface Harness {
   ) => Promise<{ secret: string; reference: string }>;
   /** Flip the platform maintenance kill-switch on/off. */
   setKillSwitch: (enabled: boolean, message?: string) => Promise<void>;
+  /** The pooled DB handle — lets specs drive sara functions directly (e.g. the
+   *  inbound-webhook settle path the BullMQ worker runs). */
+  db: InfraTxDb;
+  /** Inject a fake Nomba client (no network) for the rail/capture flows. */
+  setNombaClient: (client: NombaClient) => void;
   /** Tear down containers + clients. */
   stop: () => Promise<void>;
 }
@@ -72,6 +79,13 @@ export const startHarness = async (): Promise<Harness> => {
   process.env.INFRA_PII_ENCRYPTION_KEY =
     process.env.INFRA_PII_ENCRYPTION_KEY ?? '0'.repeat(64);
   process.env.INFRA_WEBHOOK_SECRET = process.env.INFRA_WEBHOOK_SECRET ?? 'test_webhook_secret';
+  process.env.NOMBA_WEBHOOK_SIGNATURE_KEY =
+    process.env.NOMBA_WEBHOOK_SIGNATURE_KEY ?? 'test_nomba_signature_key';
+  // Pin these OFF so tests are deterministic regardless of a developer's `.env`:
+  // debug mode would bypass signature REJECTION, and the payout flag would fire the
+  // (unconfirmed) provider bankTransfer. Set before dotenv (override:false keeps them).
+  process.env.NOMBA_WEBHOOK_DEBUG = 'false';
+  process.env.NOMBA_PAYOUT_ENABLED = 'false';
   // Keep the limiter on by default so its tests are meaningful; specs can flip it.
   delete process.env.DISABLE_API_RATE_LIMIT;
 
@@ -87,14 +101,23 @@ export const startHarness = async (): Promise<Harness> => {
   }
 
   // 4. NOW import the app + the sara/db handles (they bind to the env above).
-  const { createSuperApp } = await import('../../src/app/super-app');
+  //    Compose the two import-safe app factories here (mirrors src/server.ts's
+  //    createSuperApp) rather than importing server.ts, whose module top-level
+  //    boots the listener + workers.
+  const express = (await import('express')).default;
+  const { createMainApp } = await import('../../src/apps/main/server');
+  const { createWebhookApp } = await import('../../src/apps/webhook/server');
   const { db, pool } = await import('../../src/shared/config/db');
   const { redis } = await import('../../src/shared/config/redis');
   const { signupOrganization } = await import('@nombaone/sara/auth');
   const { createApiKey } = await import('@nombaone/sara/api-keys');
   const { platformConfigTable } = await import('@nombaone/core-db/schema');
+  const { __setNombaClient } = await import('../../src/shared/config/nomba');
 
-  const app = createSuperApp();
+  const app = express();
+  app.disable('x-powered-by');
+  app.use('/webhooks', createWebhookApp());
+  app.use(createMainApp());
 
   const seedOrg: Harness['seedOrg'] = async (name = 'Test Org') => {
     const suffix = Math.random().toString(36).slice(2, 10);
@@ -128,12 +151,15 @@ export const startHarness = async (): Promise<Harness> => {
     await new Promise((r) => setTimeout(r, 5_100));
   };
 
+  const setNombaClient: Harness['setNombaClient'] = (client) => __setNombaClient(client);
+
   const stop: Harness['stop'] = async () => {
+    __setNombaClient(null);
     await pool.end();
     redis.disconnect();
     await postgres.stop();
     await redisContainer.stop();
   };
 
-  return { app, seedOrg, mintApiKey, setKillSwitch, stop };
+  return { app, seedOrg, mintApiKey, setKillSwitch, db, setNombaClient, stop };
 };

@@ -1,0 +1,113 @@
+Bayonle  [10:54 AM]
+Hi @Max , Good day
+I am having trouble with webhook events, I am not getting it
+I have sent a sample of the webhook payload to my webhook endpoint, it works fine
+
+How did you do yours,
+
+When I use :
+
+
+sandbox.nomba.com with test credentials, nomba api access works fine but I am not receiving webhook
+sandbox.nomba.com with prod credentials, nomba api access works fine but I am not receiving webhook event 
+api.sandbox.com with prod credentialss, I am getting a 403. I could not access their apis 
+
+
+How do you handle yours please ?
+32 repliesMax  [11:08 AM]
+Hey @Bayonle,
+
+from extensive testing I discovered that webhooks do not fire in sandbox. I don't know if anything has changed in that regard. I migrated to production and webhooks work just fine. 
+When using prod credentials, make sure to change your base URL to api.nomba.com, that's the only way to get correct responses. 
+Check your configuration, you're missing something. Check if you're passing  subAccoundId as the accountId(this should be the parent account id), this one thing I've discovered would most likely give you a 403 error. 
+
+
+Your problems would most likely be resolved with these checks. Have fun yeah!
+Bayonle  [11:10 AM]
+okay, Thank you boss
+Yes I am only using parent acccount Id for auth. while sub id is used on other endpoints
+
+Are you saying I should use parent id for all ?
+Max  [11:13 AM]
+Nope. If you're already doing that then you're fine. Check other things too. Do all other endpoints work just fine?
+[11:15 AM]Carefully compare your implementation for signature verification with the ones in the docs. There might be a subtle bug you're missing. Mine was an errant colon and I caused a 401 for my webhook.
+Bayonle  [11:16 AM]
+let me switch to using parentId for all endpoints ( autth and others)
+
+I am currrently using parent for auth and sub id for other endpoints but I am getting 403
+
+I will send you a message shortly
+Max  [11:17 AM]
+Alright.
+Joseph Ajibodu  [11:18 AM]
+@Max I think we need to raise the 403 issue on the sub account to @Victor Shoaga because they wanted us to just use accountId for authentication and scope all our api calls to subAccountId
+
+That accountId looks like a generic one, the bank name I got is "accountName": "Nomba Hackathon 2026"
+
+But the subAccountId is tied to our individual team. I don't want to send real money to a generic account and have someone else withdraw it since we are using LIVE credentials now.
+
+@Victor Shoaga I get 403 Error whenever I use my subAccountId for requests. Please can this be looked into. This is the directive from the credentials email sent to us.
+
+Authenticate with the parent Account ID in the accountId header, then scope your calls to your sub-account ID.[11:21 AM]image.png Max  [11:23 AM]
+@Joseph Ajibodu I've not had any 403s though. The only time I had a 403 was when I tried to pull all the VAs on the account. It's probably a malformed request that's breaking.
+Joseph Ajibodu  [11:24 AM]
+And you use SubAccountId?
+Max  [11:26 AM]
+Yes.
+[11:26 AM]It works exactly as the docs advertise.
+Bayonle  [11:26 AM]
+but you just asked me to switch to parentId for all endpoints @Max
+[11:27 AM]your point no 3
+3. Check your configuration, you're missing something. Check if you're passing subAccoundId as the accountId(this should be the parent account id), this one thing I've discovered would most likely give you a 403 error.Max  [11:29 AM]
+Here is what I mean, the accountId header in every request, is always the parentId, when you're making scoped requests like creating VAs, or checking transactions, your subAccoundId will now be in the URL parameters to scope the requests.
+[11:29 AM]Do you follow?
+Joseph Ajibodu  [11:33 AM]
+I think what you are saying is getting clearer now.
+
+Authenticate with the parent Account ID in the accountId header, then scope your calls to your sub-account ID.
+
+The parent ID will still always be in the accountId header, right?
+
+Then how do you scope your calls in the URL parameter? Does all request accept a subAccountId param?
+[11:37 AM]@Max Looks like I understand you clearly now. Any endpoint that receives funds or send out should now be scoped to your own subAccountId. Makes sense.
+
+Thanks :pray:
+Bayonle  [11:39 AM]
+@Joseph Ajibodu
+are you getting webhook event yet ?Joseph Ajibodu  [11:42 AM]
+I want to test that now. I will let you know if I get an event.
+Joseph Ajibodu  [12:08 PM]
+It's working fine.
+Max  [12:08 PM]
+Have fun then!
+Bayonle  [12:09 PM]
+are you using checkout endpoint @Joseph Ajibodu
+Joseph Ajibodu  [12:09 PM]
+Yes
+Bayonle  [12:10 PM]
+so you are passing the subid in the endpoint while other endpoint uses parent id right ?
+Joseph Ajibodu  [12:13 PM]
+Yeah. order.accountId
+image.png Bayonle  [12:16 PM]
+which means parent Id is still in the header
+sub id is just a parameter in the request
+
+??
+Joseph Ajibodu  [12:17 PM]
+Exactly.
+Bayonle  [12:17 PM]
+then do you have to test with a real card ?
+Joseph Ajibodu  [12:18 PM]
+Yes, I tested with a real card since I'm using LIVE credentials now.
+[12:19 PM]You can easily withdraw your funds from the sub account.
+
+https://api.nomba.com/v2/transfers/bank/{subAccountId}
+Bayonle  [12:21 PM]
+I see
+Thank youBayonle  [2:20 PM]
+@Joseph Ajibodu
+when you try to pay with you card, were you shown this ?
+
+the payment is failing and I have used the card for a subscription payment this morning
+
+Also, what amout are you testing with ?

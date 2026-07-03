@@ -1,0 +1,1 @@
+export { paymentMethodsRouter } from './routes';

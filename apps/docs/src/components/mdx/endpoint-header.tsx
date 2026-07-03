@@ -12,7 +12,7 @@ type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 const METHOD_STYLES: Record<Method, string> = {
   GET: "bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-400",
-  POST: "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+  POST: "bg-accent-muted text-accent dark:bg-accent-muted dark:text-accent",
   PUT: "bg-warning-50 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400",
   PATCH: "bg-warning-50 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400",
   DELETE: "bg-error-50 text-error-700 dark:bg-error-900/30 dark:text-error-400",
@@ -25,7 +25,7 @@ function renderPath(path: string) {
     return (
       <span key={index}>
         {index > 0 && <span className="text-muted-foreground/50">/</span>}
-        <span className={isParam ? "text-purple-600 dark:text-purple-300" : "text-foreground"}>
+        <span className={isParam ? "text-accent dark:text-accent" : "text-foreground"}>
           {segment}
         </span>
         {index === all.length - 1 ? "" : ""}
@@ -58,7 +58,7 @@ export function EndpointHeader({
       <code className="font-mono text-sm font-medium">{renderPath(path)}</code>
       <div className="ml-auto flex items-center gap-2">
         {idempotent && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300">
+          <span className="inline-flex items-center gap-1 rounded-full border border-accent-border bg-accent-muted px-2 py-0.5 text-[11px] font-medium text-accent dark:border-accent-border dark:bg-accent-muted dark:text-accent">
             <RefreshCw size={11} aria-hidden />
             Idempotent
           </span>

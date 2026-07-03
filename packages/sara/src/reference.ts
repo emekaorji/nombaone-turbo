@@ -19,6 +19,24 @@ export type ReferenceDomain =
   | 'WHD' // webhook delivery
   | 'LTX' // ledger transaction
   | 'LAC' // ledger account
+  | 'CUS' // customer (subscriber)
+  | 'PLN' // plan
+  | 'PRC' // price
+  | 'PMT' // payment method
+  | 'NWE' // nomba (inbound) webhook event
+  | 'NMA' // org ↔ nomba account mapping
+  | 'SUB' // subscription
+  | 'SBI' // subscription item
+  | 'INV' // invoice
+  | 'ILI' // invoice line item
+  | 'SCH' // subscription schedule
+  | 'CPN' // coupon
+  | 'DSC' // discount
+  | 'CRG' // credit grant
+  | 'DUN' // dunning attempt
+  | 'STL' // settlement
+  | 'REF' // refund
+  | 'PAY' // payout
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {

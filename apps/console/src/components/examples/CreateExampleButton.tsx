@@ -53,7 +53,7 @@ export function CreateExampleButton() {
     setRootError(null);
     const amount = Number(values.amount);
     startTransition(async () => {
-      const result = await createExampleAction({ kind: values.kind, amount });
+      const result = await createExampleAction({ kind: values.kind, amountInKobo: amount });
       if (result.ok) {
         setOpen(false);
         form.reset();
@@ -61,8 +61,8 @@ export function CreateExampleButton() {
         router.push(`/examples/${result.value.reference}`);
         return;
       }
-      if (result.fields?.amount) {
-        form.setError('amount', { type: 'server', message: result.fields.amount[0] });
+      if (result.fields?.amountInKobo) {
+        form.setError('amount', { type: 'server', message: result.fields.amountInKobo[0] });
       } else {
         setRootError(result.message);
       }

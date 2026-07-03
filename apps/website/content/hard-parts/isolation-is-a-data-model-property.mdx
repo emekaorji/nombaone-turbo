@@ -1,0 +1,15 @@
+---
+title: "Isolation as a property of the data model, not a middleware check"
+slug: isolation-is-a-data-model-property
+problem: "If one forgotten route can leak another tenant's data, your isolation is a hope, not a guarantee."
+group: multi-tenant
+difficulty: deep
+readingTime: 5
+updated: 2026-07-03
+draft: true
+---
+
+> Draft. On the roster, not yet written.
+
+If one forgotten route can leak another tenant's data, your isolation is a hope, not a guarantee. Isolation is
+organization and environment columns on every row, scoped on every query from a trusted key.

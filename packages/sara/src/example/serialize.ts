@@ -1,6 +1,6 @@
-import type { ExampleRow } from '@nombaone/core-db/schema';
-
 import { CURRENCY } from '../money';
+
+import type { ExampleRow } from '@nombaone/core-db/schema';
 import type { ExampleResponseData, ExampleStatus } from './types';
 
 /**
@@ -23,10 +23,11 @@ export const serializeExample = (
   row: ExampleRow,
   status: ExampleStatus
 ): ExampleResponseData => ({
+  domain: 'example',
   id: row.reference,
   kind: row.kind,
   status,
-  amount: row.amount,
+  amountInKobo: row.amount,
   currency: CURRENCY,
   environment: row.environment,
   createdAt: new Date(row.createdAt).toISOString(),

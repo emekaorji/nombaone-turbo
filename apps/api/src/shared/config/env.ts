@@ -11,7 +11,7 @@ loadDotenv();
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().default(9040),
+  PORT: z.coerce.number().default(8000),
   INFRA_ENVIRONMENT: z.enum(['test', 'live']),
   INFRA_DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().url(),
@@ -29,6 +29,59 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value === 'true' || value === '1'),
+
+  /**
+   * Nomba provider credentials (contract C.8). Optional so the API can boot for
+   * the catalog/customer surfaces without them; the rail adapters + live charge
+   * path are only wired when present. Secrets live HERE (env / secret manager),
+   * never in source. The set must match the deployment's `INFRA_ENVIRONMENT`.
+   */
+  NOMBA_BASE_URL: z.string().url().optional(),
+  NOMBA_PARENT_ACCOUNT_ID: z.string().min(1).optional(),
+  NOMBA_SUBACCOUNT_ID: z.string().min(1).optional(),
+  NOMBA_CLIENT_ID: z.string().min(1).optional(),
+  NOMBA_CLIENT_SECRET: z.string().min(1).optional(),
+  NOMBA_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
+  NOMBA_TOKEN_REFRESH_MARGIN_SEC: z.coerce.number().int().positive().default(300),
+  // T0 byte-confirm: when true, the inbound nomba route LOGS the real headers + raw
+  // body + candidate signatures and processes the event WITHOUT rejecting on a
+  // signature mismatch — so the first real webhook through a tunnel pins the exact
+  // scheme. NEVER true in the live ring (it bypasses signature rejection).
+  NOMBA_WEBHOOK_DEBUG: z
+    .union([z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === 'true'),
+  // Tenant PAYOUT provider transfer (F2). Default OFF: `payoutToTenant` posts the
+  // ledger debit + records the payout as `ledger_posted` but does NOT call the
+  // ⚠UNCONFIRMED Nomba `bankTransfer`. Flip on ONLY after a live bankTransfer confirm.
+  NOMBA_PAYOUT_ENABLED: z
+    .union([z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === 'true'),
+
+  /**
+   * Billing scheduler (04). A single fixed billing zone + deterministic hour make
+   * "due today" one unambiguous instant (B5). The billing sweep runs shortly before
+   * the boundary hour; the lifecycle sweep runs hourly (kept separate so a slow
+   * renewal run cannot delay notices).
+   */
+  BILLING_TIMEZONE: z.string().min(1).default('Africa/Lagos'),
+  BILLING_HOUR: z.coerce.number().int().min(0).max(23).default(2),
+  BILLING_SWEEP_CRON: z.string().min(1).default('5 1 * * *'),
+  BILLING_BATCH_SIZE: z.coerce.number().int().positive().default(500),
+  BILLING_MAX_CATCH_UP_PERIODS: z.coerce.number().int().positive().default(36),
+  LIFECYCLE_SWEEP_CRON: z.string().min(1).default('0 * * * *'),
+  DUNNING_SWEEP_CRON: z.string().min(1).default('*/15 * * * *'),
+  WEBHOOK_MAINTENANCE_CRON: z.string().min(1).default('*/15 * * * *'),
+  // Nightly local↔Nomba reconcile (item 6) — 02:00 daily by default; the window
+  // looks back a little over a day so consecutive runs overlap and nothing is missed.
+  RECONCILE_NOMBA_CRON: z.string().min(1).default('0 2 * * *'),
+  RECONCILE_NOMBA_WINDOW_HOURS: z.coerce.number().int().positive().default(26),
+  // Mandate activation sweep (direct debit): poll `consent_pending` mandates → active.
+  MANDATE_ACTIVATION_SWEEP_CRON: z.string().min(1).default('*/10 * * * *'),
+  INCOMPLETE_EXPIRY_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
+  TRIAL_NOTICE_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
+  PM_EXPIRY_NOTICE_WINDOW_DAYS: z.coerce.number().int().positive().default(14),
 });
 
 export const env = envSchema.parse(process.env);

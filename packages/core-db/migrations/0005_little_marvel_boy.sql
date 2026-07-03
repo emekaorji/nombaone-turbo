@@ -1,0 +1,1 @@
+ALTER TABLE "invoices" ADD COLUMN "uncollectible_at" timestamp with time zone;

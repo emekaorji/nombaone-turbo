@@ -1,9 +1,12 @@
 /**
- * `@nombaone/sara/events` — the domain event spine.
+ * `@nombaone/sara/events` — the domain event spine + the frozen outbound catalog.
  *
- * Re-exports the canonical event shapes and the single emit chokepoint. Apps and
- * sibling clusters import `emitEvent` to record state changes; the outbound
- * webhook fan-out is a side effect of emitting (see `./emit`).
+ * Re-exports the canonical event shapes, the single emit chokepoint, the frozen
+ * `WEBHOOK_EVENT_TYPES` catalog (producers reference it so an undocumented event
+ * cannot ship), and the read queries backing `GET /v1/events`.
  */
 export * from './types';
 export * from './emit';
+export * from './catalog';
+export * from './queries';
+export * from './serialize';

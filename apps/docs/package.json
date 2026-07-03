@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 9070",
+    "dev": "next dev --port 8030",
     "build": "pnpm run search:index && next build",
-    "start": "next start --port 9070",
+    "start": "next start --port 8030",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
     "search:index": "tsx scripts/build-search-index.ts"

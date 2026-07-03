@@ -81,7 +81,7 @@ export const mdxComponents: MDXComponents = {
     <strong className="font-semibold text-foreground" {...props} />
   ),
   ul: (props: HTMLAttributes<HTMLUListElement>) => (
-    <ul className="mt-4 list-disc space-y-2 pl-6 text-[15px] leading-7 text-foreground/85 marker:text-purple-400" {...props} />
+    <ul className="mt-4 list-disc space-y-2 pl-6 text-[15px] leading-7 text-foreground/85 marker:text-accent" {...props} />
   ),
   ol: (props: HTMLAttributes<HTMLOListElement>) => (
     <ol className="mt-4 list-decimal space-y-2 pl-6 text-[15px] leading-7 text-foreground/85 marker:text-muted-foreground" {...props} />
@@ -89,7 +89,7 @@ export const mdxComponents: MDXComponents = {
   li: (props: HTMLAttributes<HTMLLIElement>) => <li className="pl-1" {...props} />,
   blockquote: (props: HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
-      className="mt-6 border-l-2 border-purple-300 bg-muted/40 py-2 pl-4 pr-2 text-[15px] italic leading-7 text-muted-foreground"
+      className="mt-6 border-l-2 border-accent-border bg-muted/40 py-2 pl-4 pr-2 text-[15px] italic leading-7 text-muted-foreground"
       {...props}
     />
   ),

@@ -22,7 +22,7 @@ export function SearchTrigger({ className }: { className?: string }) {
       onClick={open}
       aria-label="Search the docs"
       className={cn(
-        "group inline-flex h-9 items-center gap-2 rounded-md border border-border bg-card pl-2.5 pr-1.5 text-sm text-muted-foreground transition-colors hover:border-purple-300 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:hover:border-purple-700",
+        "group inline-flex h-9 items-center gap-2 rounded-md border border-border bg-card pl-2.5 pr-1.5 text-sm text-muted-foreground transition-colors hover:border-accent-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:hover:border-accent-border",
         className,
       )}
     >
