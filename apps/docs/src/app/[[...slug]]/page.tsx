@@ -6,7 +6,7 @@ import { Breadcrumbs } from "@/components/chrome/breadcrumbs";
 import { Pager } from "@/components/chrome/pager";
 import { Toc } from "@/components/chrome/toc";
 import { mdxComponents } from "@/components/mdx";
-import { getPage, listAllSlugs } from "@/lib/content";
+import { getPage, listRoutableSlugs } from "@/lib/content";
 import { mdxOptions } from "@/lib/mdx-pipeline";
 
 import type { Metadata } from "next";
@@ -34,7 +34,7 @@ function toSlug(segments: string[] | undefined): string {
 
 /** Prerender every authored page at build time. */
 export async function generateStaticParams(): Promise<{ slug?: string[] }[]> {
-  const slugs = await listAllSlugs();
+  const slugs = await listRoutableSlugs();
   return slugs.map((slug) => ({
     slug: slug === "" ? [] : slug.replace(/^\//, "").split("/"),
   }));

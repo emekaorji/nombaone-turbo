@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { isAllowedOperation } from "@/lib/playground-allowlist";
+
 /**
  * Playground proxy: forwards a single `<ApiExplorer>` request to the Nombaone
  * Infra public API with the developer's **test** key. This is a real security
@@ -22,20 +24,15 @@ import { NextResponse } from "next/server";
 const INFRA_API_BASE =
   process.env.NEXT_PUBLIC_INFRA_API_BASE ?? "https://sandbox.api.nombaone.xyz/v1";
 
-/** Methods we will ever forward (money POSTs included, GETs for reads). */
-const ALLOWED_METHODS = new Set(["GET", "POST"]);
-
 /**
- * Path allowlist (prefixes, sans the `/v1` base). Kept deliberately tight; the
- * reference build extends this as endpoints are documented. A path must match
- * one of these to be forwarded.
+ * The base must be a TEST/sandbox base for the `/test/*` instruments to be
+ * forwardable — they mount only on a test deployment and must never touch a live
+ * host. If the base isn't recognizably test/sandbox/local, `/test/*` is refused.
  */
-const ALLOWED_PATH_PREFIXES = [
-  "/wallets",
-  "/payments",
-  "/payouts",
-  "/health",
-];
+const IS_TEST_BASE = /sandbox|test|localhost|127\.0\.0\.1/i.test(INFRA_API_BASE);
+
+/** Methods we forward: reads (GET) + every mutating verb the reference documents. */
+const ALLOWED_METHODS = new Set(["GET", "POST", "PATCH", "PUT", "DELETE"]);
 
 const REQUEST_TIMEOUT_MS = 12_000;
 
@@ -79,8 +76,20 @@ export async function POST(request: Request): Promise<Response> {
   if (!ALLOWED_METHODS.has(method)) {
     return error(405, "METHOD_NOT_ALLOWED", `Method ${method} is not forwardable.`);
   }
-  if (!path.startsWith("/") || !ALLOWED_PATH_PREFIXES.some((p) => path.startsWith(p))) {
-    return error(403, "PATH_NOT_ALLOWED", "That endpoint is not on the playground allowlist.");
+  if (!path.startsWith("/") || !isAllowedOperation(method, path)) {
+    return error(
+      403,
+      "PATH_NOT_ALLOWED",
+      "That operation is not on the playground allowlist — it isn't in the API's OpenAPI snapshot.",
+    );
+  }
+  // Test instruments (`/test/*`) must never be forwarded to a live base.
+  if (path.startsWith("/test") && !IS_TEST_BASE) {
+    return error(
+      403,
+      "TEST_ROUTE_ON_NON_TEST_BASE",
+      "The test instruments are only available against a test/sandbox base.",
+    );
   }
 
   // Use a demo sandbox key if the caller did not bring one (GET reads only).

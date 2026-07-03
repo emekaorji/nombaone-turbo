@@ -19,7 +19,11 @@ import { CTABand } from "@/components/sections/CTABand";
 import { LangTabs } from "@/components/sections/LangTabs";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Integrations" };
+export const metadata = {
+  title: "Integrations",
+  description:
+    "One REST API and real SDKs in every language you ship. The same create-subscription call in Next.js, Laravel, Django, or a curl one-liner — across card, direct debit, bank transfer, and crypto.",
+};
 
 const APP_URL = "https://app.nombaone.xyz";
 

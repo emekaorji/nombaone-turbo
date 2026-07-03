@@ -573,6 +573,9 @@ importers:
       '@nombaone/docs-db':
         specifier: workspace:*
         version: link:../../packages/docs-db
+      '@nombaone/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@nombaone/sara':
         specifier: workspace:*
         version: link:../../packages/sara

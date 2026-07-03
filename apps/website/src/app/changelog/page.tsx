@@ -1,7 +1,11 @@
 import { Container } from "@/components/layout/Container";
 import { PageHeader } from "@/components/primitives/PageHeader";
 
-export const metadata = { title: "Changelog" };
+export const metadata = {
+  title: "Changelog",
+  description:
+    "Shipping in the open — every meaningful change to Nomba One, dated and plainly written. Proof the thing is alive and moving.",
+};
 
 const ENTRIES: { date: string; version: string; title: string; body: string }[] = [
   {

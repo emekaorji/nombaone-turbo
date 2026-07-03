@@ -5,7 +5,11 @@ import { PageHeader } from "@/components/primitives/PageHeader";
 import { UseCaseCard } from "@/components/primitives/UseCaseCard";
 import { CTABand } from "@/components/sections/CTABand";
 
-export const metadata = { title: "Use cases" };
+export const metadata = {
+  title: "Use cases",
+  description:
+    "Built for how your business bills: SaaS, school fees, gyms and memberships, lending repayment, and platforms — one subscriptions engine tuned to how each business collects.",
+};
 
 const APP_URL = "https://app.nombaone.xyz";
 

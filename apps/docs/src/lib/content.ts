@@ -3,7 +3,7 @@ import path from "node:path";
 
 import matter from "gray-matter";
 
-import { findNavItem, findSection, type Badge } from "@content/manifest";
+import { ALL_SLUGS, findNavItem, findSection, type Badge } from "@content/manifest";
 
 /**
  * Typed content layer. Walks `content/`, resolves slug ↔ file, parses
@@ -115,10 +115,43 @@ export function slugify(text: string): string {
     .replace(/\s+/g, "-");
 }
 
-/** Load + parse a single page by slug. Returns `null` if no file exists. */
+/**
+ * A "coming soon" stub for a manifest-listed route whose `.mdx` is not yet
+ * authored — so the full IA is navigable and nothing 404s while content lands.
+ * The owning phase replaces the stub by adding `content/<slug>.mdx`.
+ */
+function buildStubPage(slug: string): DocPage {
+  const navItem = findNavItem(slug);
+  const title = navItem?.title ?? humanizeSlug(slug);
+  const summary = navItem?.summary;
+  const body = [
+    `<Callout type="note" title="Coming soon">`,
+    summary
+      ? `  ${summary} This page is planned and on the way.`
+      : `  This page is planned and on the way.`,
+    ``,
+    `  In the meantime, start with the **[Quickstart](/getting-started/quickstart)**,`,
+    `  or browse the rest of the docs from the sidebar.`,
+    `</Callout>`,
+    ``,
+  ].join("\n");
+
+  return {
+    slug,
+    filePath: "",
+    frontmatter: { title, description: summary, section: findSection(slug)?.key, toc: false },
+    body,
+    headings: [],
+  };
+}
+
+/** Load + parse a single page by slug. A manifest route without an authored
+ * `.mdx` renders a stub (not a 404); an unknown slug returns `null` (real 404). */
 export async function getPage(slug: string): Promise<DocPage | null> {
   const filePath = await resolveSlugToFile(slug);
-  if (!filePath) return null;
+  if (!filePath) {
+    return ALL_SLUGS.includes(slug) ? buildStubPage(slug) : null;
+  }
 
   const raw = await fs.readFile(filePath, "utf8");
   const { content, data } = matter(raw);
@@ -170,6 +203,17 @@ export async function listAllSlugs(): Promise<string[]> {
 
   await walk(CONTENT_DIR);
   return slugs;
+}
+
+/**
+ * Every routable slug = authored `.mdx` pages ∪ manifest routes (which render a
+ * stub until authored). Used by `generateStaticParams` so the whole IA
+ * prerenders and no manifest link 404s. The search-index builder uses
+ * `listAllSlugs` (authored only) so stubs never pollute search.
+ */
+export async function listRoutableSlugs(): Promise<string[]> {
+  const authored = await listAllSlugs();
+  return Array.from(new Set([...authored, ...ALL_SLUGS]));
 }
 
 /** "/concepts/balances-and-ledger" → "Balances And Ledger". */
