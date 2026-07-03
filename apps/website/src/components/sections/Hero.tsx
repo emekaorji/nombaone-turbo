@@ -31,9 +31,9 @@ export function Hero() {
         className="pointer-events-none absolute left-1/2 top-0 h-full w-full max-w-[1080px] -translate-x-1/2 bg-[radial-gradient(100%_90%_at_35%_36%,#0b3527_0%,#050505_72%)]"
       />
       <Container className="relative">
-        <div className="flex flex-col pb-[130px] pt-[110px] md:pt-[150px]">
+        <div className="flex flex-col pb-16 pt-[76px] md:pb-[130px] md:pt-[150px]">
           {/* H1 — two lines: white statement + gradient rotating word */}
-          <h1 className="flex flex-col text-[52px] font-semibold leading-[1.03] tracking-[-2.4px] text-foreground md:text-[96px] md:leading-[1.02] md:tracking-[-4.4px]">
+          <h1 className="flex flex-col text-[44px] font-semibold leading-[1.05] tracking-[-1.9px] text-foreground md:text-[96px] md:leading-[1.02] md:tracking-[-4.4px]">
             <span>Subscriptions for every</span>
             <span className="relative inline-block">
               <AnimatePresence mode="wait" initial={false}>
@@ -51,31 +51,31 @@ export function Hero() {
             </span>
           </h1>
 
-          {/* Sub — 27px, muted, max 720 */}
-          <p className="mt-[34px] max-w-[720px] text-lg leading-[1.5] text-muted-foreground md:text-[27px]">
+          {/* Sub — 18px mobile / 27px desktop, muted, max 720 */}
+          <p className="mt-[22px] max-w-[720px] text-lg leading-[1.5] text-muted-foreground md:mt-[34px] md:text-[27px]">
             One managed subscriptions layer over every rail. Dunning that recovers, reconciliation that
             settles itself, and a ledger that never loses a kobo. Ship recurring revenue instead of
             rebuilding billing.
           </p>
 
-          {/* CTAs — padding [15,30], radius 10, 16.5px */}
-          <div className="mt-[44px] flex flex-wrap items-center gap-[14px]">
+          {/* CTAs — full-width stacked on mobile; padding [15,30], radius 10 */}
+          <div className="mt-[30px] flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center md:mt-[44px] md:gap-[14px]">
             <a
               href={APP_URL}
-              className="rounded-[10px] bg-accent px-[30px] py-[15px] text-[16.5px] font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+              className="w-full rounded-[10px] bg-accent px-[30px] py-[14px] text-center text-[16px] font-medium text-accent-foreground transition-colors hover:bg-accent-hover sm:w-auto md:py-[15px] md:text-[16.5px]"
             >
               Start building
             </a>
             <Link
               href="/guides"
-              className="rounded-[10px] border border-border-strong bg-surface-2 px-[30px] py-[15px] text-[16.5px] font-medium text-foreground transition-colors hover:bg-surface-3"
+              className="w-full rounded-[10px] border border-border-strong bg-surface-2 px-[30px] py-[14px] text-center text-[16px] font-medium text-foreground transition-colors hover:bg-surface-3 sm:w-auto md:py-[15px] md:text-[16.5px]"
             >
               Read the docs
             </Link>
           </div>
 
-          {/* Audiences — 18px, subtle, max 640 */}
-          <p className="mt-[26px] max-w-[640px] text-lg leading-[1.5] text-subtle-foreground">
+          {/* Audiences — 15px mobile / 18px desktop, subtle, max 640 */}
+          <p className="mt-[20px] max-w-[640px] text-[15px] leading-[1.5] text-subtle-foreground md:mt-[26px] md:text-lg">
             For the developers, founders, merchants, and teams switching off billing they never wanted
             to maintain.
           </p>

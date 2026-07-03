@@ -114,6 +114,24 @@ A `customerId` filter scopes the list to one customer and is set automatically w
 - **Empty (filter matched nothing):** "No subscriptions match this filter." with a clear-filter action.
 - **Error:** read-failure retry panel with `requestId`. `INVALID_CURSOR` (a stale or malformed cursor) drops the cursor and reloads from the first page.
 
+### 2.1 Command center refinements (from the Pencil pass)
+
+The `.pen` pass turned this screen from a passive table into a command center. Six refinements are now built in `NOMBAONE.pen`, and they change what the list leads with.
+
+- **Revenue command bar (replaces static KPI tiles).** The header carries a live MRR figure with its period movement, a horizontal stacked movement and composition bar segmenting the whole book into billing-cleanly, in-recovery, past-due, and churned (each segment a clickable filter into the table below), and a first-class "Revenue at risk" figure. Revenue at risk is the sum of `amountDueInKobo` across the subscriptions in dunning, rendered by the section 1.2 helper; clicking it filters the table to the at-risk rows. The bar reads as the state of the book, not as decoration.
+
+- **Per-row health strip.** Every row carries an inline last-six-cycles micro-timeline in its own cell, each cycle colored by outcome: paid emerald, failed red, recovered the accent recovery peak, upcoming neutral, trial info. This is the identified competitive gap: no billing product we surveyed (Stripe, Orb, Metronome, Chargebee, Recurly, and the rest) ships per-subscription health inline in the list.
+
+- **Rail column.** Each row shows a rail badge (card, direct-debit, or transfer) resolved from `defaultPaymentMethodId` to the payment method's `kind`, `status`, `brand`, and `last4`. No competitor models multi-rail; this is our differentiator surfaced in the list, not buried in a detail drawer.
+
+- **Default sort by revenue-at-risk descending.** The list opens with the leaking money at the top, not alphabetically. A command center leads with what matters, the past-due and in-recovery subscribers, not an alphabetical CRUD dump.
+
+- **Inline recovery actions on past_due rows.** A `past_due` row is warning-tinted and reveals Update card and Send pay link inline. It never offers a blind "retry now" on a bank-gated held branch, because a headless retry there cannot settle (the card OTP reality from doc 00); the honest action is to update the method or send the pay link.
+
+- **The enriched-list build note (kept honest).** `GET /v1/subscriptions` returns lean rows today: `latestInvoiceId` is null in list responses and the item DTO carries no amount. The rich row needs per-subscription MRR (a price join), health (recent invoice outcomes), rail (the payment-method kind and status), and recovery (the dunning state); fetching each of those per row is an N+1 anti-pattern. The design assumes an enriched list endpoint (`GET /v1/subscriptions?expand=mrr,health,rail,recovery`) or a companion batch (`GET /v1/subscriptions/health?ids=...`). This is build dependency #1 for this page, fully specified in console-plan-10-engineering.md section 3. Phase 1 renders an honest reduced row (subscriber, plan, status, next-bill countdown) with the strip, rail, MRR, and recovery behind a skeleton, never faked.
+
+The loading, empty (zero), empty (filtered), and error states for this list are designed on the States board and specified in doc 08; the reusable row symbols (StatusBadge, HealthStrip, RailBadge) live in doc 06.
+
 ---
 
 ## 3. Subscriptions: detail

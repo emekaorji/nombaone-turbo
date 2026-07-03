@@ -138,7 +138,7 @@ function QACard({ card }: { card: QA }) {
 
 export default function HallPage() {
   return (
-    <div className="mx-auto max-w-[1200px] px-6">
+    <div className="mx-auto max-w-[1200px] px-5">
       {/* Masthead */}
       <div className="flex flex-col items-center pb-12 pt-24 text-center md:pt-[120px]">
         <h1 className="text-[56px] font-semibold leading-none tracking-[-2.5px] text-foreground md:text-[108px] md:tracking-[-5px]">

@@ -19,9 +19,9 @@ const STYLES: Record<
   note: {
     icon: Info,
     label: "Note",
-    wrap: "border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950/40",
-    iconColor: "text-purple-600 dark:text-purple-300",
-    title: "text-purple-800 dark:text-purple-200",
+    wrap: "border-accent-border bg-accent-muted dark:border-accent-border dark:bg-accent-muted",
+    iconColor: "text-accent dark:text-accent",
+    title: "text-accent dark:text-accent",
   },
   tip: {
     icon: Lightbulb,

@@ -77,8 +77,8 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
 export function Footer() {
   return (
     <footer className="border-t border-border bg-background">
-      {/* Columns */}
-      <div className="flex flex-col gap-12 px-6 py-12 md:flex-row md:justify-between md:px-[60px]">
+      {/* Columns (desktop) */}
+      <div className="hidden py-12 md:flex md:flex-row md:justify-between md:px-[60px]">
         {/* Brand column */}
         <div className="flex w-full flex-col gap-3.5 md:w-60">
           <Logo />
@@ -101,8 +101,8 @@ export function Footer() {
         ))}
       </div>
 
-      {/* Bottom bar */}
-      <div className="flex flex-col gap-4 border-t border-border px-6 py-5 md:flex-row md:items-center md:justify-between md:px-[60px]">
+      {/* Bottom bar (desktop) */}
+      <div className="hidden border-t border-border py-5 md:flex md:flex-row md:items-center md:justify-between md:px-[60px]">
         <div className="flex flex-wrap items-center gap-3.5">
           <span className="inline-flex items-center gap-[7px] rounded-full bg-[var(--success-bg)] px-[11px] py-1">
             <span className="size-1.5 rounded-full bg-success" />
@@ -112,6 +112,38 @@ export function Footer() {
         </div>
         <span className="font-mono text-[12px] text-subtle-foreground">
           Built for how Nigeria pays.
+        </span>
+      </div>
+
+      {/* Mobile footer (simplified, .pen a05YD) */}
+      <div className="flex flex-col gap-4 px-5 py-7 md:hidden">
+        <Logo />
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          {[
+            { label: "Product", href: "/product" },
+            { label: "Developers", href: DOCS_URL },
+            { label: "Solutions", href: "/use-cases" },
+            { label: "Legal", href: "#" },
+          ].map((c) =>
+            c.href.startsWith("http") ? (
+              <a
+                key={c.label}
+                href={c.href}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[13px] text-muted-foreground"
+              >
+                {c.label}
+              </a>
+            ) : (
+              <Link key={c.label} href={c.href} className="text-[13px] text-muted-foreground">
+                {c.label}
+              </Link>
+            )
+          )}
+        </div>
+        <span className="text-[12px] text-subtle-foreground">
+          © 2026 Nomba One · Built for how Nigeria pays.
         </span>
       </div>
     </footer>

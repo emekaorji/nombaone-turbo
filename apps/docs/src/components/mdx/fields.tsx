@@ -37,7 +37,7 @@ function FieldShell({
           className={cn(
             "rounded-[5px] px-1.5 py-0.5 font-mono text-[13px] font-semibold",
             accent === "param"
-              ? "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
+              ? "bg-accent-muted text-accent dark:bg-accent-muted dark:text-accent"
               : "bg-magenta-100 text-magenta-700 dark:bg-magenta-900 dark:text-magenta-100",
           )}
         >

@@ -162,7 +162,7 @@ export function SearchPalette({ open, onOpenChange }: SearchPaletteProps) {
                       className={cn(
                         "flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm transition-colors",
                         isActive
-                          ? "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-200"
+                          ? "bg-accent-muted text-accent dark:bg-accent-muted dark:text-accent"
                           : "text-foreground hover:bg-muted",
                       )}
                     >
@@ -218,9 +218,9 @@ function EmptyHint() {
         Search guides, concepts, and the API reference.
       </p>
       <p className="mt-1 text-xs text-muted-foreground/70">
-        Try <span className="font-mono text-purple-600 dark:text-purple-300">idempotency</span>,{" "}
-        <span className="font-mono text-purple-600 dark:text-purple-300">withdrawals</span>, or{" "}
-        <span className="font-mono text-purple-600 dark:text-purple-300">fees</span>.
+        Try <span className="font-mono text-accent dark:text-accent">idempotency</span>,{" "}
+        <span className="font-mono text-accent dark:text-accent">withdrawals</span>, or{" "}
+        <span className="font-mono text-accent dark:text-accent">fees</span>.
       </p>
     </div>
   );
@@ -231,7 +231,7 @@ function NoResults({ query }: { query: string }) {
     <div className="px-3 py-10 text-center">
       <p className="text-sm text-foreground">
         No matches for{" "}
-        <span className="font-medium text-purple-600 dark:text-purple-300">
+        <span className="font-medium text-accent dark:text-accent">
           &ldquo;{query}&rdquo;
         </span>
         .

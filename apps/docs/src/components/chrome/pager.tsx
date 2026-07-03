@@ -24,7 +24,7 @@ export function Pager({ slug }: { slug: string }) {
         {prev ? (
           <Link
             href={prev.slug === "" ? "/" : prev.slug}
-            className="group flex flex-col rounded-lg border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-md dark:hover:border-purple-700"
+            className="group flex flex-col rounded-lg border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-accent-border hover:shadow-md dark:hover:border-accent-border"
           >
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <ArrowLeft size={13} aria-hidden /> Previous
@@ -39,7 +39,7 @@ export function Pager({ slug }: { slug: string }) {
         {next ? (
           <Link
             href={next.slug === "" ? "/" : next.slug}
-            className="group flex flex-col items-end rounded-lg border border-border bg-card p-4 text-right transition-all hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-md dark:hover:border-purple-700"
+            className="group flex flex-col items-end rounded-lg border border-border bg-card p-4 text-right transition-all hover:-translate-y-0.5 hover:border-accent-border hover:shadow-md dark:hover:border-accent-border"
           >
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               Next <ArrowRight size={13} aria-hidden />

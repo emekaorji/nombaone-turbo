@@ -71,11 +71,19 @@ export default async function DocPage({ params }: PageProps) {
     ...mdxOptions,
   });
 
+  // TOC rail: shown on nested pages that have h2/h3 headings, unless the page
+  // opts out with `toc: false` in frontmatter (home + landing suppress it).
+  const showToc = !isHome && page.frontmatter.toc !== false && page.headings.length > 0;
+
   return (
     <div className="flex w-full">
-      {/* Content column. */}
-      <article className="min-w-0 flex-1 px-5 py-8 lg:px-10 xl:px-12">
-        <div className="mx-auto w-full max-w-[var(--doc-shell-max)]">
+      {/* Content column — the `main` landmark + skip-link target. */}
+      <main
+        id="content"
+        tabIndex={-1}
+        className="min-w-0 flex-1 px-5 py-8 outline-none lg:px-10 xl:px-12"
+      >
+        <article className="mx-auto w-full max-w-[var(--doc-shell-max)]">
           {!isHome && <Breadcrumbs slug={resolvedSlug} title={page.frontmatter.title} />}
 
           <header className="mb-2">
@@ -94,13 +102,18 @@ export default async function DocPage({ params }: PageProps) {
           </div>
 
           <Pager slug={resolvedSlug} />
-        </div>
-      </article>
+        </article>
+      </main>
 
-      {/* Right TOC rail. */}
-      <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto px-4 py-8 xl:block">
-        <Toc headings={page.headings} />
-      </aside>
+      {/* Right TOC rail (complementary). */}
+      {showToc && (
+        <aside
+          aria-label="On this page"
+          className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto px-4 py-8 xl:block"
+        >
+          <Toc headings={page.headings} />
+        </aside>
+      )}
     </div>
   );
 }

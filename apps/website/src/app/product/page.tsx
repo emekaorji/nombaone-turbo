@@ -246,24 +246,24 @@ export default function ProductPage() {
       />
 
       {/* Lifecycle overview */}
-      <Container className="pb-[88px] pt-10">
+      <Container className="pb-14 md:pb-[88px] pt-10">
         <LifecycleRail />
       </Container>
 
       {/* Five stages */}
       {STAGES.map((stage) => (
-        <Container key={stage.n} className="py-[88px]">
+        <Container key={stage.n} className="py-14 md:py-[88px]">
           <StageRow stage={stage} />
         </Container>
       ))}
 
       {/* Trust */}
-      <Container className="py-[88px]">
+      <Container className="py-14 md:py-[88px]">
         <GuaranteeBand />
       </Container>
 
       {/* CTA */}
-      <Container className="pb-[120px] pt-[88px]">
+      <Container className="pb-20 md:pb-[120px] pt-14 md:pt-[88px]">
         <CTABand
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: "https://app.nombaone.xyz" }}

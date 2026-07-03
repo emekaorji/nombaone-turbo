@@ -179,7 +179,7 @@ export default function PricingPage() {
       </Container>
 
       {/* CTA */}
-      <Container className="pb-[120px] pt-24">
+      <Container className="pb-20 md:pb-[120px] pt-24">
         <CTABand
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}

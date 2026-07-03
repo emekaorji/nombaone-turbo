@@ -138,7 +138,7 @@ function ApiNav({ onNavigate }: { onNavigate?: () => void }) {
 
 /**
  * A flattened API resource: a group header (the resource title, linking to its
- * overview) with the endpoint rows directly beneath. Styled with the purple
+ * overview) with the endpoint rows directly beneath. Styled with the emerald
  * `kind:"api"` treatment so resources read as distinct top-level groups.
  */
 function ApiGroup({
@@ -160,13 +160,13 @@ function ApiGroup({
         className={cn(
           "flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.6px] transition-colors hover:text-foreground",
           active
-            ? "text-purple-700 dark:text-purple-200"
-            : "text-purple-600 dark:text-purple-300",
+            ? "text-accent dark:text-accent"
+            : "text-accent dark:text-accent",
         )}
       >
         <span
           aria-hidden
-          className="size-1 rounded-full bg-purple-400 dark:bg-purple-500"
+          className="size-1 rounded-full bg-accent dark:bg-accent"
         />
         <span className="truncate">{resource.title}</span>
         {resource.badge && <BadgePill badge={resource.badge} />}
@@ -205,7 +205,7 @@ function NavLink({
         "before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:transition-colors",
         dense ? "py-1" : "py-1.5",
         active
-          ? "font-semibold text-purple-700 before:bg-purple-500 dark:text-purple-200"
+          ? "font-semibold text-accent before:bg-accent dark:text-accent"
           : "text-muted-foreground before:bg-transparent hover:text-foreground",
       )}
     >
@@ -218,7 +218,7 @@ function NavLink({
 
 function BadgePill({ badge }: { badge: Badge }) {
   const styles: Record<Badge, string> = {
-    new: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200",
+    new: "bg-accent-muted text-accent dark:bg-accent-muted dark:text-accent",
     beta: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
     updated: "bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300",
   };

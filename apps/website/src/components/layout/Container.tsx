@@ -13,7 +13,7 @@ export function Container({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("mx-auto w-full max-w-[1080px] px-6 xl:px-0", className)}>{children}</div>
+    <div className={cn("mx-auto w-full max-w-[1080px] px-5 xl:px-0", className)}>{children}</div>
   );
 }
 
@@ -38,7 +38,7 @@ export function HomeSection({
       <Container
         className={cn(
           divider && "border-t border-border",
-          "py-20 md:py-[128px]",
+          "py-14 md:py-[128px]",
           className
         )}
       >

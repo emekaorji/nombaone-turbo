@@ -7,7 +7,7 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-      <p className="font-mono text-sm font-medium text-purple-500">404</p>
+      <p className="font-mono text-sm font-medium text-accent">404</p>
       <h1 className="mt-3 text-2xl font-bold text-foreground">You found the edge of the map.</h1>
       <p className="mt-2 max-w-md text-sm text-muted-foreground">
         This page does not exist (yet). It may have moved, or you may have followed a stale link.

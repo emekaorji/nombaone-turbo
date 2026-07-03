@@ -50,7 +50,7 @@ export default function UseCasesPage() {
         deck="The same engine, tuned to how each business actually collects. Find yourself here."
       />
 
-      <Container className="pb-[88px] pt-10">
+      <Container className="pb-14 md:pb-[88px] pt-10">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {USE_CASES.map((u) => (
             <UseCaseCard key={u.label} href={u.href} icon={u.icon} label={u.label} pain={u.pain} />
@@ -58,7 +58,7 @@ export default function UseCasesPage() {
         </div>
       </Container>
 
-      <Container className="pb-[120px]">
+      <Container className="pb-20 md:pb-[120px]">
         <CTABand
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}

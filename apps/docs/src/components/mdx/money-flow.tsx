@@ -93,10 +93,10 @@ const ACCOUNT_STYLES: Record<
   { ring: string; chip: string; dot: string; labelTone: string }
 > = {
   wallet: {
-    ring: "border-purple-300 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/50",
-    chip: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200",
-    dot: "bg-purple-500",
-    labelTone: "text-purple-800 dark:text-purple-200",
+    ring: "border-accent-border bg-accent-muted dark:border-accent-border dark:bg-accent-muted",
+    chip: "bg-accent-muted text-accent dark:bg-accent-muted dark:text-accent",
+    dot: "bg-accent",
+    labelTone: "text-accent dark:text-accent",
   },
   system: {
     ring: "border-border bg-muted/50",
@@ -220,7 +220,7 @@ export function MoneyFlow({ title, subtitle, accounts, legs, caption }: MoneyFlo
             type="button"
             onClick={play}
             disabled={playing}
-            className="inline-flex items-center gap-1.5 rounded-md border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs font-medium text-purple-700 transition-colors hover:bg-purple-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-purple-800 dark:bg-purple-950 dark:text-purple-200 dark:hover:bg-purple-900"
+            className="inline-flex items-center gap-1.5 rounded-md border border-accent-border bg-accent-muted px-2.5 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent-muted disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-accent-border dark:bg-accent-muted dark:text-accent dark:hover:bg-accent-muted"
           >
             <Play size={12} aria-hidden />
             {reduced ? "Reveal" : "Play"}
@@ -309,7 +309,7 @@ export function MoneyFlow({ title, subtitle, accounts, legs, caption }: MoneyFlo
                     aria-hidden
                     className={cn(
                       "shrink-0 transition-colors duration-500",
-                      revealed > 0 ? "text-purple-400" : "text-border",
+                      revealed > 0 ? "text-accent" : "text-border",
                     )}
                   />
                 )}

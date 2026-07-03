@@ -95,7 +95,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="flex items-center justify-between px-6 py-[14px] md:px-[60px]">
+      <div className="flex items-center justify-between px-5 py-3 md:px-[60px] md:py-[14px]">
         {/* Left: logo + nav (gap 28) */}
         <div className="flex items-center gap-7">
           <Link href="/" aria-label="Nomba One home" className="shrink-0">

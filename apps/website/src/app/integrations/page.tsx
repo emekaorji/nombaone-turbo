@@ -107,7 +107,7 @@ export default function IntegrationsPage() {
       </PageHeader>
 
       {/* 01 Reach anywhere */}
-      <Container className="pb-[88px] pt-10">
+      <Container className="pb-14 md:pb-[88px] pt-10">
         <SectionHeader
           title="Reach us from anywhere in your stack."
           deck="SDKs in seven languages, framework quickstarts, mobile, no-code, a CLI, and a REST API with an always-accurate OpenAPI spec."
@@ -129,7 +129,7 @@ export default function IntegrationsPage() {
       </Container>
 
       {/* 02 Code */}
-      <Container className="py-[88px]">
+      <Container className="py-14 md:py-[88px]">
         <SectionHeader
           title="The same call, in your framework."
           deck="One create-subscription request, shown in the stack you actually ship. Copy it and run."
@@ -140,7 +140,7 @@ export default function IntegrationsPage() {
       </Container>
 
       {/* 03 Rails */}
-      <Container className="py-[88px]">
+      <Container className="py-14 md:py-[88px]">
         <SectionHeader
           title="Every rail your customers use."
           deck="Card, bank transfer, direct debit, and crypto, behind one subscription object."
@@ -159,7 +159,7 @@ export default function IntegrationsPage() {
       </Container>
 
       {/* 04 Drop-in */}
-      <Container className="py-[88px]">
+      <Container className="py-14 md:py-[88px]">
         <SectionHeader
           title="Drop in, or go deep."
           deck="Embed a checkout in minutes, or wire the full API. Either way, the money layer stays on Nomba's hosted, PCI-compliant surface."
@@ -179,7 +179,7 @@ export default function IntegrationsPage() {
       </Container>
 
       {/* 05 Migrate */}
-      <Container className="py-[88px]">
+      <Container className="py-14 md:py-[88px]">
         <SectionHeader
           title="Moving off something else?"
           deck="Bring your plans and customers over, and pick up dunning, reconciliation, and multi-rail billing on the way in."
@@ -201,7 +201,7 @@ export default function IntegrationsPage() {
       </Container>
 
       {/* 06 CTA */}
-      <Container className="pb-[120px] pt-[88px]">
+      <Container className="pb-20 md:pb-[120px] pt-14 md:pt-[88px]">
         <CTABand
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}

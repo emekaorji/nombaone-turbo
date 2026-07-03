@@ -47,7 +47,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <>
-      <div className="mx-auto max-w-[760px] px-6 pt-[120px]">
+      <div className="mx-auto max-w-[760px] px-5 pt-20 md:pt-[120px]">
         {/* Header */}
         <span className="inline-flex items-center gap-2 rounded-full border border-accent-border bg-accent-muted px-3 py-1.5">
           <span className="size-1.5 rounded-full bg-accent" />
@@ -90,7 +90,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       </div>
 
       {/* CTA */}
-      <Container className="pb-[120px] pt-[100px]">
+      <Container className="pb-20 md:pb-[120px] pt-16 md:pt-[100px]">
         <CTABand
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}

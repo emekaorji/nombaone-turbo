@@ -61,7 +61,7 @@ export default function TrustPage() {
       />
 
       {/* 01 Money */}
-      <Container className="pb-[88px] pt-14">
+      <Container className="pb-14 md:pb-[88px] pt-14">
         <SectionHeader
           title="Every kobo, accounted for twice."
           deck="A real double-entry ledger under every charge, so the books always balance and always reconcile to Nomba."
@@ -133,7 +133,7 @@ export default function TrustPage() {
       </Container>
 
       {/* 02 Isolation */}
-      <Container className="py-[88px]">
+      <Container className="py-14 md:py-[88px]">
         <SectionHeader
           title="Isolation is a property of the schema."
           deck="Not a middleware check you can forget to add. Every row carries an org_id, so one tenant can never read another's data."
@@ -158,7 +158,7 @@ export default function TrustPage() {
       </Container>
 
       {/* 03 Reconciliation */}
-      <Container className="py-[88px]">
+      <Container className="py-14 md:py-[88px]">
         <SectionHeader
           title="Money that arrives is verified, not trusted."
           deck="Every inbound event is checked and independently re-queried against Nomba before a single ledger entry is written."
@@ -183,12 +183,12 @@ export default function TrustPage() {
       </Container>
 
       {/* 04 Guarantees */}
-      <Container className="py-[88px]">
+      <Container className="py-14 md:py-[88px]">
         <GuaranteeBand />
       </Container>
 
       {/* 05 FAQ */}
-      <Container className="pt-[88px]">
+      <Container className="pt-14 md:pt-[88px]">
         <h2 className="text-[32px] font-semibold tracking-[-1.4px] text-foreground md:text-[40px]">
           Compliance, plainly.
         </h2>
@@ -203,7 +203,7 @@ export default function TrustPage() {
       </Container>
 
       {/* 06 CTA */}
-      <Container className="pb-[120px] pt-24">
+      <Container className="pb-20 md:pb-[120px] pt-24">
         <CTABand
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}

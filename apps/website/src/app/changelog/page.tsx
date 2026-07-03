@@ -44,7 +44,7 @@ export default function ChangelogPage() {
         deck="Every meaningful change, dated and plainly written. Proof the thing is alive and moving."
       />
 
-      <Container className="pb-[88px] pt-6">
+      <Container className="pb-14 md:pb-[88px] pt-6">
         <div className="flex flex-col">
           {ENTRIES.map((e) => (
             <article

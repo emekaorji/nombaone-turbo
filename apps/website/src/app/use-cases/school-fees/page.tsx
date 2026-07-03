@@ -134,7 +134,7 @@ export default function SchoolFeesPage() {
       </Container>
 
       {/* 04 CTA */}
-      <Container className="pb-[120px] pt-[88px]">
+      <Container className="pb-20 md:pb-[120px] pt-14 md:pt-[88px]">
         <CTABand
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}

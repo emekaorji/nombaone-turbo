@@ -22,7 +22,7 @@ import type { CompileOptions } from "@mdx-js/mdx";
 
 const prettyCodeOptions: PrettyCodeOptions = {
   // Dual themes: `rehype-pretty-code` emits both and gates each with a
-  // `data-theme` attribute; our CSS shows the one matching `.dark`.
+  // `data-theme` attribute; our CSS shows the one matching [data-theme="dark"].
   theme: { light: nombaoneLight, dark: nombaoneDark },
   // Keep the literal background off; our CSS owns the code surface so it
   // tracks the Nombaone `--code-bg` token in both themes.

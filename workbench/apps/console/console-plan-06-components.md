@@ -799,4 +799,30 @@ Every component in sections 5 through 17 is authored to land in the shared `@nom
 
 **Cross-cutting checks every component passes before it is done:** Tier-2 tokens only; dark and light both correct as a pure remap; keyboard reachable and focus-visible; `prefers-reduced-motion` honored; money rendered by the money law with the 100x unit guard wherever an amount is shown or taken; status labels drawn verbatim from the API enums with voluntary cancel and involuntary churn kept distinct; and every failure path rendering `error.hint`, `error.docUrl`, and `meta.requestId`.
 
+---
+
+## Net-new symbols finalized in the Pencil pass
+
+The design pass authored these symbols on the Components board of `NOMBAONE.pen`. Each is specced here as built, so the Phase B build in `@nombaone/ui` lifts the frame 1:1. They read Tier-2 tokens only, and the two badge symbols are the concrete realization of the section 6 status system.
+
+- **StatusBadge (subscription FSM).** A pill (`--r-full`, 0.5px border) with a leading colored dot and a sentence-case label, one symbol driving all seven `SubscriptionStatus` readings: `incomplete` (neutral, `--surface-2` fill with `--muted-foreground` dot and text), `trialing` (info), `active` (success), `past_due` (warning), `paused` (neutral), `canceled` (neutral), and `churned` (danger). Each toned variant fills with its `--<tone>-bg` and paints the dot and label in the matching `--<tone>`. Voluntary `canceled` stays neutral and involuntary `churned` stays danger, so the two outcomes never share a look. Binds to `subscription.status` plus the `cancellationReason` voluntary versus involuntary split.
+
+- **Invoice StatusBadge (derived).** The same pill construction driving the derived `InvoiceStatus`: `draft` (neutral), `open` (info), `partially_paid` (warning), `paid` (success), `void` (neutral), `uncollectible` (danger). Binds to the derived invoice status, never a stored field.
+
+- **RailBadge.** A small bordered chip (`--surface-2` fill, `--border`, `--r-sm`) carrying a lucide icon and a label for the paying instrument. `card` uses the credit-card icon with an info tint and prints brand plus last4 ("Card ·2481"), `direct-debit` uses the landmark icon with an accent tint, and `transfer` uses the arrow-left-right icon with a muted tint. Binds to `payment_method.kind`, `.status`, `.brand`, and `.last4`.
+
+- **HealthStrip.** A horizontal run of six rounded segments (each about 16 by 6, `--r-full`), one per recent cycle, colored by outcome: paid `--success`, failed `--danger`, recovered `--accent`, upcoming `--border-strong`, trial `--info`. Summary variants clean, recovering, churning, and trialing read the run at a glance. Binds to per-subscription invoice outcomes over the last six cycles (see console-plan-10 section 5). In cards it runs full width as flex segments; in dense tables it uses fixed-width segments.
+
+- **MetricMovementBar.** A single horizontal stacked bar (`--r-full`, clipped) of proportional segments: billing cleanly `--success`, in recovery `--warning`, past due `--danger`, and churned `--subtle-foreground`. Each segment is clickable as a filter into the matching list. Binds to `BillingMetricsData` (`activeCount`, `dunningFunnel`, and the churn fields); the full new, expansion, and contraction waterfall is a metrics build item (console-plan-10 section 4).
+
+- **TriageDrawer.** A right slide-over opened on a row click. It holds a subscription mini-record (status, rail, MRR, current period, next bill), a compact bill, fail, and recover timeline preview, inline recovery actions, and an "Open full detail" escape hatch to the full drawer. It lets a merchant triage the at-risk book without leaving the list.
+
+- **DataTable.** A header row, data rows, and per-cell frames. The column pattern gives the subscriber cell `fill_container` and fixes the remaining cells to width, with a 14 gap, `[12,16]` row padding, and a hairline bottom stroke (`--border`). On mobile it converts to lifecycle cards per the responsive language below.
+
+### Responsive language (from the mobile pass)
+
+The mobile pass locked these rules: the sidebar becomes a five-tab bottom nav plus a hamburger topbar; table rows become lifecycle cards (health strip full width, rail and status badges on the card, inline recovery on the at-risk cards); the split brand-and-form auth screen stacks into a brand band over the form; KPI columns become a 2x2 tile grid; and the horizontal detail timeline becomes a vertical gutter of dot-plus-connector nodes.
+
+---
+
 Proceed to doc 07.
