@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, FileArchive, Github } from "lucide-react";
+import { Check, Copy, Download, FileArchive, Github, type LucideIcon, Terminal } from "lucide-react";
 
 import { BrandIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
@@ -13,12 +13,12 @@ const KEYWORDS = new Set([
   "async", "function", "return", "class", "public", "private", "protected",
   "static", "void", "use", "require", "func", "package", "fn", "def", "val",
   "this", "self", "type", "interface", "struct", "enum", "impl", "mut", "pub",
-  "module", "end", "render", "namespace", "using",
+  "module", "end", "defmodule", "do", "render", "namespace", "using", "serve",
 ]);
 const TOKEN_RE =
-  /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\/\/[^\n]*)|([A-Za-z_$][\w$]*)|(\s+|[^\sA-Za-z_$"']+)/g;
+  /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\/\/[^\n]*|#[^\n]*)|([A-Za-z_$][\w$]*)|(\s+|[^\sA-Za-z_$"'`]+)/g;
 
-function highlight(code: string): Line[] {
+function highlight(code: string, hashComments: boolean): Line[] {
   return code.split("\n").map((raw) => {
     if (raw.trim() === "") return null;
     const segs: Seg[] = [];
@@ -26,27 +26,30 @@ function highlight(code: string): Line[] {
     TOKEN_RE.lastIndex = 0;
     while ((m = TOKEN_RE.exec(raw))) {
       if (m[1]) segs.push({ t: m[1], c: "str" });
-      else if (m[2]) segs.push({ t: m[2], c: "com" });
-      else if (m[3]) segs.push({ t: m[3], c: KEYWORDS.has(m[3]) ? "kw" : undefined });
+      else if (m[2]) {
+        // Only treat # as a comment for shell/ruby/python/elixir contexts.
+        if (m[2].startsWith("#") && !hashComments) segs.push({ t: m[2] });
+        else segs.push({ t: m[2], c: "com" });
+      } else if (m[3]) segs.push({ t: m[3], c: KEYWORDS.has(m[3]) ? "kw" : undefined });
       else segs.push({ t: m[4]! });
     }
     return segs;
   });
 }
 
-// ── Snippets ───────────────────────────────────────────────────────────────
-type FW = { label: string; icon: string; code: string };
-type Lang = { label: string; icon: string; frameworks: FW[] };
+// ── Data model ─────────────────────────────────────────────────────────────
+type IconRef = string | LucideIcon; // brand-icon slug OR a lucide component
+type FW = { label: string; icon: IconRef; code: string; hash?: boolean };
+type Lang = { label: string; icon: IconRef; frameworks: FW[] };
 
-const LANGS: Lang[] = [
-  {
-    label: "Node.js",
-    icon: "nodedotjs",
-    frameworks: [
-      {
-        label: "Node.js",
-        icon: "nodedotjs",
-        code: `import { Nomba } from 'nomba-one';
+function Glyph({ icon, className }: { icon: IconRef; className?: string }) {
+  if (typeof icon === "string") return <BrandIcon slug={icon} className={className} />;
+  const Ic = icon;
+  return <Ic className={className} strokeWidth={1.75} />;
+}
+
+// Shared SDK snippets keep the file readable.
+const NODE_SDK = `import { Nomba } from 'nomba-one';
 
 const nomba = new Nomba(process.env.NOMBA_KEY);
 
@@ -54,8 +57,14 @@ await nomba.subscriptions.create({
   customer: 'cus_8821',
   plan: 'plan_pro',
   rail: 'auto',
-});`,
-      },
+});`;
+
+const LANGS: Lang[] = [
+  {
+    label: "Node.js",
+    icon: "nodedotjs",
+    frameworks: [
+      { label: "Node.js", icon: "nodedotjs", code: NODE_SDK },
       {
         label: "Next.js",
         icon: "nextdotjs",
@@ -69,37 +78,6 @@ export async function POST(req: Request) {
     customer, plan: 'plan_pro', rail: 'auto',
   });
   return Response.json(sub);
-}`,
-      },
-      {
-        label: "Express",
-        icon: "express",
-        code: `const { Nomba } = require('nomba-one');
-
-const nomba = new Nomba(process.env.NOMBA_KEY);
-
-app.post('/subscribe', async (req, res) => {
-  const sub = await nomba.subscriptions.create({
-    customer: req.body.customer, plan: 'plan_pro', rail: 'auto',
-  });
-  res.json(sub);
-});`,
-      },
-      {
-        label: "NestJS",
-        icon: "nestjs",
-        code: `import { Injectable } from '@nestjs/common';
-import { Nomba } from 'nomba-one';
-
-@Injectable()
-export class BillingService {
-  private nomba = new Nomba(process.env.NOMBA_KEY);
-
-  subscribe(customer: string) {
-    return this.nomba.subscriptions.create({
-      customer, plan: 'plan_pro', rail: 'auto',
-    });
-  }
 }`,
       },
       {
@@ -117,6 +95,34 @@ export async function action({ request }) {
 }`,
       },
       {
+        label: "Nuxt",
+        icon: "nuxtdotjs",
+        code: `import { Nomba } from 'nomba-one';
+
+const nomba = new Nomba(process.env.NOMBA_KEY);
+
+export default defineEventHandler(async (event) => {
+  const { customer } = await readBody(event);
+  return nomba.subscriptions.create({
+    customer, plan: 'plan_pro', rail: 'auto',
+  });
+});`,
+      },
+      {
+        label: "Express",
+        icon: "express",
+        code: `const { Nomba } = require('nomba-one');
+
+const nomba = new Nomba(process.env.NOMBA_KEY);
+
+app.post('/subscribe', async (req, res) => {
+  const sub = await nomba.subscriptions.create({
+    customer: req.body.customer, plan: 'plan_pro', rail: 'auto',
+  });
+  res.json(sub);
+});`,
+      },
+      {
         label: "Hono",
         icon: "hono",
         code: `import { Hono } from 'hono';
@@ -132,6 +138,199 @@ app.post('/subscribe', async (c) => {
   }));
 });`,
       },
+      {
+        label: "Redwood",
+        icon: "redwoodjs",
+        code: `import { Nomba } from 'nomba-one';
+
+const nomba = new Nomba(process.env.NOMBA_KEY);
+
+export const handler = async (event) => {
+  const { customer } = JSON.parse(event.body);
+  const sub = await nomba.subscriptions.create({
+    customer, plan: 'plan_pro', rail: 'auto',
+  });
+  return { statusCode: 200, body: JSON.stringify(sub) };
+};`,
+      },
+      {
+        label: "Bun",
+        icon: "bun",
+        code: `import { Nomba } from 'nomba-one';
+
+const nomba = new Nomba(process.env.NOMBA_KEY);
+
+Bun.serve({
+  port: 3000,
+  async fetch(req) {
+    const { customer } = await req.json();
+    return Response.json(await nomba.subscriptions.create({
+      customer, plan: 'plan_pro', rail: 'auto',
+    }));
+  },
+});`,
+      },
+      {
+        label: "Astro",
+        icon: "astro",
+        code: `import type { APIRoute } from 'astro';
+import { Nomba } from 'nomba-one';
+
+const nomba = new Nomba(import.meta.env.NOMBA_KEY);
+
+export const POST: APIRoute = async ({ request }) => {
+  const { customer } = await request.json();
+  const sub = await nomba.subscriptions.create({
+    customer, plan: 'plan_pro', rail: 'auto',
+  });
+  return new Response(JSON.stringify(sub));
+};`,
+      },
+    ],
+  },
+  {
+    label: "Serverless",
+    icon: "serverless",
+    frameworks: [
+      {
+        label: "Vercel Functions",
+        icon: "vercel",
+        code: `const NOMBA_KEY = process.env.NOMBA_KEY;
+
+export async function POST(req) {
+  const { customer } = await req.json();
+  const res = await fetch('https://api.nombaone.xyz/v1/subscriptions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: \`Bearer \${NOMBA_KEY}\`,
+    },
+    body: JSON.stringify({ customer, plan: 'plan_pro', rail: 'auto' }),
+  });
+
+  if (res.ok) {
+    return Response.json(await res.json());
+  }
+}`,
+      },
+      {
+        label: "Supabase Edge Functions",
+        icon: "supabase",
+        code: `import { serve } from 'https://deno.land/std/http/server.ts';
+
+const NOMBA_KEY = Deno.env.get('NOMBA_KEY');
+
+serve(async (req: Request): Promise<Response> => {
+  const { customer } = await req.json();
+  const res = await fetch('https://api.nombaone.xyz/v1/subscriptions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': \`Bearer \${NOMBA_KEY}\`,
+    },
+    body: JSON.stringify({ customer, plan: 'plan_pro', rail: 'auto' }),
+  });
+
+  return new Response(await res.text(), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+});`,
+      },
+      {
+        label: "Deno",
+        icon: "deno",
+        code: `import { serve } from 'https://deno.land/std/http/server.ts';
+
+const NOMBA_KEY = Deno.env.get('NOMBA_KEY');
+
+serve(async (req: Request): Promise<Response> => {
+  const { customer } = await req.json();
+  const res = await fetch('https://api.nombaone.xyz/v1/subscriptions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': \`Bearer \${NOMBA_KEY}\`,
+    },
+    body: JSON.stringify({ customer, plan: 'plan_pro', rail: 'auto' }),
+  });
+
+  return new Response(await res.text(), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+});`,
+      },
+      {
+        label: "Cloudflare Workers",
+        icon: "cloudflareworkers",
+        code: `import { Nomba } from 'nomba-one';
+
+export default {
+  async fetch(request, env) {
+    const nomba = new Nomba(env.NOMBA_KEY);
+    const { customer } = await request.json();
+    const sub = await nomba.subscriptions.create({
+      customer, plan: 'plan_pro', rail: 'auto',
+    });
+    return Response.json(sub);
+  },
+};`,
+      },
+      {
+        label: "AWS Lambda",
+        icon: "awslambda",
+        code: `const NOMBA_KEY = process.env.NOMBA_KEY;
+
+export const handler = async (event) => {
+  const { customer } = JSON.parse(event.body);
+  const res = await fetch('https://api.nombaone.xyz/v1/subscriptions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': \`Bearer \${NOMBA_KEY}\`,
+    },
+    body: JSON.stringify({ customer, plan: 'plan_pro', rail: 'auto' }),
+  });
+
+  if (res.ok) {
+    return { statusCode: 200, body: await res.text() };
+  }
+};`,
+      },
+    ],
+  },
+  {
+    label: "Ruby",
+    icon: "ruby",
+    frameworks: [
+      {
+        label: "Ruby",
+        icon: "ruby",
+        hash: true,
+        code: `require 'nomba_one'
+
+nomba = NombaOne::Client.new(ENV['NOMBA_KEY'])
+
+nomba.subscriptions.create(
+  customer: 'cus_8821',
+  plan: 'plan_pro',
+  rail: 'auto',
+)`,
+      },
+      {
+        label: "Rails",
+        icon: "rubyonrails",
+        hash: true,
+        code: `class BillingController < ApplicationController
+  def subscribe
+    nomba = NombaOne::Client.new(ENV['NOMBA_KEY'])
+    render json: nomba.subscriptions.create(
+      customer: params[:customer],
+      plan: 'plan_pro', rail: 'auto',
+    )
+  end
+end`,
+      },
     ],
   },
   {
@@ -141,6 +340,7 @@ app.post('/subscribe', async (c) => {
       {
         label: "Python",
         icon: "python",
+        hash: true,
         code: `from nomba_one import Nomba
 
 nomba = Nomba(os.environ['NOMBA_KEY'])
@@ -154,6 +354,7 @@ nomba.subscriptions.create(
       {
         label: "Django",
         icon: "django",
+        hash: true,
         code: `from django.http import JsonResponse
 from nomba_one import Nomba
 
@@ -169,6 +370,7 @@ def subscribe(request):
       {
         label: "Flask",
         icon: "flask",
+        hash: true,
         code: `from flask import Flask, request, jsonify
 from nomba_one import Nomba
 
@@ -184,6 +386,7 @@ def subscribe():
       {
         label: "FastAPI",
         icon: "fastapi",
+        hash: true,
         code: `from fastapi import FastAPI
 from nomba_one import Nomba
 
@@ -244,34 +447,17 @@ public function subscribe(Request $request): JsonResponse
     ],
   },
   {
-    label: "Ruby",
-    icon: "ruby",
+    label: "CLI",
+    icon: Terminal,
     frameworks: [
       {
-        label: "Ruby",
-        icon: "ruby",
-        code: `require 'nomba_one'
-
-nomba = NombaOne::Client.new(ENV['NOMBA_KEY'])
-
-nomba.subscriptions.create(
-  customer: 'cus_8821',
-  plan: 'plan_pro',
-  rail: 'auto',
-)`,
-      },
-      {
-        label: "Rails",
-        icon: "rubyonrails",
-        code: `class BillingController < ApplicationController
-  def subscribe
-    nomba = NombaOne::Client.new(ENV['NOMBA_KEY'])
-    render json: nomba.subscriptions.create(
-      customer: params[:customer],
-      plan: 'plan_pro', rail: 'auto',
-    )
-  end
-end`,
+        label: "CLI",
+        icon: Terminal,
+        hash: true,
+        code: `nomba subscriptions create \\
+  --customer cus_8821 \\
+  --plan plan_pro \\
+  --rail auto`,
       },
     ],
   },
@@ -341,6 +527,40 @@ public class BillingController {
     ],
   },
   {
+    label: "Elixir",
+    icon: "elixir",
+    frameworks: [
+      {
+        label: "Elixir",
+        icon: "elixir",
+        hash: true,
+        code: `nomba = NombaOne.new(System.get_env("NOMBA_KEY"))
+
+NombaOne.Subscriptions.create(nomba, %{
+  customer: "cus_8821",
+  plan: "plan_pro",
+  rail: "auto"
+})`,
+      },
+      {
+        label: "Phoenix",
+        icon: "phoenixframework",
+        hash: true,
+        code: `defmodule MyAppWeb.BillingController do
+  use MyAppWeb, :controller
+
+  def subscribe(conn, %{"customer" => customer}) do
+    nomba = NombaOne.new(System.get_env("NOMBA_KEY"))
+    {:ok, sub} = NombaOne.Subscriptions.create(nomba, %{
+      customer: customer, plan: "plan_pro", rail: "auto"
+    })
+    json(conn, sub)
+  end
+end`,
+      },
+    ],
+  },
+  {
     label: ".NET",
     icon: "dotnet",
     frameworks: [
@@ -348,7 +568,7 @@ public class BillingController {
         label: "C#",
         icon: "dotnet",
         code: `var nomba = new NombaOne.Client(
-    Environment.GetEnvironmentVariable("NOMBA_KEY"));
+    Mode.GetEnvironmentVariable("NOMBA_KEY"));
 
 await nomba.Subscriptions.CreateAsync(new SubscriptionParams {
     Customer = "cus_8821",
@@ -359,17 +579,26 @@ await nomba.Subscriptions.CreateAsync(new SubscriptionParams {
     ],
   },
   {
-    label: "cURL",
+    label: "REST",
     icon: "curl",
     frameworks: [
       {
         label: "cURL",
         icon: "curl",
+        hash: true,
         code: `curl https://api.nombaone.xyz/v1/subscriptions \\
   -H "Authorization: Bearer $NOMBA_KEY" \\
   -d customer=cus_8821 \\
   -d plan=plan_pro \\
   -d rail=auto`,
+      },
+      {
+        label: "wget",
+        icon: Download,
+        hash: true,
+        code: `wget https://api.nombaone.xyz/v1/subscriptions \\
+  --header "Authorization: Bearer $NOMBA_KEY" \\
+  --post-data 'customer=cus_8821&plan=plan_pro&rail=auto'`,
       },
     ],
   },
@@ -383,7 +612,7 @@ export function CodeStack({ className }: { className?: string }) {
 
   const lang = LANGS[langIdx]!;
   const fw = lang.frameworks[fwIdx] ?? lang.frameworks[0]!;
-  const lines = highlight(fw.code);
+  const lines = highlight(fw.code, fw.hash ?? false);
 
   function selectLang(i: number) {
     setLangIdx(i);
@@ -410,13 +639,13 @@ export function CodeStack({ className }: { className?: string }) {
             >
               <span
                 className={cn(
-                  "flex size-[52px] items-center justify-center rounded-[14px] border transition-colors",
+                  "flex size-[52px] items-center justify-center rounded-[14px] border transition-all",
                   on
-                    ? "border-border-strong bg-surface-2 text-foreground"
+                    ? "border-accent-border bg-surface-2 text-foreground shadow-[0_0_24px_-2px_rgba(11,223,163,0.45)]"
                     : "border-border bg-surface-1 text-muted-foreground group-hover:text-foreground"
                 )}
               >
-                <BrandIcon slug={l.icon} className="size-5" />
+                <Glyph icon={l.icon} className="size-5" />
               </span>
               <span
                 className={cn(
@@ -448,7 +677,7 @@ export function CodeStack({ className }: { className?: string }) {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <BrandIcon slug={f.icon} className="size-3.5" />
+                <Glyph icon={f.icon} className="size-3.5" />
                 {f.label}
               </button>
             ))}
@@ -477,7 +706,7 @@ export function CodeStack({ className }: { className?: string }) {
                         {seg.t}
                       </span>
                     ))
-                  : " "}
+                  : " "}
               </div>
             </div>
           ))}

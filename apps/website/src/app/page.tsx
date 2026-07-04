@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeftRight,
@@ -130,9 +131,15 @@ export default function HomePage() {
           <div className="relative flex flex-col gap-9 rounded-[20px] bg-surface-1 p-8 md:p-14">
           {/* Top: eyebrow pill + heading + paragraph */}
           <div className="flex flex-col gap-[18px]">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-accent-border bg-accent-muted px-3 py-1.5">
-              <span className="size-1.5 rounded-full bg-accent" />
-              <span className="text-[13px] font-medium text-accent">Powered by Nomba</span>
+            <span className="inline-flex w-fit items-center gap-2.5 rounded-full border border-border bg-surface-2 py-1.5 pl-1.5 pr-3.5">
+              <Image
+                src="/nomba-mark.png"
+                alt="Nomba"
+                width={22}
+                height={22}
+                className="rounded-[6px]"
+              />
+              <span className="text-[13px] font-medium text-muted-foreground">Powered by Nomba</span>
             </span>
             <h2 className="text-[34px] font-semibold leading-[1.08] tracking-[-1.4px] text-foreground md:text-[54px] md:tracking-[-2.2px]">
               Built on the Nomba infrastructure.
