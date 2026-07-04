@@ -1,7 +1,7 @@
 ---
 title: Your first subscription
 description: Create a plan, a price, a customer, and a subscription that bills — five real calls to a live 201, end to end.
-section: getting-started
+section: get-started
 order: 4
 ---
 
@@ -119,7 +119,7 @@ The minimal path is four resources and one deterministic test card:
   <Step title="Attach a test payment method that succeeds">
     On the test environment you attach a **deterministic** payment method: the
     `behavior` decides the outcome, so your first pass succeeds on purpose. Use
-    `test_success` here; the other behaviors (decline, OTP required, thin
+    `success` here; the other behaviors (decline, OTP required, thin
     balance) let you rehearse the unhappy paths later.
 
     <CodeGroup>
@@ -128,14 +128,14 @@ The minimal path is four resources and one deterministic test card:
         curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
           -H "Authorization: Bearer nbo_test_…" \
           -H "Content-Type: application/json" \
-          -d '{ "customerId": "{customerId}", "behavior": "test_success" }'
+          -d '{ "customerId": "{customerId}", "behavior": "success" }'
         ```
       </Tab>
       <Tab label="TypeScript">
         ```ts
         const method = await nbo("/v1/test/payment-methods", {
           method: "POST",
-          body: { customerId: customer.data.id, behavior: "test_success" },
+          body: { customerId: customer.data.id, behavior: "success" },
         });
         // method.data.id → "nbo…pm"
         ```
@@ -152,7 +152,7 @@ The minimal path is four resources and one deterministic test card:
   <Step title="Start the subscription">
     Put it together: subscribe the customer to the price, paying with the test
     method. This produces the **first invoice** and collects it — and because
-    the method is `test_success`, it comes back **active** with a paid invoice.
+    the method is `success`, it comes back **active** with a paid invoice.
 
     <CodeGroup>
       <Tab label="cURL">

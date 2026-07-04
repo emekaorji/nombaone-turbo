@@ -199,6 +199,14 @@ export const MANIFEST: ManifestSection[] = [
     ],
   },
   {
+    title: "For agents",
+    key: "agents",
+    mode: "reference",
+    items: [
+      { slug: "/agents", title: "Agent-native docs", summary: "llms.txt, a Markdown mirror of every page, and one-click copy-to-AI." },
+    ],
+  },
+  {
     title: "For merchants",
     key: "merchants",
     mode: "how-to",

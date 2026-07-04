@@ -1,7 +1,7 @@
 ---
 title: Quickstart
 description: Get a test secret key and make your first authenticated call to the nombaone API.
-section: getting-started
+section: get-started
 ---
 
 You need one thing to call the nombaone API: a secret key for your
@@ -56,6 +56,13 @@ against the test environment.
 <Callout type="tip" title="Amounts are integer kobo">
   `15000` means ₦150.00. The API never uses floats or decimal strings for money.
 </Callout>
+
+## In your language
+
+The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.
+Pick your tab; it's remembered across the docs.
+
+<Snippet method="POST" path="/v1/plans" body={{ name: "Pro" }} idempotent />
 
 ## Next steps
 

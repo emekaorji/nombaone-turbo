@@ -24,11 +24,11 @@ export function Hero() {
 
   return (
     <section id="hero" className="relative overflow-hidden">
-      {/* Dark-emerald radial glow, confined to the 1080 column, centered at
-          (0.35, 0.36) per the .pen (#0b3527 -> #050505). */}
+      {/* Dark-emerald radial glow — full-bleed, blooming off the left edge of the
+          viewport (not boxed by the content column). Dark mode only. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-full w-full max-w-[1080px] -translate-x-1/2 bg-[radial-gradient(100%_90%_at_35%_36%,#0b3527_0%,#050505_72%)]"
+        className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(55%_70%_at_26%_32%,#0b3527_0%,transparent_72%)] dark:block"
       />
       <Container className="relative">
         <div className="flex flex-col pb-16 pt-[76px] md:pb-[130px] md:pt-[150px]">

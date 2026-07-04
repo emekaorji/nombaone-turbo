@@ -8,7 +8,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     <HomeSection divider={false}>
       <SectionHeader
         title={slug}
-        deck="This page is being rebuilt against the Pencil design."
+        deck="we're working on it."
       />
     </HomeSection>
   );

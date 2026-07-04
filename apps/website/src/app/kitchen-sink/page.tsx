@@ -9,7 +9,7 @@ export default function Page() {
     <HomeSection divider={false}>
       <SectionHeader
         title="Kitchen sink"
-        deck="This page is being rebuilt section-by-section against the Pencil design."
+        deck="we're working on it."
       />
     </HomeSection>
   );

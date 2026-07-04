@@ -16,7 +16,7 @@ import { PageHeader } from "@/components/primitives/PageHeader";
 import { SectionHeader } from "@/components/primitives/SectionHeader";
 import { Tag } from "@/components/primitives/Tag";
 import { CTABand } from "@/components/sections/CTABand";
-import { LangTabs } from "@/components/sections/LangTabs";
+import { CodeStack } from "@/components/sections/CodeStack";
 import { cn } from "@/lib/utils";
 
 export const metadata = {
@@ -139,7 +139,7 @@ export default function IntegrationsPage() {
           deck="One create-subscription request, shown in the stack you actually ship. Copy it and run."
         />
         <div className="mt-10">
-          <LangTabs />
+          <CodeStack />
         </div>
       </Container>
 

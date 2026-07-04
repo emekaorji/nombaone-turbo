@@ -21,15 +21,12 @@ import { HomeSection } from "@/components/layout/Container";
 import { Callout } from "@/components/primitives/Callout";
 import { GuideCard } from "@/components/primitives/GuideCard";
 import { SectionHeader } from "@/components/primitives/SectionHeader";
-import { Tag } from "@/components/primitives/Tag";
 import { UseCaseCard } from "@/components/primitives/UseCaseCard";
 import { CTABand } from "@/components/sections/CTABand";
+import { CodeStack } from "@/components/sections/CodeStack";
 import { Hero } from "@/components/sections/Hero";
-import { LangTabs } from "@/components/sections/LangTabs";
 import { LifecycleRail } from "@/components/sections/LifecycleRail";
 import { SimulatorStage } from "@/components/sections/SimulatorStage";
-
-const RAIL_TAGS = ["Node", "Python", "Go", "PHP", "Ruby", ".NET", "Java", "CLI", "REST"];
 
 const NOMBA_PERKS = [
   {
@@ -103,18 +100,18 @@ export default function HomePage() {
       {/* §02 Rails & DX (J7Mmfu) */}
       <HomeSection id="rails-dx">
         <SectionHeader
-          title="Integrate any stack. Any language. Any way."
+          title={
+            <>
+              <span className="rainbow-text rainbow-text--animate">Integrate</span> any stack. Any
+              language. Any way.
+            </>
+          }
           deck="The same create-subscription call in your framework, plus a drop-in checkout and a CLI that tails webhooks locally."
         />
-        <div className="mt-[52px] flex flex-wrap gap-2">
-          {RAIL_TAGS.map((t) => (
-            <Tag key={t}>{t}</Tag>
-          ))}
+        <div className="mt-[52px]">
+          <CodeStack />
         </div>
-        <div className="mt-5">
-          <LangTabs />
-        </div>
-        <div className="mt-4">
+        <div className="mt-6">
           <Callout title="Drop-in, either way.">
             Embed checkout with a script tag, or scaffold your integration and tail webhooks locally
             with the CLI.
@@ -124,7 +121,13 @@ export default function HomePage() {
 
       {/* §03 Built on Nomba (Qb532) — self-contained panel, no top divider */}
       <HomeSection id="built-on-nomba" divider={false}>
-        <div className="flex flex-col gap-9 rounded-[20px] border border-border bg-surface-1 p-8 md:p-14">
+        <div className="relative overflow-hidden rounded-[21px] bg-border p-px">
+          {/* Animated emerald light travelling around the border */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2 animate-[spin_9s_linear_infinite] bg-[conic-gradient(from_0deg,#7ef0c8cc_0deg,#0bdfa300_20deg,transparent_340deg,#0bdfa300_346deg,#7ef0c8cc_360deg)] motion-reduce:hidden"
+          />
+          <div className="relative flex flex-col gap-9 rounded-[20px] bg-surface-1 p-8 md:p-14">
           {/* Top: eyebrow pill + heading + paragraph */}
           <div className="flex flex-col gap-[18px]">
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-accent-border bg-accent-muted px-3 py-1.5">
@@ -150,6 +153,7 @@ export default function HomePage() {
                 <p className="text-[16px] leading-[1.5] text-muted-foreground">{perk.desc}</p>
               </div>
             ))}
+          </div>
           </div>
         </div>
       </HomeSection>

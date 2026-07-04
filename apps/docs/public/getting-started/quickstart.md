@@ -1,0 +1,73 @@
+---
+title: "Quickstart"
+type: tutorial
+summary: "Get a test secret key and make your first authenticated call to the nombaone API."
+canonical: https://docs.nombaone.xyz/getting-started/quickstart
+---
+
+# Quickstart
+
+You need one thing to call the nombaone API: a secret key for your
+organization. This page walks you from zero to a first authenticated request
+against the test environment.
+
+### Create an organization and get a test key
+
+Sign up and your organization is provisioned with a **test** secret key that
+looks like `nbo_test_…`. This key is scoped to your organization and pinned
+to the test environment — it can only ever touch sandbox data. Keep it
+server-side; never ship it to a browser or a mobile app.
+
+### Send your first request
+
+Authenticate with the `Authorization: Bearer` header. Every money-moving
+`POST` also takes an `Idempotency-Key` so a retry never double-applies.
+
+```bash
+# Create an example (the worked money-path endpoint), ₦150.00 = 15000 kobo
+curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
+  -H "Authorization: Bearer nbo_test_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 1c4e7a90-2b3d-4f56-8a9b-0c1d2e3f4a5b" \
+  -d '{ "kind": "standard", "amount": 15000 }'
+```
+
+### Read the response
+
+A success returns the standard envelope: `success`, a `statusCode`, the
+resource in `data`, and a `meta.requestId` you can quote in support
+requests. The resource's `id` is its **reference** — the stable public id
+that also joins its ledger postings and webhooks.
+
+```json
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "id": "nbo749201835566exa",
+    "kind": "standard",
+    "status": "pending",
+    "amount": 15000,
+    "currency": "NGN",
+    "environment": "test",
+    "createdAt": "2026-06-29T10:14:52.004Z"
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+> **Amounts are integer kobo**
+>
+> `15000` means ₦150.00. The API never uses floats or decimal strings for money.
+
+## In your language
+
+The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.
+Pick your tab; it's remembered across the docs.
+
+## Next steps
+
+- **[Authentication](/getting-started/authentication)** — 
+The full rules for the per-organization secret key.
+- **[The example endpoint](/reference/examples)** — 
+The worked reference: every request and response field.

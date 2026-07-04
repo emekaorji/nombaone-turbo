@@ -1,0 +1,17 @@
+{
+  "name": "nombaone-docs",
+  "description": "Read-only Model Context Protocol server for the Nomba One documentation. Grounded strictly in the docs corpus, the OpenAPI schema, and the error registry.",
+  "version": "1.0.0",
+  "transport": "streamable-http",
+  "url": "https://docs.nombaone.xyz/api/mcp",
+  "capabilities": {
+    "tools": [
+      "search_docs",
+      "get_page",
+      "list_operations",
+      "lookup_error",
+      "list_test_methods"
+    ]
+  },
+  "readOnly": true
+}
