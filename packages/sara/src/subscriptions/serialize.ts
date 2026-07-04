@@ -39,6 +39,6 @@ export const serializeSubscription = (
   items,
   latestInvoiceId,
   currency: 'NGN',
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
 });

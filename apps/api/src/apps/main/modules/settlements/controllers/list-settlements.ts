@@ -13,7 +13,7 @@ import type { RequestHandler } from 'express';
 export const listSettlementsController: RequestHandler = paginatedHandler<SettlementResponseData>(
   async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
-    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
+    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, mode: req.apiKey.mode };
     const q = req.query as unknown as ListSettlementsQuery;
     const page = await listSettlements(db, ctx, { limit: q.limit, cursor: q.cursor, status: q.status });
     return { data: page.data, nextCursor: page.nextCursor, hasMore: page.hasMore, limit: q.limit };

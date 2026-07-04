@@ -19,7 +19,7 @@ export async function ensureOrgNombaAccount(
     .values({
       reference: mintReference('NMA'),
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       nombaAccountId: input.nombaAccountId,
       accountRef: input.accountRef,
       kind: input.kind,
@@ -27,7 +27,7 @@ export async function ensureOrgNombaAccount(
     .onConflictDoNothing({
       target: [
         orgNombaAccountsTable.organizationId,
-        orgNombaAccountsTable.environment,
+        orgNombaAccountsTable.mode,
         orgNombaAccountsTable.kind,
       ],
     });

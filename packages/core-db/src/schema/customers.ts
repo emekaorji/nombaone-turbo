@@ -1,13 +1,13 @@
 import { index, jsonb, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 import { organizationsTable } from './organizations';
 
 /**
  * Customer = a tenant's end-payer (the subscriber), distinct from the org/tenant
- * itself. Tenant-scoped like every domain row (`organization_id` + `environment`).
+ * itself. Tenant-scoped like every domain row (`organization_id` + `mode`).
  * Email uniqueness is per (org, environment), so two tenants — or the same
- * tenant's `test` vs `live` rings — can each hold the same address independently;
+ * tenant's `sandbox` vs `live` modes — can each hold the same address independently;
  * within one ring it is the natural key (a duplicate is a `409`, structurally
  * impossible via the unique index). Mutable contact fields carry an `updated_at`.
  */
@@ -19,7 +19,7 @@ export const customersTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     email: text('email').notNull(),
     name: text('name').notNull(),
     phone: text('phone'),
@@ -31,12 +31,12 @@ export const customersTable = pgTable(
     referenceUnique: uniqueIndex('customers_reference_unique').on(table.reference),
     orgEnvEmailUnique: uniqueIndex('customers_org_env_email_unique').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.email
     ),
     keysetIdx: index('customers_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

@@ -40,7 +40,7 @@ export async function applyDiscount(
       .where(
         and(
           eq(subscriptionsTable.organizationId, ctx.organizationId),
-          eq(subscriptionsTable.environment, ctx.environment),
+          eq(subscriptionsTable.mode, ctx.mode),
           eq(subscriptionsTable.reference, input.subscriptionRef)
         )
       )
@@ -67,7 +67,7 @@ export async function applyDiscount(
       .where(
         and(
           eq(customersTable.organizationId, ctx.organizationId),
-          eq(customersTable.environment, ctx.environment),
+          eq(customersTable.mode, ctx.mode),
           eq(customersTable.reference, input.customerRef)
         )
       )
@@ -103,7 +103,7 @@ export async function applyDiscount(
   await txDb.insert(discountsTable).values({
     reference,
     organizationId: ctx.organizationId,
-    environment: ctx.environment,
+    mode: ctx.mode,
     couponId: coupon.id,
     customerId,
     subscriptionId,

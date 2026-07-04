@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { bigint, check, index, pgEnum, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 
 export const payoutStatusEnum = pgEnum('payout_status', [
   'pending',
@@ -27,7 +27,7 @@ export const payoutsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     subAccountRef: text('sub_account_ref').notNull(),
     amountKobo: bigint('amount_kobo', { mode: 'number' }).notNull(),
     bankCode: text('bank_code').notNull(),
@@ -45,7 +45,7 @@ export const payoutsTable = pgTable(
     merchantTxRefUnique: uniqueIndex('payouts_merchant_tx_ref_unique').on(table.merchantTxRef),
     keysetIdx: index('payouts_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

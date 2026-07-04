@@ -33,7 +33,7 @@ export default async function WebhooksPage() {
     <div className="space-y-6">
       <PageHeader
         title="Webhooks"
-        description={`Endpoints receiving HMAC-signed event deliveries for the ${ctx.environment} environment.`}
+        description={`Endpoints receiving HMAC-signed event deliveries for the ${ctx.mode} environment.`}
       />
       <WebhooksClient endpoints={endpoints} canManage={can(user.role, 'webhooks:manage')} />
     </div>

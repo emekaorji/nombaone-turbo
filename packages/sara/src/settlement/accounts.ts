@@ -29,7 +29,7 @@ export async function findTenantSubAccount(
     .where(
       and(
         eq(orgNombaAccountsTable.organizationId, ctx.organizationId),
-        eq(orgNombaAccountsTable.environment, ctx.environment),
+        eq(orgNombaAccountsTable.mode, ctx.mode),
         eq(orgNombaAccountsTable.kind, 'subaccount')
       )
     )
@@ -72,7 +72,7 @@ export async function getTenantSettlementBalance(db: InfraReadScope, ctx: Domain
     .where(
       and(
         eq(ledgerAccountsTable.organizationId, ctx.organizationId),
-        eq(ledgerAccountsTable.environment, ctx.environment),
+        eq(ledgerAccountsTable.mode, ctx.mode),
         eq(ledgerAccountsTable.key, tenantSettlementAccountKey(sub.accountRef))
       )
     )

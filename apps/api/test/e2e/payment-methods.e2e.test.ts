@@ -43,8 +43,8 @@ describe('payment methods + inbound pipeline e2e', () => {
     harness.setNombaClient(fakeNomba);
     const orgA = await harness.seedOrg('PM A');
     const orgB = await harness.seedOrg('PM B');
-    bearerA = (await harness.mintApiKey(orgA.organizationId, 'test', scopes)).secret;
-    bearerB = (await harness.mintApiKey(orgB.organizationId, 'test', scopes)).secret;
+    bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
+    bearerB = (await harness.mintApiKey(orgB.organizationId, 'sandbox', scopes)).secret;
   });
 
   afterAll(async () => {
@@ -224,7 +224,7 @@ describe('payment methods + inbound pipeline e2e', () => {
     const noKey = await request(harness.app).get('/v1/payment-methods');
     expect(noKey.status).toBe(401);
     const orgC = await harness.seedOrg('PM C');
-    const ro = await harness.mintApiKey(orgC.organizationId, 'test', ['payment_methods:read']);
+    const ro = await harness.mintApiKey(orgC.organizationId, 'sandbox', ['payment_methods:read']);
     const forbidden = await request(harness.app)
       .post('/v1/payment-methods/virtual-account')
       .set('Authorization', `Bearer ${ro.secret}`)

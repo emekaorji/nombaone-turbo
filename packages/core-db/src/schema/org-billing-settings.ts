@@ -1,7 +1,7 @@
 import { bigint, boolean, integer, jsonb, pgEnum, pgTable, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, updatedAt } from './shared';
 
 export const prorationCreditPolicyEnum = pgEnum('proration_credit_policy', [
   'credit_next_cycle',
@@ -23,7 +23,7 @@ export const orgSettlementModeEnum = pgEnum('org_settlement_mode', [
 /**
  * Per-tenant billing settings — **05 is the SOLE creator**; 06 (dunning) and 08
  * (settlement) extend this table with additive `ALTER ADD COLUMN` only, never a
- * second CREATE. Exactly one settings row per (organization, environment).
+ * second CREATE. Exactly one settings row per (organization, mode).
  */
 export const orgBillingSettingsTable = pgTable(
   'org_billing_settings',
@@ -32,7 +32,7 @@ export const orgBillingSettingsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     // Off by default: a short collection is all-or-nothing (→ past_due) unless on.
     partialCollectionEnabled: boolean('partial_collection_enabled').notNull().default(false),
     prorationCreditPolicy: prorationCreditPolicyEnum('proration_credit_policy')
@@ -72,7 +72,7 @@ export const orgBillingSettingsTable = pgTable(
   (table) => ({
     orgEnvUnique: uniqueIndex('org_billing_settings_org_env_unique').on(
       table.organizationId,
-      table.environment
+      table.mode
     ),
   })
 );

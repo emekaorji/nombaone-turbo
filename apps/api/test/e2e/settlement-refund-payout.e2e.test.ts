@@ -39,7 +39,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
   let harness: Harness;
   let bearerA: string;
   let bearerB: string;
-  let ctxA: { organizationId: string; environment: 'test' };
+  let ctxA: { organizationId: string; mode: 'sandbox' };
   const scopes = [
     'customers:read', 'customers:write', 'subscriptions:read', 'subscriptions:write',
     'invoices:read', 'invoices:write', 'settlements:read', 'settlements:write',
@@ -56,11 +56,11 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
 
     const orgA = await harness.seedOrg('Refund A');
     const orgB = await harness.seedOrg('Refund B');
-    bearerA = (await harness.mintApiKey(orgA.organizationId, 'test', scopes)).secret;
-    bearerB = (await harness.mintApiKey(orgB.organizationId, 'test', scopes)).secret;
-    ctxA = { organizationId: orgA.organizationId, environment: 'test' };
+    bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
+    bearerB = (await harness.mintApiKey(orgB.organizationId, 'sandbox', scopes)).secret;
+    ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
     await harness.db.insert(orgNombaAccountsTable).values({
-      reference: mintReference('NMA'), organizationId: orgA.organizationId, environment: 'test',
+      reference: mintReference('NMA'), organizationId: orgA.organizationId, mode: 'sandbox',
       nombaAccountId: 'nomba_sub_A', accountRef: 'acct_A', kind: 'subaccount', subAccountId: 'nomba_sub_A', status: 'active',
     });
   });
@@ -83,7 +83,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
       .where(and(eq(customersTable.organizationId, ctxA.organizationId), eq(customersTable.reference, customer.id))).limit(1);
     const pmRef = mintReference('PMT');
     await harness.db.insert(paymentMethodsTable).values({
-      reference: pmRef, organizationId: ctxA.organizationId, environment: 'test', customerId: c!.id,
+      reference: pmRef, organizationId: ctxA.organizationId, mode: 'sandbox', customerId: c!.id,
       kind: 'card', status: 'active', tokenKey: 'tok', brand: 'visa', last4: '4242', isDefault: true,
     });
     const res = await request(harness.app).post('/v1/subscriptions')

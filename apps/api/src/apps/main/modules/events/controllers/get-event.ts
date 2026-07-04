@@ -14,7 +14,7 @@ import type { RequestHandler } from 'express';
 /** GET /v1/events/:id. */
 export const getEventController: RequestHandler = jsonHandler<DomainEventResponseData>(async (req) => {
   if (!req.apiKey) throw AppError.Unauthorized('API key required');
-  const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
+  const ctx: DomainContext = { organizationId: req.apiKey.organizationId, mode: req.apiKey.mode };
   const [row] = await db
     .select()
     .from(domainEventsTable)
@@ -22,7 +22,7 @@ export const getEventController: RequestHandler = jsonHandler<DomainEventRespons
       and(
         eq(domainEventsTable.reference, req.params.id ?? ''),
         eq(domainEventsTable.organizationId, ctx.organizationId),
-        eq(domainEventsTable.environment, ctx.environment)
+        eq(domainEventsTable.mode, ctx.mode)
       )
     )
     .limit(1);

@@ -21,7 +21,7 @@ export const createPayoutController: RequestHandler = jsonHandler<PayoutResponse
   if (!req.apiKey) throw AppError.Unauthorized('API key required');
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
   const body = req.body as CreatePayoutBody;
   const headerKey = req.headers['idempotency-key'];
@@ -31,7 +31,7 @@ export const createPayoutController: RequestHandler = jsonHandler<PayoutResponse
       amountKobo: body.amountInKobo,
       bank: { code: body.bankCode, accountNumber: body.accountNumber },
       merchantTxRef,
-      client: getNombaClient(),
+      client: getNombaClient(ctx.mode),
       payoutEnabled: env.NOMBA_PAYOUT_ENABLED,
     }),
     statusCode: 201,

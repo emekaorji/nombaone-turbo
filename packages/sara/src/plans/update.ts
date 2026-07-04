@@ -26,7 +26,7 @@ export async function updatePlan(
     .where(
       and(
         eq(plansTable.organizationId, ctx.organizationId),
-        eq(plansTable.environment, ctx.environment),
+        eq(plansTable.mode, ctx.mode),
         eq(plansTable.reference, reference)
       )
     )
@@ -43,7 +43,7 @@ export async function updatePlan(
       .where(
         and(
           eq(plansTable.organizationId, ctx.organizationId),
-          eq(plansTable.environment, ctx.environment),
+          eq(plansTable.mode, ctx.mode),
           eq(plansTable.name, input.name),
           ne(plansTable.id, existing.id)
         )

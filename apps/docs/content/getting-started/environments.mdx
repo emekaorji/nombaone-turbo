@@ -1,55 +1,89 @@
 ---
 title: Environments
-description: nombaone has two environments — test and live. Your secret key's prefix pins every request to exactly one of them.
+description: Two independent axes — the deployment environment (development or production) is our infrastructure, and the account mode (sandbox or live) is set by your key's prefix and partitions your data.
 section: get-started
 ---
 
-nombaone has exactly two environments:
+Most APIs jam two unrelated ideas into one "test/live" switch. nombaone keeps
+them separate, because they answer different questions:
 
-| Environment | Key prefix | Purpose |
-|---|---|---|
-| `test` | `nbo_test_` | A sandbox with isolated data. Safe to experiment; nothing here touches real money. |
-| `live` | `nbo_live_` | Production. Real organizations, real money movement. |
+- **Deployment environment** — *where* the code runs. Our infrastructure concern.
+- **Account mode** — *which* data a request touches. Yours, chosen by your key.
 
-## One key, one environment
+| Axis | Values | Set by | Do you see it? |
+|---|---|---|---|
+| Deployment environment | `development` · `production` | Our infrastructure (`INFRA_ENVIRONMENT`) | No — it's ours |
+| Account mode | `sandbox` · `live` | Your API key's prefix | Yes — you pick the key |
 
-You do not pass an environment parameter. The environment is **embedded in the
-secret key** and verified on every request: an `nbo_test_` key reaches only test
-data, and an `nbo_live_` key reaches only live data. The two are fully isolated
-— separate data, separate balances, separate webhook endpoints.
+## Account mode is the one you choose
 
-This is why you can hold both keys at once: a request can never cross from one
-environment into the other, no matter how it is constructed.
+Mode is **derived from your secret key's prefix** and verified on every request.
+You never pass a mode parameter:
+
+- `nbo_sandbox_…` → **sandbox** mode. Isolated data, no real money. Safe to
+  experiment.
+- `nbo_live_…` → **live** mode. Real organizations, real money movement.
+
+The two are fully isolated — separate data, separate balances, separate webhook
+endpoints — so you can hold both keys at once and a request can never cross from
+one mode into the other.
 
 ```bash
-# Test — sandbox data only
+# Sandbox — isolated data, no real money
 curl https://sandbox.api.nombaone.xyz/v1/examples \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 
-# Live — production data only
+# Live — real money movement
 curl https://api.nombaone.xyz/v1/examples \
   -H "Authorization: Bearer nbo_live_…"
 ```
 
-<Callout type="note" title="Resources carry their environment">
-  Every resource the API returns includes its `environment` field, so you can
-  always confirm which side a record belongs to.
+<Callout type="note" title="Resources record their mode">
+  Every resource the API returns carries the mode it belongs to, so you can
+  always confirm which side a record lives on.
 </Callout>
 
-## Working across environments
+## Deployment environment is infrastructure
 
-A clean integration keeps the two strictly separate:
+The deployment environment is *where* nombaone itself runs, and it isn't
+something you configure:
+
+- **`development`** is local-only — the machine an engineer runs the service on.
+- **`production`** is the single hosted deployment that serves every merchant.
+
+One production deployment serves **both modes at once**. The mode comes from the
+key on each request, not from a separate deployment — there is no "sandbox server"
+and "live server" to point at. A `sandbox` key works everywhere; a `live` key
+only works against the production deployment.
+
+<Callout type="warning" title="Live needs production">
+  Real money only moves on the `production` deployment. A `live` key is rejected
+  anywhere else, so you can't accidentally move funds from a local dev machine.
+</Callout>
+
+## Working across modes
+
+A clean integration keeps the two modes strictly separate:
 
 - **Configuration** — load the key from an environment variable
-  (`NOMBAONE_SECRET_KEY`) so the same code runs against test in staging and live
-  in production with no code change.
-- **Data** — test references and live references are distinct; an id minted in
-  test will never resolve in live.
-- **Webhooks** — register endpoints per environment. A test event is delivered
-  only to your test endpoint.
+  (`NOMBAONE_SECRET_KEY`) so the same code runs against sandbox in staging and
+  live in production with no code change.
+- **Data** — sandbox references and live references are distinct; an id minted in
+  sandbox will never resolve in live.
+- **Webhooks** — register endpoints per mode. A sandbox event is delivered only to
+  your sandbox endpoint.
 
-<Callout type="warning" title="Promote deliberately">
-  Build and verify against `test`, then swap the key to `nbo_live_` to go live.
-  Re-run your end-to-end checks after the swap: live has its own data, its own
-  balances, and moves real money.
+<Callout type="tip" title="Promote deliberately">
+  Build and verify in sandbox, then swap the key to `nbo_live_` to go live. Re-run
+  your end-to-end checks after the swap: live has its own data, its own balances,
+  and moves real money.
 </Callout>
+
+<CardGroup cols={2}>
+  <Card title="Authentication" href="/getting-started/authentication">
+    How the key's prefix pins the mode, and how to keep it safe.
+  </Card>
+  <Card title="Going live" href="/guides/going-live">
+    The checklist to move from a sandbox key to real money.
+  </Card>
+</CardGroup>

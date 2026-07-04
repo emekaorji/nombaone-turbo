@@ -62,7 +62,7 @@ export async function resubscribe(
     .where(
       and(
         eq(subscriptionItemsTable.organizationId, ctx.organizationId),
-        eq(subscriptionItemsTable.environment, ctx.environment),
+        eq(subscriptionItemsTable.mode, ctx.mode),
         eq(subscriptionItemsTable.subscriptionId, source.id)
       )
     )

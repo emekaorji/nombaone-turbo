@@ -15,20 +15,20 @@ const TOKEN_EMAIL = process.argv[3] ?? 'e2e.1782960200346@gmail.com';
 const AMOUNT_KOBO = 10000;
 
 async function main(): Promise<void> {
-  const environment = env.INFRA_ENVIRONMENT;
+  const mode = 'live' as const; // live-testing harness runs against the NOMBA_LIVE_* account
   const orgId = randomUUID();
   await db.insert(organizationsTable).values({ id: orgId, reference: mintReference('ORG'), name: 'Renewal2' });
   const custId = randomUUID();
   await db.insert(customersTable).values({
-    id: custId, reference: mintReference('CUS'), organizationId: orgId, environment, email: TOKEN_EMAIL, name: 'Renewal2',
+    id: custId, reference: mintReference('CUS'), organizationId: orgId, mode, email: TOKEN_EMAIL, name: 'Renewal2',
   });
   const invRef = mintReference('INV');
   await db.insert(invoicesTable).values({
-    reference: invRef, organizationId: orgId, environment, customerId: custId,
+    reference: invRef, organizationId: orgId, mode, customerId: custId,
     billingReason: 'subscription_cycle', subtotal: AMOUNT_KOBO, total: AMOUNT_KOBO, amountDue: AMOUNT_KOBO, finalizedAt: new Date(),
   });
 
-  const res = await getNombaClient().request({
+  const res = await getNombaClient('live').request({
     method: 'POST',
     endpoint: NOMBA_ENDPOINTS.tokenizedCardCharge,
     idempotencyRef: invRef,
@@ -41,7 +41,7 @@ async function main(): Promise<void> {
         customerEmail: TOKEN_EMAIL,
         callbackUrl: 'https://tunnel.nombaone.xyz/callback',
         orderReference: invRef,
-        accountId: env.NOMBA_SUBACCOUNT_ID,
+        accountId: env.NOMBA_LIVE_SUBACCOUNT_ID,
       },
     },
   });

@@ -6,13 +6,19 @@ loadDotenv();
 
 /**
  * Zod-validated env schema that fails fast at boot — a misconfigured deploy
- * crashes loudly instead of serving the wrong environment. Every deployment is
- * pinned to exactly one `INFRA_ENVIRONMENT`; use a SEPARATE database per env.
+ * crashes loudly.
+ *
+ * TWO orthogonal axes (never conflate again):
+ *  • `INFRA_ENVIRONMENT` = the DEPLOYMENT ring (`development` | `production`) —
+ *    picks the DB, secrets, log level. Merchants never see it. `development` is
+ *    local-only. ONE deployment serves BOTH modes.
+ *  • `mode` (`sandbox` | `live`) = the per-request ACCOUNT partition, derived from
+ *    the API-key prefix into `ctx.mode`. Never a deployment.
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(8000),
-  INFRA_ENVIRONMENT: z.enum(['test', 'live']),
+  INFRA_ENVIRONMENT: z.enum(['development', 'production']).default('development'),
   INFRA_DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().url(),
   INFRA_PII_ENCRYPTION_KEY: z.string().min(1),
@@ -31,17 +37,30 @@ const envSchema = z.object({
     .transform((value) => value === 'true' || value === '1'),
 
   /**
-   * Nomba provider credentials (contract C.8). Optional so the API can boot for
-   * the catalog/customer surfaces without them; the rail adapters + live charge
-   * path are only wired when present. Secrets live HERE (env / secret manager),
-   * never in source. The set must match the deployment's `INFRA_ENVIRONMENT`.
+   * Nomba provider credentials (contract C.8), split by ACCOUNT MODE so ONE
+   * deployment serves both. `getNombaClient(mode)` picks the matching set;
+   * a `sandbox` charge can never reach the `live` Nomba and vice-versa. Both
+   * sets are optional so the API can boot for the catalog/customer surfaces
+   * without them (each mode's rails wire only when that mode's set is present).
+   * Secrets live HERE (env / secret manager), never in source. The `live` set is
+   * only USABLE on `INFRA_ENVIRONMENT=production` (guarded in `getNombaClient`),
+   * so a dev laptop cannot touch live money even if a live key leaks into its env.
    */
-  NOMBA_BASE_URL: z.string().url().optional(),
-  NOMBA_PARENT_ACCOUNT_ID: z.string().min(1).optional(),
-  NOMBA_SUBACCOUNT_ID: z.string().min(1).optional(),
-  NOMBA_CLIENT_ID: z.string().min(1).optional(),
-  NOMBA_CLIENT_SECRET: z.string().min(1).optional(),
-  NOMBA_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
+  NOMBA_SANDBOX_BASE_URL: z.string().url().optional(),
+  NOMBA_SANDBOX_PARENT_ACCOUNT_ID: z.string().min(1).optional(),
+  NOMBA_SANDBOX_SUBACCOUNT_ID: z.string().min(1).optional(),
+  NOMBA_SANDBOX_CLIENT_ID: z.string().min(1).optional(),
+  NOMBA_SANDBOX_CLIENT_SECRET: z.string().min(1).optional(),
+  NOMBA_LIVE_BASE_URL: z.string().url().optional(),
+  NOMBA_LIVE_PARENT_ACCOUNT_ID: z.string().min(1).optional(),
+  NOMBA_LIVE_SUBACCOUNT_ID: z.string().min(1).optional(),
+  NOMBA_LIVE_CLIENT_ID: z.string().min(1).optional(),
+  NOMBA_LIVE_CLIENT_SECRET: z.string().min(1).optional(),
+  // Inbound-webhook HMAC keys, per mode. One inbound endpoint serves both modes
+  // (sandbox.api is a CNAME alias of api), so the controller can't know the mode
+  // before verifying — it tries every configured key and accepts on any match.
+  NOMBA_SANDBOX_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
+  NOMBA_LIVE_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
   NOMBA_TOKEN_REFRESH_MARGIN_SEC: z.coerce.number().int().positive().default(300),
   // T0 byte-confirm: when true, the inbound nomba route LOGS the real headers + raw
   // body + candidate signatures and processes the event WITHOUT rejecting on a

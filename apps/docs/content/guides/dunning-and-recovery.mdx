@@ -47,11 +47,11 @@ Read where recovery stands for a subscription:
 ```bash
 # Current dunning status
 curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 
 # The full attempt history
 curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning/attempts \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 ## Rehearse it in test
@@ -59,8 +59,8 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning/attempts \
 Attach a test method that fails, then watch the loop run:
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "customerId": "{customerId}", "behavior": "decline_insufficient_funds" }'
 ```

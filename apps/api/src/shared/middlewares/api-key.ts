@@ -14,16 +14,16 @@ import type { RequestHandler } from 'express';
  * a presented secret so every downstream guard (scope, rate-limit, idempotency,
  * handler) works off a TRUSTED principal, never client-supplied org/env.
  *
- * Two failure modes, both surfaced as the sara-minted AppError:
+ * Failure modes, surfaced as the sara-minted AppError:
  *   • missing key          → 401 API_KEY_MISSING
  *   • malformed / unknown / revoked → 401 API_KEY_INVALID (from sara)
- *   • env encoded in the key disagrees with the row → 401 API_KEY_ENVIRONMENT_MISMATCH
+ *   • mode encoded in the key disagrees with the row → 401 API_KEY_ENVIRONMENT_MISMATCH
  *
- * On top of sara's checks we enforce a DEPLOYMENT-level guard: this process
- * serves exactly one `env.INFRA_ENVIRONMENT`. A key whose verified environment
- * does not match THIS deployment is rejected with API_KEY_ENVIRONMENT_MISMATCH —
- * a `live` key presented to a `test` host (or vice versa) never authenticates,
- * even if the key itself is internally consistent.
+ * The key's `mode` (`sandbox`|`live`, from its prefix) is NOT pinned to the
+ * deployment — ONE process serves BOTH modes and derives `ctx.mode` per request
+ * from the key. The only deployment-level guard is a SAFETY one: a `live` key is
+ * rejected on any non-`production` deployment, so a leaked live key still cannot
+ * move real money from a laptop or CI box.
  */
 
 /** Pull the raw secret from `Authorization: Bearer <key>` or `x-api-key`. */
@@ -58,13 +58,15 @@ export const apiKeyAuth: RequestHandler = async (req, _res, next) => {
 
     const verified = await verifyApiKey(db, rawKey);
 
-    // Deployment-level pin: the key's environment must match the env THIS host
-    // serves. sara already rejected a key whose encoded prefix disagrees with its
-    // row; this guards the orthogonal case of a valid key on the wrong host.
-    if (verified.environment !== env.INFRA_ENVIRONMENT) {
+    // SAFETY guard (not a deployment pin): a `live` key is only honoured on a
+    // `production` deployment. A non-production box (laptop, CI) cannot mint a live
+    // Nomba client anyway (getNombaClient guards it), so refuse the key up front —
+    // a leaked live key never authenticates off production. `sandbox` keys work on
+    // every deployment; ONE process serves both modes via `ctx.mode`.
+    if (verified.mode === 'live' && env.INFRA_ENVIRONMENT !== 'production') {
       throw AppError.Unauthorized(
-        'API key environment does not match this deployment',
-        { keyEnvironment: verified.environment, deploymentEnvironment: env.INFRA_ENVIRONMENT },
+        'Live API keys are only accepted on a production deployment',
+        { keyMode: verified.mode, deploymentEnvironment: env.INFRA_ENVIRONMENT },
         NOMBAONE_ERROR_CODES.API_KEY_ENVIRONMENT_MISMATCH
       );
     }
@@ -72,7 +74,7 @@ export const apiKeyAuth: RequestHandler = async (req, _res, next) => {
     req.apiKey = {
       apiKeyId: verified.apiKeyId,
       organizationId: verified.organizationId,
-      environment: verified.environment,
+      mode: verified.mode,
       scopes: verified.scopes,
     };
 
@@ -80,7 +82,7 @@ export const apiKeyAuth: RequestHandler = async (req, _res, next) => {
     // log line (request + any work it drives) is filterable by tenant.
     setCorrelationFields({
       organizationId: verified.organizationId,
-      environment: verified.environment,
+      mode: verified.mode,
     });
 
     next();

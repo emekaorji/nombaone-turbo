@@ -1,10 +1,17 @@
 import type { PoolDatabase } from '@nombaone/core-db/pool';
 import type { ServerlessDatabase } from '@nombaone/core-db/serverless';
 
-/** Every deployment serves exactly one environment; the request's key/session
- * supplies it and it is threaded through the call chain (no env conditionals
- * inside handlers). */
-export type Environment = 'test' | 'live';
+/**
+ * The account MODE — the per-request data partition. ONE deployment serves both;
+ * the request's API key (its `nbo_sandbox_`/`nbo_live_` prefix) supplies the mode
+ * and it is threaded through the call chain as `ctx.mode` (no deployment-env
+ * conditionals inside handlers). Orthogonal to the deployment ring
+ * (`INFRA_ENVIRONMENT` = `development`|`production`), which the domain never sees.
+ */
+export type Mode = 'sandbox' | 'live';
+
+/** The two account modes, for sweeps that must cover the whole shared DB. */
+export const ALL_MODES: readonly Mode[] = ['sandbox', 'live'] as const;
 
 /**
  * A read / single-statement-write handle. In production a Next.js app uses the
@@ -53,5 +60,5 @@ export type InfraReadScope = InfraDb | InfraTx;
  */
 export interface DomainContext {
   organizationId: string;
-  environment: Environment;
+  mode: Mode;
 }

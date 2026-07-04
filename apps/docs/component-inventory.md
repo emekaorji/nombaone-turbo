@@ -33,7 +33,7 @@
 | MobileNav | `mobile-nav.tsx` | chrome | `manifest.ts` | — | 01 (verify) / 02 |
 | SidebarViewToggle | `sidebar-view-toggle.tsx` | chrome | dev/merchant toggle | — | 01 / 09 (merchant track) |
 | ThemeToggle | `theme-toggle.tsx` | chrome | next-themes | — | 01 (done) |
-| EnvPill | `env-pill.tsx` | chrome | static (test/live) | — | 03 / 06 |
+| EnvPill | `env-pill.tsx` | chrome | static (sandbox/live) | — | 03 / 06 |
 
 ## Brand (`src/components/brand/`)
 

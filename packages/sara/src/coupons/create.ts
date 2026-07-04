@@ -42,7 +42,7 @@ export async function createCoupon(
     .where(
       and(
         eq(couponsTable.organizationId, ctx.organizationId),
-        eq(couponsTable.environment, ctx.environment),
+        eq(couponsTable.mode, ctx.mode),
         eq(couponsTable.code, input.code)
       )
     )
@@ -61,7 +61,7 @@ export async function createCoupon(
     .values({
       reference,
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       code: input.code,
       duration: input.duration,
       amountOff: input.amountOff ?? null,

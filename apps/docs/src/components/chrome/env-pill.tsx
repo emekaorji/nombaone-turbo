@@ -1,7 +1,7 @@
 import { envBadgeLabel } from "@/lib/env";
 
 /**
- * Environment indicator (mirrors the console/admin `EnvPill`): a small pill on
+ * Mode indicator (mirrors the console/admin `EnvPill`): a small pill on
  * local/preview, hidden in production. warning-50 fill, warning-200 stroke.
  */
 export function EnvPill() {

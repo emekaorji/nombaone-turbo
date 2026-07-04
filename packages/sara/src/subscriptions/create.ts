@@ -47,7 +47,7 @@ export async function createSubscription(
     .where(
       and(
         eq(customersTable.organizationId, ctx.organizationId),
-        eq(customersTable.environment, ctx.environment),
+        eq(customersTable.mode, ctx.mode),
         eq(customersTable.reference, input.customerRef)
       )
     )
@@ -66,7 +66,7 @@ export async function createSubscription(
     .where(
       and(
         eq(pricesTable.organizationId, ctx.organizationId),
-        eq(pricesTable.environment, ctx.environment),
+        eq(pricesTable.mode, ctx.mode),
         eq(pricesTable.reference, input.priceRef)
       )
     )
@@ -87,7 +87,7 @@ export async function createSubscription(
       .where(
         and(
           eq(paymentMethodsTable.organizationId, ctx.organizationId),
-          eq(paymentMethodsTable.environment, ctx.environment),
+          eq(paymentMethodsTable.mode, ctx.mode),
           eq(paymentMethodsTable.reference, input.paymentMethodRef)
         )
       )
@@ -129,7 +129,7 @@ export async function createSubscription(
       .values({
         reference,
         organizationId: ctx.organizationId,
-        environment: ctx.environment,
+        mode: ctx.mode,
         customerId: customer.id,
         priceId: price.id,
         defaultPaymentMethodId: paymentMethodId,
@@ -155,7 +155,7 @@ export async function createSubscription(
     await tx.insert(subscriptionItemsTable).values({
       reference: mintReference('SBI'),
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       subscriptionId: sub.id,
       priceId: price.id,
       quantity: input.quantity,

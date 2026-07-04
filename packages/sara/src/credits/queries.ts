@@ -19,7 +19,7 @@ export async function resolveCustomerId(
     .where(
       and(
         eq(customersTable.organizationId, ctx.organizationId),
-        eq(customersTable.environment, ctx.environment),
+        eq(customersTable.mode, ctx.mode),
         eq(customersTable.reference, customerRef)
       )
     )
@@ -47,7 +47,7 @@ export async function listCreditGrants(
     .where(
       and(
         eq(creditGrantsTable.organizationId, ctx.organizationId),
-        eq(creditGrantsTable.environment, ctx.environment),
+        eq(creditGrantsTable.mode, ctx.mode),
         eq(creditGrantsTable.customerId, customerId)
       )
     )

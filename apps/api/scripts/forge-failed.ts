@@ -15,7 +15,7 @@ async function main(): Promise<void> {
     event_type: 'payment_failed',
     requestId: `forged-fail-${Date.now()}`,
     data: {
-      merchant: { userId: env.NOMBA_SUBACCOUNT_ID ?? '', walletId: 'wallet-x' },
+      merchant: { userId: env.NOMBA_LIVE_SUBACCOUNT_ID ?? '', walletId: 'wallet-x' },
       transaction: {
         transactionId: FAILED_TXN_ID,
         type: 'online_checkout',
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
       order: {
         orderReference: invRef,
         orderId: 'forged-order',
-        accountId: env.NOMBA_SUBACCOUNT_ID ?? '',
+        accountId: env.NOMBA_LIVE_SUBACCOUNT_ID ?? '',
         amount: 1000.0,
         currency: 'NGN',
         paymentMethod: 'card',
@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     },
   } as Record<string, unknown>;
   const raw = JSON.stringify(payload);
-  const sig = computeNombaSignature(env.NOMBA_WEBHOOK_SIGNATURE_KEY ?? '', raw, payload, ts);
+  const sig = computeNombaSignature(env.NOMBA_LIVE_WEBHOOK_SIGNATURE_KEY ?? '', raw, payload, ts);
   const res = await fetch('http://localhost:8000/webhooks/v1/nomba', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'nomba-signature': sig, 'nomba-timestamp': ts },

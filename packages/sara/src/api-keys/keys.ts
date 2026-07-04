@@ -6,7 +6,7 @@ import { apiKeysTable, type ApiKeyRow } from '@nombaone/core-db/schema';
 
 import { mintReference } from '../reference';
 
-import type { DomainContext, Environment, InfraDb, InfraTxDb } from '../context';
+import type { DomainContext, Mode, InfraDb, InfraTxDb } from '../context';
 
 /**
  * ── The per-org secret API key (public-API authentication) ─────────────────
@@ -18,7 +18,7 @@ import type { DomainContext, Environment, InfraDb, InfraTxDb } from '../context'
  * want.
  *
  * Key string shape: `nbo_<env>_<random>`. The environment is encoded IN the key
- * (so a `test` key can never be presented to a `live` deployment by accident)
+ * (the `sandbox`|`live` prefix selects the mode — a `live` key is only accepted on production)
  * and ALSO denormalised onto the row. Verification re-derives the environment
  * from the prefix and rejects a mismatch before touching the database.
  *
@@ -28,20 +28,20 @@ import type { DomainContext, Environment, InfraDb, InfraTxDb } from '../context'
  * writes so a hot key does not turn every authenticated request into a write.
  *
  * Tenancy: writes are scoped by `ctx` (org + environment); reads filter by
- * `ctx.organizationId` AND `ctx.environment`. Handlers pass `ctx` derived from
+ * `ctx.organizationId` AND `ctx.mode`. Handlers pass `ctx` derived from
  * the authenticated principal — never client input.
  */
 
 /** Public secret prefix per environment. The verifier parses the env back out. */
-const ENV_PREFIX: Record<Environment, string> = {
-  test: 'nbo_test_',
+const ENV_PREFIX: Record<Mode, string> = {
+  sandbox: 'nbo_sandbox_',
   live: 'nbo_live_',
 };
 
 /** Bytes of randomness in the secret body (256 bits → 43 base64url chars). */
 const SECRET_ENTROPY_BYTES = 32;
 
-/** Chars of the full key kept (un-hashed) for display, e.g. `nbo_test_a1b2c3d4`. */
+/** Chars of the full key kept (un-hashed) for display, e.g. `nbo_sandbox_a1b2c3d4`. */
 const KEY_PREFIX_DISPLAY_LENGTH = 16;
 
 /** Minimum gap between `lastUsedAt` writes for the same key (write throttle). */
@@ -52,10 +52,10 @@ const sha256Hex = (value: string): string =>
 
 /** Generate a fresh secret + its display prefix + storage hash for an env. */
 const generateSecret = (
-  environment: Environment
+  mode: Mode
 ): { secret: string; keyPrefix: string; keyHash: string } => {
   const body = randomBytes(SECRET_ENTROPY_BYTES).toString('base64url');
-  const secret = `${ENV_PREFIX[environment]}${body}`;
+  const secret = `${ENV_PREFIX[mode]}${body}`;
   return {
     secret,
     keyPrefix: secret.slice(0, KEY_PREFIX_DISPLAY_LENGTH),
@@ -64,8 +64,8 @@ const generateSecret = (
 };
 
 /** Derive the environment a raw key claims from its prefix, or `null`. */
-const environmentFromKey = (rawKey: string): Environment | null => {
-  if (rawKey.startsWith(ENV_PREFIX.test)) return 'test';
+const environmentFromKey = (rawKey: string): Mode | null => {
+  if (rawKey.startsWith(ENV_PREFIX.sandbox)) return 'sandbox';
   if (rawKey.startsWith(ENV_PREFIX.live)) return 'live';
   return null;
 };
@@ -89,7 +89,7 @@ export interface CreatedApiKey {
 export interface VerifiedApiKey {
   apiKeyId: string;
   organizationId: string;
-  environment: Environment;
+  mode: Mode;
   scopes: string[];
 }
 
@@ -104,12 +104,12 @@ export async function createApiKey(
   params: { name: string; scopes: string[]; createdByUserId?: string }
 ): Promise<CreatedApiKey> {
   const reference = mintReference('KEY');
-  const { secret, keyPrefix, keyHash } = generateSecret(ctx.environment);
+  const { secret, keyPrefix, keyHash } = generateSecret(ctx.mode);
 
   await txDb.insert(apiKeysTable).values({
     reference,
     organizationId: ctx.organizationId,
-    environment: ctx.environment,
+    mode: ctx.mode,
     name: params.name,
     keyPrefix,
     keyHash,
@@ -165,7 +165,7 @@ export async function verifyApiKey(db: InfraDb, rawKey: string): Promise<Verifie
     );
   }
 
-  if (row.environment !== claimedEnvironment) {
+  if (row.mode !== claimedEnvironment) {
     throw AppError.Unauthorized(
       'API key environment does not match',
       { claimed: claimedEnvironment },
@@ -178,7 +178,7 @@ export async function verifyApiKey(db: InfraDb, rawKey: string): Promise<Verifie
   return {
     apiKeyId: row.id,
     organizationId: row.organizationId,
-    environment: row.environment,
+    mode: row.mode,
     scopes: row.scopes ?? [],
   };
 }
@@ -214,7 +214,7 @@ export async function rotateApiKey(
       and(
         eq(apiKeysTable.reference, apiKeyReference),
         eq(apiKeysTable.organizationId, ctx.organizationId),
-        eq(apiKeysTable.environment, ctx.environment)
+        eq(apiKeysTable.mode, ctx.mode)
       )
     )
     .limit(1);
@@ -227,7 +227,7 @@ export async function rotateApiKey(
     );
   }
 
-  const { secret, keyPrefix, keyHash } = generateSecret(existing.environment);
+  const { secret, keyPrefix, keyHash } = generateSecret(existing.mode);
 
   await txDb
     .update(apiKeysTable)
@@ -254,7 +254,7 @@ export async function revokeApiKey(
       and(
         eq(apiKeysTable.reference, apiKeyReference),
         eq(apiKeysTable.organizationId, ctx.organizationId),
-        eq(apiKeysTable.environment, ctx.environment)
+        eq(apiKeysTable.mode, ctx.mode)
       )
     );
 }
@@ -267,7 +267,7 @@ export async function listApiKeys(db: InfraDb, ctx: DomainContext): Promise<ApiK
     .where(
       and(
         eq(apiKeysTable.organizationId, ctx.organizationId),
-        eq(apiKeysTable.environment, ctx.environment)
+        eq(apiKeysTable.mode, ctx.mode)
       )
     )
     .orderBy(desc(apiKeysTable.createdAt));

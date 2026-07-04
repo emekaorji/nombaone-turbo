@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 /**
  * PAYMENT METHOD DTO — a customer's instance on one rail. **N1 is structural:**
@@ -25,7 +25,7 @@ export interface PaymentMethodResponseData {
   last4: string | null;
   expMonth: number | null;
   expYear: number | null;
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
   updatedAt: string;
 }

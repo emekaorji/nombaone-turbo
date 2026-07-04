@@ -25,7 +25,7 @@ export async function getTenantSettings(
     .where(
       and(
         eq(webhookEndpointsTable.organizationId, ctx.organizationId),
-        eq(webhookEndpointsTable.environment, ctx.environment)
+        eq(webhookEndpointsTable.mode, ctx.mode)
       )
     )
     .orderBy(desc(webhookEndpointsTable.createdAt))
@@ -37,7 +37,7 @@ export async function getTenantSettings(
     .where(
       and(
         eq(orgNombaAccountsTable.organizationId, ctx.organizationId),
-        eq(orgNombaAccountsTable.environment, ctx.environment),
+        eq(orgNombaAccountsTable.mode, ctx.mode),
         eq(orgNombaAccountsTable.kind, 'subaccount')
       )
     )

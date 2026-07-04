@@ -1,6 +1,6 @@
 import { index, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 import { organizationsTable } from './organizations';
 
 /**
@@ -25,7 +25,7 @@ export const nombaWebhookEventsTable = pgTable(
     organizationId: uuid('organization_id').references(() => organizationsTable.id, {
       onDelete: 'set null',
     }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     provider: text('provider').notNull().default('nomba'),
     requestId: text('request_id').notNull(),
     eventType: text('event_type').notNull(),
@@ -42,7 +42,7 @@ export const nombaWebhookEventsTable = pgTable(
       table.requestId
     ),
     keysetIdx: index('nomba_webhook_events_keyset_idx').on(
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

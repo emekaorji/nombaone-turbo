@@ -12,7 +12,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 import { customersTable } from './customers';
 import { organizationsTable } from './organizations';
 import { subscriptionsTable } from './subscriptions';
@@ -40,7 +40,7 @@ export const invoicesTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     customerId: uuid('customer_id')
       .notNull()
       .references(() => customersTable.id, { onDelete: 'restrict' }),
@@ -84,13 +84,13 @@ export const invoicesTable = pgTable(
       .where(sql`${table.subscriptionId} is not null`),
     keysetIdx: index('invoices_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),
     customerIdx: index('invoices_customer_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.customerId
     ),
   })

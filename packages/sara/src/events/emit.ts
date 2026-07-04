@@ -35,7 +35,7 @@ import type { EmitEventInput, EmittedEvent } from './types';
  * emits that need not share a transaction.
  *
  * Scope is pinned: the row is stamped with `ctx.organizationId` /
- * `ctx.environment`, and ONLY endpoints in that same (org, env) are considered.
+ * `ctx.mode`, and ONLY endpoints in that same (org, env) are considered.
  */
 export const emitEvent = async (
   db: InfraDb | InfraTxDb,
@@ -48,7 +48,7 @@ export const emitEvent = async (
     .values({
       reference,
       organizationId: input.organizationId,
-      environment: input.environment,
+      mode: input.mode,
       type: input.type,
       payload: input.payload,
     })
@@ -69,7 +69,7 @@ export const emitEvent = async (
     .where(
       and(
         eq(webhookEndpointsTable.organizationId, input.organizationId),
-        eq(webhookEndpointsTable.environment, input.environment),
+        eq(webhookEndpointsTable.mode, input.mode),
         isNull(webhookEndpointsTable.disabledAt),
         or(
           sql`${webhookEndpointsTable.enabledEvents} @> ${JSON.stringify(['*'])}::jsonb`,

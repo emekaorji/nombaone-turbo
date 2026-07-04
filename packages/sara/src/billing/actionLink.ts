@@ -33,7 +33,7 @@ export async function mintInvoiceCheckoutLink(
   ctx: DomainContext,
   invoice: InvoiceRow
 ): Promise<string | null> {
-  const client = getBillingNombaClient();
+  const client = getBillingNombaClient(ctx.mode);
   if (!client) return null;
 
   const [customer] = await txDb
@@ -42,7 +42,7 @@ export async function mintInvoiceCheckoutLink(
     .where(
       and(
         eq(customersTable.organizationId, ctx.organizationId),
-        eq(customersTable.environment, ctx.environment),
+        eq(customersTable.mode, ctx.mode),
         eq(customersTable.id, invoice.customerId)
       )
     )

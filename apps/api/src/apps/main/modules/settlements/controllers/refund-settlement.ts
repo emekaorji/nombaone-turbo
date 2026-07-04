@@ -20,7 +20,7 @@ export const refundSettlementController: RequestHandler = jsonHandler<RefundResp
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const body = req.body as RefundSettlementBody;
     const headerKey = req.headers['idempotency-key'];

@@ -27,3 +27,4 @@ export { requireScope } from './scope';
 export { idempotency, idempotencyOptional } from './idempotency';
 export { rateLimit } from './rate-limit';
 export { platformGate } from './platform-gate';
+export { requireSandboxMode } from './sandbox-mode';

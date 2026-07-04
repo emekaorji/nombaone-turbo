@@ -11,11 +11,11 @@ import { db, pool } from '../src/shared/config/db';
 
 const main = async (): Promise<void> => {
   const key = process.argv[2];
-  if (!key) throw new Error('Usage: verify-docs-key.ts <nbo_test_...>');
+  if (!key) throw new Error('Usage: verify-docs-key.ts <nbo_sandbox_...>');
   const verified = await verifyApiKey(db, key);
   console.log('\nKEY AUTHENTICATES ✓');
   console.log(`  organizationId : ${verified.organizationId}`);
-  console.log(`  environment    : ${verified.environment}`);
+  console.log(`  mode           : ${verified.mode}`);
   console.log(`  scopes         : ${verified.scopes.length}`);
   console.log('');
 };

@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 export type SubscriptionStatus =
   | 'incomplete'
@@ -41,6 +41,6 @@ export interface SubscriptionResponseData {
   items: SubscriptionItemData[];
   latestInvoiceId: string | null;
   currency: 'NGN';
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
 }

@@ -5,7 +5,7 @@ import { paymentMethodsTable } from '@nombaone/core-db/schema';
 import { markInboundEvent, recordInboundEvent } from '../nomba/ingest';
 import { settleInboundEvent } from './settle';
 
-import type { DomainContext, Environment, InfraDb, InfraTxDb } from '../context';
+import type { DomainContext, Mode, InfraDb, InfraTxDb } from '../context';
 
 /** Pull OUR stable reference out of a Nomba inbound payload (order ref / VA alias).
  *  Live prod (2026-07-01) confirmed the join field: our reference comes back as
@@ -54,11 +54,11 @@ export function extractProviderTransactionId(payload: Record<string, unknown>): 
 export async function resolveScopeByReference(
   db: InfraDb,
   reference: string
-): Promise<{ organizationId: string; environment: Environment } | null> {
+): Promise<{ organizationId: string; mode: Mode } | null> {
   const [row] = await db
     .select({
       organizationId: paymentMethodsTable.organizationId,
-      environment: paymentMethodsTable.environment,
+      mode: paymentMethodsTable.mode,
     })
     .from(paymentMethodsTable)
     .where(or(eq(paymentMethodsTable.reference, reference), eq(paymentMethodsTable.accountRef, reference)))
@@ -85,7 +85,7 @@ export async function processInboundNombaEvent(
     // We cannot attribute the event to a tenant — record it (org-less) for audit
     // so it is still de-duplicated, and ack.
     const { firstSeen } = await recordInboundEvent(txDb, {
-      environment: 'test',
+      mode: 'sandbox',
       provider: 'nomba',
       requestId: input.requestId,
       eventType: input.eventType,
@@ -102,7 +102,7 @@ export async function processInboundNombaEvent(
   });
 
   const { firstSeen } = await recordInboundEvent(txDb, {
-    environment: scope.environment,
+    mode: scope.mode,
     provider: 'nomba',
     requestId: input.requestId,
     eventType: input.eventType,

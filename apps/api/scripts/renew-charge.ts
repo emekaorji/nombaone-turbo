@@ -17,7 +17,7 @@ const TOKEN_EMAIL = 'e2e.1782960200346@gmail.com'; // the email the Verve card w
 const AMOUNT_KOBO = 10000; // ₦100
 
 async function main(): Promise<void> {
-  const environment = env.INFRA_ENVIRONMENT;
+  const mode = 'live' as const; // live-testing harness runs against the NOMBA_LIVE_* account
   const orgId = randomUUID();
   await db.insert(organizationsTable).values({ id: orgId, reference: mintReference('ORG'), name: 'Renewal Test' });
   const custId = randomUUID();
@@ -25,7 +25,7 @@ async function main(): Promise<void> {
     id: custId,
     reference: mintReference('CUS'),
     organizationId: orgId,
-    environment,
+    mode,
     email: TOKEN_EMAIL,
     name: 'Renewal Customer',
   });
@@ -33,7 +33,7 @@ async function main(): Promise<void> {
   await db.insert(invoicesTable).values({
     reference: invRef,
     organizationId: orgId,
-    environment,
+    mode,
     customerId: custId,
     billingReason: 'subscription_cycle',
     subtotal: AMOUNT_KOBO,
@@ -43,10 +43,10 @@ async function main(): Promise<void> {
   });
 
   // Merchant-initiated recharge of the saved card — the actual renewal path.
-  const rail = createCardRail(getNombaClient());
+  const rail = createCardRail(getNombaClient);
   const res = await rail.collect({
     organizationId: orgId,
-    environment,
+    mode,
     reference: invRef,
     amountKobo: AMOUNT_KOBO,
     metadata: {
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
       customerId: custId,
       customerEmail: TOKEN_EMAIL,
       callbackUrl: 'https://tunnel.nombaone.xyz/callback',
-      accountId: env.NOMBA_SUBACCOUNT_ID, // sub-account scope → webhook fires + funds land here
+      accountId: env.NOMBA_LIVE_SUBACCOUNT_ID, // sub-account scope → webhook fires + funds land here
     },
   });
   console.log('RENEWAL_INVOICE_REF=', invRef);

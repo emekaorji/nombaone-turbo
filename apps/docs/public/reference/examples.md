@@ -30,7 +30,7 @@ so a retry never creates a second example.
 ```bash
 # Record a ₦150.00 example (15000 kobo)
 curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: 1c4e7a90-2b3d-4f56-8a9b-0c1d2e3f4a5b" \
   -d '{
@@ -75,7 +75,7 @@ behave identically.
     "status": "pending",
     "amount": 15000,
     "currency": "NGN",
-    "environment": "test",
+    "mode": "sandbox",
     "createdAt": "2026-06-29T10:14:52.004Z"
   },
   "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
@@ -124,7 +124,7 @@ The amount recorded, in kobo.
 
 Always `NGN`.
 
-The environment this resource belongs to, matching your key's prefix.
+The mode this resource belongs to, matching your key's prefix.
 
 When the example was created.
 

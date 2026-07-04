@@ -30,7 +30,7 @@ import type { InfraTxDb } from '../context';
 
 export type LoginResult = { status: 'ok'; token: string } | { status: 'totp_required' };
 
-const SESSION_ENVIRONMENT = 'test' as const;
+const SESSION_ENVIRONMENT = 'sandbox' as const;
 
 export const loginOrgUser = async (
   txDb: InfraTxDb,
@@ -70,7 +70,7 @@ export const loginOrgUser = async (
   const { token } = await createSession(txDb, {
     userId: user.id,
     organizationId: user.organizationId,
-    environment: SESSION_ENVIRONMENT,
+    mode: SESSION_ENVIRONMENT,
   });
 
   return { status: 'ok', token };

@@ -22,7 +22,7 @@ export const getExampleController: RequestHandler = jsonHandler<
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
 
   const example = await getExampleByReference(db, ctx, req.params.id ?? '');

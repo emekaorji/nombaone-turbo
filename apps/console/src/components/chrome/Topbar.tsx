@@ -1,4 +1,4 @@
-import type { Environment } from '@nombaone/sara/context';
+import type { Mode } from '@nombaone/sara/context';
 
 import { EnvPill } from './EnvPill';
 import { EnvSwitcher } from './EnvSwitcher';
@@ -8,12 +8,12 @@ import { TopbarBreadcrumbs } from './TopbarBreadcrumbs';
 /**
  * Sticky topbar inside the SidebarInset scroll column.
  *   - left: breadcrumb (active nav label)
- *   - right: deployment-ring pill · test/live env switch · theme toggle
+ *   - right: deployment-ring pill · sandbox/live mode switch · theme toggle
  *
- * The active `environment` is passed from the layout (resolved server-side from
+ * The active `mode` is passed from the layout (resolved server-side from
  * the `console_env` cookie) so the switch renders the correct ring at SSR.
  */
-export function Topbar({ environment }: { environment: Environment }) {
+export function Topbar({ mode }: { mode: Mode }) {
   return (
     <header
       role="banner"
@@ -22,7 +22,7 @@ export function Topbar({ environment }: { environment: Environment }) {
       <TopbarBreadcrumbs />
       <div className="flex items-center gap-3">
         <EnvPill />
-        <EnvSwitcher environment={environment} />
+        <EnvSwitcher mode={mode} />
         <ThemeToggle />
       </div>
     </header>

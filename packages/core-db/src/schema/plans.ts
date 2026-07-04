@@ -1,6 +1,6 @@
 import { index, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 import { organizationsTable } from './organizations';
 
 /**
@@ -19,7 +19,7 @@ export const plansTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     name: text('name').notNull(),
     description: text('description'),
     status: planStatusEnum('status').notNull().default('active'),
@@ -31,12 +31,12 @@ export const plansTable = pgTable(
     referenceUnique: uniqueIndex('plans_reference_unique').on(table.reference),
     orgEnvNameUnique: uniqueIndex('plans_org_env_name_unique').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.name
     ),
     keysetIdx: index('plans_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

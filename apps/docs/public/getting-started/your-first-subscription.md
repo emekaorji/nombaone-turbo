@@ -7,10 +7,10 @@ canonical: https://docs.nombaone.xyz/getting-started/your-first-subscription
 
 # Your first subscription
 
-By the end of this page you will have a **real subscription** billing on the test
-environment — created with five calls, in about ten minutes, with no mocks. Each
+By the end of this page you will have a **real subscription** billing in sandbox
+mode — created with five calls, in about ten minutes, with no mocks. Each
 call below is the genuine request your server will make in production; only the
-key (`nbo_test_…`) and the host (`sandbox.api.nombaone.xyz`) change when you go
+key (`nbo_sandbox_…`) and the host (`sandbox.api.nombaone.xyz`) change when you go
 live.
 
 The minimal path is four resources and one deterministic test card:
@@ -21,9 +21,9 @@ The minimal path is four resources and one deterministic test card:
 4. a **test payment method** that succeeds on cue,
 5. the **subscription** — which produces the first invoice and collects it.
 
-> **Get a test key first**
+> **Get a sandbox key first**
 >
-> Every call authenticates with `Authorization: Bearer nbo_test_…`. If you don't
+> Every call authenticates with `Authorization: Bearer nbo_sandbox_…`. If you don't
 > have a key yet, see [authentication](/getting-started/authentication) — it
 > takes one step. Keep the key server-side.
 
@@ -37,7 +37,7 @@ yearly prices at once.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "name": "Pro" }'
@@ -66,7 +66,7 @@ A **price** sets the amount and the interval. Amounts are **integer kobo**:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "unitAmountInKobo": 250000, "interval": "month" }'
@@ -97,7 +97,7 @@ A **customer** is who you bill. Email and name are all you need to start.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/customers \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "email": "ada@example.com", "name": "Ada Lovelace" }'
@@ -116,7 +116,7 @@ const customer = await nbo("/v1/customers", {
 
 ### Attach a test payment method that succeeds
 
-On the test environment you attach a **deterministic** payment method: the
+In sandbox mode you attach a **deterministic** payment method: the
 `behavior` decides the outcome, so your first pass succeeds on purpose. Use
 `success` here; the other behaviors (decline, OTP required, thin
 balance) let you rehearse the unhappy paths later.
@@ -124,8 +124,8 @@ balance) let you rehearse the unhappy paths later.
 **cURL**
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "customerId": "{customerId}", "behavior": "success" }'
 ```
@@ -133,16 +133,16 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
 **TypeScript**
 
 ```ts
-const method = await nbo("/v1/test/payment-methods", {
+const method = await nbo("/v1/sandbox/payment-methods", {
   method: "POST",
   body: { customerId: customer.data.id, behavior: "success" },
 });
 // method.data.id → "nbo…pm"
 ```
 
-> **Test-environment only**
+> **Sandbox mode only**
 >
-> `POST /v1/test/payment-methods` exists only on the sandbox. In live, a
+> `POST /v1/sandbox/payment-methods` exists only in sandbox mode. In live, a
 > customer attaches a real card, mandate, or transfer instruction — see
 > [multi-rail: push and pull](/concepts/multi-rail-push-and-pull).
 
@@ -156,7 +156,7 @@ the method is `success`, it comes back **active** with a paid invoice.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{
@@ -193,7 +193,7 @@ A `201` with the standard envelope confirms it:
     "customerId": "nbo…cus",
     "priceId": "nbo…prc",
     "currentPeriodEnd": "2026-08-03T10:14:52.004Z",
-    "environment": "test"
+    "mode": "sandbox"
   },
   "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
 }

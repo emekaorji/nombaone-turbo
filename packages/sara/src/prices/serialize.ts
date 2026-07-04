@@ -20,6 +20,6 @@ export const serializePrice = (row: PriceRow, planRef: string): PriceResponseDat
   trialPeriodDays: row.trialPeriodDays,
   active: row.active,
   metadata: row.metadata,
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
 });

@@ -74,7 +74,7 @@ export async function payAction(reference: string): Promise<ActionResult> {
 
     const ctx: DomainContext = {
       organizationId: scope.organizationId,
-      environment: scope.environment,
+      mode: scope.mode,
     };
 
     // STUB: stand in for the verified provider webhook. A real `providerReference`

@@ -24,7 +24,7 @@ const fakeNomba: NombaClient = {
 describe('observability + docs e2e (L/M)', () => {
   let harness: Harness;
   let bearer: string;
-  let ctx: { organizationId: string; environment: 'test' };
+  let ctx: { organizationId: string; mode: 'sandbox' };
 
   const scopes = ['customers:read', 'customers:write', 'subscriptions:read', 'subscriptions:write', 'metrics:read'];
 
@@ -33,8 +33,8 @@ describe('observability + docs e2e (L/M)', () => {
     harness.setNombaClient(fakeNomba);
     registerRail({ key: 'card', direction: 'pull', collect: async () => ({ status: 'succeeded' }) });
     const org = await harness.seedOrg('Obs');
-    bearer = (await harness.mintApiKey(org.organizationId, 'test', scopes)).secret;
-    ctx = { organizationId: org.organizationId, environment: 'test' };
+    bearer = (await harness.mintApiKey(org.organizationId, 'sandbox', scopes)).secret;
+    ctx = { organizationId: org.organizationId, mode: 'sandbox' };
   });
 
   afterAll(async () => { await harness?.stop(); });
@@ -54,7 +54,7 @@ describe('observability + docs e2e (L/M)', () => {
       .where(and(eq(customersTable.organizationId, ctx.organizationId), eq(customersTable.reference, customer.id))).limit(1);
     const pmRef = mintReference('PMT');
     await harness.db.insert(paymentMethodsTable).values({
-      reference: pmRef, organizationId: ctx.organizationId, environment: 'test', customerId: c!.id,
+      reference: pmRef, organizationId: ctx.organizationId, mode: 'sandbox', customerId: c!.id,
       kind: 'card', status: 'active', tokenKey: 'tok', brand: 'visa', last4: '4242', isDefault: true,
     });
     const res = await auth(request(harness.app).post('/v1/subscriptions')).set('Idempotency-Key', `s-${uniq()}`)
@@ -137,7 +137,7 @@ describe('observability + docs e2e (L/M)', () => {
       .schema.properties.data;
     expect(getData.$ref).toBe('#/components/schemas/Customer');
     expect(Object.keys(doc.components.schemas.Customer.properties)).toEqual(
-      expect.arrayContaining(['id', 'email', 'name', 'phone', 'metadata', 'environment', 'createdAt'])
+      expect.arrayContaining(['id', 'email', 'name', 'phone', 'metadata', 'mode', 'createdAt'])
     );
 
     // (d) a LIST response `data` is a typed array of the resource.
@@ -236,7 +236,7 @@ describe('observability + docs e2e (L/M)', () => {
     expect(httpLine).toMatchObject({
       correlationId: requestIdHeader,
       organizationId: ctx.organizationId,
-      environment: 'test',
+      mode: 'sandbox',
     });
 
     // (b) the job path uses the same runWithCorrelation + logger; a line logged in a
@@ -244,7 +244,7 @@ describe('observability + docs e2e (L/M)', () => {
     const { runWithCorrelation } = await import('../../src/shared/observability/correlation');
     const jobLines = await captureLogs(async () => {
       await runWithCorrelation(
-        { correlationId: 'job_abc', task: 'billing', organizationId: ctx.organizationId, environment: 'test' },
+        { correlationId: 'job_abc', task: 'billing', organizationId: ctx.organizationId, mode: 'sandbox' },
         async () => {
           await Promise.resolve(); // correlation must survive an await
           const { logger } = await import('../../src/shared/observability/logger');

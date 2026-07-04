@@ -11,7 +11,7 @@ import type { RequestHandler } from 'express';
 
 const ctxOf = (req: Parameters<RequestHandler>[0]): DomainContext => {
   if (!req.apiKey) throw AppError.Unauthorized('API key required');
-  return { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
+  return { organizationId: req.apiKey.organizationId, mode: req.apiKey.mode };
 };
 
 /** POST /v1/webhooks — the signing secret escapes ONCE. */

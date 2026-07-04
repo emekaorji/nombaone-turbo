@@ -15,7 +15,7 @@ import { mintReference } from '@nombaone/sara/reference';
 const AMOUNT_KOBO = Number(process.argv[2]) || 10000; // kobo; default ₦100
 
 async function main(): Promise<void> {
-  const environment = env.INFRA_ENVIRONMENT;
+  const mode = 'live' as const; // live-testing harness runs against the NOMBA_LIVE_* account
   const orgId = randomUUID();
   await db.insert(organizationsTable).values({ id: orgId, reference: mintReference('ORG'), name: 'Live E2E Org' });
   const custId = randomUUID();
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     id: custId,
     reference: mintReference('CUS'),
     organizationId: orgId,
-    environment,
+    mode,
     email: `e2e-cust-${Date.now()}@nombaone.xyz`,
     name: 'Live E2E Customer',
   });
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   await db.insert(invoicesTable).values({
     reference: invRef,
     organizationId: orgId,
-    environment,
+    mode,
     customerId: custId,
     billingReason: 'manual',
     subtotal: AMOUNT_KOBO,
@@ -40,7 +40,7 @@ async function main(): Promise<void> {
     finalizedAt: new Date(),
   });
 
-  const res = await getNombaClient().request({
+  const res = await getNombaClient('live').request({
     method: 'POST',
     endpoint: NOMBA_ENDPOINTS.checkoutOrder,
     idempotencyRef: invRef,
@@ -48,7 +48,7 @@ async function main(): Promise<void> {
       tokenizeCard: process.argv.includes('--tokenize'),
       order: {
         orderReference: invRef, // ← the invoice reference; the webhook will settle THIS invoice
-        accountId: env.NOMBA_SUBACCOUNT_ID, // sub-account → webhook fires
+        accountId: env.NOMBA_LIVE_SUBACCOUNT_ID, // sub-account → webhook fires
         amount: koboToNombaAmount(AMOUNT_KOBO), // "100.00"
         currency: 'NGN',
         callbackUrl: 'https://tunnel.nombaone.xyz/callback',

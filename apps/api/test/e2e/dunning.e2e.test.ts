@@ -39,7 +39,7 @@ const fakeNomba: NombaClient = {
 describe('dunning & recovery e2e (★ D/E)', () => {
   let harness: Harness;
   let bearerA: string;
-  let ctxA: { organizationId: string; environment: 'test' };
+  let ctxA: { organizationId: string; mode: 'sandbox' };
 
   const scopes = [
     'customers:read',
@@ -71,8 +71,8 @@ describe('dunning & recovery e2e (★ D/E)', () => {
     });
 
     const orgA = await harness.seedOrg('Dun A');
-    bearerA = (await harness.mintApiKey(orgA.organizationId, 'test', scopes)).secret;
-    ctxA = { organizationId: orgA.organizationId, environment: 'test' };
+    bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
+    ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
   });
 
   afterAll(async () => {
@@ -97,7 +97,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
       .limit(1);
     const pmRef = mintReference('PMT');
     await harness.db.insert(paymentMethodsTable).values({
-      reference: pmRef, organizationId: ctxA.organizationId, environment: 'test', customerId: c!.id,
+      reference: pmRef, organizationId: ctxA.organizationId, mode: 'sandbox', customerId: c!.id,
       kind: 'card', status: 'active', tokenKey: 'tok_test', brand: 'visa', last4: '4242', isDefault: true,
     });
     railStatus = 'succeeded';
@@ -122,7 +122,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
     await runCycle(harness.db, ctxA, subRef);
   }
 
-  const sweep = () => runDunningSweep({ db: harness.db, environment: 'test', now: new Date(), batchSize: 100 });
+  const sweep = () => runDunningSweep({ db: harness.db, mode: 'sandbox', now: new Date(), batchSize: 100 });
 
   async function makeAttemptsDue(subId: string): Promise<void> {
     await harness.db
@@ -301,7 +301,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
     expect((await request(harness.app).get('/v1/organization/billing')).status).toBe(401);
 
     const orgC = await harness.seedOrg('Dun RO');
-    const ro = (await harness.mintApiKey(orgC.organizationId, 'test', ['subscriptions:read'])).secret;
+    const ro = (await harness.mintApiKey(orgC.organizationId, 'sandbox', ['subscriptions:read'])).secret;
     const forbidden = await request(harness.app)
       .put('/v1/organization/billing')
       .set('Authorization', `Bearer ${ro}`)
@@ -338,7 +338,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
     const { subRef, subId, attemptRef, invRef, amountDue } = await pendingRetry();
 
     // The real payment_success webhook carries the DUN attempt reference (not an invoice ref).
-    const res = await processInboundDunningEvent(harness.db, clientRequerying({ succeeded: true, amount: amountDue }), {
+    const res = await processInboundDunningEvent(harness.db, () => clientRequerying({ succeeded: true, amount: amountDue }), {
       requestId: 'dun-ok-1', eventType: 'payment_success', payload: { data: { orderReference: attemptRef } },
     });
     expect(res.matched).toBe(true);
@@ -354,7 +354,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
   it('item 9 — an async dunning retry that FAILS at Nomba drives the dunning branch (reschedule)', async () => {
     const { subRef, subId, attemptRef } = await pendingRetry();
 
-    const res = await processInboundDunningEvent(harness.db, clientRequerying({ succeeded: false, status: 'failed', gatewayMessage: 'insufficient funds' }), {
+    const res = await processInboundDunningEvent(harness.db, () => clientRequerying({ succeeded: false, status: 'failed', gatewayMessage: 'insufficient funds' }), {
       requestId: 'dun-fail-1', eventType: 'payment_failed', payload: { data: { orderReference: attemptRef } },
     });
     expect(res.matched).toBe(true);

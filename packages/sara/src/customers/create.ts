@@ -33,7 +33,7 @@ export async function createCustomer(
     .where(
       and(
         eq(customersTable.organizationId, ctx.organizationId),
-        eq(customersTable.environment, ctx.environment),
+        eq(customersTable.mode, ctx.mode),
         eq(customersTable.email, input.email)
       )
     )
@@ -54,7 +54,7 @@ export async function createCustomer(
     .values({
       reference,
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       email: input.email,
       name: input.name,
       phone: input.phone ?? null,

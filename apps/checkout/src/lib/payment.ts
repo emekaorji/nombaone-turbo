@@ -8,7 +8,7 @@ import { AppError, HTTP_STATUS_CODES } from '@nombaone/errors';
 
 import { db } from './db';
 
-import type { DomainContext, Environment } from '@nombaone/sara/context';
+import type { DomainContext, Mode } from '@nombaone/sara/context';
 import type { ExampleResponseData } from '@nombaone/core-contracts/types';
 
 /**
@@ -47,7 +47,7 @@ export interface CheckoutScope {
   /** Resolved internal org id — needed to build the `DomainContext`. */
   organizationId: string;
   /** The resource's own environment dimension (drives which data it lives in). */
-  environment: Environment;
+  mode: Mode;
 }
 
 /** A resolved checkout view: the public DTO + the collecting merchant + scope. */
@@ -72,7 +72,7 @@ async function resolveScopeByReference(
   const [row] = await db
     .select({
       organizationId: examplesTable.organizationId,
-      environment: examplesTable.environment,
+      mode: examplesTable.mode,
       orgName: organizationsTable.name,
       orgReference: organizationsTable.reference,
     })
@@ -84,7 +84,7 @@ async function resolveScopeByReference(
   if (!row) return null;
 
   return {
-    scope: { organizationId: row.organizationId, environment: row.environment },
+    scope: { organizationId: row.organizationId, mode: row.mode },
     merchant: { name: row.orgName, reference: row.orgReference },
   };
 }
@@ -109,7 +109,7 @@ export async function getCheckoutResource(reference: string): Promise<CheckoutRe
 
   const ctx: DomainContext = {
     organizationId: resolved.scope.organizationId,
-    environment: resolved.scope.environment,
+    mode: resolved.scope.mode,
   };
 
   try {

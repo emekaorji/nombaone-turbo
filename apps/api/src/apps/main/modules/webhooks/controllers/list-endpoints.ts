@@ -13,7 +13,7 @@ export const listWebhookEndpointsController: RequestHandler = jsonHandler<
   WebhookEndpointResponseData[]
 >(async (req) => {
   if (!req.apiKey) throw AppError.Unauthorized('API key required');
-  const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
+  const ctx: DomainContext = { organizationId: req.apiKey.organizationId, mode: req.apiKey.mode };
   const rows = await listWebhookEndpoints(db, ctx);
   return { data: rows.map(serializeWebhookEndpoint) };
 });

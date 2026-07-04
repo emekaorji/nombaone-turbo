@@ -12,10 +12,10 @@ demand and watch land in your own tunnel. This page proves the pipe end to end:
 register → fire → verify.
 
 <Callout type="note" title="Real and signed, not mocked">
-  The event you fire below is a genuine signed payload from the test instrument,
+  The event you fire below is a genuine signed payload from the sandbox instrument,
   the same shape and the same signature scheme as a live event. Nothing here is
   faked or `setTimeout`-ed. `simulate` is the honest substitute for organic
-  sandbox delivery — it is test-deployment-only and at-least-once (dedupe on the
+  sandbox delivery — it is sandbox-mode-only and at-least-once (dedupe on the
   event id).
 </Callout>
 
@@ -26,7 +26,7 @@ with a tunnel (ngrok, Cloudflare Tunnel) and register the public URL:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-tunnel.ngrok.app/webhooks/nomba",
@@ -39,22 +39,22 @@ Store it server-side — you need it to verify every delivery.
 
 ## 2 · Fire a real signed event
 
-Ask the test instrument to emit a signed event to your registered endpoint. Fire
+Ask the sandbox instrument to emit a signed event to your registered endpoint. Fire
 a happy path and an unhappy one:
 
 <CodeGroup>
   <Tab label="invoice.paid">
     ```bash
-    curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-      -H "Authorization: Bearer nbo_test_…" \
+    curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+      -H "Authorization: Bearer nbo_sandbox_…" \
       -H "Content-Type: application/json" \
       -d '{ "type": "invoice.paid" }'
     ```
   </Tab>
   <Tab label="invoice.action_required">
     ```bash
-    curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-      -H "Authorization: Bearer nbo_test_…" \
+    curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+      -H "Authorization: Bearer nbo_sandbox_…" \
       -H "Content-Type: application/json" \
       -d '{ "type": "invoice.action_required" }'
     ```

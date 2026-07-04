@@ -30,7 +30,7 @@ export async function listTransactions(
 
   const tenantScope = and(
     eq(ledgerTransactionsTable.organizationId, ctx.organizationId),
-    eq(ledgerTransactionsTable.environment, ctx.environment)
+    eq(ledgerTransactionsTable.mode, ctx.mode)
   );
 
   // Strict keyset predicate: rows strictly "after" the cursor in (createdAt,id)

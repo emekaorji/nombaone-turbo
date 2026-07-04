@@ -37,10 +37,10 @@ export interface Harness {
   app: Express;
   /** Create an organization (tenant genesis) → its id. */
   seedOrg: (name?: string) => Promise<{ organizationId: string; reference: string }>;
-  /** Mint an API key for an org in a given environment → the raw secret. */
+  /** Mint an API key for an org in a given mode → the raw secret. */
   mintApiKey: (
     organizationId: string,
-    environment: 'test' | 'live',
+    mode: 'sandbox' | 'live',
     scopes: string[]
   ) => Promise<{ secret: string; reference: string }>;
   /** Flip the platform maintenance kill-switch on/off. */
@@ -73,14 +73,20 @@ export const startHarness = async (): Promise<Harness> => {
   // 2. Set env BEFORE importing ANY app/sara/db code. The singletons bind here.
   process.env.NODE_ENV = 'test';
   process.env.PORT = '0';
-  process.env.INFRA_ENVIRONMENT = 'test';
+  // A `development` deployment serves BOTH modes; tests mint sandbox keys (which
+  // authenticate here) and assert that live keys are refused off production.
+  process.env.INFRA_ENVIRONMENT = 'development';
   process.env.INFRA_DATABASE_URL = databaseUrl;
   process.env.REDIS_URL = redisUrl;
   process.env.INFRA_PII_ENCRYPTION_KEY =
     process.env.INFRA_PII_ENCRYPTION_KEY ?? '0'.repeat(64);
   process.env.INFRA_WEBHOOK_SECRET = process.env.INFRA_WEBHOOK_SECRET ?? 'test_webhook_secret';
-  process.env.NOMBA_WEBHOOK_SIGNATURE_KEY =
-    process.env.NOMBA_WEBHOOK_SIGNATURE_KEY ?? 'test_nomba_signature_key';
+  // One inbound endpoint serves both modes; the controller tries every configured
+  // mode key, so set the same test key for both (the sig-forging spec computes with it).
+  process.env.NOMBA_SANDBOX_WEBHOOK_SIGNATURE_KEY =
+    process.env.NOMBA_SANDBOX_WEBHOOK_SIGNATURE_KEY ?? 'test_nomba_signature_key';
+  process.env.NOMBA_LIVE_WEBHOOK_SIGNATURE_KEY =
+    process.env.NOMBA_LIVE_WEBHOOK_SIGNATURE_KEY ?? 'test_nomba_signature_key';
   // Pin these OFF so tests are deterministic regardless of a developer's `.env`:
   // debug mode would bypass signature REJECTION, and the payout flag would fire the
   // (unconfirmed) provider bankTransfer. Set before dotenv (override:false keeps them).
@@ -130,10 +136,10 @@ export const startHarness = async (): Promise<Harness> => {
     return { organizationId: organization.id, reference: organization.reference };
   };
 
-  const mintApiKey: Harness['mintApiKey'] = async (organizationId, environment, scopes) => {
+  const mintApiKey: Harness['mintApiKey'] = async (organizationId, mode, scopes) => {
     const key = await createApiKey(
       db,
-      { organizationId, environment },
+      { organizationId, mode },
       { name: 'test key', scopes }
     );
     return { secret: key.secret, reference: key.reference };

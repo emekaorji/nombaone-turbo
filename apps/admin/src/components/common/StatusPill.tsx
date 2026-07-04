@@ -42,10 +42,10 @@ const REGISTRY: Record<string, Record<string, PillSpec>> = {
     balanced: { tone: 'success', label: 'Balanced' },
     drift: { tone: 'danger', label: 'Drift detected' },
   },
-  // Environment ring.
-  environment: {
+  // Mode ring.
+  mode: {
     live: { tone: 'success', label: 'Live' },
-    test: { tone: 'warning', label: 'Test' },
+    sandbox: { tone: 'warning', label: 'Sandbox' },
   },
   // Queue availability.
   queue: {

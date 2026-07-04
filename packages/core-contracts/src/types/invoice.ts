@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 export type InvoiceStatus =
   | 'draft'
@@ -48,6 +48,6 @@ export interface InvoiceResponseData {
   finalizedAt: string | null;
   paidAt: string | null;
   voidedAt: string | null;
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
 }

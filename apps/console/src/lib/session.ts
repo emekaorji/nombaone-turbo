@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { validateSession } from '@nombaone/sara/auth';
 import { findUserById } from '@nombaone/sara/auth';
 import type { OrgUserRole } from '@nombaone/sara/auth';
-import type { Environment } from '@nombaone/sara/context';
+import type { Mode } from '@nombaone/sara/context';
 
 import { db } from './db';
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from './session-cookie';
@@ -34,7 +34,7 @@ export interface SessionUser {
 export interface ActiveSession {
   user: SessionUser;
   /** The ring the session was opened in (pinned at login/signup). */
-  environment: Environment;
+  mode: Mode;
 }
 
 /** Set the session cookie after a successful login / signup. */
@@ -79,7 +79,7 @@ export async function getSession(): Promise<ActiveSession | null> {
     if (!user || user.organizationId !== validated.organizationId) return null;
 
     return {
-      environment: validated.environment,
+      mode: validated.mode,
       user: {
         id: user.id,
         organizationId: user.organizationId,

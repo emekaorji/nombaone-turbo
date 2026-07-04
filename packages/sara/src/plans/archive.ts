@@ -63,7 +63,7 @@ export async function archivePlan(
     .where(
       and(
         eq(plansTable.organizationId, ctx.organizationId),
-        eq(plansTable.environment, ctx.environment),
+        eq(plansTable.mode, ctx.mode),
         eq(plansTable.reference, reference)
       )
     )

@@ -49,7 +49,7 @@ export async function listWebhookDeliveries(
   const cursor = decodeCursor(opts.cursor);
   const scope = and(
     eq(webhookDeliveriesTable.organizationId, ctx.organizationId),
-    eq(webhookEndpointsTable.environment, ctx.environment),
+    eq(webhookEndpointsTable.mode, ctx.mode),
     opts.status ? eq(webhookDeliveriesTable.status, opts.status) : undefined,
     opts.eventType ? eq(webhookDeliveriesTable.eventType, opts.eventType) : undefined,
     opts.endpoint ? eq(webhookEndpointsTable.reference, opts.endpoint) : undefined
@@ -105,7 +105,7 @@ async function loadJoinedDelivery(
       and(
         eq(webhookDeliveriesTable.reference, reference),
         eq(webhookDeliveriesTable.organizationId, ctx.organizationId),
-        eq(webhookEndpointsTable.environment, ctx.environment)
+        eq(webhookEndpointsTable.mode, ctx.mode)
       )
     )
     .limit(1);

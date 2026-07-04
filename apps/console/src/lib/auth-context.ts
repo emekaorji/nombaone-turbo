@@ -13,13 +13,13 @@ import { getSession, type SessionUser } from './session';
  * Server-component / server-action auth helpers. They compose `getSession()`
  * (cookie → DB validation) with the active-ring cookie so route code can ask for
  * exactly what it needs. The CLIENT NEVER SUPPLIES SCOPE — the organization comes
- * from the session row and the environment from the per-browser preference
+ * from the session row and the mode from the per-browser preference
  * cookie, both resolved here and re-pinned into the `DomainContext` every domain
  * read/write takes.
  *
  *   - `requireUser()`     → the signed-in user, or redirect to /login.
  *   - `requireCapability()` → user, asserting they hold an RBAC capability.
- *   - `getOrgDomainCtx()` → `{ organizationId, environment }` — the pinned scope.
+ *   - `getOrgDomainCtx()` → `{ organizationId, mode }` — the pinned scope.
  */
 
 /** The signed-in user, or redirect to /login when there's no valid session. */
@@ -44,10 +44,10 @@ export async function requireCapability(capability: Capability): Promise<Session
 /**
  * The pinned `DomainContext` threaded into every `@nombaone/sara` read/write.
  * `organizationId` is the signed-in user's org (from the session, never the
- * client); `environment` is the active ring preference. This is THE place scope
+ * client); `mode` is the active ring preference. This is THE place scope
  * is assembled — a handler must never construct a ctx from request input.
  */
 export async function getOrgDomainCtx(): Promise<DomainContext> {
-  const [user, environment] = await Promise.all([requireUser(), getEnvironment()]);
-  return { organizationId: user.organizationId, environment };
+  const [user, mode] = await Promise.all([requireUser(), getEnvironment()]);
+  return { organizationId: user.organizationId, mode };
 }

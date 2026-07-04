@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 export type CouponDuration = 'once' | 'repeating' | 'forever';
 
@@ -13,6 +13,6 @@ export interface CouponResponseData {
   redeemBy: string | null;
   maxRedemptions: number | null;
   timesRedeemed: number;
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
 }

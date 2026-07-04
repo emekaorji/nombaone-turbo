@@ -22,6 +22,6 @@ export const serializeDiscount = (
   cyclesRemaining: row.cyclesRemaining,
   startAt: new Date(row.startAt).toISOString(),
   endAt: iso(row.endAt),
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
 });

@@ -12,7 +12,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 import { customersTable } from './customers';
 import { organizationsTable } from './organizations';
 
@@ -21,7 +21,7 @@ import { organizationsTable } from './organizations';
  * references — a card `token_key`, a mandate id, or a virtual-account ref — plus
  * provider-returned display fields (`brand`/`last4`/`exp*`). **There is no column
  * that could hold a PAN: N1 is structural, not a check.** `is_default` is unique
- * per (customer, environment) via a partial index. The capture lifecycle lives in
+ * per (customer, mode) via a partial index. The capture lifecycle lives in
  * `status` (`setup_pending`/`consent_pending` → `active` → `removed`/`expired`).
  */
 export const paymentMethodKindEnum = pgEnum('payment_method_kind', [
@@ -45,7 +45,7 @@ export const paymentMethodsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     customerId: uuid('customer_id')
       .notNull()
       .references(() => customersTable.id, { onDelete: 'cascade' }),
@@ -73,16 +73,16 @@ export const paymentMethodsTable = pgTable(
     referenceUnique: uniqueIndex('payment_methods_reference_unique').on(table.reference),
     // At most one default method per customer per environment.
     defaultUnique: uniqueIndex('payment_methods_default_unique')
-      .on(table.customerId, table.environment)
+      .on(table.customerId, table.mode)
       .where(sql`${table.isDefault}`),
     customerIdx: index('payment_methods_customer_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.customerId
     ),
     keysetIdx: index('payment_methods_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

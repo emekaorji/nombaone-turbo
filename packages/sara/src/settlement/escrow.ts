@@ -38,7 +38,7 @@ export async function computeTenantEscrow(
     .where(
       and(
         eq(settlementsTable.organizationId, ctx.organizationId),
-        eq(settlementsTable.environment, ctx.environment),
+        eq(settlementsTable.mode, ctx.mode),
         eq(settlementsTable.subAccountRef, sub.accountRef),
         gte(settlementsTable.createdAt, since),
         inArray(settlementsTable.status, ['settled', 'reconciled'])

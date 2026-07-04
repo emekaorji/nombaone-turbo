@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 export type SubscriptionScheduleStatus = 'active' | 'released' | 'canceled';
 
@@ -20,7 +20,7 @@ export interface SubscriptionScheduleResponseData {
   subscriptionId: string;
   status: SubscriptionScheduleStatus;
   phases: SubscriptionSchedulePhaseData[];
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
   updatedAt: string;
 }

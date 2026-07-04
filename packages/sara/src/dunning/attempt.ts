@@ -64,7 +64,7 @@ async function loadInvoiceById(
     .where(
       and(
         eq(invoicesTable.organizationId, ctx.organizationId),
-        eq(invoicesTable.environment, ctx.environment),
+        eq(invoicesTable.mode, ctx.mode),
         eq(invoicesTable.id, invoiceId)
       )
     )
@@ -85,7 +85,7 @@ async function firstFailureInstant(
     .where(
       and(
         eq(dunningAttemptsTable.organizationId, ctx.organizationId),
-        eq(dunningAttemptsTable.environment, ctx.environment),
+        eq(dunningAttemptsTable.mode, ctx.mode),
         eq(dunningAttemptsTable.invoiceId, invoiceId)
       )
     )
@@ -121,7 +121,7 @@ export async function scheduleFirstAttempt(
     .values({
       reference: mintReference('DUN'),
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       subscriptionId: input.subscription.id,
       invoiceId: input.invoice.id,
       attemptNumber: 1,
@@ -200,7 +200,7 @@ async function chargeDunningAttempt(
   // TEST-MODE ONLY: a seeded test method short-circuits to a deterministic outcome
   // (null on live ⇒ the real rail runs, unchanged).
   const result =
-    maybeSimulateTestCollect(ctx.environment, method, outstanding) ??
+    maybeSimulateTestCollect(ctx.mode, method, outstanding) ??
     (await getRail(railKeyForMethod(method.kind)).collect({
       ...ctx,
       reference: attemptRef,
@@ -377,7 +377,7 @@ export async function recordOutcome(
     .values({
       reference: mintReference('DUN'),
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       subscriptionId: sub.id,
       invoiceId: invoice.id,
       attemptNumber: attempt.attemptNumber + 1,
@@ -529,7 +529,7 @@ export async function triggerReattemptNow(
     .where(
       and(
         eq(dunningAttemptsTable.organizationId, ctx.organizationId),
-        eq(dunningAttemptsTable.environment, ctx.environment),
+        eq(dunningAttemptsTable.mode, ctx.mode),
         eq(dunningAttemptsTable.invoiceId, invoiceId),
         eq(dunningAttemptsTable.status, 'card_update_required')
       )
@@ -564,7 +564,7 @@ export async function closeHeldAttemptsForInvoice(
     .where(
       and(
         eq(dunningAttemptsTable.organizationId, ctx.organizationId),
-        eq(dunningAttemptsTable.environment, ctx.environment),
+        eq(dunningAttemptsTable.mode, ctx.mode),
         eq(dunningAttemptsTable.invoiceId, invoiceId),
         eq(dunningAttemptsTable.status, 'card_update_required')
       )

@@ -10,7 +10,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/test/webhooks/simulate — emit a real catalog event and deliver it
+ * POST /v1/sandbox/webhooks/simulate — emit a real catalog event and deliver it
  * through the real signed path (test deployments only), so a developer can verify
  * their endpoint against a genuine delivery on demand.
  */
@@ -19,7 +19,7 @@ export const simulateWebhookController: RequestHandler =
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const body = req.body as SimulateWebhookBody;
     const result = await simulateWebhookEvent(db, ctx, { type: body.type, payload: body.payload });

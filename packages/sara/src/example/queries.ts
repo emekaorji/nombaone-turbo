@@ -43,7 +43,7 @@ export async function getExampleByReference(
     .where(
       and(
         eq(examplesTable.organizationId, ctx.organizationId),
-        eq(examplesTable.environment, ctx.environment),
+        eq(examplesTable.mode, ctx.mode),
         eq(examplesTable.reference, reference)
       )
     )
@@ -72,7 +72,7 @@ export async function listExamples(
 
   const tenantScope = and(
     eq(examplesTable.organizationId, ctx.organizationId),
-    eq(examplesTable.environment, ctx.environment),
+    eq(examplesTable.mode, ctx.mode),
     opts.kind ? eq(examplesTable.kind, opts.kind) : undefined
   );
 
@@ -127,7 +127,7 @@ async function deriveStatus(db: InfraDb, ctx: DomainContext): Promise<ExampleSta
     .where(
       and(
         eq(ledgerAccountsTable.organizationId, ctx.organizationId),
-        eq(ledgerAccountsTable.environment, ctx.environment),
+        eq(ledgerAccountsTable.mode, ctx.mode),
         eq(ledgerAccountsTable.key, 'cash')
       )
     )

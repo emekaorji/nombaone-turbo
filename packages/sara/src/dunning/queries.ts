@@ -14,7 +14,7 @@ import { resolveBillingSettings } from './policy';
 import { graceAccessUntil } from './schedule';
 import { serializeDunningAttempt } from './serialize';
 
-import type { DunningStateResponseData, Environment } from '@nombaone/core-contracts/types';
+import type { DunningStateResponseData, Mode } from '@nombaone/core-contracts/types';
 import type { DomainContext, InfraTxDb } from '../context';
 
 export interface PastDueNeedingDunning {
@@ -29,7 +29,7 @@ export interface PastDueNeedingDunning {
  */
 export async function selectPastDueNeedingDunning(
   db: InfraTxDb,
-  environment: Environment,
+  mode: Mode,
   limit: number
 ): Promise<PastDueNeedingDunning[]> {
   const rows = await db
@@ -39,7 +39,7 @@ export async function selectPastDueNeedingDunning(
     .leftJoin(dunningAttemptsTable, eq(dunningAttemptsTable.invoiceId, invoicesTable.id))
     .where(
       and(
-        eq(invoicesTable.environment, environment),
+        eq(invoicesTable.mode, mode),
         eq(subscriptionsTable.status, 'past_due'),
         isNotNull(invoicesTable.finalizedAt),
         isNull(invoicesTable.paidAt),
@@ -58,7 +58,7 @@ export async function selectPastDueNeedingDunning(
  */
 export async function selectDueDunningAttempts(
   db: InfraTxDb,
-  environment: Environment,
+  mode: Mode,
   now: Date,
   limit: number
 ): Promise<DunningAttemptRow[]> {
@@ -67,7 +67,7 @@ export async function selectDueDunningAttempts(
     .from(dunningAttemptsTable)
     .where(
       and(
-        eq(dunningAttemptsTable.environment, environment),
+        eq(dunningAttemptsTable.mode, mode),
         eq(dunningAttemptsTable.status, 'scheduled'),
         lte(dunningAttemptsTable.nextAttemptAt, now)
       )
@@ -88,7 +88,7 @@ export async function listDunningAttemptsForInvoice(
     .where(
       and(
         eq(dunningAttemptsTable.organizationId, ctx.organizationId),
-        eq(dunningAttemptsTable.environment, ctx.environment),
+        eq(dunningAttemptsTable.mode, ctx.mode),
         eq(dunningAttemptsTable.invoiceId, invoiceId)
       )
     )
@@ -106,7 +106,7 @@ async function loadSubscriptionByRef(
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         eq(subscriptionsTable.reference, reference)
       )
     )
@@ -133,7 +133,7 @@ async function loadDunnableInvoice(
     .where(
       and(
         eq(invoicesTable.organizationId, ctx.organizationId),
-        eq(invoicesTable.environment, ctx.environment),
+        eq(invoicesTable.mode, ctx.mode),
         eq(invoicesTable.subscriptionId, subscriptionId),
         isNull(invoicesTable.paidAt),
         isNull(invoicesTable.voidedAt)

@@ -21,7 +21,7 @@ describe('outbound webhooks e2e (G)', () => {
   let harness: Harness;
   let bearerA: string;
   let bearerB: string;
-  let ctxA: { organizationId: string; environment: 'test' };
+  let ctxA: { organizationId: string; mode: 'sandbox' };
 
   let server: http.Server;
   let receiverUrl: string;
@@ -46,9 +46,9 @@ describe('outbound webhooks e2e (G)', () => {
     harness = await startHarness();
     const orgA = await harness.seedOrg('WH A');
     const orgB = await harness.seedOrg('WH B');
-    bearerA = (await harness.mintApiKey(orgA.organizationId, 'test', scopes)).secret;
-    bearerB = (await harness.mintApiKey(orgB.organizationId, 'test', scopes)).secret;
-    ctxA = { organizationId: orgA.organizationId, environment: 'test' };
+    bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
+    bearerB = (await harness.mintApiKey(orgB.organizationId, 'sandbox', scopes)).secret;
+    ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
   });
 
   afterAll(async () => {
@@ -215,7 +215,7 @@ describe('outbound webhooks e2e (G)', () => {
     expect((await request(harness.app).get('/v1/webhooks')).status).toBe(401);
 
     const orgC = await harness.seedOrg('WH RO');
-    const ro = (await harness.mintApiKey(orgC.organizationId, 'test', ['webhooks:read'])).secret;
+    const ro = (await harness.mintApiKey(orgC.organizationId, 'sandbox', ['webhooks:read'])).secret;
     const forbidden = await request(harness.app)
       .post('/v1/webhooks')
       .set('Authorization', `Bearer ${ro}`)

@@ -76,8 +76,8 @@ export function nombaTokenNeedsRefresh(
 export function createNombaClient(deps: NombaClientDeps): NombaClient {
   const { redis, config } = deps;
   const fetchImpl = deps.fetchImpl ?? fetch;
-  const tokenCacheKey = `nomba:token:${config.environment}`;
-  const refreshLockKey = `nomba:token:refresh:${config.environment}`;
+  const tokenCacheKey = `nomba:token:${config.mode}`;
+  const refreshLockKey = `nomba:token:refresh:${config.mode}`;
 
   const readCachedToken = async (): Promise<NombaToken | null> => {
     const raw = await redis.get(tokenCacheKey);

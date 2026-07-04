@@ -20,7 +20,7 @@ authorizes (and, for a card, may complete a bank OTP step) at the returned link:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/setup \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "customerRef": "{customerId}",
@@ -37,13 +37,13 @@ customer pushes money to it on each billing date:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/virtual-account \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "customerRef": "{customerId}", "expectedAmount": 250000 }'
 ```
 
 <Callout type="note" title="Rehearse deterministically in test">
-  On the sandbox, skip the hosted step: `POST /v1/test/payment-methods` with a
+  On the sandbox, skip the hosted step: `POST /v1/sandbox/payment-methods` with a
   `behavior` (`success`, `requires_otp`, `decline_insufficient_funds`)
   gives you a method with a known outcome, so you can rehearse both the happy and
   the unhappy paths before real money is involved.
@@ -55,7 +55,7 @@ Subscribe the customer to the price with the method:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{

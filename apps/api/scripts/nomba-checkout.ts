@@ -14,7 +14,7 @@ async function main(): Promise<void> {
   const invRef = mintReference('INV');
   const email = `qa.${invRef}@gmail.com`;
 
-  const res = await getNombaClient().request({
+  const res = await getNombaClient('live').request({
     method: 'POST',
     endpoint: NOMBA_ENDPOINTS.checkoutOrder,
     idempotencyRef: invRef,
@@ -22,7 +22,7 @@ async function main(): Promise<void> {
       tokenizeCard: tokenize,
       order: {
         orderReference: invRef,
-        accountId: env.NOMBA_SUBACCOUNT_ID,
+        accountId: env.NOMBA_LIVE_SUBACCOUNT_ID,
         amount: koboToNombaAmount(amountKobo),
         currency: 'NGN',
         callbackUrl: 'https://tunnel.nombaone.xyz/callback',
@@ -32,7 +32,7 @@ async function main(): Promise<void> {
     },
   });
   const data = (res.data as { data?: Record<string, unknown> })?.data ?? {};
-  console.log('BASE=', env.NOMBA_BASE_URL);
+  console.log('BASE=', env.NOMBA_LIVE_BASE_URL);
   console.log('INVOICE_REF=', invRef);
   console.log('EMAIL=', email);
   console.log('TOKENIZE=', tokenize);

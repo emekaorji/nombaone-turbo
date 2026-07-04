@@ -15,7 +15,7 @@ export const updateBillingSettingsController: RequestHandler =
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const body = req.body as UpdateBillingSettingsBody;
     const settings = await upsertOrgBillingSettings(db, ctx, body);

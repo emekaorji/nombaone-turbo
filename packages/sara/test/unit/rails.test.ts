@@ -6,7 +6,12 @@ import {
   createTransferRail,
   type RailCollectInput,
 } from '@nombaone/sara/rails';
-import { nombaTokenNeedsRefresh, type NombaClient, type NombaRequest } from '@nombaone/sara/nomba';
+import {
+  nombaTokenNeedsRefresh,
+  type NombaClient,
+  type NombaClientFactory,
+  type NombaRequest,
+} from '@nombaone/sara/nomba';
 
 /** A fake `NombaClient` — no network (B.10). `handler` shapes the response. */
 const fakeClient = (
@@ -20,7 +25,15 @@ const fakeClient = (
   requeryTransaction: async () => ({ found: true, succeeded: true }),
 });
 
-const ctx = { organizationId: 'org-1', environment: 'test' as const };
+/** The rails now take a mode-selecting FACTORY; wrap a fake as one (mode ignored). */
+const fakeFactory =
+  (
+    handler: (req: NombaRequest) => { ok?: boolean; status?: number; data?: unknown }
+  ): NombaClientFactory =>
+  () =>
+    fakeClient(handler);
+
+const ctx = { organizationId: 'org-1', mode: 'sandbox' as const };
 const input = (over: Partial<RailCollectInput>): RailCollectInput => ({
   ...ctx,
   reference: 'nbo000000000001exa',
@@ -32,7 +45,7 @@ describe('rails/card', () => {
   it('accepted charge → pending; orderReference is OUR reference (E3); kobo→naira on the wire (D.1)', async () => {
     let seen: NombaRequest | undefined;
     const rail = createCardRail(
-      fakeClient((req) => {
+      fakeFactory((req) => {
         seen = req;
         return { ok: true, data: { data: { status: true, message: 'Approved by Financial Institution' } } };
       })
@@ -47,13 +60,13 @@ describe('rails/card', () => {
   });
 
   it('missing token → failed (no charge possible)', async () => {
-    const rail = createCardRail(fakeClient(() => ({ ok: true, data: {} })));
+    const rail = createCardRail(fakeFactory(() => ({ ok: true, data: {} })));
     expect((await rail.collect(input({ metadata: {} }))).status).toBe('failed');
   });
 
   // The three live-proven outcomes of a tokenized recharge (data.status + data.message).
   const cardOutcome = (data: unknown) =>
-    createCardRail(fakeClient(() => ({ ok: true, data }))).collect(
+    createCardRail(fakeFactory(() => ({ ok: true, data }))).collect(
       input({ metadata: { tokenKey: 'tok_1', customerEmail: 'a@b.c' } })
     );
 
@@ -80,7 +93,7 @@ describe('rails/card', () => {
   });
 
   it('transport failure (res.ok=false) → failed:request_failed', async () => {
-    const rail = createCardRail(fakeClient(() => ({ ok: false, status: 502, data: {} })));
+    const rail = createCardRail(fakeFactory(() => ({ ok: false, status: 502, data: {} })));
     const res = await rail.collect(input({ metadata: { tokenKey: 'tok_1' } }));
     expect(res.status).toBe('failed');
     expect(res.failureReason).toBe('request_failed');
@@ -96,7 +109,7 @@ describe('rails/mandate', () => {
   it('SUCCESS → succeeded; failure maps the taxonomy; over-ceiling → failed', async () => {
     let seenM: NombaRequest | undefined;
     const ok = createMandateRail(
-      fakeClient((req) => {
+      fakeFactory((req) => {
         seenM = req;
         return { data: { data: { status: 'SUCCESS' } } };
       })
@@ -107,13 +120,13 @@ describe('rails/mandate', () => {
     expect((seenM?.body as { amount: string }).amount).toBe('10.00'); // 1000 kobo → ₦10.00 (D.1)
 
     const fail = createMandateRail(
-      fakeClient(() => ({ data: { data: { status: 'FAILED', message: 'Insufficient funds' } } }))
+      fakeFactory(() => ({ data: { data: { status: 'FAILED', message: 'Insufficient funds' } } }))
     );
     const fr = await fail.collect(input({ amountKobo: 1000, metadata: { mandateId: 'm1' } }));
     expect(fr.status).toBe('failed');
     expect(fr.failureReason).toBe('insufficient_funds');
 
-    const cap = createMandateRail(fakeClient(() => ({ data: {} })));
+    const cap = createMandateRail(fakeFactory(() => ({ data: {} })));
     const capped = await cap.collect(
       input({ amountKobo: 6000, metadata: { mandateId: 'm1', maxAmount: 5000 } })
     );
@@ -126,7 +139,7 @@ describe('rails/transfer', () => {
   it('push → pending + payInstructions; expectedAmount kobo→naira (D.1)', async () => {
     let seenT: NombaRequest | undefined;
     const rail = createTransferRail(
-      fakeClient((req) => {
+      fakeFactory((req) => {
         seenT = req;
         return {
           data: { bankName: 'Wema', bankAccountNumber: '0000000000', bankAccountName: 'NombaOne' },

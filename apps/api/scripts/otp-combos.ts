@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   const ourRef = process.argv[2] ?? '';
   const orderId = process.argv[3] ?? '';
   const otp = process.argv[4] ?? '';
-  const c = getNombaClient();
+  const c = getNombaClient('live');
 
   const combos: Array<{ orderReference: string; transactionId: string }> = [
     { orderReference: ourRef, transactionId: ourRef },

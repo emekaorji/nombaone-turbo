@@ -49,7 +49,7 @@ export async function confirmExampleFromWebhook(
     .where(
       and(
         eq(examplesTable.organizationId, ctx.organizationId),
-        eq(examplesTable.environment, ctx.environment),
+        eq(examplesTable.mode, ctx.mode),
         eq(examplesTable.reference, input.reference)
       )
     )

@@ -13,7 +13,7 @@ import type { RequestHandler } from 'express';
 export const listWebhookDeliveriesController: RequestHandler =
   paginatedHandler<WebhookDeliveryResponseData>(async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
-    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
+    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, mode: req.apiKey.mode };
     const q = req.query as unknown as ListWebhookDeliveryQuery;
     const page = await listWebhookDeliveries(db, ctx, {
       limit: q.limit, cursor: q.cursor, status: q.status, eventType: q.eventType, endpoint: req.params.id,

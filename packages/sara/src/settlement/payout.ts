@@ -91,7 +91,7 @@ export async function payoutToTenant(
       .values({
         reference: mintReference('PAY'),
         organizationId: ctx.organizationId,
-        environment: ctx.environment,
+        mode: ctx.mode,
         subAccountRef: sub.accountRef,
         amountKobo: input.amountKobo,
         bankCode: input.bank.code,

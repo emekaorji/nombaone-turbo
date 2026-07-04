@@ -8,7 +8,7 @@ import {
 
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
-import { getNombaClient, isNombaConfigured } from '@shared/config/nomba';
+import { availableNombaModes, getNombaClient } from '@shared/config/nomba';
 import { logger } from '@shared/observability/logger';
 import { recordReconcileDiscrepancy, recordReconcileHealed } from '@shared/observability/prometheus';
 
@@ -44,87 +44,94 @@ export interface ReconcileNombaResult {
  * without per-invoice requeries), so we requery each recent invoice.
  */
 export async function handleReconcileNomba(): Promise<ReconcileNombaResult> {
-  if (!isNombaConfigured()) {
+  const modes = availableNombaModes();
+  if (modes.length === 0) {
     logger.info('[cron] reconcile-nomba skipped (Nomba not configured)');
     return { tenants: 0, checked: 0, discrepancies: 0, healed: 0, skipped: true };
   }
 
   const since = new Date(Date.now() - env.RECONCILE_NOMBA_WINDOW_HOURS * 3_600_000);
-  const invoices = await getReconcilableInvoicesSince(db, env.INFRA_ENVIRONMENT, since);
-  if (invoices.length === 0) {
-    logger.info('[cron] reconcile-nomba: no recently-active invoices', { since });
-    return { tenants: 0, checked: 0, discrepancies: 0, healed: 0 };
-  }
-
-  const client = getNombaClient();
-
-  // Group by tenant so each self-heal runs under the owning org's context.
-  const byOrg = new Map<string, ReconcilableInvoice[]>();
-  for (const inv of invoices) {
-    const list = byOrg.get(inv.organizationId) ?? [];
-    list.push(inv);
-    byOrg.set(inv.organizationId, list);
-  }
-
+  let tenants = 0;
   let checked = 0;
   let discrepancies = 0;
   let healed = 0;
 
-  for (const [organizationId, list] of byOrg) {
-    const ctx: DomainContext = { organizationId, environment: env.INFRA_ENVIRONMENT };
-    const localPaid: LocalPaidInvoice[] = [];
-    const nombaTx: NombaChargeTransaction[] = [];
-    const requeries = new Map<string, RequeryResult>();
-
-    for (const inv of list) {
-      checked += 1;
-      if (inv.paidLocally) localPaid.push({ reference: inv.reference, amountKobo: inv.amountDueKobo });
-      try {
-        const rq = await client.requeryTransaction(ctx, { reference: inv.reference });
-        requeries.set(inv.reference, rq);
-        if (rq.found && rq.succeeded && typeof rq.amount === 'number') {
-          nombaTx.push({ reference: inv.reference, amountKobo: rq.amount });
-        }
-      } catch (error) {
-        // A requery failure is not a discrepancy — Nomba may be briefly down. Log and
-        // move on; the next nightly run re-checks the same (still-open) invoice.
-        logger.warn('[cron] reconcile-nomba requery failed', {
-          organizationId,
-          reference: inv.reference,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
+  // ONE deployment serves both modes: reconcile each mode's slice of the shared DB
+  // against its OWN Nomba account (separate creds + token cache).
+  for (const mode of modes) {
+    const invoices = await getReconcilableInvoicesSince(db, mode, since);
+    if (invoices.length === 0) {
+      logger.info('[cron] reconcile-nomba: no recently-active invoices', { mode, since });
+      continue;
     }
 
-    for (const d of diffAgainstNomba(localPaid, nombaTx)) {
-      discrepancies += 1;
-      recordReconcileDiscrepancy(d.class);
-      logger.warn('[cron] reconcile-nomba discrepancy', { organizationId, ...d });
+    const client = getNombaClient(mode);
 
-      if (d.class === 'settled_at_nomba_missing_locally') {
-        const rq = requeries.get(d.reference);
-        const verification: InboundVerification = {
-          status: 'settled',
-          settledAmountKobo: rq?.amount ?? d.nombaKobo ?? 0,
-          providerReference: rq?.providerReference,
-        };
-        // confirmInvoiceFromWebhook is idempotent (claim CAS) and only settles when
-        // the provider-confirmed amount equals amount_due (E4); a mismatch stays flagged.
-        const res = await confirmInvoiceFromWebhook(db, ctx, d.reference, verification);
-        if (res.settled) {
-          healed += 1;
-          recordReconcileHealed();
-          logger.info('[cron] reconcile-nomba self-healed invoice', { organizationId, reference: d.reference });
+    // Group by tenant so each self-heal runs under the owning org's context.
+    const byOrg = new Map<string, ReconcilableInvoice[]>();
+    for (const inv of invoices) {
+      const list = byOrg.get(inv.organizationId) ?? [];
+      list.push(inv);
+      byOrg.set(inv.organizationId, list);
+    }
+    tenants += byOrg.size;
+
+    for (const [organizationId, list] of byOrg) {
+      const ctx: DomainContext = { organizationId, mode };
+      const localPaid: LocalPaidInvoice[] = [];
+      const nombaTx: NombaChargeTransaction[] = [];
+      const requeries = new Map<string, RequeryResult>();
+
+      for (const inv of list) {
+        checked += 1;
+        if (inv.paidLocally) localPaid.push({ reference: inv.reference, amountKobo: inv.amountDueKobo });
+        try {
+          const rq = await client.requeryTransaction(ctx, { reference: inv.reference });
+          requeries.set(inv.reference, rq);
+          if (rq.found && rq.succeeded && typeof rq.amount === 'number') {
+            nombaTx.push({ reference: inv.reference, amountKobo: rq.amount });
+          }
+        } catch (error) {
+          // A requery failure is not a discrepancy — Nomba may be briefly down. Log and
+          // move on; the next nightly run re-checks the same (still-open) invoice.
+          logger.warn('[cron] reconcile-nomba requery failed', {
+            mode,
+            organizationId,
+            reference: inv.reference,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      for (const d of diffAgainstNomba(localPaid, nombaTx)) {
+        discrepancies += 1;
+        recordReconcileDiscrepancy(d.class);
+        logger.warn('[cron] reconcile-nomba discrepancy', { mode, organizationId, ...d });
+
+        if (d.class === 'settled_at_nomba_missing_locally') {
+          const rq = requeries.get(d.reference);
+          const verification: InboundVerification = {
+            status: 'settled',
+            settledAmountKobo: rq?.amount ?? d.nombaKobo ?? 0,
+            providerReference: rq?.providerReference,
+          };
+          // confirmInvoiceFromWebhook is idempotent (claim CAS) and only settles when
+          // the provider-confirmed amount equals amount_due (E4); a mismatch stays flagged.
+          const res = await confirmInvoiceFromWebhook(db, ctx, d.reference, verification);
+          if (res.settled) {
+            healed += 1;
+            recordReconcileHealed();
+            logger.info('[cron] reconcile-nomba self-healed invoice', {
+              mode,
+              organizationId,
+              reference: d.reference,
+            });
+          }
         }
       }
     }
   }
 
-  logger.info('[cron] reconcile-nomba ran', {
-    tenants: byOrg.size,
-    checked,
-    discrepancies,
-    healed,
-  });
-  return { tenants: byOrg.size, checked, discrepancies, healed };
+  logger.info('[cron] reconcile-nomba ran', { tenants, checked, discrepancies, healed });
+  return { tenants, checked, discrepancies, healed };
 }

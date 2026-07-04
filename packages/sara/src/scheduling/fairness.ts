@@ -1,13 +1,13 @@
 import { sql } from 'drizzle-orm';
 
-import type { Environment } from '@nombaone/core-contracts/types';
+import type { Mode } from '@nombaone/core-contracts/types';
 import type { InfraDb } from '../context';
 
 export interface FairDueRow {
   id: string;
   reference: string;
   organizationId: string;
-  environment: Environment;
+  mode: Mode;
   currentPeriodIndex: number;
 }
 
@@ -32,21 +32,21 @@ export const FAIR_SWEEP_DEFAULTS: FairSweepConfig = { globalBudget: 500, perTena
  */
 export async function selectDueSubscriptionsFair(
   db: InfraDb,
-  environment: Environment,
+  mode: Mode,
   now: Date,
   cfg: FairSweepConfig = FAIR_SWEEP_DEFAULTS
 ): Promise<FairDueRow[]> {
   const result = await db.execute(sql`
     SELECT id, reference, organization_id AS "organizationId",
-           environment, current_period_index AS "currentPeriodIndex"
+           mode, current_period_index AS "currentPeriodIndex"
     FROM (
-      SELECT id, reference, organization_id, environment, current_period_index, next_billing_at,
+      SELECT id, reference, organization_id, mode, current_period_index, next_billing_at,
              row_number() OVER (
                PARTITION BY organization_id ORDER BY next_billing_at ASC, id ASC
              ) AS rn
       FROM subscriptions
       WHERE status IN ('active', 'trialing')
-        AND environment = ${environment}
+        AND mode = ${mode}
         AND next_billing_at IS NOT NULL
         AND next_billing_at <= ${now}
     ) ranked

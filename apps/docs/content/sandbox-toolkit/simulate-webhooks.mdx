@@ -1,7 +1,7 @@
 ---
 title: Simulate webhooks
 description: Emit and deliver any catalog event on demand — a real, signed payload to your endpoint, the honest substitute for a sandbox that sends no organic webhooks.
-section: test-toolkit
+section: sandbox-toolkit
 order: 4
 ---
 
@@ -14,8 +14,8 @@ one click.
 ## Fire an event
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "type": "invoice.paid" }'
 ```
@@ -24,8 +24,8 @@ Pass any `type` from the [event catalog](/webhooks/event-catalog). Add a `payloa
 to shape the body:
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "type": "invoice.action_required",

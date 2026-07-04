@@ -3,7 +3,7 @@ import { bigint, check, index, pgEnum, pgTable, text, uniqueIndex, uuid } from '
 
 import { organizationsTable } from './organizations';
 import { settlementsTable } from './settlements';
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 
 export const refundStatusEnum = pgEnum('refund_status', [
   'pending',
@@ -30,7 +30,7 @@ export const refundsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     settlementId: uuid('settlement_id')
       .notNull()
       .references(() => settlementsTable.id, { onDelete: 'cascade' }),
@@ -47,7 +47,7 @@ export const refundsTable = pgTable(
     merchantTxRefUnique: uniqueIndex('refunds_merchant_tx_ref_unique').on(table.merchantTxRef),
     settlementIdx: index('refunds_settlement_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.settlementId
     ),
     amountPositive: check('refunds_amount_positive', sql`${table.amountKobo} > 0`),

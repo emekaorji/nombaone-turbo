@@ -25,7 +25,7 @@ export async function listSubscriptionAuditTrail(
     .where(
       and(
         eq(domainEventsTable.organizationId, ctx.organizationId),
-        eq(domainEventsTable.environment, ctx.environment),
+        eq(domainEventsTable.mode, ctx.mode),
         sql`${domainEventsTable.payload} ->> 'reference' = ${subscriptionRef}`
       )
     )
@@ -49,7 +49,7 @@ export async function listDomainEvents(
   const cursor = decodeCursor(opts.cursor);
   const scope = and(
     eq(domainEventsTable.organizationId, ctx.organizationId),
-    eq(domainEventsTable.environment, ctx.environment),
+    eq(domainEventsTable.mode, ctx.mode),
     opts.type ? eq(domainEventsTable.type, opts.type) : undefined
   );
   const keyset = cursor

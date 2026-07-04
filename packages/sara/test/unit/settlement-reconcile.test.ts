@@ -46,9 +46,9 @@ describe('reconciliation/nomba — J7 ★ charge-leg diff (O partial-failure)', 
 
 describe('observability/tenant-log — H8 / M1 field bag', () => {
   it('binds organizationId + environment + correlationId (no PII)', () => {
-    expect(withTenantLog({ organizationId: 'org_1', environment: 'test' }, 'req_9')).toEqual({
+    expect(withTenantLog({ organizationId: 'org_1', mode: 'sandbox' }, 'req_9')).toEqual({
       organizationId: 'org_1',
-      environment: 'test',
+      mode: 'sandbox',
       correlationId: 'req_9',
     });
   });

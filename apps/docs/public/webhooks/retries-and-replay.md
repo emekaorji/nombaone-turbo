@@ -36,11 +36,11 @@ Every attempt is recorded. List an endpoint's deliveries, or read one:
 ```bash
 # All deliveries for an endpoint
 curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 
 # One delivery, with its attempts and your endpoint's responses
 curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId} \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 ## Replay a delivery
@@ -51,7 +51,7 @@ endpoint that was down:
 ```bash
 curl -X POST \
   https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId}/replay \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 > **Replay keeps the original event id**

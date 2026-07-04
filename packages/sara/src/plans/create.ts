@@ -26,7 +26,7 @@ export async function createPlan(
     .where(
       and(
         eq(plansTable.organizationId, ctx.organizationId),
-        eq(plansTable.environment, ctx.environment),
+        eq(plansTable.mode, ctx.mode),
         eq(plansTable.name, input.name)
       )
     )
@@ -47,7 +47,7 @@ export async function createPlan(
     .values({
       reference,
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       name: input.name,
       description: input.description ?? null,
       metadata: input.metadata ?? {},

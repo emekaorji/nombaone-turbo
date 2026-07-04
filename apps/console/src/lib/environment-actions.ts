@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
-import type { Environment } from '@nombaone/sara/context';
+import type { Mode } from '@nombaone/sara/context';
 
 import { ENV_COOKIE, parseEnvironment } from './environment';
 
@@ -16,7 +16,7 @@ import { ENV_COOKIE, parseEnvironment } from './environment';
  * ring's data. The cookie carries NO authority — reads re-pin (org, env)
  * server-side on every request.
  */
-export async function switchEnvironment(next: Environment): Promise<void> {
+export async function switchEnvironment(next: Mode): Promise<void> {
   const environment = parseEnvironment(next);
   const store = await cookies();
   store.set(ENV_COOKIE, environment, {

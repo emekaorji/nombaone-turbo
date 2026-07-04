@@ -22,11 +22,11 @@ export const createMandateController: RequestHandler = jsonHandler<
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
   const body = req.body as CreateMandateBody;
 
-  const result = await createMandate(getNombaClient(), db, ctx, {
+  const result = await createMandate(getNombaClient(ctx.mode), db, ctx, {
     customerRef: body.customerRef,
     customerAccountNumber: body.customerAccountNumber,
     bankCode: body.bankCode,

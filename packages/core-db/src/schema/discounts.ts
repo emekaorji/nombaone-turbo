@@ -13,7 +13,7 @@ import {
 import { couponsTable } from './coupons';
 import { customersTable } from './customers';
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 import { subscriptionsTable } from './subscriptions';
 
 export const discountStatusEnum = pgEnum('discount_status', ['active', 'ended']);
@@ -31,7 +31,7 @@ export const discountsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     couponId: uuid('coupon_id')
       .notNull()
       .references(() => couponsTable.id, { onDelete: 'restrict' }),
@@ -60,7 +60,7 @@ export const discountsTable = pgTable(
       .where(sql`${table.status} = 'active' and ${table.customerId} is not null`),
     keysetIdx: index('discounts_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

@@ -24,7 +24,7 @@ export async function getCreditBalance(
     .where(
       and(
         eq(ledgerAccountsTable.organizationId, ctx.organizationId),
-        eq(ledgerAccountsTable.environment, ctx.environment),
+        eq(ledgerAccountsTable.mode, ctx.mode),
         eq(ledgerAccountsTable.key, customerCreditAccountKey(customerRef))
       )
     )

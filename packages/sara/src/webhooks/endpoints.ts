@@ -28,7 +28,7 @@ import type { DomainContext, InfraDb, InfraTxDb } from '../context';
  * one-way hash (no reversible plaintext column) while still letting both sides
  * agree on the HMAC key. The prefix is for human display only.
  *
- * Every read/write is pinned to `ctx.organizationId` AND `ctx.environment`; a
+ * Every read/write is pinned to `ctx.organizationId` AND `ctx.mode`; a
  * handler never passes a client-supplied scope.
  */
 
@@ -51,7 +51,7 @@ export const createWebhookEndpoint = async (
   await txDb.insert(webhookEndpointsTable).values({
     reference,
     organizationId: ctx.organizationId,
-    environment: ctx.environment,
+    mode: ctx.mode,
     url: params.url,
     enabledEvents: params.enabledEvents,
     signingSecretHash: sha256Hex(signingSecret),
@@ -76,7 +76,7 @@ export const getWebhookEndpoint = async (
       and(
         eq(webhookEndpointsTable.reference, reference),
         eq(webhookEndpointsTable.organizationId, ctx.organizationId),
-        eq(webhookEndpointsTable.environment, ctx.environment)
+        eq(webhookEndpointsTable.mode, ctx.mode)
       )
     )
     .limit(1);
@@ -114,7 +114,7 @@ export const updateWebhookEndpoint = async (
       and(
         eq(webhookEndpointsTable.id, existing.id),
         eq(webhookEndpointsTable.organizationId, ctx.organizationId),
-        eq(webhookEndpointsTable.environment, ctx.environment)
+        eq(webhookEndpointsTable.mode, ctx.mode)
       )
     );
   return getWebhookEndpoint(db, ctx, reference);
@@ -140,7 +140,7 @@ export const rotateWebhookSecret = async (
       and(
         eq(webhookEndpointsTable.id, existing.id),
         eq(webhookEndpointsTable.organizationId, ctx.organizationId),
-        eq(webhookEndpointsTable.environment, ctx.environment)
+        eq(webhookEndpointsTable.mode, ctx.mode)
       )
     );
   return { reference, signingSecret, signingSecretPrefix };
@@ -156,7 +156,7 @@ export const listWebhookEndpoints = (
     .where(
       and(
         eq(webhookEndpointsTable.organizationId, ctx.organizationId),
-        eq(webhookEndpointsTable.environment, ctx.environment)
+        eq(webhookEndpointsTable.mode, ctx.mode)
       )
     )
     .orderBy(desc(webhookEndpointsTable.createdAt));
@@ -185,7 +185,7 @@ export const disableWebhookEndpoint = async (
       and(
         eq(webhookEndpointsTable.reference, reference),
         eq(webhookEndpointsTable.organizationId, ctx.organizationId),
-        eq(webhookEndpointsTable.environment, ctx.environment)
+        eq(webhookEndpointsTable.mode, ctx.mode)
       )
     )
     .limit(1);
@@ -210,7 +210,7 @@ export const disableWebhookEndpoint = async (
       and(
         eq(webhookEndpointsTable.reference, reference),
         eq(webhookEndpointsTable.organizationId, ctx.organizationId),
-        eq(webhookEndpointsTable.environment, ctx.environment),
+        eq(webhookEndpointsTable.mode, ctx.mode),
         isNull(webhookEndpointsTable.disabledAt)
       )
     );

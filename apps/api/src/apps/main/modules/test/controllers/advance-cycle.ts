@@ -14,7 +14,7 @@ import type { RequestHandler } from 'express';
 const ADVANCEABLE = new Set(['active', 'trialing']);
 
 /**
- * POST /v1/test/subscriptions/{id}/advance-cycle — force the subscription's next
+ * POST /v1/sandbox/subscriptions/{id}/advance-cycle — force the subscription's next
  * billing cycle NOW (test deployments only), so a developer never waits on the
  * cron. Calls `runCycle` directly (clock-independent). Billing is exactly-once
  * PER PERIOD: while a period's invoice is unpaid a repeat call returns that same
@@ -27,13 +27,13 @@ export const advanceCycleController: RequestHandler = jsonHandler<AdvanceCycleRe
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     // Defence in depth — the router is also only mounted on a test deployment.
     // advance-cycle bills a real cycle, so it must never run outside test.
-    if (ctx.environment !== 'test') {
+    if (ctx.mode !== 'sandbox') {
       throw AppError.Forbidden(
-        'The test clock is only available in the test environment',
+        'The test clock is only available in sandbox mode',
         undefined,
         NOMBAONE_ERROR_CODES.CLIENT_FORBIDDEN
       );

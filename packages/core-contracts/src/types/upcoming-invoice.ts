@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 import type { InvoiceBillingReason, InvoiceLineItemData } from './invoice';
 
 /**
@@ -18,5 +18,5 @@ export interface UpcomingInvoiceResponseData {
   amountDueInKobo: number;
   currency: 'NGN';
   lineItems: InvoiceLineItemData[];
-  environment: Environment;
+  mode: Mode;
 }

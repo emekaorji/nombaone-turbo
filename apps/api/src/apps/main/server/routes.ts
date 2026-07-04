@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import { env } from '@shared/config/env';
 import { buildOpenApiDocument } from '@shared/openapi/build';
 import { billingSettingsRouter } from '@modules/billing-settings';
 import { couponsRouter } from '@modules/coupons';
@@ -48,11 +47,10 @@ v1Router.use(settingsRouter);
 v1Router.use(metricsRouter);
 v1Router.use(exampleRouter);
 
-// Test-mode simulation instruments — mounted ONLY on a test deployment, so the
-// `/v1/test/*` helpers cannot exist on (and cannot be reached in) a live process.
-if (env.INFRA_ENVIRONMENT === 'test') {
-  v1Router.use(testRouter);
-}
+// Sandbox simulation instruments — ALWAYS mounted (one process serves both modes);
+// `requireSandboxMode` inside the router refuses `live` keys per request, so the
+// `/v1/sandbox/*` helpers are reachable only by sandbox-mode keys.
+v1Router.use(testRouter);
 
 // The generated OpenAPI 3.1 document (L ⚠) — public (codegen tools fetch it),
 // served RAW (not the platform envelope), paths walked from THIS mounted router so

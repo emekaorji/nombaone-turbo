@@ -19,7 +19,7 @@ proration:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "priceId": "{newPriceId}", "prorationBehavior": "create_prorations" }'
@@ -35,7 +35,7 @@ Show the customer the exact cost of a change before making it:
 
 ```bash
 curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/upcoming-invoice \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 The upcoming invoice reflects proration lines so there are no surprises on the
@@ -48,7 +48,7 @@ same plan. Set `intervalSwitch: true` so the engine aligns the billing anchor:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "priceId": "{yearlyPriceId}", "intervalSwitch": true }'
 ```

@@ -14,7 +14,7 @@ export const voidCustomerCreditController: RequestHandler = jsonHandler<CreditGr
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const data = await voidCreditGrant(db, ctx, { reference: req.params.grantId ?? '' });
     return { data };

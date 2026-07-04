@@ -9,7 +9,7 @@ import { db, pool } from '../src/shared/config/db';
 import type { ApiKeyScope } from '@nombaone/core-contracts/types';
 
 /**
- * Provision a real, working SANDBOX (`nbo_test_`) API key for the docs, the same
+ * Provision a real, working SANDBOX (`nbo_sandbox_`) API key for the docs, the same
  * way a dashboard signup would: an atomic tenant genesis (organization + owner +
  * system ledger accounts) via `signupOrganization`, then a full-scope key via
  * `createApiKey`. The secret is SHA-256 hashed at rest and shown here exactly
@@ -21,9 +21,9 @@ import type { ApiKeyScope } from '@nombaone/core-contracts/types';
  * Run from apps/api (so `.env` → INFRA_DATABASE_URL loads):
  *   pnpm --filter @nombaone/api exec tsx scripts/provision-docs-key.ts
  *
- * The key is `test`-environment (a `nbo_test_` secret) because the docs playground
+ * The key is `sandbox`-mode (a `nbo_sandbox_` secret) because the docs playground
  * is sandbox-only and rejects `nbo_live_` keys outright. Minting a live key would
- * need `environment: 'live'` here — deliberately not done: it moves real money and
+ * need `mode: 'live'` here — deliberately not done: it moves real money and
  * the docs proxy refuses it.
  */
 
@@ -73,7 +73,7 @@ const main = async (): Promise<void> => {
 
   const key = await createApiKey(
     db,
-    { organizationId: organization.id, environment: 'test' },
+    { organizationId: organization.id, mode: 'sandbox' },
     { name: 'docs sandbox key', scopes: ALL_SCOPES, createdByUserId: ownerUserId },
   );
 
@@ -82,7 +82,7 @@ const main = async (): Promise<void> => {
       '',
       `Docs sandbox tenant ${created ? '(newly provisioned)' : '(reused existing org)'}:`,
       `  organization : ${organization.reference} (${organization.name})`,
-      `  environment  : test`,
+      `  mode         : sandbox`,
       `  api key ref  : ${key.reference}`,
       `  scopes       : ${key.scopes.length} (full surface)`,
       '',

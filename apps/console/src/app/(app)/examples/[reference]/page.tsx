@@ -63,7 +63,7 @@ export default async function ExampleDetailPage({
             },
             { label: 'Amount', value: <MoneyAmount kobo={example.amountInKobo} /> },
             { label: 'Currency', value: example.currency },
-            { label: 'Environment', value: <span className="capitalize">{example.environment}</span> },
+            { label: 'Mode', value: <span className="capitalize">{example.mode}</span> },
             { label: 'Created', value: absoluteDateTime(example.createdAt) },
           ]}
         />

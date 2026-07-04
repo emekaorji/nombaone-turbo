@@ -1,7 +1,7 @@
 import { envBadgeLabel } from '@/lib/env';
 
 /**
- * Deployment-ring indicator (NOT the test/live env — that's `EnvSwitcher`).
+ * Deployment-ring indicator (NOT the sandbox/live mode — that's `EnvSwitcher`).
  * Reflects `NEXT_PUBLIC_NOMBAONE_ENV`: hidden in production, "Preview" on Vercel
  * previews, "Local" in dev — a guardrail so it's obvious which deployment you're
  * looking at.

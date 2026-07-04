@@ -127,7 +127,7 @@ function lookupError(code: string) {
 const TEST_METHODS = {
   behaviors: ["success", "requires_otp", "decline_insufficient_funds", "decline_expired_card", "decline_do_not_honor"],
   kinds: ["card", "mandate"],
-  endpoint: "POST /v1/test/payment-methods",
+  endpoint: "POST /v1/sandbox/payment-methods",
   note: "Sandbox only. The behavior deterministically decides the charge outcome.",
 };
 

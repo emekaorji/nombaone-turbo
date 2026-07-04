@@ -34,7 +34,7 @@ export async function applyCreditsOldestFirst(
     .where(
       and(
         eq(creditGrantsTable.organizationId, ctx.organizationId),
-        eq(creditGrantsTable.environment, ctx.environment),
+        eq(creditGrantsTable.mode, ctx.mode),
         eq(creditGrantsTable.customerId, input.customerId),
         gt(creditGrantsTable.remaining, 0)
       )

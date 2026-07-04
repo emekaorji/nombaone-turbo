@@ -50,40 +50,39 @@ export const nombaWebhookController: RequestHandler = jsonHandler<{ received: tr
   }
 
   // ── Nomba: its own signing scheme + requestId dedup key ──────────────────
-  const key = env.NOMBA_WEBHOOK_SIGNATURE_KEY;
-  if (!key) {
-    logger.error(`[webhook] ${req.requestId} NOMBA_WEBHOOK_SIGNATURE_KEY unset; rejecting nomba`);
+  // ONE inbound endpoint serves BOTH modes (sandbox.api is a CNAME alias of api),
+  // so we can't know the event's mode before verifying — try every configured
+  // mode key and accept on any match. The worker resolves the real mode later by
+  // reference lookup; this gate only proves the bytes came from OUR Nomba.
+  const keys = [env.NOMBA_LIVE_WEBHOOK_SIGNATURE_KEY, env.NOMBA_SANDBOX_WEBHOOK_SIGNATURE_KEY].filter(
+    (k): k is string => Boolean(k)
+  );
+  if (keys.length === 0) {
+    logger.error(`[webhook] ${req.requestId} no NOMBA_*_WEBHOOK_SIGNATURE_KEY set; rejecting nomba`);
     rejectSignature(provider);
   }
   const parsed = (req.body ?? {}) as Record<string, unknown>;
   const signature = headerValue(req.headers['nomba-signature']);
+  const timestamp = headerValue(req.headers['nomba-timestamp']) ?? undefined;
+  const body = rawBody.toString('utf8');
 
   if (env.NOMBA_WEBHOOK_DEBUG) {
     // T0 byte-confirm: log the REAL headers + raw body + every candidate signature
-    // so the exact scheme can be pinned, and DO NOT reject on mismatch while the
-    // scheme is still being confirmed. (env guard forbids this in the live ring.)
+    // (per key) so the exact scheme can be pinned, and DO NOT reject on mismatch
+    // while the scheme is still being confirmed. (env guard forbids this in prod.)
     logger.warn(`[webhook][T0] nomba headers=${JSON.stringify(req.headers)}`);
     logger.warn(`[webhook][T0] nomba rawBody(b64)=${rawBody.toString('base64')}`);
     logger.warn(`[webhook][T0] nomba-signature(header)=${signature ?? '(none)'}`);
-    logger.warn(
-      `[webhook][T0] candidates=${JSON.stringify(
-        nombaSignatureCandidates(
-          key as string,
-          rawBody.toString('utf8'),
-          parsed,
-          headerValue(req.headers['nomba-timestamp']) ?? undefined
-        )
-      )}`
-    );
+    for (const key of keys) {
+      logger.warn(
+        `[webhook][T0] candidates=${JSON.stringify(
+          nombaSignatureCandidates(key, body, parsed, timestamp)
+        )}`
+      );
+    }
   } else if (
     !signature ||
-    !verifyNombaSignature(
-      key as string,
-      signature,
-      rawBody.toString('utf8'),
-      parsed,
-      headerValue(req.headers['nomba-timestamp']) ?? undefined
-    )
+    !keys.some((key) => verifyNombaSignature(key, signature, body, parsed, timestamp))
   ) {
     rejectSignature(provider);
   }

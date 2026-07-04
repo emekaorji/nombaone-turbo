@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { invoicesTable } from '@nombaone/core-db/schema';
 
 import { closeHeldAttemptsForInvoice } from '../dunning/attempt';
-import { markInboundEvent, recordInboundEvent, type NombaClient } from '../nomba';
+import { markInboundEvent, recordInboundEvent, type NombaClientFactory } from '../nomba';
 import { extractOurReference, extractProviderTransactionId } from '../payment-methods';
 import { OTP_ORDER_REF_SUFFIX } from './actionLink';
 import { confirmInvoiceFromWebhook } from './confirmInvoiceFromWebhook';
@@ -31,7 +31,7 @@ export interface InboundInvoiceResult {
  */
 export async function processInboundInvoiceEvent(
   txDb: InfraTxDb,
-  client: NombaClient,
+  getClient: NombaClientFactory,
   input: { requestId: string; eventType: string; payload: Record<string, unknown> }
 ): Promise<InboundInvoiceResult> {
   const rawReference = extractOurReference(input.payload);
@@ -47,14 +47,17 @@ export async function processInboundInvoiceEvent(
     .select({
       id: invoicesTable.id,
       organizationId: invoicesTable.organizationId,
-      environment: invoicesTable.environment,
+      mode: invoicesTable.mode,
     })
     .from(invoicesTable)
     .where(eq(invoicesTable.reference, reference))
     .limit(1);
   if (!inv) return { matched: false, handled: false };
 
-  const ctx: DomainContext = { organizationId: inv.organizationId, environment: inv.environment };
+  const ctx: DomainContext = { organizationId: inv.organizationId, mode: inv.mode };
+  // Resolve the Nomba client for the invoice's OWN mode — a live invoice requeries
+  // live Nomba, a sandbox invoice sandbox Nomba (one endpoint receives both).
+  const client = getClient(ctx.mode);
 
   // E4 — re-verify against the provider; the webhook is only a hint. Requery keys on the
   // NOMBA transaction id (live-confirmed: our reference 404s), so pull it from the payload.
@@ -74,7 +77,7 @@ export async function processInboundInvoiceEvent(
   }
 
   const { firstSeen } = await recordInboundEvent(txDb, {
-    environment: ctx.environment,
+    mode: ctx.mode,
     provider: 'nomba',
     requestId: input.requestId,
     eventType: input.eventType,

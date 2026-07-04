@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 export type DiscountStatus = 'active' | 'ended';
 
@@ -12,6 +12,6 @@ export interface DiscountResponseData {
   cyclesRemaining: number | null;
   startAt: string;
   endAt: string | null;
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
 }

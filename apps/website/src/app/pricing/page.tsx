@@ -29,7 +29,7 @@ const TIERS: Tier[] = [
     name: "Sandbox",
     price: "Free",
     unit: "everything to build",
-    desc: "The full API in a test environment. Build the whole lifecycle before you pay anything.",
+    desc: "The full API in sandbox mode. Build the whole lifecycle before you pay anything.",
     features: [
       "All rails, in sandbox",
       "Dunning + recovery",

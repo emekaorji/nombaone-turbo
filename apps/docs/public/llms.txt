@@ -14,8 +14,8 @@ This is the agent index. Every link points at a clean Markdown mirror (append `.
 - [PHP](https://docs.nombaone.xyz/getting-started/quickstart/php.md)
 - [Ruby](https://docs.nombaone.xyz/getting-started/quickstart/ruby.md)
 - [cURL](https://docs.nombaone.xyz/getting-started/quickstart/curl.md)
-- [Authentication](https://docs.nombaone.xyz/getting-started/authentication.md): The per-organization nbo_test_ / nbo_live_ secret key, and how it works.
-- [Environments](https://docs.nombaone.xyz/getting-started/environments.md): Test vs live, and how a key pins every request to one environment.
+- [Authentication](https://docs.nombaone.xyz/getting-started/authentication.md): The per-organization nbo_sandbox_ / nbo_live_ secret key, and how it works.
+- [Environments](https://docs.nombaone.xyz/getting-started/environments.md): The two axes: deployment environment vs account mode, and how a key pins every request to sandbox or live.
 - [Your first subscription](https://docs.nombaone.xyz/getting-started/your-first-subscription.md): Create a plan, a price, and a subscription that bills — end to end.
 - [Verify us in your devtools](https://docs.nombaone.xyz/getting-started/verify-in-your-devtools.md): Fire a real signed webhook and watch it land in your own logs.
 
@@ -28,7 +28,7 @@ This is the agent index. Every link points at a clean Markdown mirror (append `.
 - [Refunds, payouts & settlement](https://docs.nombaone.xyz/guides/refunds-payouts-settlement.md): Move money back out: refunds, escrow, and payouts to a bank.
 - [Proration and plan changes](https://docs.nombaone.xyz/guides/proration-and-plan-changes.md): Upgrade, downgrade, and switch intervals mid-cycle, correctly.
 - [Coupons and credits](https://docs.nombaone.xyz/guides/coupons-and-credits.md): Discounts, credit grants, and how they resolve on an invoice.
-- [Going live](https://docs.nombaone.xyz/guides/going-live.md): The checklist to move from a test key to real money.
+- [Going live](https://docs.nombaone.xyz/guides/going-live.md): The checklist to move from a sandbox key to real money.
 
 ## Concepts
 
@@ -80,18 +80,18 @@ This is the agent index. Every link points at a clean Markdown mirror (append `.
 - [Signing & verification](https://docs.nombaone.xyz/webhooks/signing-and-verification.md): Verify a delivery's signature and timestamp.
 - [Retries & replay](https://docs.nombaone.xyz/webhooks/retries-and-replay.md): The retry cadence, dead-letters, and replay.
 - [Delivery guarantee](https://docs.nombaone.xyz/webhooks/delivery-guarantee.md): At least once, deduped on event id — never exactly once.
-- [Simulate an event](https://docs.nombaone.xyz/webhooks/simulate.md): Fire a real signed event to your endpoint on demand (test).
+- [Simulate an event](https://docs.nombaone.xyz/webhooks/simulate.md): Fire a real signed event to your endpoint on demand (sandbox).
 
 ## Errors
 
 - [Error reference](https://docs.nombaone.xyz/errors.md): Every error code, what triggers it, and exactly how to fix it.
 
-## Test toolkit
+## Sandbox toolkit
 
-- [Overview](https://docs.nombaone.xyz/test-toolkit/overview.md): Drive the engine deterministically — no real card, no cron wait.
-- [Test payment methods](https://docs.nombaone.xyz/test-toolkit/test-payment-methods.md): Deterministic success / decline / OTP methods.
-- [The test clock](https://docs.nombaone.xyz/test-toolkit/test-clock.md): Advance a subscription's next cycle on demand.
-- [Simulate webhooks](https://docs.nombaone.xyz/test-toolkit/simulate-webhooks.md): Emit and deliver any catalog event on demand.
+- [Overview](https://docs.nombaone.xyz/sandbox-toolkit/overview.md): Drive the engine deterministically — no real card, no cron wait.
+- [Sandbox payment methods](https://docs.nombaone.xyz/sandbox-toolkit/payment-methods.md): Deterministic success / decline / OTP methods.
+- [The sandbox clock](https://docs.nombaone.xyz/sandbox-toolkit/clock.md): Advance a subscription's next cycle on demand.
+- [Simulate webhooks](https://docs.nombaone.xyz/sandbox-toolkit/simulate-webhooks.md): Emit and deliver any catalog event on demand.
 
 ## Changelog
 

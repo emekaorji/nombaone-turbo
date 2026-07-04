@@ -53,7 +53,7 @@ export const DEFAULT_FEE_SCHEDULE: FeeSchedule = {
  * The default implementation applies {@link DEFAULT_FEE_SCHEDULE} to every org.
  * This is the documented SEAM for per-org pricing: swap in a resolver that reads
  * an override from `platform_config` (or a dedicated pricing table) keyed by
- * `ctx.organizationId` / `ctx.environment`, falling back to the default. The
+ * `ctx.organizationId` / `ctx.mode`, falling back to the default. The
  * signature — `(db, ctx, amount) → Promise<kobo>` — is intentionally async and
  * db-bearing so an override resolver can do exactly that without an API change.
  */

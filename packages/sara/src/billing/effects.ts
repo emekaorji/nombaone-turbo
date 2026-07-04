@@ -40,7 +40,7 @@ export async function loadSubscriptionRowById(
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         eq(subscriptionsTable.id, id)
       )
     )
@@ -62,7 +62,7 @@ export async function loadPriceById(
     .where(
       and(
         eq(pricesTable.organizationId, ctx.organizationId),
-        eq(pricesTable.environment, ctx.environment),
+        eq(pricesTable.mode, ctx.mode),
         eq(pricesTable.id, id)
       )
     )
@@ -84,7 +84,7 @@ export async function loadPrimarySubscriptionItem(
     .where(
       and(
         eq(subscriptionItemsTable.organizationId, ctx.organizationId),
-        eq(subscriptionItemsTable.environment, ctx.environment),
+        eq(subscriptionItemsTable.mode, ctx.mode),
         eq(subscriptionItemsTable.subscriptionId, subscriptionId)
       )
     )
@@ -118,7 +118,7 @@ export async function resolveCollectionMethod(
       .where(
         and(
           eq(paymentMethodsTable.organizationId, ctx.organizationId),
-          eq(paymentMethodsTable.environment, ctx.environment),
+          eq(paymentMethodsTable.mode, ctx.mode),
           eq(paymentMethodsTable.id, sub.defaultPaymentMethodId)
         )
       )

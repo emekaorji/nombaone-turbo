@@ -16,7 +16,7 @@ export const removeCustomerDiscountController: RequestHandler = jsonHandler<Disc
     }
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const data = await removeDiscount(db, ctx, { customerRef: req.params.id ?? '' });
     return { data };

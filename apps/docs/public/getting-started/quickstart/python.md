@@ -8,12 +8,12 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart/python
 # Python quickstart
 
 Create your first plan on the Nomba One sandbox with **Python**. This is a real
-call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+call that returns a `201`; only the key (`nbo_sandbox_…`) and the host change when
 you go live.
 
-## 1 · Get a test key
+## 1 · Get a sandbox key
 
-Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
 Install the HTTP client: `pip install requests`. Read the key from `NOMBAONE_SECRET_KEY`.
 
 ## 2 · Create a plan

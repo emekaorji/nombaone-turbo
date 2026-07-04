@@ -8,7 +8,7 @@ const row = {
   id: 'pm-uuid',
   reference: 'nbo000000000001pmt',
   organizationId: 'org-uuid',
-  environment: 'test',
+  mode: 'sandbox',
   customerId: 'cust-uuid',
   kind: 'card',
   status: 'active',

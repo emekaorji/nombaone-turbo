@@ -25,7 +25,7 @@ export async function loadActiveSchedule(
     .where(
       and(
         eq(subscriptionSchedulesTable.organizationId, ctx.organizationId),
-        eq(subscriptionSchedulesTable.environment, ctx.environment),
+        eq(subscriptionSchedulesTable.mode, ctx.mode),
         eq(subscriptionSchedulesTable.subscriptionId, subscriptionId),
         eq(subscriptionSchedulesTable.status, 'active')
       )
@@ -49,7 +49,7 @@ async function resolvePhasePriceRefs(
     .where(
       and(
         eq(pricesTable.organizationId, ctx.organizationId),
-        eq(pricesTable.environment, ctx.environment),
+        eq(pricesTable.mode, ctx.mode),
         inArray(pricesTable.id, ids)
       )
     );
@@ -82,7 +82,7 @@ export async function getScheduleByReference(
     .where(
       and(
         eq(subscriptionSchedulesTable.organizationId, ctx.organizationId),
-        eq(subscriptionSchedulesTable.environment, ctx.environment),
+        eq(subscriptionSchedulesTable.mode, ctx.mode),
         eq(subscriptionSchedulesTable.reference, reference)
       )
     )
@@ -109,7 +109,7 @@ export async function getActiveScheduleForSubscription(
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         eq(subscriptionsTable.reference, subscriptionRef)
       )
     )

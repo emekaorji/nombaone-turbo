@@ -15,7 +15,7 @@ export const getCouponController: RequestHandler = jsonHandler<CouponResponseDat
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
   const data = await getCouponByReference(db, ctx, req.params.id ?? '');
   return { data };

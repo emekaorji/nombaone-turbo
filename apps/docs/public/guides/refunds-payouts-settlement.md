@@ -21,7 +21,7 @@ the full net; pass `amountInKobo` for a partial:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/{id}/refund \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "amountInKobo": 250000 }'
@@ -46,7 +46,7 @@ Check what's locked vs available:
 
 ```bash
 curl https://sandbox.api.nombaone.xyz/v1/settlements/escrow \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 The response shows the locked amount and when it releases. Available balance for
@@ -58,7 +58,7 @@ Withdraw an organization's available balance to a bank:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/payout \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "amountInKobo": 500000, "bankCode": "058", "accountNumber": "0123456789" }'

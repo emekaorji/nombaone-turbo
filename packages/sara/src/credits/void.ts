@@ -31,7 +31,7 @@ export async function voidCreditGrant(
     .where(
       and(
         eq(creditGrantsTable.organizationId, ctx.organizationId),
-        eq(creditGrantsTable.environment, ctx.environment),
+        eq(creditGrantsTable.mode, ctx.mode),
         eq(creditGrantsTable.reference, input.reference)
       )
     )

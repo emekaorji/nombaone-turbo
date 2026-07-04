@@ -1,7 +1,7 @@
 import { NOMBA_ENDPOINTS } from '../nomba/endpoints';
 import { koboToNombaAmount } from '../nomba/money';
 
-import type { NombaClient } from '../nomba/client';
+import type { NombaClientFactory } from '../nomba/injected';
 import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
 
 /**
@@ -12,7 +12,7 @@ import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
  * pipeline). The `expectedAmount` is a hint; over/under-payment is handled where
  * the money lands.
  */
-export function createTransferRail(client: NombaClient): RailAdapter {
+export function createTransferRail(getClient: NombaClientFactory): RailAdapter {
   return {
     key: 'transfer',
     direction: 'push',
@@ -20,6 +20,7 @@ export function createTransferRail(client: NombaClient): RailAdapter {
       const meta = input.metadata ?? {};
       const accountRef = (meta.accountRef as string | undefined) ?? input.reference;
 
+      const client = getClient(input.mode);
       const res = await client.request<Record<string, unknown>>({
         method: 'POST',
         endpoint: NOMBA_ENDPOINTS.virtualAccountCreate,

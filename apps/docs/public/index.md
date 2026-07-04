@@ -30,9 +30,9 @@ hard parts (dunning, reconciliation, the double-charge trap) are documented in t
 - **[Quickstart](/getting-started/quickstart)** — 
 Get a sandbox key and reach your first real subscription in minutes.
 - **[Authentication](/getting-started/authentication)** — 
-The per-organization `nbo_test_` / `nbo_live_` secret key, and how it works.
+The per-organization `nbo_sandbox_` / `nbo_live_` secret key, and how it works.
 - **[Environments](/getting-started/environments)** — 
-Test vs live, and how a key pins every request to one environment.
+Sandbox vs live, and how a key pins every request to one mode.
 
 ## Built to be verified, not trusted
 

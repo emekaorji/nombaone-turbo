@@ -21,11 +21,11 @@ export const setupCardController: RequestHandler = jsonHandler<Awaited<ReturnTyp
     }
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const body = req.body as SetupCardBody;
 
-    const result = await setupCard(getNombaClient(), db, ctx, {
+    const result = await setupCard(getNombaClient(ctx.mode), db, ctx, {
       customerRef: body.customerRef,
       amount: body.amountInKobo,
       callbackUrl: body.callbackUrl,

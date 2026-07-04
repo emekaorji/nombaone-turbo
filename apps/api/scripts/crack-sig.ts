@@ -15,7 +15,7 @@ const d = p.data;
 console.log('=== decoded payload ===');
 console.log(JSON.stringify(p, null, 2));
 
-const secretStr = env.NOMBA_WEBHOOK_SIGNATURE_KEY ?? '';
+const secretStr = env.NOMBA_LIVE_WEBHOOK_SIGNATURE_KEY ?? '';
 const secretForms: Record<string, Buffer> = {
   utf8: Buffer.from(secretStr, 'utf8'),
 };

@@ -37,8 +37,8 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
   let harness: Harness;
   let bearerA: string;
   let bearerB: string;
-  let ctxA: { organizationId: string; environment: 'test' };
-  let ctxB: { organizationId: string; environment: 'test' };
+  let ctxA: { organizationId: string; mode: 'sandbox' };
+  let ctxB: { organizationId: string; mode: 'sandbox' };
 
   const scopes = [
     'customers:read', 'customers:write', 'subscriptions:read', 'subscriptions:write',
@@ -55,14 +55,14 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
 
     const orgA = await harness.seedOrg('Ten A');
     const orgB = await harness.seedOrg('Ten B');
-    bearerA = (await harness.mintApiKey(orgA.organizationId, 'test', scopes)).secret;
-    bearerB = (await harness.mintApiKey(orgB.organizationId, 'test', scopes)).secret;
-    ctxA = { organizationId: orgA.organizationId, environment: 'test' };
-    ctxB = { organizationId: orgB.organizationId, environment: 'test' };
+    bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
+    bearerB = (await harness.mintApiKey(orgB.organizationId, 'sandbox', scopes)).secret;
+    ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
+    ctxB = { organizationId: orgB.organizationId, mode: 'sandbox' };
 
     // Onboard tenant A to a Nomba sub-account so its collections settle.
     await harness.db.insert(orgNombaAccountsTable).values({
-      reference: mintReference('NMA'), organizationId: orgA.organizationId, environment: 'test',
+      reference: mintReference('NMA'), organizationId: orgA.organizationId, mode: 'sandbox',
       nombaAccountId: 'nomba_sub_A', accountRef: 'acct_A', kind: 'subaccount', subAccountId: 'nomba_sub_A', status: 'active',
     });
   });
@@ -91,7 +91,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
       .where(and(eq(customersTable.organizationId, ctx.organizationId), eq(customersTable.reference, customer.id))).limit(1);
     const pmRef = mintReference('PMT');
     await harness.db.insert(paymentMethodsTable).values({
-      reference: pmRef, organizationId: ctx.organizationId, environment: 'test', customerId: c!.id,
+      reference: pmRef, organizationId: ctx.organizationId, mode: 'sandbox', customerId: c!.id,
       kind: 'card', status: 'active', tokenKey: 'tok', brand: 'visa', last4: '4242', isDefault: true,
     });
     cardOutcome = 'succeeded';
@@ -161,11 +161,11 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
   it('H6 — a tenant past its monthly request quota gets 429 QUOTA_EXCEEDED', async () => {
     // A THROWAWAY tenant so exhausting the quota does not pollute A/B.
     const orgQ = await harness.seedOrg('Ten Q');
-    const bearerQ = (await harness.mintApiKey(orgQ.organizationId, 'test', ['organizations:read'])).secret;
+    const bearerQ = (await harness.mintApiKey(orgQ.organizationId, 'sandbox', ['organizations:read'])).secret;
     // Operator seam: set a tiny quota directly (the tenant API cannot).
     await harness.db.insert(orgBillingSettingsTable)
-      .values({ organizationId: orgQ.organizationId, environment: 'test', monthlyRequestQuota: 2 })
-      .onConflictDoUpdate({ target: [orgBillingSettingsTable.organizationId, orgBillingSettingsTable.environment], set: { monthlyRequestQuota: 2 } });
+      .values({ organizationId: orgQ.organizationId, mode: 'sandbox', monthlyRequestQuota: 2 })
+      .onConflictDoUpdate({ target: [orgBillingSettingsTable.organizationId, orgBillingSettingsTable.mode], set: { monthlyRequestQuota: 2 } });
 
     let quotaHit = false;
     for (let i = 0; i < 6; i += 1) {
@@ -186,7 +186,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
     await harness.db.update(subscriptionsTable).set({ nextBillingAt: new Date(Date.now() - 60_000) })
       .where(eq(subscriptionsTable.organizationId, ctxB.organizationId));
 
-    const drawn = await selectDueSubscriptionsFair(harness.db, 'test', new Date(), { globalBudget: 100, perTenantBudget: 2 });
+    const drawn = await selectDueSubscriptionsFair(harness.db, 'sandbox', new Date(), { globalBudget: 100, perTenantBudget: 2 });
     const fromA = drawn.filter((r) => r.organizationId === ctxA.organizationId);
     const fromB = drawn.filter((r) => r.organizationId === ctxB.organizationId);
     expect(aSubs.length).toBe(4);

@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 /**
  * PRICE DTO — an immutable, versioned way to charge for a plan. Money is integer
@@ -22,6 +22,6 @@ export interface PriceResponseData {
   trialPeriodDays: number;
   active: boolean;
   metadata: Record<string, unknown>;
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
 }

@@ -17,10 +17,10 @@ export const removePaymentMethodController: RequestHandler = jsonHandler<
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
 
-  const method = await removePaymentMethod(getNombaClient(), db, ctx, {
+  const method = await removePaymentMethod(getNombaClient(ctx.mode), db, ctx, {
     reference: req.params.id ?? '',
   });
 

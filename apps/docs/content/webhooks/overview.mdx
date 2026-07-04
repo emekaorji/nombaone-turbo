@@ -39,7 +39,7 @@ Point a webhook at a URL you control, choosing which events it should receive:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://yourapp.com/webhooks/nomba",
@@ -48,7 +48,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 You get back a **signing secret** (`whsec_…`), shown once. Endpoints are
-per-environment — a test event only reaches your test endpoint.
+per-mode — a sandbox event only reaches your sandbox endpoint.
 
 ## The four rules
 

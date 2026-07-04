@@ -19,7 +19,7 @@ export const updateSubscriptionCardController: RequestHandler =
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const body = req.body as UpdateSubscriptionCardBody;
     const { method, customerRef } = await updateCardOnSubscription(db, ctx, {

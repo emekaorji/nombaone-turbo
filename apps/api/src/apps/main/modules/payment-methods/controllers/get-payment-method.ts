@@ -16,7 +16,7 @@ export const getPaymentMethodController: RequestHandler = jsonHandler<
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
 
   const method = await getPaymentMethodByReference(db, ctx, req.params.id ?? '');

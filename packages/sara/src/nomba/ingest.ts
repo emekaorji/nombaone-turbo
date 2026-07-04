@@ -4,7 +4,7 @@ import { nombaWebhookEventsTable } from '@nombaone/core-db/schema';
 
 import { mintReference } from '../reference';
 
-import type { Environment, InfraTxDb } from '../context';
+import type { Mode, InfraTxDb } from '../context';
 
 /**
  * The DURABLE inbound-dedup primitive (F2). Inserts a `nomba_webhook_events` row;
@@ -13,7 +13,7 @@ import type { Environment, InfraTxDb } from '../context';
  * null at ingest and resolved during settle.
  */
 export interface RecordInboundEventInput {
-  environment: Environment;
+  mode: Mode;
   provider?: string;
   requestId: string;
   eventType: string;
@@ -30,7 +30,7 @@ export async function recordInboundEvent(
     .insert(nombaWebhookEventsTable)
     .values({
       reference,
-      environment: input.environment,
+      mode: input.mode,
       provider: input.provider ?? 'nomba',
       requestId: input.requestId,
       eventType: input.eventType,

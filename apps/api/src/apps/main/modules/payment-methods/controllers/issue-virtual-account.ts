@@ -22,11 +22,11 @@ export const issueVirtualAccountController: RequestHandler = jsonHandler<
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
   const body = req.body as IssueVirtualAccountBody;
 
-  const result = await issueVirtualAccount(getNombaClient(), db, ctx, {
+  const result = await issueVirtualAccount(getNombaClient(ctx.mode), db, ctx, {
     customerRef: body.customerRef,
     expectedAmount: body.expectedAmount,
     expiryDate: body.expiryDate,

@@ -13,7 +13,7 @@ import type { RequestHandler } from 'express';
 export const listEventsController: RequestHandler = paginatedHandler<DomainEventResponseData>(
   async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
-    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
+    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, mode: req.apiKey.mode };
     const query = req.query as unknown as ListEventQuery;
     const page = await listDomainEvents(db, ctx, { limit: query.limit, cursor: query.cursor, type: query.type });
     return { data: page.data, nextCursor: page.nextCursor, hasMore: page.hasMore, limit: query.limit };

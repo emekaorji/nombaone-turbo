@@ -3,12 +3,12 @@ import { pgEnum, timestamp, uuid, text } from 'drizzle-orm/pg-core';
 
 /**
  * Shared column conventions. Reuse these so every table looks the same:
- * a UUID PK, a public `reference` (unique), a first-class `environment`, and
+ * a UUID PK, a public `reference` (unique), a first-class `mode`, and
  * append-only timestamps.
  */
 
-/** test | live — a first-class column on every tenant-scoped row. */
-export const environmentEnum = pgEnum('environment', ['test', 'live']);
+/** sandbox | live — a first-class column on every tenant-scoped row. */
+export const modeEnum = pgEnum('mode', ['sandbox', 'live']);
 
 /** Internal UUID primary key. Never leaves the backend. */
 export const idPk = () => uuid('id').primaryKey().defaultRandom();

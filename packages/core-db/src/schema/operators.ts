@@ -53,14 +53,14 @@ export type AdminAuditLogRow = typeof adminAuditLogTable.$inferSelect;
 export const operatorThemeEnum = pgEnum('operator_theme', ['light', 'dark', 'system']);
 export const operatorDensityEnum = pgEnum('operator_density', ['compact', 'cozy', 'comfortable']);
 
-/** Per-operator UI preferences. Staff default environment is `live` (a preference,
+/** Per-operator UI preferences. Staff default mode is `live` (a preference,
  * NOT authority — reads always re-filter server-side). */
 export const operatorPreferencesTable = pgTable('operator_preferences', {
   id: idPk(),
   operatorId: text('operator_id').notNull().unique(),
   theme: operatorThemeEnum('theme').notNull().default('system'),
   density: operatorDensityEnum('density').notNull().default('cozy'),
-  defaultEnvironment: text('default_environment').notNull().default('live'),
+  defaultMode: text('default_mode').notNull().default('live'),
   createdAt: createdAt(),
 });
 export type OperatorPreferencesRow = typeof operatorPreferencesTable.$inferSelect;

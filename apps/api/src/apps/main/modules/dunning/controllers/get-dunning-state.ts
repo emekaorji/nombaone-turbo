@@ -14,7 +14,7 @@ export const getDunningStateController: RequestHandler = jsonHandler<DunningStat
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const data = await buildDunningState(db, ctx, req.params.id ?? '');
     return { data };

@@ -16,7 +16,7 @@ A plan just needs a name. Description and metadata are optional.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "name": "Pro", "description": "Everything in the Pro tier" }'
@@ -31,7 +31,7 @@ under the plan:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{
@@ -56,7 +56,7 @@ Set `trialPeriodDays` on the price. A subscription started on it enters
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "unitAmountInKobo": 250000, "interval": "month", "trialPeriodDays": 14 }'
 ```

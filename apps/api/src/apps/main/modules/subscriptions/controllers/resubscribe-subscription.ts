@@ -20,7 +20,7 @@ export const resubscribeSubscriptionController: RequestHandler = jsonHandler<Sub
     }
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const body = (req.body ?? {}) as ResubscribeBody;
 

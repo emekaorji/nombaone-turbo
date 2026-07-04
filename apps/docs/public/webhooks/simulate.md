@@ -1,7 +1,7 @@
 ---
 title: "Simulate an event"
 type: reference
-summary: "Fire a real, signed event to your endpoint on demand — the honest substitute for a sandbox that sends no organic webhooks. Test-environment only."
+summary: "Fire a real, signed event to your endpoint on demand — the honest substitute for a sandbox that sends no organic webhooks. Sandbox mode only."
 canonical: https://docs.nombaone.xyz/webhooks/simulate
 ---
 
@@ -11,22 +11,22 @@ The Nomba sandbox does not push webhooks on its own. Rather than pretend it does
 nombaone gives you a way to **fire a real, signed event whenever you want**, so you
 can build and test your handler against genuine traffic — the same shape, the same
 signature scheme, the same delivery pipeline as production. This is the honest
-substitute, and it is clearly test-only.
+substitute, and it is clearly sandbox-only.
 
-> **Real, not mocked — and test-only**
+> **Real, not mocked — and sandbox-only**
 >
 > A simulated event is signed with your endpoint's real secret and delivered
 > through the real pipeline. It is **not** a fake payload or a `setTimeout` — your
 > verification code will pass against it exactly as it will in production.
-> `simulate` exists only on the test deployment; it is not available in live.
+> `simulate` exists only in sandbox mode; it is not available in live.
 
 ## Fire an event
 
 Ask the instrument to emit any catalog event to your registered endpoints:
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "type": "invoice.paid" }'
 ```
@@ -35,8 +35,8 @@ Pass any type from the [event catalog](/webhooks/event-catalog). To shape the
 body, include a `payload`:
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "type": "invoice.action_required",

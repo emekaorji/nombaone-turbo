@@ -24,7 +24,7 @@ export const listExampleController: RequestHandler = paginatedHandler<ExampleRes
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
   const query = req.query as unknown as ListExampleQuery;
 

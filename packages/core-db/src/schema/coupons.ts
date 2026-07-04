@@ -15,7 +15,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 
 export const couponDurationEnum = pgEnum('coupon_duration', ['once', 'repeating', 'forever']);
 
@@ -34,7 +34,7 @@ export const couponsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     code: text('code').notNull(),
     duration: couponDurationEnum('duration').notNull(),
     amountOff: bigint('amount_off', { mode: 'number' }), // kobo
@@ -51,12 +51,12 @@ export const couponsTable = pgTable(
     referenceUnique: uniqueIndex('coupons_reference_unique').on(table.reference),
     codeUnique: uniqueIndex('coupons_code_unique').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.code
     ),
     keysetIdx: index('coupons_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

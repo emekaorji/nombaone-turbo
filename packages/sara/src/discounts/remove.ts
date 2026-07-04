@@ -28,7 +28,7 @@ export async function removeDiscount(
       .where(
         and(
           eq(subscriptionsTable.organizationId, ctx.organizationId),
-          eq(subscriptionsTable.environment, ctx.environment),
+          eq(subscriptionsTable.mode, ctx.mode),
           eq(subscriptionsTable.reference, target.subscriptionRef)
         )
       )
@@ -41,7 +41,7 @@ export async function removeDiscount(
       .where(
         and(
           eq(customersTable.organizationId, ctx.organizationId),
-          eq(customersTable.environment, ctx.environment),
+          eq(customersTable.mode, ctx.mode),
           eq(customersTable.reference, target.customerRef)
         )
       )

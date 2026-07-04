@@ -27,7 +27,7 @@ describe('catalog domain', () => {
 
   it('assertPlanArchivable blocks when active subscribers > 0, passes at 0 (the O1 guard / 03 seam)', async () => {
     const db = {} as InfraReadScope;
-    const ctx: DomainContext = { organizationId: 'org-1', environment: 'test' };
+    const ctx: DomainContext = { organizationId: 'org-1', mode: 'sandbox' };
 
     await expect(assertPlanArchivable(db, ctx, 'plan-1', async () => 1)).rejects.toMatchObject({
       code: NOMBAONE_ERROR_CODES.PLAN_HAS_ACTIVE_SUBSCRIBERS,

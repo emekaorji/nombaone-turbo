@@ -38,7 +38,7 @@ export function serverEnv(): ServerEnv {
   });
   if (!parsed.success) {
     throw new Error(
-      `Invalid server environment:\n${parsed.error.issues
+      `Invalid server mode:\n${parsed.error.issues
         .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
         .join('\n')}`
     );
