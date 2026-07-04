@@ -43,11 +43,17 @@ export async function generateStaticParams(): Promise<{ slug?: string[] }[]> {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const page = await getPage(toSlug(slug));
+  const path = toSlug(slug);
+  const page = await getPage(path);
   if (!page) return {};
+  const { title, description } = page.frontmatter;
+  const canonical = path === "" ? "/" : path;
   return {
-    title: page.frontmatter.title,
-    description: page.frontmatter.description,
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { type: path === "" ? "website" : "article", title, description, url: canonical },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 

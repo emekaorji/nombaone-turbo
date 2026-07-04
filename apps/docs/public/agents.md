@@ -82,6 +82,14 @@ an agent can read but never move money:
 > stays behind the test-keyed playground. The server is discoverable at
 > [`/.well-known/mcp.json`](https://docs.nombaone.xyz/.well-known/mcp.json).
 
+## Ask AI — grounded in these docs
+
+Every page has an **Ask AI** button. It answers only from this documentation and
+the API schema — the same corpus behind `llms-full.txt` and the MCP server — so it
+cites its sources, expresses money in integer kobo, and says "I don't have that in
+the docs" rather than inventing an endpoint. It's the fastest way to get a grounded
+answer without leaving the page.
+
 ## What's honest about this
 
 - **The same bytes.** The `.md` mirror is the same content the HTML renders, not a

@@ -68,7 +68,21 @@ export const MANIFEST: ManifestSection[] = [
     key: "get-started",
     mode: "tutorial",
     items: [
-      { slug: "/getting-started/quickstart", title: "Quickstart", badge: "new", summary: "Get a sandbox key and reach your first real subscription in minutes." },
+      {
+        slug: "/getting-started/quickstart",
+        title: "Quickstart",
+        badge: "new",
+        summary: "Get a sandbox key and reach your first real subscription in minutes.",
+        children: [
+          { slug: "/getting-started/quickstart/node", title: "Node.js" },
+          { slug: "/getting-started/quickstart/nextjs", title: "Next.js" },
+          { slug: "/getting-started/quickstart/python", title: "Python" },
+          { slug: "/getting-started/quickstart/go", title: "Go" },
+          { slug: "/getting-started/quickstart/php", title: "PHP" },
+          { slug: "/getting-started/quickstart/ruby", title: "Ruby" },
+          { slug: "/getting-started/quickstart/curl", title: "cURL" },
+        ],
+      },
       { slug: "/getting-started/authentication", title: "Authentication", summary: "The per-organization nbo_test_ / nbo_live_ secret key, and how it works." },
       { slug: "/getting-started/environments", title: "Environments", summary: "Test vs live, and how a key pins every request to one environment." },
       { slug: "/getting-started/your-first-subscription", title: "Your first subscription", summary: "Create a plan, a price, and a subscription that bills — end to end." },

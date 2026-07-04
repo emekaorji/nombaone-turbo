@@ -60,6 +60,11 @@ that also joins its ledger postings and webhooks.
 >
 > `15000` means ₦150.00. The API never uses floats or decimal strings for money.
 
+## Pick your stack
+
+Each is a self-contained path to a real `201` in your own language — no monolithic
+tutorial in a stack you don't use.
+
 ## In your language
 
 The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.

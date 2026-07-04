@@ -9,6 +9,7 @@ import { Callout } from "./callout";
 import { Card, CardGroup } from "./card";
 import { InlineCode, Pre } from "./code-block";
 import { EndpointHeader } from "./endpoint-header";
+import { ErrorExplorer } from "./error-explorer";
 import { ErrorReference } from "./error-reference";
 import { EventCatalog } from "./event-catalog";
 import { IdempotencyLab } from "./idempotency-lab";
@@ -142,11 +143,13 @@ export const mdxComponents: MDXComponents = {
   EndpointHeader,
   Card,
   CardGroup,
+  ErrorExplorer,
   ErrorReference,
   EventCatalog,
   ApiReference,
   IdempotencyLab,
   MoneyUnit,
+  QuickstartGrid,
   RailSwitcher,
   Snippet,
   Glossary,

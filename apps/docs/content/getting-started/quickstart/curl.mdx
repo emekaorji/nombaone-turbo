@@ -1,0 +1,32 @@
+---
+title: cURL quickstart
+description: Reach a real 201 with cURL — create your first plan on the Nomba One sandbox in a few lines.
+section: get-started
+---
+
+Create your first plan on the Nomba One sandbox with **cURL**. This is a real
+call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+you go live.
+
+## 1 · Get a test key
+
+Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Just a shell. Export your key: `export NOMBAONE_SECRET_KEY=nbo_test_…`.
+
+## 2 · Create a plan
+
+<Snippet method="POST" path="/v1/plans" body={{ name: "Pro" }} idempotent defaultLang="curl" />
+
+A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+its [prices](/guides/create-plans-and-prices) are **integer kobo**.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Your first subscription" href="/getting-started/your-first-subscription">
+    The full plan → price → customer → subscription flow to a live 201.
+  </Card>
+  <Card title="Authentication" href="/getting-started/authentication">
+    The secret-key rules and how the prefix pins the environment.
+  </Card>
+</CardGroup>
