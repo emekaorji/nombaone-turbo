@@ -2,7 +2,7 @@ name: Deploy API
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main]
 
 concurrency:
   group: deploy-api-${{ github.ref_name }}
@@ -17,36 +17,59 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Full history is cheap on this repo and guarantees github.event.before
+          # is reachable for any push size. No pnpm/node/turbo — see below.
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check affected
+      - name: Check affected paths
         id: check
         run: |
-          AFFECTED=$(pnpm turbo run build --filter=@nombaone/api...[HEAD^1] --dry=json 2>/dev/null | jq '[.tasks[].taskId] | map(select(startswith("@nombaone/api#"))) | length > 0')
-          echo "affected=$AFFECTED" >> $GITHUB_OUTPUT
-          echo "API affected: $AFFECTED (branch: ${{ github.ref_name }})"
-        env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          # "Did the API change?" answered by a git diff over the pushed range —
+          # seconds, not the ~2 min a `pnpm install` + turbo dry-run costs.
+          #
+          # Redeploy only when the API's own code, a workspace package it ACTUALLY
+          # depends on, or root build/dependency config changed. Packages the API
+          # does not use (ui, docs-db) and lint/format tooling are excluded, so a
+          # docs- or website-only commit skips the deploy entirely.
+          #
+          # MAINTENANCE: if apps/api gains a new @nombaone/* dependency, add its
+          # package dir to PATTERN below, or its changes won't trigger a redeploy.
+          BASE="${{ github.event.before }}"
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "No usable base ref (first push / forced) — deploying to be safe."
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-  deploy:
-    name: Deploy (${{ github.ref_name == 'main' && 'production' || 'staging' }})
+          CHANGED="$(git diff --name-only "$BASE" "${{ github.sha }}")"
+          echo "Changed files in this push:"; echo "$CHANGED"
+
+          PATTERN='^(apps/api/|packages/(core-contracts|core-db|errors|queue|sara|utils)/|toolings/typescript-config/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig[^/]*\.json)'
+
+          if echo "$CHANGED" | grep -qE "$PATTERN"; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+            echo "API affected: true"
+          else
+            echo "affected=false" >> "$GITHUB_OUTPUT"
+            echo "API affected: false"
+          fi
+
+  # Two DO apps run the SAME @nombaone/api code from main: production (live ring)
+  # and sandbox (test ring). They differ only by which DigitalOcean app they hit —
+  # each app carries its own env (INFRA_ENVIRONMENT, INFRA_DATABASE_URL, …) in the
+  # DO dashboard. Both gate on the single check-affected above, so the expensive
+  # install/turbo step runs once and the two deploys fan out in parallel.
+  #
+  # Not a matrix: GitHub can't index `secrets` by a matrix variable
+  # (secrets[matrix.x] is unsupported), and each target needs its own app-name
+  # secret — so two explicit jobs are the unambiguous form.
+
+  deploy-production:
+    name: Deploy production
     runs-on: ubuntu-latest
     needs: check-affected
     if: needs.check-affected.outputs.affected == 'true'
-    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    environment: Production
     steps:
       - uses: actions/checkout@v4
 
@@ -55,4 +78,20 @@ jobs:
         with:
           token: ${{ secrets.DO_ACCESS_TOKEN }}
           app_name: ${{ secrets.DO_APP_NAME_API }}
+          print_build_logs: false
+
+  deploy-sandbox:
+    name: Deploy sandbox
+    runs-on: ubuntu-latest
+    needs: check-affected
+    if: needs.check-affected.outputs.affected == 'true'
+    environment: sandbox
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to DigitalOcean App Platform
+        uses: digitalocean/app_action/deploy@v2
+        with:
+          token: ${{ secrets.DO_ACCESS_TOKEN }}
+          app_name: ${{ secrets.DO_APP_NAME_API_SANDBOX }}
           print_build_logs: false
