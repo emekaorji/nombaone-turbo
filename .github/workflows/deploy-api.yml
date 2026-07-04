@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-affected
     if: needs.check-affected.outputs.affected == 'true'
-    environment: production
+    environment: Production
     steps:
       - uses: actions/checkout@v4
 
