@@ -60,6 +60,11 @@ that also joins its ledger postings and webhooks.
 >
 > `15000` means ₦150.00. The API never uses floats or decimal strings for money.
 
+## In your language
+
+The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.
+Pick your tab; it's remembered across the docs.
+
 ## Next steps
 
 - **[Authentication](/getting-started/authentication)** — 

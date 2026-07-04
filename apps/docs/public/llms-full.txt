@@ -856,6 +856,8 @@ is a real case you must handle, not an edge.
 > reference" — and each rail adapts it. That is what lets the same subscription run over a
 > card, a mandate, or a transfer, with the push/pull difference handled beneath you.
 
+Switch between the rails to see how the same "collect" verb plays out on each:
+
 ## Why the asymmetry shapes everything
 
 Because a transfer can't be pulled, a "charge on the billing date and mark it paid" model
@@ -1047,28 +1049,17 @@ practice.
 
 ## Authenticating a request
 
-```bash
-curl https://sandbox.api.nombaone.xyz/v1/examples \
-  -H "Authorization: Bearer nbo_test_…"
-```
+The same authenticated request, in your language — switch the tab:
 
-```ts
-const res = await fetch("https://sandbox.api.nombaone.xyz/v1/examples", {
-  headers: {
-    Authorization: `Bearer ${process.env.NOMBAONE_SECRET_KEY}`,
-  },
-});
-```
-
-A missing, malformed, or revoked key returns `401 Unauthorized` in the standard
-error envelope:
+A missing, malformed, or revoked key returns `401 Unauthorized` — see
+[`API_KEY_INVALID`](/errors#API_KEY_INVALID) for the fix. The error envelope:
 
 ```json
 {
   "success": false,
   "statusCode": 401,
   "error": {
-    "code": "UNAUTHORIZED",
+    "code": "API_KEY_INVALID",
     "message": "Invalid or missing API key."
   },
   "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
@@ -1209,6 +1200,11 @@ that also joins its ledger postings and webhooks.
 > **Amounts are integer kobo**
 >
 > `15000` means ₦150.00. The API never uses floats or decimal strings for money.
+
+## In your language
+
+The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.
+Pick your tab; it's remembered across the docs.
 
 ## Next steps
 
@@ -3073,7 +3069,7 @@ behave identically.
   "success": false,
   "statusCode": 401,
   "error": {
-    "code": "UNAUTHORIZED",
+    "code": "API_KEY_INVALID",
     "message": "Invalid or missing API key."
   },
   "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }

@@ -385,3 +385,19 @@ pre code[data-theme] span {
     scroll-behavior: auto !important;
   }
 }
+
+/* Error-code autolink (Phase 04): an inline error code linked to /errors. The
+   emerald dashed underline marks it clickable without shouting. */
+.error-code-link {
+  text-decoration: none;
+}
+.error-code-link > code {
+  border-bottom: 1px dashed var(--accent-border);
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.error-code-link:hover > code,
+.error-code-link:focus-visible > code {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}

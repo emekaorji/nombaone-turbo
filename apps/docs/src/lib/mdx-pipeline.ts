@@ -3,6 +3,7 @@ import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 
+import { rehypeErrorAutolink } from "./rehype-error-autolink";
 import { nombaoneDark, nombaoneLight } from "./shiki-theme";
 
 import type { Options as PrettyCodeOptions } from "rehype-pretty-code";
@@ -53,6 +54,7 @@ export const mdxOptions: Pick<CompileOptions, "format" | "remarkPlugins" | "rehy
   remarkPlugins: [remarkGfm],
   rehypePlugins: [
     rehypeSlug,
+    rehypeErrorAutolink,
     [rehypePrettyCode, prettyCodeOptions],
     [
       rehypeAutolinkHeadings,

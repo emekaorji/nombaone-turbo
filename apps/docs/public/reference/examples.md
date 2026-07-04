@@ -100,7 +100,7 @@ behave identically.
   "success": false,
   "statusCode": 401,
   "error": {
-    "code": "UNAUTHORIZED",
+    "code": "API_KEY_INVALID",
     "message": "Invalid or missing API key."
   },
   "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }

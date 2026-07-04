@@ -42,6 +42,8 @@ is a real case you must handle, not an edge.
 > reference" — and each rail adapts it. That is what lets the same subscription run over a
 > card, a mandate, or a transfer, with the push/pull difference handled beneath you.
 
+Switch between the rails to see how the same "collect" verb plays out on each:
+
 ## Why the asymmetry shapes everything
 
 Because a transfer can't be pulled, a "charge on the billing date and mark it paid" model

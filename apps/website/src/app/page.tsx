@@ -21,15 +21,12 @@ import { HomeSection } from "@/components/layout/Container";
 import { Callout } from "@/components/primitives/Callout";
 import { GuideCard } from "@/components/primitives/GuideCard";
 import { SectionHeader } from "@/components/primitives/SectionHeader";
-import { Tag } from "@/components/primitives/Tag";
 import { UseCaseCard } from "@/components/primitives/UseCaseCard";
 import { CTABand } from "@/components/sections/CTABand";
+import { CodeStack } from "@/components/sections/CodeStack";
 import { Hero } from "@/components/sections/Hero";
-import { LangTabs } from "@/components/sections/LangTabs";
 import { LifecycleRail } from "@/components/sections/LifecycleRail";
 import { SimulatorStage } from "@/components/sections/SimulatorStage";
-
-const RAIL_TAGS = ["Node", "Python", "Go", "PHP", "Ruby", ".NET", "Java", "CLI", "REST"];
 
 const NOMBA_PERKS = [
   {
@@ -111,15 +108,10 @@ export default function HomePage() {
           }
           deck="The same create-subscription call in your framework, plus a drop-in checkout and a CLI that tails webhooks locally."
         />
-        <div className="mt-[52px] flex flex-wrap gap-2">
-          {RAIL_TAGS.map((t) => (
-            <Tag key={t}>{t}</Tag>
-          ))}
+        <div className="mt-[52px]">
+          <CodeStack />
         </div>
-        <div className="mt-5">
-          <LangTabs />
-        </div>
-        <div className="mt-4">
+        <div className="mt-6">
           <Callout title="Drop-in, either way.">
             Embed checkout with a script tag, or scaffold your integration and tail webhooks locally
             with the CLI.
