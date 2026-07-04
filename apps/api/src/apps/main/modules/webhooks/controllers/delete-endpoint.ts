@@ -12,7 +12,7 @@ import type { RequestHandler } from 'express';
 export const deleteWebhookEndpointController: RequestHandler =
   jsonHandler<WebhookEndpointResponseData>(async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
-    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
+    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, mode: req.apiKey.mode };
     const reference = req.params.id ?? '';
     await disableWebhookEndpoint(db, ctx, reference);
     return { data: serializeWebhookEndpoint(await getWebhookEndpoint(db, ctx, reference)) };

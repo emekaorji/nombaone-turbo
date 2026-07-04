@@ -18,11 +18,11 @@ describe('customers e2e', () => {
     harness = await startHarness();
     const orgA = await harness.seedOrg('Org A');
     const orgB = await harness.seedOrg('Org B');
-    bearerA = (await harness.mintApiKey(orgA.organizationId, 'test', [
+    bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', [
       'customers:read',
       'customers:write',
     ])).secret;
-    bearerB = (await harness.mintApiKey(orgB.organizationId, 'test', [
+    bearerB = (await harness.mintApiKey(orgB.organizationId, 'sandbox', [
       'customers:read',
       'customers:write',
     ])).secret;
@@ -136,7 +136,7 @@ describe('customers e2e', () => {
 
   it('read-only key on a write route → 403', async () => {
     const orgC = await harness.seedOrg('Org C');
-    const readOnly = await harness.mintApiKey(orgC.organizationId, 'test', ['customers:read']);
+    const readOnly = await harness.mintApiKey(orgC.organizationId, 'sandbox', ['customers:read']);
     const res = await request(harness.app)
       .post('/v1/customers')
       .set('Authorization', `Bearer ${readOnly.secret}`)

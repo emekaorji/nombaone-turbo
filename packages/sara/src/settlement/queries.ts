@@ -25,7 +25,7 @@ export async function listSettlements(
   const cursor = decodeCursor(opts.cursor);
   const scope = and(
     eq(settlementsTable.organizationId, ctx.organizationId),
-    eq(settlementsTable.environment, ctx.environment),
+    eq(settlementsTable.mode, ctx.mode),
     opts.status ? eq(settlementsTable.status, opts.status) : undefined
   );
   const keyset = cursor
@@ -66,7 +66,7 @@ export async function getSettlementByReference(
       and(
         eq(settlementsTable.reference, reference),
         eq(settlementsTable.organizationId, ctx.organizationId),
-        eq(settlementsTable.environment, ctx.environment)
+        eq(settlementsTable.mode, ctx.mode)
       )
     )
     .limit(1);

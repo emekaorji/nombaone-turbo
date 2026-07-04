@@ -14,7 +14,7 @@ import {
 
 import { customersTable } from './customers';
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 
 export const creditGrantSourceEnum = pgEnum('credit_grant_source', [
   'downgrade_proration',
@@ -38,7 +38,7 @@ export const creditGrantsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     customerId: uuid('customer_id')
       .notNull()
       .references(() => customersTable.id, { onDelete: 'cascade' }),
@@ -58,7 +58,7 @@ export const creditGrantsTable = pgTable(
     referenceUnique: uniqueIndex('credit_grants_reference_unique').on(table.reference),
     oldestFirstIdx: index('credit_grants_oldest_first_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.customerId,
       table.createdAt.asc(),
       table.id.asc()

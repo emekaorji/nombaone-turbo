@@ -16,7 +16,7 @@ export const cancelScheduleController: RequestHandler = jsonHandler<Subscription
     }
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const data = await cancelSchedule(db, ctx, req.params.id ?? '');
     return { data };

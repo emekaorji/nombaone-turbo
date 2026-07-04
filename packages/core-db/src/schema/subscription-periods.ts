@@ -3,7 +3,7 @@ import { check, index, integer, pgTable, timestamp, uniqueIndex, uuid } from 'dr
 
 import { invoicesTable } from './invoices';
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk } from './shared';
+import { createdAt, modeEnum, idPk } from './shared';
 import { subscriptionsTable } from './subscriptions';
 
 /**
@@ -23,7 +23,7 @@ export const subscriptionPeriodsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     subscriptionId: uuid('subscription_id')
       .notNull()
       .references(() => subscriptionsTable.id, { onDelete: 'cascade' }),
@@ -41,7 +41,7 @@ export const subscriptionPeriodsTable = pgTable(
     ),
     dueIdx: index('subscription_periods_due_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.periodEnd
     ),
     periodIndexNonNegative: check(

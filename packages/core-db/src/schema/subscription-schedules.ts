@@ -1,7 +1,7 @@
 import { index, jsonb, pgEnum, pgTable, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 import { subscriptionsTable } from './subscriptions';
 
 export const subscriptionScheduleStatusEnum = pgEnum('subscription_schedule_status', [
@@ -31,7 +31,7 @@ export const subscriptionSchedulesTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     subscriptionId: uuid('subscription_id')
       .notNull()
       .references(() => subscriptionsTable.id, { onDelete: 'cascade' }),
@@ -44,13 +44,13 @@ export const subscriptionSchedulesTable = pgTable(
     referenceUnique: uniqueIndex('subscription_schedules_reference_unique').on(table.reference),
     keysetIdx: index('subscription_schedules_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),
     subscriptionIdx: index('subscription_schedules_subscription_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.subscriptionId
     ),
   })

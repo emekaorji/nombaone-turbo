@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { assertSplitBalances, buildSplitRequest } from '@nombaone/sara/settlement';
 
-const ctx = { organizationId: 'org', environment: 'test' as const };
+const ctx = { organizationId: 'org', mode: 'sandbox' as const };
 
 describe('settlement/split — kobo-exact split invariant (H5 ★ / L4)', () => {
   it('assertSplitBalances passes only when gross = fee + net, non-negative integers', () => {

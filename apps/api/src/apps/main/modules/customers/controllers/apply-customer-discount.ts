@@ -17,7 +17,7 @@ export const applyCustomerDiscountController: RequestHandler = jsonHandler<Disco
     }
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const body = req.body as ApplyDiscountBody;
 

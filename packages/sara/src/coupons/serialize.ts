@@ -14,6 +14,6 @@ export const serializeCoupon = (row: CouponRow): CouponResponseData => ({
   redeemBy: iso(row.redeemBy),
   maxRedemptions: row.maxRedemptions,
   timesRedeemed: row.timesRedeemed,
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
 });

@@ -12,7 +12,7 @@ import {
 
 import { invoicesTable } from './invoices';
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 import { subscriptionsTable } from './subscriptions';
 
 /** The dunning machine's per-attempt status (C.3). Terminal: `succeeded`, `exhausted`. */
@@ -36,7 +36,7 @@ export const dunningBranchEnum = pgEnum('dunning_branch', [
  * `dunning_attempts` — one APPEND-ONLY row per retry of a `past_due` invoice (D11).
  * It is the audit log AND the concurrency spine: `unique(invoice_id, attempt_number)`
  * makes a duplicate attempt for the same step structurally impossible (K4/J6), and
- * the partial `WHERE status = 'scheduled'` index on `(environment, next_attempt_at)`
+ * the partial `WHERE status = 'scheduled'` index on `(mode, next_attempt_at)`
  * is the dunning sweep's due-selection. Like `ledger_transactions`, there is **no
  * `updated_at`** — status/outcome transitions are recorded on the row in place but
  * the row is a fact, not a mutable entity; comms are guarded by `comms_sent_at`.
@@ -49,7 +49,7 @@ export const dunningAttemptsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     subscriptionId: uuid('subscription_id')
       .notNull()
       .references(() => subscriptionsTable.id, { onDelete: 'cascade' }),
@@ -77,11 +77,11 @@ export const dunningAttemptsTable = pgTable(
       table.attemptNumber
     ),
     dueIdx: index('dunning_attempts_due_idx')
-      .on(table.environment, table.nextAttemptAt)
+      .on(table.mode, table.nextAttemptAt)
       .where(sql`${table.status} = 'scheduled'`),
     keysetIdx: index('dunning_attempts_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

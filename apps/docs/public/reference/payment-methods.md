@@ -18,5 +18,5 @@ determines whether a charge is *pulled* or *pushed* — see
 >
 > `setup` and `virtual-account` create the instrument (the customer authorizes at
 > the returned link); a [subscription](/guides/start-a-subscription) then charges
-> it each cycle. On the sandbox, `POST /v1/test/payment-methods` mints a
+> it each cycle. On the sandbox, `POST /v1/sandbox/payment-methods` mints a
 > deterministic method for rehearsing outcomes.

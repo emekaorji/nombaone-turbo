@@ -158,7 +158,7 @@ export function buildOpenApiDocument(v1Router: Router, baseUrl = 'http://localho
     // target and the response mirrors), so the version label matches the schema dialect.
     openapi: '3.0.3',
     info: { title: 'nombaone API', version: 'v1', description: 'Subscription billing on Nomba rails.' },
-    servers: [{ url: `${baseUrl}/v1`, description: 'test mode (test-environment API keys)' }],
+    servers: [{ url: `${baseUrl}/v1`, description: 'One base URL for both modes — the API key prefix (nbo_sandbox_ / nbo_live_) selects sandbox vs live.' }],
     components: {
       securitySchemes: {
         ApiKeyAuth: { type: 'http', scheme: 'bearer', description: 'A tenant API key: `Authorization: Bearer <secret>`.' },

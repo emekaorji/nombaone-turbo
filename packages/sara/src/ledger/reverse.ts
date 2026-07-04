@@ -41,7 +41,7 @@ export async function reverseTransaction(
         and(
           eq(ledgerTransactionsTable.id, transactionId),
           eq(ledgerTransactionsTable.organizationId, ctx.organizationId),
-          eq(ledgerTransactionsTable.environment, ctx.environment)
+          eq(ledgerTransactionsTable.mode, ctx.mode)
         )
       )
       .limit(1);
@@ -100,7 +100,7 @@ export async function reverseTransaction(
       .values({
         reference,
         organizationId: ctx.organizationId,
-        environment: ctx.environment,
+        mode: ctx.mode,
         kind: 'reversal',
         reversesTransactionId: transactionId,
         memo: `reversal of ${original.reference}`,

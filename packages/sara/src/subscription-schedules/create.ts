@@ -32,7 +32,7 @@ export async function createSchedule(
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         eq(subscriptionsTable.reference, input.subscriptionRef)
       )
     )
@@ -51,7 +51,7 @@ export async function createSchedule(
     .where(
       and(
         eq(pricesTable.organizationId, ctx.organizationId),
-        eq(pricesTable.environment, ctx.environment),
+        eq(pricesTable.mode, ctx.mode),
         eq(pricesTable.reference, input.priceRef)
       )
     )
@@ -92,7 +92,7 @@ export async function createSchedule(
   await txDb.insert(subscriptionSchedulesTable).values({
     reference,
     organizationId: ctx.organizationId,
-    environment: ctx.environment,
+    mode: ctx.mode,
     subscriptionId: sub.id,
     status: 'active',
     phases: [phase],

@@ -28,7 +28,7 @@
 - **Sentence case** for every heading ("Handle webhooks", not "Handle Webhooks").
 - **Oxford comma.** "cards, mandates, and transfers."
 - **Code font** for code, identifiers, fields, and values (`amountInKobo`, `POST`,
-  `nbo_test_…`). **Bold** for UI a merchant clicks. Never bold for emphasis in reference.
+  `nbo_sandbox_…`). **Bold** for UI a merchant clicks. Never bold for emphasis in reference.
 - **Contractions are fine** ("don't", "you'll") — this is a human talking to a human.
 - **Descriptive links.** Link the noun ("see the [error reference]"), never "click
   here" / "this link."
@@ -53,7 +53,7 @@
 - **Tutorials** (Get started) — learning-oriented; a guided path to a first success. No
   reference tables.
 - **How-to guides** (Guides, Migrate, For merchants) — task-oriented; assume a goal.
-- **Reference** (API reference, Webhooks, Errors, Test toolkit, Changelog) —
+- **Reference** (API reference, Webhooks, Errors, Sandbox toolkit, Changelog) —
   information-oriented; complete, accurate, dry. No tutorials smuggled in.
 - **Explanation** (Concepts, incl. Hard Parts) — understanding-oriented; the "why," the
   trade-offs, the honest hard parts. No step-by-step.

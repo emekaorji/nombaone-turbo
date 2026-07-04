@@ -1,12 +1,12 @@
 import 'server-only';
 
 import { cookies } from 'next/headers';
-import type { Environment } from '@nombaone/sara/context';
+import type { Mode } from '@nombaone/sara/context';
 
 /**
  * PARADIGM — STAFF ENVIRONMENT IS A PREFERENCE, NOT AUTHORITY.
  *
- * Operators view platform data scoped to one ring at a time (`test` | `live`).
+ * Operators view platform data scoped to one mode at a time (`sandbox` | `live`).
  * The default is `live` — staff care about production first. The selected ring
  * is stored in a NON-httpOnly preference cookie so a client island can flip it
  * without a round-trip; CRUCIALLY it is NOT a security boundary. Every read in
@@ -23,10 +23,10 @@ import type { Environment } from '@nombaone/sara/context';
 export const ENV_COOKIE = 'nombaone_env';
 
 /** The default ring staff land on. */
-export const DEFAULT_ENVIRONMENT: Environment = 'live';
+export const DEFAULT_ENVIRONMENT: Mode = 'live';
 
-function isEnvironment(value: string | undefined): value is Environment {
-  return value === 'test' || value === 'live';
+function isEnvironment(value: string | undefined): value is Mode {
+  return value === 'sandbox' || value === 'live';
 }
 
 /**
@@ -34,7 +34,7 @@ function isEnvironment(value: string | undefined): value is Environment {
  * back to the `live` default. Called server-side by every scoped read so the
  * filter is always re-derived, never trusted from the client.
  */
-export async function getSelectedEnvironment(): Promise<Environment> {
+export async function getSelectedEnvironment(): Promise<Mode> {
   const raw = (await cookies()).get(ENV_COOKIE)?.value;
   return isEnvironment(raw) ? raw : DEFAULT_ENVIRONMENT;
 }

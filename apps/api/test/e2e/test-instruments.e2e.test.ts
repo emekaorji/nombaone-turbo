@@ -23,7 +23,7 @@ import type { AddressInfo } from 'node:net';
 describe('test-mode simulation instruments e2e', () => {
   let harness: Harness;
   let bearer: string;
-  let ctx: { organizationId: string; environment: 'test' };
+  let ctx: { organizationId: string; mode: 'sandbox' };
   let receiver: http.Server;
   let receiverUrl: string;
   const received: Array<{ body: unknown }> = [];
@@ -74,8 +74,8 @@ describe('test-mode simulation instruments e2e', () => {
     receiverUrl = `http://127.0.0.1:${(receiver.address() as AddressInfo).port}/hook`;
 
     const org = await harness.seedOrg('Test Instruments');
-    bearer = (await harness.mintApiKey(org.organizationId, 'test', scopes)).secret;
-    ctx = { organizationId: org.organizationId, environment: 'test' };
+    bearer = (await harness.mintApiKey(org.organizationId, 'sandbox', scopes)).secret;
+    ctx = { organizationId: org.organizationId, mode: 'sandbox' };
   });
 
   afterAll(async () => {
@@ -104,7 +104,7 @@ describe('test-mode simulation instruments e2e', () => {
   }
 
   const createTestPM = (customerId: string, behavior: string): request.Test =>
-    as(request(harness.app).post('/v1/test/payment-methods'))
+    as(request(harness.app).post('/v1/sandbox/payment-methods'))
       .set('Idempotency-Key', `pm-${uniq()}`)
       .send({ customerId, behavior });
 
@@ -114,7 +114,7 @@ describe('test-mode simulation instruments e2e', () => {
       .send(body);
 
   const advance = (subId: string): request.Test =>
-    as(request(harness.app).post(`/v1/test/subscriptions/${subId}/advance-cycle`))
+    as(request(harness.app).post(`/v1/sandbox/subscriptions/${subId}/advance-cycle`))
       .set('Idempotency-Key', `adv-${uniq()}`)
       .send({});
 
@@ -183,7 +183,7 @@ describe('test-mode simulation instruments e2e', () => {
     expect(wh.status).toBe(201);
 
     const before = received.length;
-    const sim = await as(request(harness.app).post('/v1/test/webhooks/simulate'))
+    const sim = await as(request(harness.app).post('/v1/sandbox/webhooks/simulate'))
       .set('Idempotency-Key', `sim-${uniq()}`)
       .send({ type: 'customer.created' });
 
@@ -197,7 +197,7 @@ describe('test-mode simulation instruments e2e', () => {
   });
 
   it('webhook simulate with an uncatalogued event type → 400', async () => {
-    const sim = await as(request(harness.app).post('/v1/test/webhooks/simulate'))
+    const sim = await as(request(harness.app).post('/v1/sandbox/webhooks/simulate'))
       .set('Idempotency-Key', `sim-${uniq()}`)
       .send({ type: 'not.a.real.event' });
     expect(sim.status).toBe(400);

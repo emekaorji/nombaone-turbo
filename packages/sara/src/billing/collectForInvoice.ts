@@ -58,7 +58,7 @@ export async function collectForInvoice(
   // TEST-MODE ONLY: a seeded test method short-circuits to a deterministic outcome
   // (null on live ⇒ the real rail runs, unchanged).
   const result =
-    maybeSimulateTestCollect(ctx.environment, method, invoice.amountDue) ??
+    maybeSimulateTestCollect(ctx.mode, method, invoice.amountDue) ??
     (await getRail(railKeyForMethod(method.kind)).collect({
       ...ctx,
       reference: invoice.reference,

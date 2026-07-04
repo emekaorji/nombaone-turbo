@@ -1,6 +1,6 @@
 import { bigint, index, integer, jsonb, pgTable, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 import { organizationsTable } from './organizations';
 import { pricesTable } from './prices';
 import { subscriptionsTable } from './subscriptions';
@@ -18,7 +18,7 @@ export const subscriptionItemsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     subscriptionId: uuid('subscription_id')
       .notNull()
       .references(() => subscriptionsTable.id, { onDelete: 'cascade' }),
@@ -35,7 +35,7 @@ export const subscriptionItemsTable = pgTable(
     referenceUnique: uniqueIndex('subscription_items_reference_unique').on(table.reference),
     subscriptionIdx: index('subscription_items_subscription_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.subscriptionId
     ),
   })

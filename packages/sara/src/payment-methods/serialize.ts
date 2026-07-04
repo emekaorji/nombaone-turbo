@@ -21,7 +21,7 @@ export const serializePaymentMethod = (
   last4: row.last4,
   expMonth: row.expMonth,
   expYear: row.expYear,
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
   updatedAt: new Date(row.updatedAt).toISOString(),
 });

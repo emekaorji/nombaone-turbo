@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   const orderReference = process.argv[2];
   const transactionId = process.argv[3];
   const otp = process.argv[4];
-  const c = getNombaClient();
+  const c = getNombaClient('live');
 
   const res = await c.request({
     method: 'POST',

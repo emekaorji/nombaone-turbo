@@ -19,7 +19,7 @@ import type { NombaClient, RequeryResult } from '@nombaone/sara/nomba';
  */
 describe('reconcile-nomba cron (item 6)', () => {
   let harness: Harness;
-  let ctx: { organizationId: string; environment: 'test' };
+  let ctx: { organizationId: string; mode: 'sandbox' };
   let customerId: string;
 
   // reference → the requery Nomba should return for it.
@@ -38,7 +38,7 @@ describe('reconcile-nomba cron (item 6)', () => {
     harness = await startHarness();
     harness.setNombaClient(fakeNomba);
     const org = await harness.seedOrg('Recon');
-    ctx = { organizationId: org.organizationId, environment: 'test' };
+    ctx = { organizationId: org.organizationId, mode: 'sandbox' };
     const customer = await createCustomer(harness.db, ctx, { email: 'r@acme.test', name: 'R' });
     const [c] = await harness.db
       .select({ id: customersTable.id })
@@ -57,7 +57,7 @@ describe('reconcile-nomba cron (item 6)', () => {
     await harness.db.insert(invoicesTable).values({
       reference,
       organizationId: ctx.organizationId,
-      environment: 'test',
+      mode: 'sandbox',
       customerId,
       billingReason: 'manual',
       subtotal: amountDue,

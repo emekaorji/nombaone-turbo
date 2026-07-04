@@ -19,7 +19,7 @@ export interface CorrelationFields {
   correlationId: string;
   /** The tenant, once known (HTTP: after apiKeyAuth; jobs: from job data). */
   organizationId?: string;
-  environment?: string;
+  mode?: string;
   /** The job/queue name for a background flow (absent for HTTP). */
   task?: string;
 }

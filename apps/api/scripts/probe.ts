@@ -6,9 +6,9 @@ import { env } from '../src/shared/config/env';
 import { getNombaClient } from '../src/shared/config/nomba';
 
 async function main(): Promise<void> {
-  const client = getNombaClient();
-  const sub = env.NOMBA_SUBACCOUNT_ID ?? '';
-  const parent = env.NOMBA_PARENT_ACCOUNT_ID ?? '';
+  const client = getNombaClient('live');
+  const sub = env.NOMBA_LIVE_SUBACCOUNT_ID ?? '';
+  const parent = env.NOMBA_LIVE_PARENT_ACCOUNT_ID ?? '';
   const candidates: [string, Record<string, string>?][] = [
     ['/v1/transactions'],
     ['/v1/transactions/accounts'],

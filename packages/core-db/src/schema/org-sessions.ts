@@ -1,14 +1,14 @@
 import { index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { createdAt, idPk } from './shared';
-import { environmentEnum } from './shared';
+import { modeEnum } from './shared';
 import { orgUsersTable } from './org-users';
 import { organizationsTable } from './organizations';
 
 /**
  * Opaque-token session: only the SHA-256 hash of the token is stored; the raw
  * token lives in an httpOnly cookie and is validated against this row each
- * request. The pinned `environment` is the console's active test/live ring.
+ * request. The pinned `mode` is the console's active sandbox/live mode.
  */
 export const orgSessionsTable = pgTable(
   'org_sessions',
@@ -21,7 +21,7 @@ export const orgSessionsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull().default('test'),
+    mode: modeEnum('mode').notNull().default('sandbox'),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: createdAt(),
   },

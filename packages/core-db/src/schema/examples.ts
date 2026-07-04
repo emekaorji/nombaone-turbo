@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { bigint, check, index, integer, pgEnum, pgTable, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 import { organizationsTable } from './organizations';
 
 /**
@@ -12,7 +12,7 @@ import { organizationsTable } from './organizations';
  *
  * Conventions shown here:
  *  • `organization_id` on every tenant-scoped row (isolation is data-model deep)
- *  • first-class `environment` column (test|live)
+ *  • first-class `mode` column (sandbox|live)
  *  • a `kind` enum discriminator + bare typed columns + a CHECK constraint
  *    (instead of an opaque jsonb payload — keeps analytics queryable)
  *  • a public `reference` with a UNIQUE index, separate from the UUID PK
@@ -34,7 +34,7 @@ export const examplesTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     kind: exampleKindEnum('kind').notNull().default('standard'),
     amount: bigint('amount', { mode: 'number' }).notNull(),
     attemptCount: integer('attempt_count').notNull().default(0),
@@ -44,7 +44,7 @@ export const examplesTable = pgTable(
     referenceUnique: uniqueIndex('examples_reference_unique').on(table.reference),
     keysetIdx: index('examples_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

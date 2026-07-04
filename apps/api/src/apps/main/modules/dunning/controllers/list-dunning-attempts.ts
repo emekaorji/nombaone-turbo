@@ -15,7 +15,7 @@ export const listDunningAttemptsController: RequestHandler = jsonHandler<
   if (!req.apiKey) throw AppError.Unauthorized('API key required');
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
   const { attempts } = await getDunningStateBySubscriptionRef(db, ctx, req.params.id ?? '');
   return { data: attempts.map(serializeDunningAttempt) };

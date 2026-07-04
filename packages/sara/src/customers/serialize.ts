@@ -13,7 +13,7 @@ export const serializeCustomer = (row: CustomerRow): CustomerResponseData => ({
   name: row.name,
   phone: row.phone,
   metadata: row.metadata,
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
   updatedAt: new Date(row.updatedAt).toISOString(),
 });

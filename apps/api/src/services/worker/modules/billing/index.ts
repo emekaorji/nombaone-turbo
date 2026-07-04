@@ -31,15 +31,15 @@ export const createBillingWorker = (): Worker<BillingJobData, BillingJobResult> 
   const worker = new Worker<BillingJobData, BillingJobResult>(
     BILLING_QUEUE_NAME,
     async (job) => {
-      const { subscriptionId, subscriptionReference, periodIndex, organizationId, environment } =
+      const { subscriptionId, subscriptionReference, periodIndex, organizationId, mode } =
         job.data;
-      const ctx: DomainContext = { organizationId, environment };
+      const ctx: DomainContext = { organizationId, mode };
 
       return runWithCorrelation(
         {
           correlationId: job.id ?? `billing:${subscriptionId}:${periodIndex}`,
           organizationId,
-          environment,
+          mode,
           task: 'billing',
         },
         async () => {

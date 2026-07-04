@@ -40,6 +40,6 @@ export const serializeInvoice = (
   finalizedAt: iso(row.finalizedAt),
   paidAt: iso(row.paidAt),
   voidedAt: iso(row.voidedAt),
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
 });

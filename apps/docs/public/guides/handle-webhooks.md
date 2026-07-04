@@ -17,7 +17,7 @@ first, do [verify us in your devtools](/getting-started/verify-in-your-devtools)
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://yourapp.com/webhooks/nomba",
@@ -26,8 +26,8 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 The response returns a **signing secret** (`whsec_…`), shown once. Store it
-server-side. Register endpoints per environment — a test event only reaches your
-test endpoint.
+server-side. Register endpoints per mode — a sandbox event only reaches your
+sandbox endpoint.
 
 ## 2 · Verify the signature — on the raw body
 

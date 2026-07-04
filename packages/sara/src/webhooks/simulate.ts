@@ -31,9 +31,9 @@ export async function simulateWebhookEvent(
   ctx: DomainContext,
   input: SimulateWebhookInput
 ): Promise<WebhookSimulationResult> {
-  if (ctx.environment !== 'test') {
+  if (ctx.mode !== 'sandbox') {
     throw AppError.Forbidden(
-      'Webhook simulation is only available in the test environment',
+      'Webhook simulation is only available in sandbox mode',
       undefined,
       NOMBAONE_ERROR_CODES.CLIENT_FORBIDDEN
     );

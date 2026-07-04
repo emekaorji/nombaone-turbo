@@ -10,7 +10,7 @@ export const serializePlan = (row: PlanRow): PlanResponseData => ({
   description: row.description,
   status: row.status,
   metadata: row.metadata,
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
   updatedAt: new Date(row.updatedAt).toISOString(),
 });

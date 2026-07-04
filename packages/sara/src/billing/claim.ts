@@ -35,7 +35,7 @@ export async function claimPeriod(
     .insert(subscriptionPeriodsTable)
     .values({
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       subscriptionId: input.subscriptionId,
       periodIndex: input.periodIndex,
       periodStart: input.start,

@@ -1,6 +1,6 @@
 import { index, pgEnum, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 import { organizationsTable } from './organizations';
 
 export const ledgerTransactionKindEnum = pgEnum('ledger_transaction_kind', [
@@ -24,7 +24,7 @@ export const ledgerTransactionsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     kind: ledgerTransactionKindEnum('kind').notNull(),
     reversesTransactionId: uuid('reverses_transaction_id'),
     memo: text('memo'),
@@ -34,7 +34,7 @@ export const ledgerTransactionsTable = pgTable(
     referenceUnique: uniqueIndex('ledger_transactions_reference_unique').on(table.reference),
     keysetIdx: index('ledger_transactions_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

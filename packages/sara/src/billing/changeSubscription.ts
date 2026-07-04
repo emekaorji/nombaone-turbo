@@ -72,7 +72,7 @@ export async function changeSubscription(
       .where(
         and(
           eq(pricesTable.organizationId, ctx.organizationId),
-          eq(pricesTable.environment, ctx.environment),
+          eq(pricesTable.mode, ctx.mode),
           eq(pricesTable.reference, input.priceRef)
         )
       )
@@ -126,7 +126,7 @@ export async function changeSubscription(
       .where(
         and(
           eq(subscriptionItemsTable.organizationId, ctx.organizationId),
-          eq(subscriptionItemsTable.environment, ctx.environment),
+          eq(subscriptionItemsTable.mode, ctx.mode),
           eq(subscriptionItemsTable.subscriptionId, sub.id)
         )
       );

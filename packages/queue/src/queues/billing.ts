@@ -15,7 +15,7 @@ export interface BillingJobData {
   subscriptionReference: string;
   periodIndex: number;
   organizationId: string;
-  environment: 'test' | 'live';
+  mode: 'sandbox' | 'live';
 }
 
 export type BillingJobResult = {

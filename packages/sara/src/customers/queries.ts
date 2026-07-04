@@ -31,7 +31,7 @@ export async function getCustomerByReference(
     .where(
       and(
         eq(customersTable.organizationId, ctx.organizationId),
-        eq(customersTable.environment, ctx.environment),
+        eq(customersTable.mode, ctx.mode),
         eq(customersTable.reference, reference)
       )
     )
@@ -59,7 +59,7 @@ export async function listCustomers(
 
   const tenantScope = and(
     eq(customersTable.organizationId, ctx.organizationId),
-    eq(customersTable.environment, ctx.environment),
+    eq(customersTable.mode, ctx.mode),
     opts.email ? eq(customersTable.email, opts.email) : undefined
   );
 

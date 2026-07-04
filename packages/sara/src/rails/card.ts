@@ -1,7 +1,7 @@
 import { NOMBA_ENDPOINTS } from '../nomba/endpoints';
 import { koboToNombaAmount } from '../nomba/money';
 
-import type { NombaClient } from '../nomba/client';
+import type { NombaClientFactory } from '../nomba/injected';
 import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
 
 /**
@@ -19,7 +19,7 @@ import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
  * The token + customer fields ride in `input.metadata` (the billing core passes
  * the resolved payment method through, staying rail-agnostic).
  */
-export function createCardRail(client: NombaClient): RailAdapter {
+export function createCardRail(getClient: NombaClientFactory): RailAdapter {
   return {
     key: 'card',
     direction: 'pull',
@@ -30,6 +30,8 @@ export function createCardRail(client: NombaClient): RailAdapter {
         return { status: 'failed', failureReason: 'no_token_on_method' };
       }
 
+      // Resolve the Nomba client for THIS request's mode (sandbox vs live) — never crossed.
+      const client = getClient(input.mode);
       const orderReference = input.reference; // E3
       const res = await client.request<{ data?: { status?: boolean; message?: string } }>({
         method: 'POST',

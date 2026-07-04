@@ -29,6 +29,6 @@ export const serializeExample = (
   status,
   amountInKobo: row.amount,
   currency: CURRENCY,
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
 });

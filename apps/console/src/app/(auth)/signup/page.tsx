@@ -9,7 +9,7 @@ export default function SignupPage() {
   return (
     <AuthCard
       title="Create your organization"
-      subtitle="Start in test mode — go live whenever you're ready."
+      subtitle="Start in sandbox mode — go live whenever you're ready."
       footer={{ prompt: 'Already have an account?', href: '/login', cta: 'Log in' }}
     >
       <SignupForm />

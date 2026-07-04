@@ -36,9 +36,9 @@ hard parts (dunning, reconciliation, the double-charge trap) are documented in t
 - **[Quickstart](/getting-started/quickstart)** — 
 Get a sandbox key and reach your first real subscription in minutes.
 - **[Authentication](/getting-started/authentication)** — 
-The per-organization `nbo_test_` / `nbo_live_` secret key, and how it works.
+The per-organization `nbo_sandbox_` / `nbo_live_` secret key, and how it works.
 - **[Environments](/getting-started/environments)** — 
-Test vs live, and how a key pins every request to one environment.
+Sandbox vs live, and how a key pins every request to one mode.
 
 ## Built to be verified, not trusted
 
@@ -210,8 +210,8 @@ machine-readable catalog.
 - **Organization & metrics** — [`/v1/organization`](/reference/organization) and
 [`/v1/metrics`](/reference/metrics): config, billing settings, MRR, churn, and the
 dunning funnel.
-- **Test toolkit** — [`/v1/test/*`](/test-toolkit/overview): deterministic payment
-methods, a test clock, and on-demand signed webhook simulation (sandbox only).
+- **Sandbox toolkit** — [`/v1/sandbox/*`](/sandbox-toolkit/overview): deterministic payment
+methods, a sandbox clock, and on-demand signed webhook simulation (sandbox only).
 - **Agent-native docs** — a [Markdown mirror](/agents) of every page, `llms.txt`,
 and `llms-full.txt`.
 
@@ -1034,7 +1034,7 @@ Got an error response in hand? Paste it here to jump straight to the fix:
 ---
 title: "Authentication"
 type: tutorial
-summary: "Every request authenticates with your organization's secret key, sent as a Bearer token. The key's prefix pins it to one environment."
+summary: "Every request authenticates with your organization's secret key, sent as a Bearer token. The key's prefix pins it to one mode — sandbox or live."
 canonical: https://docs.nombaone.xyz/getting-started/authentication
 ---
 
@@ -1044,7 +1044,7 @@ The nombaone API authenticates with a single **secret key per organization**.
 You send it as a Bearer token on every request:
 
 ```http
-Authorization: Bearer nbo_test_…
+Authorization: Bearer nbo_sandbox_…
 ```
 
 There is no separate client id or signing step — the secret key both identifies
@@ -1052,12 +1052,12 @@ your organization and proves the request is yours, so it must stay server-side.
 
 ## Key format
 
-A secret key is an environment prefix followed by 256 bits of random body:
+A secret key is a mode prefix followed by 256 bits of random body:
 
-| Prefix | Environment | Example |
+| Prefix | Mode | Example |
 |---|---|---|
-| `nbo_test_` | Test (sandbox) | `nbo_test_a1b2c3d4…` |
-| `nbo_live_` | Live (production) | `nbo_live_x9y8z7w6…` |
+| `nbo_sandbox_` | Sandbox | `nbo_sandbox_a1b2c3d4…` |
+| `nbo_live_` | Live | `nbo_live_x9y8z7w6…` |
 
 The full secret is shown to you **once**, at creation, and is never recoverable
 afterward — the API stores only a hash. If you lose it, rotate the key and
@@ -1065,17 +1065,17 @@ update your servers.
 
 > **Treat the secret key like a password**
 >
-> The secret key can move money in the live environment. Never commit it, never
+> The secret key can move money in live mode. Never commit it, never
 > put it in client-side code or a mobile bundle, and never log it. Load it from
 > an environment variable or a secrets manager.
 
-## The key pins the environment
+## The key pins the mode
 
-The environment is not a separate parameter — it is **derived from the key's
-prefix** and verified on every request. An `nbo_test_` key can only ever touch
-test data; an `nbo_live_` key can only touch live data. There is no way for one
+The mode is not a separate parameter — it is **derived from the key's
+prefix** and verified on every request. An `nbo_sandbox_` key can only ever touch
+sandbox data; an `nbo_live_` key can only touch live data. There is no way for one
 request to cross the boundary, which is why you can keep both keys side by side
-without fear of a test call hitting production.
+without fear of a sandbox call reaching live.
 
 See [environments](/getting-started/environments) for what that pinning means in
 practice.
@@ -1102,8 +1102,8 @@ A missing, malformed, or revoked key returns `401 Unauthorized` — see
 ## Rotating a key
 
 Rotation issues a new secret and invalidates the old one. Because the key both
-authenticates and pins the environment, a rotated key keeps the same
-environment — a rotated test key is still a test key.
+authenticates and pins the mode, a rotated key keeps the same
+mode — a rotated sandbox key is still a sandbox key.
 
 >
 > Roll keys on a schedule and on any suspected exposure. Update every server
@@ -1114,68 +1114,98 @@ environment — a rotated test key is still a test key.
 ---
 title: "Environments"
 type: tutorial
-summary: "nombaone has two environments — test and live. Your secret key's prefix pins every request to exactly one of them."
+summary: "Two independent axes — the deployment environment (development or production) is our infrastructure, and the account mode (sandbox or live) is set by your key's prefix and partitions your data."
 canonical: https://docs.nombaone.xyz/getting-started/environments
 ---
 
 # Environments
 
-nombaone has exactly two environments:
+Most APIs jam two unrelated ideas into one "test/live" switch. nombaone keeps
+them separate, because they answer different questions:
 
-| Environment | Key prefix | Purpose |
-|---|---|---|
-| `test` | `nbo_test_` | A sandbox with isolated data. Safe to experiment; nothing here touches real money. |
-| `live` | `nbo_live_` | Production. Real organizations, real money movement. |
+- **Deployment environment** — *where* the code runs. Our infrastructure concern.
+- **Account mode** — *which* data a request touches. Yours, chosen by your key.
 
-## One key, one environment
+| Axis | Values | Set by | Do you see it? |
+|---|---|---|---|
+| Deployment environment | `development` · `production` | Our infrastructure (`INFRA_ENVIRONMENT`) | No — it's ours |
+| Account mode | `sandbox` · `live` | Your API key's prefix | Yes — you pick the key |
 
-You do not pass an environment parameter. The environment is **embedded in the
-secret key** and verified on every request: an `nbo_test_` key reaches only test
-data, and an `nbo_live_` key reaches only live data. The two are fully isolated
-— separate data, separate balances, separate webhook endpoints.
+## Account mode is the one you choose
 
-This is why you can hold both keys at once: a request can never cross from one
-environment into the other, no matter how it is constructed.
+Mode is **derived from your secret key's prefix** and verified on every request.
+You never pass a mode parameter:
+
+- `nbo_sandbox_…` → **sandbox** mode. Isolated data, no real money. Safe to
+experiment.
+- `nbo_live_…` → **live** mode. Real organizations, real money movement.
+
+The two are fully isolated — separate data, separate balances, separate webhook
+endpoints — so you can hold both keys at once and a request can never cross from
+one mode into the other.
 
 ```bash
-# Test — sandbox data only
+# Sandbox — isolated data, no real money
 curl https://sandbox.api.nombaone.xyz/v1/examples \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 
-# Live — production data only
+# Live — real money movement
 curl https://api.nombaone.xyz/v1/examples \
   -H "Authorization: Bearer nbo_live_…"
 ```
 
-> **Resources carry their environment**
+> **Resources record their mode**
 >
-> Every resource the API returns includes its `environment` field, so you can
-> always confirm which side a record belongs to.
+> Every resource the API returns carries the mode it belongs to, so you can
+> always confirm which side a record lives on.
 
-## Working across environments
+## Deployment environment is infrastructure
 
-A clean integration keeps the two strictly separate:
+The deployment environment is *where* nombaone itself runs, and it isn't
+something you configure:
+
+- **`development`** is local-only — the machine an engineer runs the service on.
+- **`production`** is the single hosted deployment that serves every merchant.
+
+One production deployment serves **both modes at once**. The mode comes from the
+key on each request, not from a separate deployment — there is no "sandbox server"
+and "live server" to point at. A `sandbox` key works everywhere; a `live` key
+only works against the production deployment.
+
+> **Live needs production**
+>
+> Real money only moves on the `production` deployment. A `live` key is rejected
+> anywhere else, so you can't accidentally move funds from a local dev machine.
+
+## Working across modes
+
+A clean integration keeps the two modes strictly separate:
 
 - **Configuration** — load the key from an environment variable
-(`NOMBAONE_SECRET_KEY`) so the same code runs against test in staging and live
-in production with no code change.
-- **Data** — test references and live references are distinct; an id minted in
-test will never resolve in live.
-- **Webhooks** — register endpoints per environment. A test event is delivered
-only to your test endpoint.
+(`NOMBAONE_SECRET_KEY`) so the same code runs against sandbox in staging and
+live in production with no code change.
+- **Data** — sandbox references and live references are distinct; an id minted in
+sandbox will never resolve in live.
+- **Webhooks** — register endpoints per mode. A sandbox event is delivered only to
+your sandbox endpoint.
 
 > **Promote deliberately**
 >
-> Build and verify against `test`, then swap the key to `nbo_live_` to go live.
-> Re-run your end-to-end checks after the swap: live has its own data, its own
-> balances, and moves real money.
+> Build and verify in sandbox, then swap the key to `nbo_live_` to go live. Re-run
+> your end-to-end checks after the swap: live has its own data, its own balances,
+> and moves real money.
+
+- **[Authentication](/getting-started/authentication)** — 
+How the key's prefix pins the mode, and how to keep it safe.
+- **[Going live](/guides/going-live)** — 
+The checklist to move from a sandbox key to real money.
 
 ---
 
 ---
 title: "Quickstart"
 type: tutorial
-summary: "Get a test secret key and make your first authenticated call to the nombaone API."
+summary: "Get a sandbox secret key and make your first authenticated call to the nombaone API."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart
 ---
 
@@ -1183,13 +1213,13 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart
 
 You need one thing to call the nombaone API: a secret key for your
 organization. This page walks you from zero to a first authenticated request
-against the test environment.
+in sandbox mode.
 
-### Create an organization and get a test key
+### Create an organization and get a sandbox key
 
-Sign up and your organization is provisioned with a **test** secret key that
-looks like `nbo_test_…`. This key is scoped to your organization and pinned
-to the test environment — it can only ever touch sandbox data. Keep it
+Sign up and your organization is provisioned with a **sandbox** secret key that
+looks like `nbo_sandbox_…`. This key is scoped to your organization and pinned
+to sandbox mode — it can only ever touch sandbox data. Keep it
 server-side; never ship it to a browser or a mobile app.
 
 ### Send your first request
@@ -1200,7 +1230,7 @@ Authenticate with the `Authorization: Bearer` header. Every money-moving
 ```bash
 # Create an example (the worked money-path endpoint), ₦150.00 = 15000 kobo
 curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: 1c4e7a90-2b3d-4f56-8a9b-0c1d2e3f4a5b" \
   -d '{ "kind": "standard", "amount": 15000 }'
@@ -1223,7 +1253,7 @@ that also joins its ledger postings and webhooks.
     "status": "pending",
     "amount": 15000,
     "currency": "NGN",
-    "environment": "test",
+    "mode": "sandbox",
     "createdAt": "2026-06-29T10:14:52.004Z"
   },
   "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
@@ -1263,13 +1293,13 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart/curl
 # cURL quickstart
 
 Create your first plan on the Nomba One sandbox with **cURL**. This is a real
-call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+call that returns a `201`; only the key (`nbo_sandbox_…`) and the host change when
 you go live.
 
-## 1 · Get a test key
+## 1 · Get a sandbox key
 
-Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
-Just a shell. Export your key: `export NOMBAONE_SECRET_KEY=nbo_test_…`.
+Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
+Just a shell. Export your key: `export NOMBAONE_SECRET_KEY=nbo_sandbox_…`.
 
 ## 2 · Create a plan
 
@@ -1295,12 +1325,12 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart/go
 # Go quickstart
 
 Create your first plan on the Nomba One sandbox with **Go**. This is a real
-call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+call that returns a `201`; only the key (`nbo_sandbox_…`) and the host change when
 you go live.
 
-## 1 · Get a test key
+## 1 · Get a sandbox key
 
-Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
 Standard library only — `net/http`, no dependency. Read the key from `os.Getenv("NOMBAONE_SECRET_KEY")`.
 
 ## 2 · Create a plan
@@ -1327,12 +1357,12 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart/nextjs
 # Next.js quickstart
 
 Create your first plan on the Nomba One sandbox with **Next.js**. This is a real
-call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+call that returns a `201`; only the key (`nbo_sandbox_…`) and the host change when
 you go live.
 
-## 1 · Get a test key
+## 1 · Get a sandbox key
 
-Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
 Call from a **route handler** or server action — never the browser. `fetch` is built in; read the key from `process.env.NOMBAONE_SECRET_KEY`.
 
 ## 2 · Create a plan
@@ -1359,12 +1389,12 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart/node
 # Node.js quickstart
 
 Create your first plan on the Nomba One sandbox with **Node.js**. This is a real
-call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+call that returns a `201`; only the key (`nbo_sandbox_…`) and the host change when
 you go live.
 
-## 1 · Get a test key
+## 1 · Get a sandbox key
 
-Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
 No SDK needed — Node 18+ has `fetch` built in. Load the key from `process.env.NOMBAONE_SECRET_KEY`.
 
 ## 2 · Create a plan
@@ -1391,12 +1421,12 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart/php
 # PHP quickstart
 
 Create your first plan on the Nomba One sandbox with **PHP**. This is a real
-call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+call that returns a `201`; only the key (`nbo_sandbox_…`) and the host change when
 you go live.
 
-## 1 · Get a test key
+## 1 · Get a sandbox key
 
-Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
 The `curl` extension ships with PHP. Read the key from `getenv("NOMBAONE_SECRET_KEY")`.
 
 ## 2 · Create a plan
@@ -1423,12 +1453,12 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart/python
 # Python quickstart
 
 Create your first plan on the Nomba One sandbox with **Python**. This is a real
-call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+call that returns a `201`; only the key (`nbo_sandbox_…`) and the host change when
 you go live.
 
-## 1 · Get a test key
+## 1 · Get a sandbox key
 
-Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
 Install the HTTP client: `pip install requests`. Read the key from `NOMBAONE_SECRET_KEY`.
 
 ## 2 · Create a plan
@@ -1455,12 +1485,12 @@ canonical: https://docs.nombaone.xyz/getting-started/quickstart/ruby
 # Ruby quickstart
 
 Create your first plan on the Nomba One sandbox with **Ruby**. This is a real
-call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+call that returns a `201`; only the key (`nbo_sandbox_…`) and the host change when
 you go live.
 
-## 1 · Get a test key
+## 1 · Get a sandbox key
 
-Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
 Standard library only — `net/http`. Read the key from `ENV['NOMBAONE_SECRET_KEY']`.
 
 ## 2 · Create a plan
@@ -1494,10 +1524,10 @@ register → fire → verify.
 
 > **Real and signed, not mocked**
 >
-> The event you fire below is a genuine signed payload from the test instrument,
+> The event you fire below is a genuine signed payload from the sandbox instrument,
 > the same shape and the same signature scheme as a live event. Nothing here is
 > faked or `setTimeout`-ed. `simulate` is the honest substitute for organic
-> sandbox delivery — it is test-deployment-only and at-least-once (dedupe on the
+> sandbox delivery — it is sandbox-mode-only and at-least-once (dedupe on the
 > event id).
 
 ## 1 · Register an endpoint
@@ -1507,7 +1537,7 @@ with a tunnel (ngrok, Cloudflare Tunnel) and register the public URL:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-tunnel.ngrok.app/webhooks/nomba",
@@ -1520,14 +1550,14 @@ Store it server-side — you need it to verify every delivery.
 
 ## 2 · Fire a real signed event
 
-Ask the test instrument to emit a signed event to your registered endpoint. Fire
+Ask the sandbox instrument to emit a signed event to your registered endpoint. Fire
 a happy path and an unhappy one:
 
 **invoice.paid**
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "type": "invoice.paid" }'
 ```
@@ -1535,8 +1565,8 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
 **invoice.action_required**
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "type": "invoice.action_required" }'
 ```
@@ -1619,10 +1649,10 @@ canonical: https://docs.nombaone.xyz/getting-started/your-first-subscription
 
 # Your first subscription
 
-By the end of this page you will have a **real subscription** billing on the test
-environment — created with five calls, in about ten minutes, with no mocks. Each
+By the end of this page you will have a **real subscription** billing in sandbox
+mode — created with five calls, in about ten minutes, with no mocks. Each
 call below is the genuine request your server will make in production; only the
-key (`nbo_test_…`) and the host (`sandbox.api.nombaone.xyz`) change when you go
+key (`nbo_sandbox_…`) and the host (`sandbox.api.nombaone.xyz`) change when you go
 live.
 
 The minimal path is four resources and one deterministic test card:
@@ -1633,9 +1663,9 @@ The minimal path is four resources and one deterministic test card:
 4. a **test payment method** that succeeds on cue,
 5. the **subscription** — which produces the first invoice and collects it.
 
-> **Get a test key first**
+> **Get a sandbox key first**
 >
-> Every call authenticates with `Authorization: Bearer nbo_test_…`. If you don't
+> Every call authenticates with `Authorization: Bearer nbo_sandbox_…`. If you don't
 > have a key yet, see [authentication](/getting-started/authentication) — it
 > takes one step. Keep the key server-side.
 
@@ -1649,7 +1679,7 @@ yearly prices at once.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "name": "Pro" }'
@@ -1678,7 +1708,7 @@ A **price** sets the amount and the interval. Amounts are **integer kobo**:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "unitAmountInKobo": 250000, "interval": "month" }'
@@ -1709,7 +1739,7 @@ A **customer** is who you bill. Email and name are all you need to start.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/customers \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "email": "ada@example.com", "name": "Ada Lovelace" }'
@@ -1728,7 +1758,7 @@ const customer = await nbo("/v1/customers", {
 
 ### Attach a test payment method that succeeds
 
-On the test environment you attach a **deterministic** payment method: the
+In sandbox mode you attach a **deterministic** payment method: the
 `behavior` decides the outcome, so your first pass succeeds on purpose. Use
 `success` here; the other behaviors (decline, OTP required, thin
 balance) let you rehearse the unhappy paths later.
@@ -1736,8 +1766,8 @@ balance) let you rehearse the unhappy paths later.
 **cURL**
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "customerId": "{customerId}", "behavior": "success" }'
 ```
@@ -1745,16 +1775,16 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
 **TypeScript**
 
 ```ts
-const method = await nbo("/v1/test/payment-methods", {
+const method = await nbo("/v1/sandbox/payment-methods", {
   method: "POST",
   body: { customerId: customer.data.id, behavior: "success" },
 });
 // method.data.id → "nbo…pm"
 ```
 
-> **Test-environment only**
+> **Sandbox mode only**
 >
-> `POST /v1/test/payment-methods` exists only on the sandbox. In live, a
+> `POST /v1/sandbox/payment-methods` exists only in sandbox mode. In live, a
 > customer attaches a real card, mandate, or transfer instruction — see
 > [multi-rail: push and pull](/concepts/multi-rail-push-and-pull).
 
@@ -1768,7 +1798,7 @@ the method is `success`, it comes back **active** with a paid invoice.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{
@@ -1805,7 +1835,7 @@ A `201` with the standard envelope confirms it:
     "customerId": "nbo…cus",
     "priceId": "nbo…prc",
     "currentPeriodEnd": "2026-08-03T10:14:52.004Z",
-    "environment": "test"
+    "mode": "sandbox"
   },
   "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
 }
@@ -1873,7 +1903,7 @@ a `duration` that controls how long it applies:
 ```bash
 # 20% off for the first 3 cycles
 curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "code": "LAUNCH20", "percentOff": 20, "duration": "repeating", "durationInCycles": 3 }'
 ```
@@ -1881,7 +1911,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
 ```bash
 # ₦500 off, once
 curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "code": "SAVE500", "amountOffInKobo": 50000, "duration": "once" }'
 ```
@@ -1896,7 +1926,7 @@ Attach it to a whole customer or a single subscription:
 ```bash
 # To a subscription
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/discount \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "coupon": "LAUNCH20" }'
 ```
@@ -1904,7 +1934,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/discount \
 ```bash
 # To a customer (applies to all their subscriptions)
 curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/discount \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "coupon": "LAUNCH20" }'
 ```
@@ -1918,7 +1948,7 @@ useful for refunds-as-credit, goodwill, or prepaid balances:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "amountInKobo": 100000, "source": "goodwill" }'
 ```
@@ -1969,7 +1999,7 @@ A plan just needs a name. Description and metadata are optional.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "name": "Pro", "description": "Everything in the Pro tier" }'
@@ -1984,7 +2014,7 @@ under the plan:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{
@@ -2009,7 +2039,7 @@ Set `trialPeriodDays` on the price. A subscription started on it enters
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "unitAmountInKobo": 250000, "interval": "month", "trialPeriodDays": 14 }'
 ```
@@ -2087,11 +2117,11 @@ Read where recovery stands for a subscription:
 ```bash
 # Current dunning status
 curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 
 # The full attempt history
 curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning/attempts \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 ## Rehearse it in test
@@ -2099,8 +2129,8 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning/attempts \
 Attach a test method that fails, then watch the loop run:
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "customerId": "{customerId}", "behavior": "decline_insufficient_funds" }'
 ```
@@ -2126,26 +2156,26 @@ Receive and verify these events correctly.
 ---
 title: "Going live"
 type: how-to
-summary: "The checklist to move from a test key to real money — swap the key and host, re-register webhooks, verify signatures live, and confirm idempotency and the money unit before the first charge."
+summary: "The checklist to move from a sandbox key to real money — swap the key and host, re-register webhooks, verify signatures live, and confirm idempotency and the money unit before the first charge."
 canonical: https://docs.nombaone.xyz/guides/going-live
 ---
 
 # Going live
 
-Going live is deliberately small: swap your `nbo_test_` key for `nbo_live_` and
+Going live is deliberately small: swap your `nbo_sandbox_` key for `nbo_live_` and
 your host from `sandbox.api.nombaone.xyz` to `api.nombaone.xyz`. But the two
-environments share nothing — separate data, balances, and webhook endpoints — so
+modes share nothing — separate data, balances, and webhook endpoints — so
 run this checklist before the first real charge.
 
 ## The switch
 
-The key prefix pins everything. There is no environment parameter — a `nbo_live_`
-key reaches only live, a `nbo_test_` key only sandbox. See
+The key prefix pins everything. There is no mode parameter — a `nbo_live_`
+key reaches only live, a `nbo_sandbox_` key only sandbox. See
 [environments](/getting-started/environments).
 
 ```bash
-# Test
-https://sandbox.api.nombaone.xyz/v1   +   nbo_test_…
+# Sandbox
+https://sandbox.api.nombaone.xyz/v1   +   nbo_sandbox_…
 
 # Live
 https://api.nombaone.xyz/v1           +   nbo_live_…
@@ -2155,27 +2185,27 @@ Load the key from an environment variable so the same code runs against both:
 
 ```ts
 const base = process.env.NOMBAONE_BASE_URL;   // sandbox vs prod
-const key  = process.env.NOMBAONE_SECRET_KEY; // nbo_test_ vs nbo_live_
+const key  = process.env.NOMBAONE_SECRET_KEY; // nbo_sandbox_ vs nbo_live_
 ```
 
 ## Pre-launch checklist
 
 ### Re-create your plans and prices in live
 
-Test and live data are fully isolated — a plan id minted in test does not
+Sandbox and live data are fully isolated — a plan id minted in sandbox does not
 exist in live. Re-create your plans, prices, and coupons with the live key
 (or run your seed script pointed at the live base).
 
 ### Register live webhook endpoints
 
-Webhooks are per-environment. Register your production endpoint with the live
-key and store the new `whsec_…` secret — it is different from your test
+Webhooks are per-mode. Register your production endpoint with the live
+key and store the new `whsec_…` secret — it is different from your sandbox
 secret. Verify signatures against the live secret.
 
 ### Confirm signature verification against the live secret
 
 Fire a real event and confirm your handler verifies it — HMAC over the raw
-body, constant-time compare. A handler that passed in test with the test
+body, constant-time compare. A handler that passed in sandbox with the sandbox
 secret will reject live events until you point it at the live secret. See
 [handle webhooks](/guides/handle-webhooks).
 
@@ -2238,7 +2268,7 @@ first, do [verify us in your devtools](/getting-started/verify-in-your-devtools)
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://yourapp.com/webhooks/nomba",
@@ -2247,8 +2277,8 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 The response returns a **signing secret** (`whsec_…`), shown once. Store it
-server-side. Register endpoints per environment — a test event only reaches your
-test endpoint.
+server-side. Register endpoints per mode — a sandbox event only reaches your
+sandbox endpoint.
 
 ## 2 · Verify the signature — on the raw body
 
@@ -2357,7 +2387,7 @@ proration:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "priceId": "{newPriceId}", "prorationBehavior": "create_prorations" }'
@@ -2373,7 +2403,7 @@ Show the customer the exact cost of a change before making it:
 
 ```bash
 curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/upcoming-invoice \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 The upcoming invoice reflects proration lines so there are no surprises on the
@@ -2386,7 +2416,7 @@ same plan. Set `intervalSwitch: true` so the engine aligns the billing anchor:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "priceId": "{yearlyPriceId}", "intervalSwitch": true }'
 ```
@@ -2439,7 +2469,7 @@ the full net; pass `amountInKobo` for a partial:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/{id}/refund \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "amountInKobo": 250000 }'
@@ -2464,7 +2494,7 @@ Check what's locked vs available:
 
 ```bash
 curl https://sandbox.api.nombaone.xyz/v1/settlements/escrow \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 The response shows the locked amount and when it releases. Available balance for
@@ -2476,7 +2506,7 @@ Withdraw an organization's available balance to a bank:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/payout \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "amountInKobo": 500000, "bankCode": "058", "accountNumber": "0123456789" }'
@@ -2525,7 +2555,7 @@ authorizes (and, for a card, may complete a bank OTP step) at the returned link:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/setup \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "customerRef": "{customerId}",
@@ -2542,14 +2572,14 @@ customer pushes money to it on each billing date:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/virtual-account \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "customerRef": "{customerId}", "expectedAmount": 250000 }'
 ```
 
 > **Rehearse deterministically in test**
 >
-> On the sandbox, skip the hosted step: `POST /v1/test/payment-methods` with a
+> On the sandbox, skip the hosted step: `POST /v1/sandbox/payment-methods` with a
 > `behavior` (`success`, `requires_otp`, `decline_insufficient_funds`)
 > gives you a method with a known outcome, so you can rehearse both the happy and
 > the unhappy paths before real money is involved.
@@ -2560,7 +2590,7 @@ Subscribe the customer to the price with the method:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
   -d '{
@@ -3128,7 +3158,7 @@ goodwill, or prepaid balances. Credits are a sub-resource of the
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "amountInKobo": 100000, "source": "goodwill" }'
 ```
@@ -3193,7 +3223,7 @@ branch are explained in [dunning and recovery](/guides/dunning-and-recovery).
 
 ```bash
 curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 > **past_due is not canceled**
@@ -3261,7 +3291,7 @@ so a retry never creates a second example.
 ```bash
 # Record a ₦150.00 example (15000 kobo)
 curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: 1c4e7a90-2b3d-4f56-8a9b-0c1d2e3f4a5b" \
   -d '{
@@ -3306,7 +3336,7 @@ behave identically.
     "status": "pending",
     "amount": 15000,
     "currency": "NGN",
-    "environment": "test",
+    "mode": "sandbox",
     "createdAt": "2026-06-29T10:14:52.004Z"
   },
   "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
@@ -3355,7 +3385,7 @@ The amount recorded, in kobo.
 
 Always `NGN`.
 
-The environment this resource belongs to, matching your key's prefix.
+The mode this resource belongs to, matching your key's prefix.
 
 When the example was created.
 
@@ -3502,7 +3532,7 @@ determines whether a charge is *pulled* or *pushed* — see
 >
 > `setup` and `virtual-account` create the instrument (the customer authorizes at
 > the returned link); a [subscription](/guides/start-a-subscription) then charges
-> it each cycle. On the sandbox, `POST /v1/test/payment-methods` mints a
+> it each cycle. On the sandbox, `POST /v1/sandbox/payment-methods` mints a
 > deterministic method for rehearsing outcomes.
 
 ---
@@ -3631,121 +3661,16 @@ and how to handle them, see the [Webhooks](/webhooks/overview) section.
 ---
 
 ---
-title: "Test toolkit overview"
-type: reference
-summary: "Drive the engine deterministically on the sandbox — deterministic payment outcomes, a test clock to skip the wait, and on-demand signed webhooks. No real card, no cron."
-canonical: https://docs.nombaone.xyz/test-toolkit/overview
----
-
-# Test toolkit overview
-
-Testing a billing engine is hard for three reasons: you can't wait a month for the
-next cycle, you can't reliably make a real card decline, and the sandbox sends no
-organic webhooks. The **test toolkit** solves all three — a set of `/v1/test/*`
-instruments, available only on the test deployment, that make the engine behave
-exactly how you need to rehearse a flow.
-
-> **Test-deployment only, live behavior identical**
->
-> Every `/v1/test/*` route exists only when you call the sandbox with an
-> `nbo_test_` key. Live behaves byte-identically minus these shortcuts — the test
-> toolkit changes *how you trigger* a path, never *what the path does*.
-
-## The three instruments
-
-- **[Test payment methods](/test-toolkit/test-payment-methods)** — 
-Attach a method that succeeds, declines, or demands OTP — on purpose.
-- **[The test clock](/test-toolkit/test-clock)** — 
-Advance a subscription's next cycle on demand — no month-long wait.
-- **[Simulate webhooks](/test-toolkit/simulate-webhooks)** — 
-Fire a real, signed event to your endpoint whenever you want.
-- **[Verify in your devtools](/getting-started/verify-in-your-devtools)** — 
-The one-click flow that ties a simulate to in-browser verification.
-
-## Rehearse the whole lifecycle
-
-Together the three let you drive a complete billing story in seconds:
-
-1. Attach a `requires_otp` method → start a subscription → get `invoice.action_required`.
-2. Swap to a `success` method → advance the cycle → watch it collect and settle.
-3. Simulate `invoice.payment_failed` → confirm your dunning handling fires.
-
-Every step is a real sandbox call with a genuine `X-Request-Id`. Nothing is
-mocked — see [agent-native docs](/agents) for the same honesty guarantee applied
-to the docs themselves.
-
----
-
----
-title: "Simulate webhooks"
-type: reference
-summary: "Emit and deliver any catalog event on demand — a real, signed payload to your endpoint, the honest substitute for a sandbox that sends no organic webhooks."
-canonical: https://docs.nombaone.xyz/test-toolkit/simulate-webhooks
----
-
-# Simulate webhooks
-
-The sandbox does not push webhooks on its own, so the toolkit lets you **fire any
-event yourself** — a real, signed payload delivered through the real pipeline to
-your registered endpoint. It is the same instrument the
-[verify-in-your-devtools](/getting-started/verify-in-your-devtools) flow wraps in
-one click.
-
-## Fire an event
-
-```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
-  -H "Content-Type: application/json" \
-  -d '{ "type": "invoice.paid" }'
-```
-
-Pass any `type` from the [event catalog](/webhooks/event-catalog). Add a `payload`
-to shape the body:
-
-```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "invoice.action_required",
-    "payload": { "reference": "nbo749201835566inv", "reason": "otp_required" }
-  }'
-```
-
-The event arrives signed with your endpoint's secret — verify it exactly as you
-would a production delivery.
-
-> **Real and signed, not mocked**
->
-> A simulated event is a genuine signed payload, identical in shape and signature
-> scheme to production. Your verification code passes against it unchanged. It is
-> the honest substitute for organic delivery, not a stand-in.
-
-> **At-least-once, even here**
->
-> Simulated deliveries follow the same
-> [delivery guarantee](/webhooks/delivery-guarantee) — dedupe on the event id.
-> Firing the same event twice must be a no-op in your handler.
-
-- **[Verify in your devtools](/getting-started/verify-in-your-devtools)** — 
-The one-click fire-and-verify flow.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
-Build the idempotent handler these events drive.
-
----
-
----
-title: "The test clock"
+title: "The sandbox clock"
 type: reference
 summary: "Advance a subscription's next cycle on demand — rehearse a renewal, a proration, or a dunning retry in seconds instead of waiting a real billing period."
-canonical: https://docs.nombaone.xyz/test-toolkit/test-clock
+canonical: https://docs.nombaone.xyz/sandbox-toolkit/clock
 ---
 
-# The test clock
+# The sandbox clock
 
 A subscription bills on a repeating cycle — monthly, yearly. You can't wait a
-month to test the second charge. The **test clock** advances a subscription's next
+month to test the second charge. The **sandbox clock** advances a subscription's next
 cycle immediately, running the same billing loop the scheduler would run on the
 real billing date: open the cycle, finalize the invoice, collect it, post to the
 ledger.
@@ -3754,8 +3679,8 @@ ledger.
 
 ```bash
 curl -X POST \
-  https://sandbox.api.nombaone.xyz/v1/test/subscriptions/{id}/advance-cycle \
-  -H "Authorization: Bearer nbo_test_…"
+  https://sandbox.api.nombaone.xyz/v1/sandbox/subscriptions/{id}/advance-cycle \
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 No body — it advances the target subscription by exactly one cycle and returns the
@@ -3777,27 +3702,74 @@ the [change](/guides/proration-and-plan-changes) produces.
 > — it just triggers it now instead of on the calendar. What you see is what live
 > will do. See [how billing works](/concepts/how-billing-works).
 
-> **Test deployment only**
+> **Sandbox mode only**
 >
-> `advance-cycle` exists only on the sandbox. In live, cycles advance on their real
+> `advance-cycle` exists only in sandbox mode. In live, cycles advance on their real
 > billing dates, driven by the scheduler — there is no way to force a live charge
 > early.
 
-- **[Test payment methods](/test-toolkit/test-payment-methods)** — 
+- **[Sandbox payment methods](/sandbox-toolkit/payment-methods)** — 
 Choose the outcome the advanced cycle produces.
-- **[Simulate webhooks](/test-toolkit/simulate-webhooks)** — 
+- **[Simulate webhooks](/sandbox-toolkit/simulate-webhooks)** — 
 Fire the events a cycle would emit, directly.
 
 ---
 
 ---
-title: "Test payment methods"
+title: "Sandbox toolkit overview"
 type: reference
-summary: "Attach a deterministic payment method on the sandbox — its behavior decides the outcome, so you can rehearse success, decline, and card-OTP paths on demand."
-canonical: https://docs.nombaone.xyz/test-toolkit/test-payment-methods
+summary: "Drive the engine deterministically on the sandbox — deterministic payment outcomes, a sandbox clock to skip the wait, and on-demand signed webhooks. No real card, no cron."
+canonical: https://docs.nombaone.xyz/sandbox-toolkit/overview
 ---
 
-# Test payment methods
+# Sandbox toolkit overview
+
+Testing a billing engine is hard for three reasons: you can't wait a month for the
+next cycle, you can't reliably make a real card decline, and the sandbox sends no
+organic webhooks. The **sandbox toolkit** solves all three — a set of `/v1/sandbox/*`
+instruments, available only in sandbox mode, that make the engine behave
+exactly how you need to rehearse a flow.
+
+> **Sandbox mode only, live behavior identical**
+>
+> Every `/v1/sandbox/*` route exists only in sandbox mode — that is, when you
+> authenticate with an `nbo_sandbox_` key. Live behaves byte-identically minus these
+> shortcuts — the sandbox toolkit changes *how you trigger* a path, never *what the
+> path does*.
+
+## The three instruments
+
+- **[Sandbox payment methods](/sandbox-toolkit/payment-methods)** — 
+Attach a method that succeeds, declines, or demands OTP — on purpose.
+- **[The sandbox clock](/sandbox-toolkit/clock)** — 
+Advance a subscription's next cycle on demand — no month-long wait.
+- **[Simulate webhooks](/sandbox-toolkit/simulate-webhooks)** — 
+Fire a real, signed event to your endpoint whenever you want.
+- **[Verify in your devtools](/getting-started/verify-in-your-devtools)** — 
+The one-click flow that ties a simulate to in-browser verification.
+
+## Rehearse the whole lifecycle
+
+Together the three let you drive a complete billing story in seconds:
+
+1. Attach a `requires_otp` method → start a subscription → get `invoice.action_required`.
+2. Swap to a `success` method → advance the cycle → watch it collect and settle.
+3. Simulate `invoice.payment_failed` → confirm your dunning handling fires.
+
+Every step is a real sandbox call with a genuine `X-Request-Id`. Nothing is
+mocked — see [agent-native docs](/agents) for the same honesty guarantee applied
+to the docs themselves.
+
+---
+
+---
+title: "Sandbox payment methods"
+type: reference
+summary: "Attach a deterministic payment method on the sandbox — its behavior decides the outcome, so you can rehearse success, decline, and card-OTP paths on demand."
+canonical: https://docs.nombaone.xyz/sandbox-toolkit/payment-methods
+---
+
+# Sandbox payment methods
 
 In live, whether a charge succeeds depends on the customer's real card and bank —
 which you can't control while testing. On the sandbox, you attach a **deterministic**
@@ -3807,8 +3779,8 @@ rehearse the unhappy paths a happy demo skips.
 ## Create one
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "customerId": "{customerId}", "behavior": "success", "kind": "card" }'
 ```
@@ -3837,10 +3809,69 @@ rail, `card` for the OTP-prone one.
 > your handler sends the customer the fresh checkout link — see
 > [card tokens expire](/concepts/hard-parts/card-tokens-expire).
 
-- **[The test clock](/test-toolkit/test-clock)** — 
+- **[The sandbox clock](/sandbox-toolkit/clock)** — 
 Advance the cycle to see the method charged again.
 - **[Dunning and recovery](/guides/dunning-and-recovery)** — 
 What the decline behaviors let you rehearse.
+
+---
+
+---
+title: "Simulate webhooks"
+type: reference
+summary: "Emit and deliver any catalog event on demand — a real, signed payload to your endpoint, the honest substitute for a sandbox that sends no organic webhooks."
+canonical: https://docs.nombaone.xyz/sandbox-toolkit/simulate-webhooks
+---
+
+# Simulate webhooks
+
+The sandbox does not push webhooks on its own, so the toolkit lets you **fire any
+event yourself** — a real, signed payload delivered through the real pipeline to
+your registered endpoint. It is the same instrument the
+[verify-in-your-devtools](/getting-started/verify-in-your-devtools) flow wraps in
+one click.
+
+## Fire an event
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "type": "invoice.paid" }'
+```
+
+Pass any `type` from the [event catalog](/webhooks/event-catalog). Add a `payload`
+to shape the body:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "invoice.action_required",
+    "payload": { "reference": "nbo749201835566inv", "reason": "otp_required" }
+  }'
+```
+
+The event arrives signed with your endpoint's secret — verify it exactly as you
+would a production delivery.
+
+> **Real and signed, not mocked**
+>
+> A simulated event is a genuine signed payload, identical in shape and signature
+> scheme to production. Your verification code passes against it unchanged. It is
+> the honest substitute for organic delivery, not a stand-in.
+
+> **At-least-once, even here**
+>
+> Simulated deliveries follow the same
+> [delivery guarantee](/webhooks/delivery-guarantee) — dedupe on the event id.
+> Firing the same event twice must be a no-op in your handler.
+
+- **[Verify in your devtools](/getting-started/verify-in-your-devtools)** — 
+The one-click fire-and-verify flow.
+- **[Handle webhooks](/guides/handle-webhooks)** — 
+Build the idempotent handler these events drive.
 
 ---
 
@@ -3979,7 +4010,7 @@ Point a webhook at a URL you control, choosing which events it should receive:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://yourapp.com/webhooks/nomba",
@@ -3988,7 +4019,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 You get back a **signing secret** (`whsec_…`), shown once. Endpoints are
-per-environment — a test event only reaches your test endpoint.
+per-mode — a sandbox event only reaches your sandbox endpoint.
 
 ## The four rules
 
@@ -4052,11 +4083,11 @@ Every attempt is recorded. List an endpoint's deliveries, or read one:
 ```bash
 # All deliveries for an endpoint
 curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 
 # One delivery, with its attempts and your endpoint's responses
 curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId} \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 ## Replay a delivery
@@ -4067,7 +4098,7 @@ endpoint that was down:
 ```bash
 curl -X POST \
   https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId}/replay \
-  -H "Authorization: Bearer nbo_test_…"
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 > **Replay keeps the original event id**
@@ -4192,7 +4223,7 @@ Fire a real signed event and watch it verify.
 ---
 title: "Simulate an event"
 type: reference
-summary: "Fire a real, signed event to your endpoint on demand — the honest substitute for a sandbox that sends no organic webhooks. Test-environment only."
+summary: "Fire a real, signed event to your endpoint on demand — the honest substitute for a sandbox that sends no organic webhooks. Sandbox mode only."
 canonical: https://docs.nombaone.xyz/webhooks/simulate
 ---
 
@@ -4202,22 +4233,22 @@ The Nomba sandbox does not push webhooks on its own. Rather than pretend it does
 nombaone gives you a way to **fire a real, signed event whenever you want**, so you
 can build and test your handler against genuine traffic — the same shape, the same
 signature scheme, the same delivery pipeline as production. This is the honest
-substitute, and it is clearly test-only.
+substitute, and it is clearly sandbox-only.
 
-> **Real, not mocked — and test-only**
+> **Real, not mocked — and sandbox-only**
 >
 > A simulated event is signed with your endpoint's real secret and delivered
 > through the real pipeline. It is **not** a fake payload or a `setTimeout` — your
 > verification code will pass against it exactly as it will in production.
-> `simulate` exists only on the test deployment; it is not available in live.
+> `simulate` exists only in sandbox mode; it is not available in live.
 
 ## Fire an event
 
 Ask the instrument to emit any catalog event to your registered endpoints:
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "type": "invoice.paid" }'
 ```
@@ -4226,8 +4257,8 @@ Pass any type from the [event catalog](/webhooks/event-catalog). To shape the
 body, include a `payload`:
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/webhooks/simulate \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{
     "type": "invoice.action_required",
@@ -4348,9 +4379,9 @@ The interactive fire-and-verify flow.
 - `POST /v1/examples` — POST /v1/examples (params: Idempotency-Key*)
 - `GET /v1/examples` — GET /v1/examples (params: kind, limit, cursor)
 - `GET /v1/examples/{id}` — GET /v1/examples/{id} (params: id*)
-- `POST /v1/test/payment-methods` — POST /v1/test/payment-methods (params: Idempotency-Key*)
-- `POST /v1/test/subscriptions/{id}/advance-cycle` — POST /v1/test/subscriptions/{id}/advance-cycle (params: id*, Idempotency-Key*)
-- `POST /v1/test/webhooks/simulate` — POST /v1/test/webhooks/simulate (params: Idempotency-Key*)
+- `POST /v1/sandbox/payment-methods` — POST /v1/sandbox/payment-methods (params: Idempotency-Key*)
+- `POST /v1/sandbox/subscriptions/{id}/advance-cycle` — POST /v1/sandbox/subscriptions/{id}/advance-cycle (params: id*, Idempotency-Key*)
+- `POST /v1/sandbox/webhooks/simulate` — POST /v1/sandbox/webhooks/simulate (params: Idempotency-Key*)
 - `GET /v1/openapi.json` — GET /v1/openapi.json
 
 All money fields are integer kobo (e.g. `250000` = ₦2,500.00).
@@ -4367,9 +4398,9 @@ All money fields are integer kobo (e.g. `250000` = ₦2,500.00).
 - `CLIENT_CONFLICT` — This request conflicts with the current state of the resource. Re-fetch it to see its latest state, then retry with values consistent with that state.
 - `INVALID_CURSOR` — The pagination `cursor` is malformed or expired. Drop the `cursor` to start from the first page, then page forward using only the `nextCursor` values we return.
 - `API_KEY_MISSING` — Send your secret key as `Authorization: Bearer <key>`. Create one in the dashboard under API keys if you do not have it.
-- `API_KEY_INVALID` — That key is not recognized. Copy it fresh from the dashboard (it may have been rotated or revoked) and send the whole `nbo_test_`/`nbo_live_` string with no extra whitespace.
+- `API_KEY_INVALID` — That key is not recognized. Copy it fresh from the dashboard (it may have been rotated or revoked) and send the whole `nbo_sandbox_`/`nbo_live_` string with no extra whitespace.
 - `API_KEY_SCOPE_FORBIDDEN` — Your key lacks the scope this endpoint needs. Grant the required scope (e.g. `customers:write`) to the key in the dashboard, or use a key that already has it.
-- `API_KEY_ENVIRONMENT_MISMATCH` — You used a live key against a test host (or vice-versa). Use the key whose prefix (`nbo_test_`/`nbo_live_`) matches the environment you're calling.
+- `API_KEY_ENVIRONMENT_MISMATCH` — You used a live key against a test host (or vice-versa). Use the key whose prefix (`nbo_sandbox_`/`nbo_live_`) matches the environment you're calling.
 - `IDEMPOTENCY_KEY_MISSING` — Send a unique `Idempotency-Key` header on this request; reuse the same key to safely retry the same operation.
 - `IDEMPOTENCY_KEY_REUSED` — You reused an `Idempotency-Key` with a different request body. Use a new key for a new operation, or resend the identical body to replay the original result.
 - `IDEMPOTENCY_IN_PROGRESS` — A request with this `Idempotency-Key` is still being processed. Wait briefly and retry with the same key to get the final result.

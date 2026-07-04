@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 export type CreditGrantSource = 'downgrade_proration' | 'manual' | 'goodwill' | 'coupon';
 
@@ -10,7 +10,7 @@ export interface CreditGrantResponseData {
   remainingInKobo: number; // kobo unconsumed
   source: CreditGrantSource;
   sourceReference: string | null;
-  environment: Environment;
+  mode: Mode;
   voidedAt: string | null;
   createdAt: string;
 }

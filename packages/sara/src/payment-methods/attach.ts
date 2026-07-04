@@ -65,7 +65,7 @@ export async function setupCard(
   await txDb.insert(paymentMethodsTable).values({
     reference,
     organizationId: ctx.organizationId,
-    environment: ctx.environment,
+    mode: ctx.mode,
     customerId: customer.id,
     kind: 'card',
     status: 'setup_pending',
@@ -143,7 +143,7 @@ export async function createMandate(
   await txDb.insert(paymentMethodsTable).values({
     reference,
     organizationId: ctx.organizationId,
-    environment: ctx.environment,
+    mode: ctx.mode,
     customerId: customer.id,
     kind: 'mandate',
     status: 'consent_pending',
@@ -194,7 +194,7 @@ export async function issueVirtualAccount(
   await txDb.insert(paymentMethodsTable).values({
     reference,
     organizationId: ctx.organizationId,
-    environment: ctx.environment,
+    mode: ctx.mode,
     customerId: customer.id,
     kind: 'virtual_account',
     status: 'active',

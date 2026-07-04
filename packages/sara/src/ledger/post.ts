@@ -131,7 +131,7 @@ export async function postTransaction(
       .values({
         reference,
         organizationId: ctx.organizationId,
-        environment: ctx.environment,
+        mode: ctx.mode,
         kind: input.kind,
         memo: input.memo ?? null,
       })

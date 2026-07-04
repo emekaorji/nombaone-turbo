@@ -13,7 +13,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 import { organizationsTable } from './organizations';
 import { plansTable } from './plans';
 
@@ -44,7 +44,7 @@ export const pricesTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     planId: uuid('plan_id')
       .notNull()
       .references(() => plansTable.id, { onDelete: 'restrict' }),
@@ -64,7 +64,7 @@ export const pricesTable = pgTable(
     planActiveIdx: index('prices_plan_active_idx').on(table.planId, table.active),
     keysetIdx: index('prices_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

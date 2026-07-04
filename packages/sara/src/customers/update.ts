@@ -27,7 +27,7 @@ export async function updateCustomer(
     .where(
       and(
         eq(customersTable.organizationId, ctx.organizationId),
-        eq(customersTable.environment, ctx.environment),
+        eq(customersTable.mode, ctx.mode),
         eq(customersTable.reference, reference)
       )
     )

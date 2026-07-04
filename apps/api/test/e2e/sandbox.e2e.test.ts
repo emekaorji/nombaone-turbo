@@ -38,7 +38,7 @@ const NOMBA_CONFIGURED = Boolean(
 describe.skipIf(!(RUN && NOMBA_CONFIGURED))('nomba sandbox integration (item 3, opt-in, network)', () => {
   let harness: Harness;
   let bearer: string;
-  let ctx: { organizationId: string; environment: 'test' };
+  let ctx: { organizationId: string; mode: 'sandbox' };
   let customerRef: string;
 
   beforeAll(async () => {
@@ -48,9 +48,9 @@ describe.skipIf(!(RUN && NOMBA_CONFIGURED))('nomba sandbox integration (item 3, 
     registerRailsIfConfigured();
 
     const org = await harness.seedOrg('Sandbox');
-    ctx = { organizationId: org.organizationId, environment: 'test' };
+    ctx = { organizationId: org.organizationId, mode: 'sandbox' };
     bearer = (
-      await harness.mintApiKey(org.organizationId, 'test', ['customers:write', 'payment_methods:write'])
+      await harness.mintApiKey(org.organizationId, 'sandbox', ['customers:write', 'payment_methods:write'])
     ).secret;
     const customer = await createCustomer(harness.db, ctx, { email: 'sandbox@acme.test', name: 'Sandbox' });
     customerRef = customer.id;
@@ -64,7 +64,7 @@ describe.skipIf(!(RUN && NOMBA_CONFIGURED))('nomba sandbox integration (item 3, 
 
   it('authenticates against the real Nomba sandbox (client_credentials → token)', async () => {
     const { getNombaClient } = await import('../../src/shared/config/nomba');
-    const token = await getNombaClient().getToken();
+    const token = await getNombaClient('sandbox').getToken();
     expect(typeof token).toBe('string');
     expect(token.length).toBeGreaterThan(0);
   }, 30_000);
@@ -90,7 +90,7 @@ describe.skipIf(!(RUN && NOMBA_CONFIGURED))('nomba sandbox integration (item 3, 
 
   it('requeries an unknown transaction gracefully (found:false, no throw)', async () => {
     const { getNombaClient } = await import('../../src/shared/config/nomba');
-    const result = await getNombaClient().requeryTransaction(ctx, { reference: `nbo000000000000inv` });
+    const result = await getNombaClient('sandbox').requeryTransaction(ctx, { reference: `nbo000000000000inv` });
     expect(result.found).toBe(false);
     expect(result.succeeded).toBe(false);
   }, 30_000);

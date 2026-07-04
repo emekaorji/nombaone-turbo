@@ -24,7 +24,7 @@ const fakeNomba: NombaClient = {
 
 describe('mandate activation sweep e2e (direct debit)', () => {
   let harness: Harness;
-  let ctxA: { organizationId: string; environment: 'test' };
+  let ctxA: { organizationId: string; mode: 'sandbox' };
   let seq = 0;
   const uniq = (): string => `${Date.now()}-${seq++}`;
 
@@ -32,7 +32,7 @@ describe('mandate activation sweep e2e (direct debit)', () => {
     harness = await startHarness();
     harness.setNombaClient(fakeNomba);
     const orgA = await harness.seedOrg('Mandate A');
-    ctxA = { organizationId: orgA.organizationId, environment: 'test' };
+    ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
   });
 
   afterAll(async () => {
@@ -52,12 +52,12 @@ describe('mandate activation sweep e2e (direct debit)', () => {
     const cardRef = mintReference('PMT');
     const cid = await newCustomerId();
     await harness.db.insert(paymentMethodsTable).values([
-      { reference: pendingRef, organizationId: ctxA.organizationId, environment: 'test', customerId: cid, kind: 'mandate', status: 'consent_pending', mandateId: 'md_pending' },
-      { reference: activeRef, organizationId: ctxA.organizationId, environment: 'test', customerId: cid, kind: 'mandate', status: 'active', mandateId: 'md_active' },
-      { reference: cardRef, organizationId: ctxA.organizationId, environment: 'test', customerId: cid, kind: 'card', status: 'active', tokenKey: 'tok' },
+      { reference: pendingRef, organizationId: ctxA.organizationId, mode: 'sandbox', customerId: cid, kind: 'mandate', status: 'consent_pending', mandateId: 'md_pending' },
+      { reference: activeRef, organizationId: ctxA.organizationId, mode: 'sandbox', customerId: cid, kind: 'mandate', status: 'active', mandateId: 'md_active' },
+      { reference: cardRef, organizationId: ctxA.organizationId, mode: 'sandbox', customerId: cid, kind: 'card', status: 'active', tokenKey: 'tok' },
     ]);
 
-    const pending = await selectPendingMandates(harness.db, 'test', 100);
+    const pending = await selectPendingMandates(harness.db, 'sandbox', 100);
     const refs = pending.map((p) => p.reference);
     expect(refs).toContain(pendingRef);
     expect(refs).not.toContain(activeRef); // already active
@@ -75,6 +75,6 @@ describe('mandate activation sweep e2e (direct debit)', () => {
     expect(events.some((e) => e.type === 'payment_method.updated' && (e.payload as { reference?: string }).reference === pendingRef)).toBe(true);
 
     // It is no longer pending.
-    expect((await selectPendingMandates(harness.db, 'test', 100)).map((p) => p.reference)).not.toContain(pendingRef);
+    expect((await selectPendingMandates(harness.db, 'sandbox', 100)).map((p) => p.reference)).not.toContain(pendingRef);
   });
 });

@@ -9,7 +9,7 @@ import { coerceFailureReason } from '../nomba/failure-taxonomy';
 import { extractOurReference, extractProviderTransactionId } from '../payment-methods';
 import { recordOutcome } from './attempt';
 
-import type { NombaClient } from '../nomba/client';
+import type { NombaClientFactory } from '../nomba/injected';
 import type { DomainContext, InfraTxDb } from '../context';
 
 export interface InboundDunningResult {
@@ -29,7 +29,7 @@ async function loadInvoiceById(
     .where(
       and(
         eq(invoicesTable.organizationId, ctx.organizationId),
-        eq(invoicesTable.environment, ctx.environment),
+        eq(invoicesTable.mode, ctx.mode),
         eq(invoicesTable.id, invoiceId)
       )
     )
@@ -54,7 +54,7 @@ async function loadInvoiceById(
  */
 export async function processInboundDunningEvent(
   txDb: InfraTxDb,
-  client: NombaClient,
+  getClient: NombaClientFactory,
   input: { requestId: string; eventType: string; payload: Record<string, unknown> }
 ): Promise<InboundDunningResult> {
   const reference = extractOurReference(input.payload);
@@ -69,8 +69,10 @@ export async function processInboundDunningEvent(
 
   const ctx: DomainContext = {
     organizationId: attempt.organizationId,
-    environment: attempt.environment,
+    mode: attempt.mode,
   };
+  // Resolve the Nomba client for the attempt's OWN mode (one endpoint, both modes).
+  const client = getClient(ctx.mode);
   const invoice = await loadInvoiceById(txDb, ctx, attempt.invoiceId);
   if (!invoice) return { matched: true, handled: false };
   const sub = await loadSubscriptionRowById(txDb, ctx, attempt.subscriptionId);

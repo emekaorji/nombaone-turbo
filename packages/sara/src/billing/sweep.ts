@@ -1,14 +1,14 @@
 import { selectDueSubscriptionsFair, type FairSweepConfig } from '../scheduling';
 import { findDueSubscriptions, type DueCursor } from './queries';
 
-import type { DomainContext, Environment, InfraDb } from '../context';
+import type { DomainContext, Mode, InfraDb } from '../context';
 
 export interface BillingSweepEnqueueJob {
   subscriptionId: string;
   subscriptionReference: string;
   periodIndex: number;
   organizationId: string;
-  environment: Environment;
+  mode: Mode;
 }
 
 export interface BillingSweepDeps {
@@ -22,7 +22,7 @@ export interface BillingSweepDeps {
    * set, ONE bounded tick draws a fair share per tenant (no tenant starves); 04's
    * catch-up drains backlogs across ticks. Selection only — the claim stays 04's.
    */
-  fair?: { environment: Environment; config?: FairSweepConfig };
+  fair?: { mode: Mode; config?: FairSweepConfig };
 }
 
 /**
@@ -40,7 +40,7 @@ export async function runBillingSweep(deps: BillingSweepDeps): Promise<{ enqueue
   if (deps.fair) {
     const rows = await selectDueSubscriptionsFair(
       deps.db,
-      deps.fair.environment,
+      deps.fair.mode,
       deps.now,
       deps.fair.config
     );
@@ -50,7 +50,7 @@ export async function runBillingSweep(deps: BillingSweepDeps): Promise<{ enqueue
         subscriptionReference: row.reference,
         periodIndex: row.currentPeriodIndex,
         organizationId: row.organizationId,
-        environment: row.environment,
+        mode: row.mode,
       });
       enqueued += 1;
     }
@@ -72,7 +72,7 @@ export async function runBillingSweep(deps: BillingSweepDeps): Promise<{ enqueue
         subscriptionReference: sub.reference,
         periodIndex: sub.currentPeriodIndex,
         organizationId: sub.organizationId,
-        environment: sub.environment,
+        mode: sub.mode,
       });
       enqueued += 1;
     }
@@ -85,7 +85,7 @@ export async function runBillingSweep(deps: BillingSweepDeps): Promise<{ enqueue
 }
 
 /** A tenant-scoped helper the worker uses to build the per-job domain context. */
-export const jobContext = (organizationId: string, environment: Environment): DomainContext => ({
+export const jobContext = (organizationId: string, mode: Mode): DomainContext => ({
   organizationId,
-  environment,
+  mode,
 });

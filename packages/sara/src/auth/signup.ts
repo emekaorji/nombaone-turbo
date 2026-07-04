@@ -21,7 +21,7 @@ import type { InfraTxDb } from '../context';
  * authenticated console. If ANY step fails the whole thing rolls back and no
  * orphaned org/user/account is left behind.
  *
- * The new tenant always starts in the `test` ring — live access is a later,
+ * The new tenant always starts in `sandbox` mode — live access is a later,
  * deliberate gate, never the default on day zero.
  *
  * Email uniqueness is checked up front for a clean AUTH_EMAIL_TAKEN, but the
@@ -29,7 +29,7 @@ import type { InfraTxDb } from '../context';
  * concurrent duplicate violates the index and aborts the transaction.
  */
 
-const SIGNUP_ENVIRONMENT = 'test' as const;
+const SIGNUP_ENVIRONMENT = 'sandbox' as const;
 
 export const signupOrganization = async (
   txDb: InfraTxDb,
@@ -71,13 +71,13 @@ export const signupOrganization = async (
     // ledger relies on, scoped to the new tenant's starting environment.
     await ensureSystemAccounts(tx, {
       organizationId: organization.id,
-      environment: SIGNUP_ENVIRONMENT,
+      mode: SIGNUP_ENVIRONMENT,
     });
 
     const { token } = await createSession(tx, {
       userId: user.id,
       organizationId: organization.id,
-      environment: SIGNUP_ENVIRONMENT,
+      mode: SIGNUP_ENVIRONMENT,
     });
 
     return { organization, user, token };

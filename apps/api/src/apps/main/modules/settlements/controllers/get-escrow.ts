@@ -13,7 +13,7 @@ export const getEscrowController: RequestHandler = jsonHandler<EscrowResponseDat
   if (!req.apiKey) throw AppError.Unauthorized('API key required');
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
   return { data: serializeEscrow(await getAvailableForPayout(db, ctx)) };
 });

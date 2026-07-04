@@ -35,7 +35,7 @@ export default async function OverviewPage() {
     <div className="space-y-6">
       <PageHeader
         title={`Welcome${org ? `, ${org.name}` : ''}`}
-        description={`You're viewing the ${ctx.environment === 'live' ? 'live' : 'test'} environment.`}
+        description={`You're viewing the ${ctx.mode === 'live' ? 'live' : 'sandbox'} mode.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

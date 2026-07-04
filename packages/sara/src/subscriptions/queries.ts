@@ -30,7 +30,7 @@ export async function loadSubscriptionRow(
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         eq(subscriptionsTable.reference, reference)
       )
     )
@@ -59,7 +59,7 @@ async function loadItems(
     .where(
       and(
         eq(subscriptionItemsTable.organizationId, ctx.organizationId),
-        eq(subscriptionItemsTable.environment, ctx.environment),
+        eq(subscriptionItemsTable.mode, ctx.mode),
         inArray(subscriptionItemsTable.subscriptionId, subscriptionIds)
       )
     );
@@ -82,7 +82,7 @@ async function latestInvoiceRef(
     .where(
       and(
         eq(invoicesTable.organizationId, ctx.organizationId),
-        eq(invoicesTable.environment, ctx.environment),
+        eq(invoicesTable.mode, ctx.mode),
         eq(invoicesTable.subscriptionId, subscriptionId)
       )
     )
@@ -113,7 +113,7 @@ export async function getSubscriptionByReference(
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         eq(subscriptionsTable.reference, reference)
       )
     )
@@ -152,7 +152,7 @@ export async function listSubscriptions(
       .where(
         and(
           eq(customersTable.organizationId, ctx.organizationId),
-          eq(customersTable.environment, ctx.environment),
+          eq(customersTable.mode, ctx.mode),
           eq(customersTable.reference, opts.customerRef)
         )
       )
@@ -163,7 +163,7 @@ export async function listSubscriptions(
 
   const tenantScope = and(
     eq(subscriptionsTable.organizationId, ctx.organizationId),
-    eq(subscriptionsTable.environment, ctx.environment),
+    eq(subscriptionsTable.mode, ctx.mode),
     customerId ? eq(subscriptionsTable.customerId, customerId) : undefined,
     opts.status ? eq(subscriptionsTable.status, opts.status) : undefined
   );

@@ -45,7 +45,7 @@ export async function ensureAccount(
       .values({
         reference: mintReference('LAC'),
         organizationId: ctx.organizationId,
-        environment: ctx.environment,
+        mode: ctx.mode,
         kind: params.kind,
         key: params.key,
         currency: CURRENCY,
@@ -80,7 +80,7 @@ const findByKey = async (
     .where(
       and(
         eq(ledgerAccountsTable.organizationId, ctx.organizationId),
-        eq(ledgerAccountsTable.environment, ctx.environment),
+        eq(ledgerAccountsTable.mode, ctx.mode),
         eq(ledgerAccountsTable.key, key)
       )
     )

@@ -1,4 +1,4 @@
-import type { Environment } from '../context';
+import type { Mode } from '../context';
 
 /** A cached Nomba OAuth bearer + its absolute expiry (we refresh off `expiresAt`). */
 export interface NombaToken {
@@ -15,7 +15,7 @@ export interface NombaConfig {
   subAccountId: string;
   clientId: string;
   clientSecret: string;
-  environment: Environment;
+  mode: Mode;
   /** Seconds before `expiresAt` to proactively refresh (default 300). */
   tokenRefreshMarginSec: number;
 }

@@ -25,7 +25,7 @@ export async function loadActiveDiscountForSubscription(
     .where(
       and(
         eq(discountsTable.organizationId, ctx.organizationId),
-        eq(discountsTable.environment, ctx.environment),
+        eq(discountsTable.mode, ctx.mode),
         eq(discountsTable.subscriptionId, subscriptionId),
         eq(discountsTable.status, 'active')
       )
@@ -45,7 +45,7 @@ export async function loadActiveDiscountForCustomer(
     .where(
       and(
         eq(discountsTable.organizationId, ctx.organizationId),
-        eq(discountsTable.environment, ctx.environment),
+        eq(discountsTable.mode, ctx.mode),
         eq(discountsTable.customerId, customerId),
         eq(discountsTable.status, 'active')
       )
@@ -73,7 +73,7 @@ export async function getDiscountByReference(
     .where(
       and(
         eq(discountsTable.organizationId, ctx.organizationId),
-        eq(discountsTable.environment, ctx.environment),
+        eq(discountsTable.mode, ctx.mode),
         eq(discountsTable.reference, reference)
       )
     )

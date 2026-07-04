@@ -395,7 +395,7 @@ export const ERROR_CODE_META: Record<NombaoneErrorCode, ErrorCodeMeta> = {
     docUrl: `${DOCS_ERRORS_BASE}#API_KEY_MISSING`,
   },
   API_KEY_INVALID: {
-    hint: 'That key is not recognized. Copy it fresh from the dashboard (it may have been rotated or revoked) and send the whole `nbo_test_`/`nbo_live_` string with no extra whitespace.',
+    hint: 'That key is not recognized. Copy it fresh from the dashboard (it may have been rotated or revoked) and send the whole `nbo_sandbox_`/`nbo_live_` string with no extra whitespace.',
     docUrl: `${DOCS_ERRORS_BASE}#API_KEY_INVALID`,
   },
   API_KEY_SCOPE_FORBIDDEN: {
@@ -403,7 +403,7 @@ export const ERROR_CODE_META: Record<NombaoneErrorCode, ErrorCodeMeta> = {
     docUrl: `${DOCS_ERRORS_BASE}#API_KEY_SCOPE_FORBIDDEN`,
   },
   API_KEY_ENVIRONMENT_MISMATCH: {
-    hint: "You used a live key against a test host (or vice-versa). Use the key whose prefix (`nbo_test_`/`nbo_live_`) matches the environment you're calling.",
+    hint: "You used a live key against a test host (or vice-versa). Use the key whose prefix (`nbo_sandbox_`/`nbo_live_`) matches the environment you're calling.",
     docUrl: `${DOCS_ERRORS_BASE}#API_KEY_ENVIRONMENT_MISMATCH`,
   },
 

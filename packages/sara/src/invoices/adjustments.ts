@@ -52,7 +52,7 @@ export async function appendInvoiceLines(
     lines.map((l) => ({
       reference: mintReference('ILI'),
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       invoiceId,
       kind: l.kind,
       description: l.description,

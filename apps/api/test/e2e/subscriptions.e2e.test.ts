@@ -52,7 +52,7 @@ describe('subscriptions + billing e2e', () => {
   let harness: Harness;
   let bearerA: string;
   let bearerB: string;
-  let ctxA: { organizationId: string; environment: 'test' };
+  let ctxA: { organizationId: string; mode: 'sandbox' };
 
   const scopes = [
     'customers:read',
@@ -96,9 +96,9 @@ describe('subscriptions + billing e2e', () => {
 
     const orgA = await harness.seedOrg('Sub A');
     const orgB = await harness.seedOrg('Sub B');
-    bearerA = (await harness.mintApiKey(orgA.organizationId, 'test', scopes)).secret;
-    bearerB = (await harness.mintApiKey(orgB.organizationId, 'test', scopes)).secret;
-    ctxA = { organizationId: orgA.organizationId, environment: 'test' };
+    bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
+    bearerB = (await harness.mintApiKey(orgB.organizationId, 'sandbox', scopes)).secret;
+    ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
   });
 
   afterAll(async () => {
@@ -139,7 +139,7 @@ describe('subscriptions + billing e2e', () => {
       .where(
         and(
           eq(customersTable.organizationId, ctxA.organizationId),
-          eq(customersTable.environment, 'test'),
+          eq(customersTable.mode, 'sandbox'),
           eq(customersTable.reference, customerRef)
         )
       )
@@ -148,7 +148,7 @@ describe('subscriptions + billing e2e', () => {
     await harness.db.insert(paymentMethodsTable).values({
       reference,
       organizationId: ctxA.organizationId,
-      environment: 'test',
+      mode: 'sandbox',
       customerId: c!.id,
       kind: 'card',
       status: 'active',
@@ -245,7 +245,7 @@ describe('subscriptions + billing e2e', () => {
 
     requeryAmount = 250000;
     const payload = { event_type: 'payment_success', data: { orderReference: invRef } };
-    const first = await processInboundInvoiceEvent(harness.db, fakeNomba, {
+    const first = await processInboundInvoiceEvent(harness.db, () => fakeNomba, {
       requestId: 'inv-req-1',
       eventType: 'payment_success',
       payload,
@@ -254,7 +254,7 @@ describe('subscriptions + billing e2e', () => {
     expect(first.settled).toBe(true);
     expect(first.firstSeen).toBe(true);
 
-    const replay = await processInboundInvoiceEvent(harness.db, fakeNomba, {
+    const replay = await processInboundInvoiceEvent(harness.db, () => fakeNomba, {
       requestId: 'inv-req-1',
       eventType: 'payment_success',
       payload,

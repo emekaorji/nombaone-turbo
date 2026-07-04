@@ -28,7 +28,7 @@ export async function loadInvoiceRow(
     .where(
       and(
         eq(invoicesTable.organizationId, ctx.organizationId),
-        eq(invoicesTable.environment, ctx.environment),
+        eq(invoicesTable.mode, ctx.mode),
         eq(invoicesTable.reference, reference)
       )
     )
@@ -52,7 +52,7 @@ async function loadLines(
     .where(
       and(
         eq(invoiceLineItemsTable.organizationId, ctx.organizationId),
-        eq(invoiceLineItemsTable.environment, ctx.environment),
+        eq(invoiceLineItemsTable.mode, ctx.mode),
         inArray(invoiceLineItemsTable.invoiceId, invoiceIds)
       )
     )
@@ -73,7 +73,7 @@ export async function getInvoiceLineRows(db: InfraReadScope, ctx: DomainContext,
     .where(
       and(
         eq(invoiceLineItemsTable.organizationId, ctx.organizationId),
-        eq(invoiceLineItemsTable.environment, ctx.environment),
+        eq(invoiceLineItemsTable.mode, ctx.mode),
         eq(invoiceLineItemsTable.invoiceId, invoiceId)
       )
     );
@@ -134,7 +134,7 @@ export async function getInvoiceByReference(
     .where(
       and(
         eq(invoicesTable.organizationId, ctx.organizationId),
-        eq(invoicesTable.environment, ctx.environment),
+        eq(invoicesTable.mode, ctx.mode),
         eq(invoicesTable.reference, reference)
       )
     )
@@ -146,7 +146,7 @@ export async function getInvoiceByReference(
   return serializeInvoice(found.inv, found.customerRef, found.subRef ?? null, linesMap.get(found.inv.id) ?? []);
 }
 
-/** A finalized invoice recently active in one environment — the input to the nightly
+/** A finalized invoice recently active in one mode — the input to the nightly
  *  Nomba reconcile (item 6). `paidLocally` distinguishes the locally-settled set (which
  *  we verify against Nomba) from the still-unpaid set (which Nomba may have silently
  *  settled — a missed-webhook self-heal candidate). `organizationId` lets the cron
@@ -159,14 +159,14 @@ export interface ReconcilableInvoice {
 }
 
 /**
- * Finalized, non-void, non-uncollectible invoices in `environment` whose `updated_at`
+ * Finalized, non-void, non-uncollectible invoices in `mode` whose `updated_at`
  * is within the reconcile window (`>= since`) — covers both recently-settled invoices
  * and still-open/past_due ones whose last charge attempt bumped `updated_at`. Scoped
- * by environment, NOT by org, so the cron can reconcile every active tenant in one pass.
+ * by mode, NOT by org, so the cron can reconcile every active tenant in one pass.
  */
 export async function getReconcilableInvoicesSince(
   db: InfraReadScope,
-  environment: DomainContext['environment'],
+  mode: DomainContext['mode'],
   since: Date
 ): Promise<ReconcilableInvoice[]> {
   const rows = await db
@@ -179,7 +179,7 @@ export async function getReconcilableInvoicesSince(
     .from(invoicesTable)
     .where(
       and(
-        eq(invoicesTable.environment, environment),
+        eq(invoicesTable.mode, mode),
         isNotNull(invoicesTable.finalizedAt),
         isNull(invoicesTable.voidedAt),
         isNull(invoicesTable.uncollectibleAt),
@@ -207,7 +207,7 @@ export async function listInvoices(
       .select({ id: table.id })
       .from(table)
       .where(
-        and(eq(table.organizationId, ctx.organizationId), eq(table.environment, ctx.environment), eq(table.reference, ref))
+        and(eq(table.organizationId, ctx.organizationId), eq(table.mode, ctx.mode), eq(table.reference, ref))
       )
       .limit(1);
     return row?.id;
@@ -226,7 +226,7 @@ export async function listInvoices(
 
   const tenantScope = and(
     eq(invoicesTable.organizationId, ctx.organizationId),
-    eq(invoicesTable.environment, ctx.environment),
+    eq(invoicesTable.mode, ctx.mode),
     customerId ? eq(invoicesTable.customerId, customerId) : undefined,
     subscriptionId ? eq(invoicesTable.subscriptionId, subscriptionId) : undefined,
     opts.status ? statusPredicate(opts.status) : undefined

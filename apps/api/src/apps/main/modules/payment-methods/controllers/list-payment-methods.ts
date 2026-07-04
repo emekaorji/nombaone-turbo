@@ -17,7 +17,7 @@ export const listPaymentMethodsController: RequestHandler = paginatedHandler<Pay
     }
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const query = req.query as unknown as ListPaymentMethodQuery;
 

@@ -27,7 +27,7 @@ export default async function DevelopersPage() {
     name: row.name,
     keyPrefix: row.keyPrefix,
     scopes: (row.scopes ?? []) as ApiKeyScope[],
-    environment: row.environment,
+    mode: row.mode,
     lastUsedAt: row.lastUsedAt ? row.lastUsedAt.toISOString() : null,
     revokedAt: row.revokedAt ? row.revokedAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),
@@ -37,7 +37,7 @@ export default async function DevelopersPage() {
     <div className="space-y-6">
       <PageHeader
         title="API keys"
-        description={`Secret keys for the ${ctx.environment} environment. Each key is shown once at creation.`}
+        description={`Secret keys for the ${ctx.mode} environment. Each key is shown once at creation.`}
       />
       <ApiKeysClient keys={keys} canManage={can(user.role, 'apiKeys:manage')} />
     </div>

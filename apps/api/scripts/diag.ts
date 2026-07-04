@@ -5,7 +5,7 @@ import { getNombaClient } from '../src/shared/config/nomba';
 import { NOMBA_ENDPOINTS } from '@nombaone/sara/nomba';
 
 async function main(): Promise<void> {
-  const client = getNombaClient();
+  const client = getNombaClient('live');
   for (const ref of process.argv.slice(2)) {
     console.log(`\n===== ORDER STATUS  GET /v1/checkout/order/${ref} =====`);
     const o = await client.request({ method: 'GET', endpoint: `/v1/checkout/order/${ref}` });

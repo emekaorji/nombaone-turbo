@@ -22,7 +22,7 @@ import type { ReactNode } from "react";
  * type, so "try it" doubles as "copy it".
  *
  * Security posture (mirrors the proxy's hard rules, surfaced in the UI):
- *   - TEST KEYS ONLY. We refuse to send anything that isn't `nbo_test_…`,
+ *   - TEST KEYS ONLY. We refuse to send anything that isn't `nbo_sandbox_…`,
  *     with a loud warning. The proxy rejects live keys server-side too; this is
  *     defence in depth, not the only guard.
  *   - The key lives in `localStorage` (so you paste it once across the docs) and
@@ -138,7 +138,7 @@ export function ApiExplorer({
   // Key classification drives the warning + the send gate.
   const trimmedKey = apiKey.trim();
   const isLiveKey = trimmedKey.startsWith("nbo_live_");
-  const isTestKey = trimmedKey.startsWith("nbo_test_");
+  const isTestKey = trimmedKey.startsWith("nbo_sandbox_");
   const keyInvalidShape = trimmedKey.length > 0 && !isLiveKey && !isTestKey;
 
   const resolvedPath = buildPath(endpoint, paramValues);
@@ -245,7 +245,7 @@ export function ApiExplorer({
               spellCheck={false}
               value={mounted ? apiKey : ""}
               onChange={(event) => persistKey(event.target.value)}
-              placeholder="nbo_test_…"
+              placeholder="nbo_sandbox_…"
               aria-invalid={isLiveKey || keyInvalidShape}
               className={inputClass(isLiveKey || keyInvalidShape)}
             />
@@ -263,15 +263,15 @@ export function ApiExplorer({
           {isLiveKey ? (
             <KeyWarning tone="danger">
               That looks like a <strong>live</strong> key. Never paste a live key here: the
-              playground refuses it and nothing is sent. Use an <code>nbo_test_…</code> key.
+              playground refuses it and nothing is sent. Use an <code>nbo_sandbox_…</code> key.
             </KeyWarning>
           ) : keyInvalidShape ? (
             <KeyWarning tone="warning">
-              Nombaone keys start with <code>nbo_test_</code>. Double-check what you pasted.
+              Nombaone keys start with <code>nbo_sandbox_</code>. Double-check what you pasted.
             </KeyWarning>
           ) : (
             <KeyWarning tone="muted">
-              Test keys only. Never paste a live key. Your key is stored only in this browser
+              Sandbox keys only. Never paste a live key. Your key is stored only in this browser
               (localStorage) and sent only to the same-origin playground proxy.
             </KeyWarning>
           )}
@@ -536,7 +536,7 @@ function buildCurl({
   body: string;
 }): string {
   const lines = [`curl -X ${method} ${API_BASE}${path} \\`];
-  lines.push(`  -H "Authorization: Bearer nbo_test_…" \\`);
+  lines.push(`  -H "Authorization: Bearer nbo_sandbox_…" \\`);
   if (method === "POST") {
     lines.push(`  -H "Content-Type: application/json" \\`);
     if (idempotent) lines.push(`  -H "Idempotency-Key: ${idempotencyKey || "…"}" \\`);

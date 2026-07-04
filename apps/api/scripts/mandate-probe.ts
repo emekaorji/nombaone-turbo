@@ -6,7 +6,7 @@ import { NOMBA_ENDPOINTS } from '@nombaone/sara/nomba';
 
 async function call(label: string, method: 'GET' | 'POST', endpoint: string, body?: unknown): Promise<void> {
   try {
-    const res = await getNombaClient().request({ method, endpoint, body: body as never });
+    const res = await getNombaClient('live').request({ method, endpoint, body: body as never });
     console.log(`### ${label} [${res.status}] ${method} ${endpoint}`);
     console.log(JSON.stringify(res.data));
   } catch (e) {

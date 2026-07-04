@@ -22,7 +22,7 @@ export const serializeSchedule = (
       consumedAt: p.consumedAt ?? null,
     })
   ),
-  environment: row.environment,
+  mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),
   updatedAt: new Date(row.updatedAt).toISOString(),
 });

@@ -1,6 +1,6 @@
 import { index, jsonb, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 import { organizationsTable } from './organizations';
 
 /**
@@ -16,7 +16,7 @@ export const domainEventsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     type: text('type').notNull(),
     payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
     createdAt: createdAt(),
@@ -25,7 +25,7 @@ export const domainEventsTable = pgTable(
     referenceUnique: uniqueIndex('domain_events_reference_unique').on(table.reference),
     keysetIdx: index('domain_events_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),

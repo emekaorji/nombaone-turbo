@@ -36,7 +36,7 @@ export async function grantCredit(
     .where(
       and(
         eq(customersTable.organizationId, ctx.organizationId),
-        eq(customersTable.environment, ctx.environment),
+        eq(customersTable.mode, ctx.mode),
         eq(customersTable.reference, input.customerRef)
       )
     )
@@ -69,7 +69,7 @@ export async function grantCredit(
     .values({
       reference,
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       customerId: customer.id,
       amount: input.amount,
       remaining: input.amount,

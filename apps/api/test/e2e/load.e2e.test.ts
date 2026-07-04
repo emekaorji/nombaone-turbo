@@ -72,7 +72,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
   let harness: Harness;
-  let ctx: { organizationId: string; environment: 'test' };
+  let ctx: { organizationId: string; mode: 'sandbox' };
   let customerId: string;
   let pmId: string;
   let priceUuid: string;
@@ -86,7 +86,7 @@ describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
       collect: async () => ({ status: 'succeeded' }),
     });
     const org = await harness.seedOrg('Load');
-    ctx = { organizationId: org.organizationId, environment: 'test' };
+    ctx = { organizationId: org.organizationId, mode: 'sandbox' };
 
     const customer = await createCustomer(harness.db, ctx, {
       email: 'load@acme.test',
@@ -109,7 +109,7 @@ describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
       id: pmId,
       reference: mintReference('PMT'),
       organizationId: ctx.organizationId,
-      environment: 'test',
+      mode: 'sandbox',
       customerId,
       kind: 'card',
       status: 'active',
@@ -157,7 +157,7 @@ describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
         id,
         reference: mintReference('SUB'),
         organizationId: ctx.organizationId,
-        environment: 'test',
+        mode: 'sandbox',
         customerId,
         priceId: priceUuid,
         defaultPaymentMethodId: pmId,
@@ -173,7 +173,7 @@ describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
         id: randomUUID(),
         reference: mintReference('SBI'),
         organizationId: ctx.organizationId,
-        environment: 'test',
+        mode: 'sandbox',
         subscriptionId: id,
         priceId: priceUuid,
         quantity: 1,
@@ -209,7 +209,7 @@ describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
     await pool(jobs, CONCURRENCY, async (job) => {
       const res = await runCycle(
         harness.db,
-        { organizationId: job.organizationId, environment: 'test' },
+        { organizationId: job.organizationId, mode: 'sandbox' },
         job.subscriptionReference,
         { maxCatchUpPeriods: 36 }
       );
@@ -227,7 +227,7 @@ describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
       .where(
         and(
           eq(invoicesTable.organizationId, ctx.organizationId),
-          eq(invoicesTable.environment, 'test')
+          eq(invoicesTable.mode, 'sandbox')
         )
       );
     expect(invRow!.invoices).toBe(N); // one invoice per sub (unique(sub,period) makes dupes impossible)
@@ -237,7 +237,7 @@ describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
       .where(
         and(
           eq(invoicesTable.organizationId, ctx.organizationId),
-          eq(invoicesTable.environment, 'test'),
+          eq(invoicesTable.mode, 'sandbox'),
           sql`${invoicesTable.paidAt} is not null`
         )
       );

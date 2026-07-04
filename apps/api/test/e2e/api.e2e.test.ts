@@ -17,7 +17,7 @@ describe('api e2e', () => {
     harness = await startHarness();
     const org = await harness.seedOrg();
     organizationId = org.organizationId;
-    const key = await harness.mintApiKey(organizationId, 'test', [
+    const key = await harness.mintApiKey(organizationId, 'sandbox', [
       'example:read',
       'example:write',
     ]);
@@ -100,13 +100,13 @@ describe('api e2e', () => {
   it('invalid API key → 401', async () => {
     const res = await request(harness.app)
       .get('/v1/examples')
-      .set('Authorization', 'Bearer nbo_test_not_a_real_key');
+      .set('Authorization', 'Bearer nbo_sandbox_not_a_real_key');
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe('API_KEY_INVALID');
   });
 
   it('key missing the required scope → 403', async () => {
-    const readOnly = await harness.mintApiKey(organizationId, 'test', ['example:read']);
+    const readOnly = await harness.mintApiKey(organizationId, 'sandbox', ['example:read']);
     const res = await request(harness.app)
       .post('/v1/examples')
       .set('Authorization', `Bearer ${readOnly.secret}`)
@@ -116,7 +116,9 @@ describe('api e2e', () => {
     expect(res.body.error.code).toBe('API_KEY_SCOPE_FORBIDDEN');
   });
 
-  it('wrong-environment key (live key on test host) → 401 env mismatch', async () => {
+  it('live key on a non-production deployment → 401 (safety guard)', async () => {
+    // ONE process serves both modes, but a `live` key is only honoured on a
+    // `production` deployment; the harness runs `development`, so it is refused.
     const liveKey = await harness.mintApiKey(organizationId, 'live', ['example:read']);
     const res = await request(harness.app)
       .get('/v1/examples')

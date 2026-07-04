@@ -41,7 +41,7 @@ const fakeNomba: NombaClient = {
 describe('card OTP/3DS → dunning → fresh-checkout-link e2e (Area 1)', () => {
   let harness: Harness;
   let bearerA: string;
-  let ctxA: { organizationId: string; environment: 'test' };
+  let ctxA: { organizationId: string; mode: 'sandbox' };
   const scopes = ['customers:read', 'customers:write', 'subscriptions:read', 'subscriptions:write'];
   let seq = 0;
   const uniq = (): string => `${Date.now()}-${seq++}`;
@@ -61,8 +61,8 @@ describe('card OTP/3DS → dunning → fresh-checkout-link e2e (Area 1)', () => 
     registerRail({ key: 'transfer', direction: 'push', collect: async () => ({ status: 'pending', payInstructions: {} }) });
 
     const orgA = await harness.seedOrg('OTP A');
-    bearerA = (await harness.mintApiKey(orgA.organizationId, 'test', scopes)).secret;
-    ctxA = { organizationId: orgA.organizationId, environment: 'test' };
+    bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
+    ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
   });
 
   afterAll(async () => {
@@ -82,7 +82,7 @@ describe('card OTP/3DS → dunning → fresh-checkout-link e2e (Area 1)', () => 
       .where(and(eq(customersTable.organizationId, ctxA.organizationId), eq(customersTable.reference, customer.id))).limit(1);
     const pmRef = mintReference('PMT');
     await harness.db.insert(paymentMethodsTable).values({
-      reference: pmRef, organizationId: ctxA.organizationId, environment: 'test', customerId: c!.id,
+      reference: pmRef, organizationId: ctxA.organizationId, mode: 'sandbox', customerId: c!.id,
       kind: 'card', status: 'active', tokenKey: 'tok', brand: 'visa', last4: '4242', isDefault: true,
     });
     railMode = 'succeeded';
@@ -125,7 +125,7 @@ describe('card OTP/3DS → dunning → fresh-checkout-link e2e (Area 1)', () => 
     expect(evs.some((e) => e.type === 'invoice.payment_failed')).toBe(false);
 
     // Dunning sweep detects the past_due invoice → holds attempt #1 (no re-charge, no 2nd event).
-    await runDunningSweep({ db: harness.db, environment: 'test', now: new Date(), batchSize: 100 });
+    await runDunningSweep({ db: harness.db, mode: 'sandbox', now: new Date(), batchSize: 100 });
     const [held] = await harness.db.select().from(dunningAttemptsTable).where(eq(dunningAttemptsTable.invoiceId, inv!.id));
     expect(held!.status).toBe('card_update_required');
     expect(held!.outcome).toBe(null); // scheduleFirstAttempt sets no outcome; only the hold status
@@ -135,7 +135,7 @@ describe('card OTP/3DS → dunning → fresh-checkout-link e2e (Area 1)', () => 
     // The customer completes the fresh checkout — Nomba posts a payment_success carrying
     // the `${invRef}-otp` order reference. It settles the SAME invoice + closes the hold.
     requeryAmount = inv!.amountDue;
-    const result = await processInboundInvoiceEvent(harness.db, fakeNomba, {
+    const result = await processInboundInvoiceEvent(harness.db, () => fakeNomba, {
       requestId: `req-${uniq()}`,
       eventType: 'payment_success',
       payload: { data: { orderReference: `${invRef}-otp`, transaction: { transactionId: 'WEB-ONLINE_C-otp' } } },
@@ -153,7 +153,7 @@ describe('card OTP/3DS → dunning → fresh-checkout-link e2e (Area 1)', () => 
     expect((await eventsFor(invRef)).some((e) => e.type === 'invoice.payment_recovered')).toBe(true);
 
     // Idempotent replay of the completion → no second settle.
-    const replay = await processInboundInvoiceEvent(harness.db, fakeNomba, {
+    const replay = await processInboundInvoiceEvent(harness.db, () => fakeNomba, {
       requestId: `req-${uniq()}`,
       eventType: 'payment_success',
       payload: { data: { orderReference: `${invRef}-otp`, transaction: { transactionId: 'WEB-ONLINE_C-otp' } } },

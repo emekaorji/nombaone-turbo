@@ -14,7 +14,7 @@ The developer documentation for the **nombaone public API** (`api.nombaone.xyz/v
 ```bash
 pnpm -F @nombaone/docs dev      # http://localhost:8030  (search index builds on `build`, not `dev`)
 ```
-No DB, no secrets. The `<ApiExplorer>` proxies to the sandbox via `/api/playground`; the user pastes their own `nbo_test_…` key (held client-side only, never persisted; live keys are hard-blocked).
+No DB, no secrets. The `<ApiExplorer>` proxies to the sandbox via `/api/playground`; the user pastes their own `nbo_sandbox_…` key (held client-side only, never persisted; live keys are hard-blocked).
 
 ## Authoring a page
 1. Add `content/<section>/<slug>.mdx` with frontmatter (`title`, `description`, `section`, optional `order`, optional `badge`).
@@ -27,7 +27,7 @@ No DB, no secrets. The `<ApiExplorer>` proxies to the sandbox via `/api/playgrou
 |---|---|
 | `NEXT_PUBLIC_INFRA_API_BASE` | Sandbox base for the explorer/snippets (default `https://sandbox.api.nombaone.xyz/v1`). |
 | `NEXT_PUBLIC_NOMBAONE_ENV` | Deployment ring (`local` \| `preview` \| `production`) — drives the topbar env pill. |
-| `INFRA_DEMO_SANDBOX_KEY` | Optional shared read-only `nbo_test_` key so GET examples work before a user pastes their own. |
+| `INFRA_DEMO_SANDBOX_KEY` | Optional shared read-only `nbo_sandbox_` key so GET examples work before a user pastes their own. |
 | `DOCS_DATABASE_URL` | Connection string for the **dedicated** docs analytics Neon DB (`@nombaone/docs-db`, separate from the financial DB). Powers the "Was this page helpful?" feedback. Read only at runtime, not at build. Run `pnpm -F @nombaone/docs-db db:generate && pnpm -F @nombaone/docs-db db:migrate` after setting it. |
 
 ## Build & deploy

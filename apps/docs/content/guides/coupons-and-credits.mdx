@@ -19,7 +19,7 @@ a `duration` that controls how long it applies:
 ```bash
 # 20% off for the first 3 cycles
 curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "code": "LAUNCH20", "percentOff": 20, "duration": "repeating", "durationInCycles": 3 }'
 ```
@@ -27,7 +27,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
 ```bash
 # ₦500 off, once
 curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "code": "SAVE500", "amountOffInKobo": 50000, "duration": "once" }'
 ```
@@ -42,7 +42,7 @@ Attach it to a whole customer or a single subscription:
 ```bash
 # To a subscription
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/discount \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "coupon": "LAUNCH20" }'
 ```
@@ -50,7 +50,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/discount \
 ```bash
 # To a customer (applies to all their subscriptions)
 curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/discount \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "coupon": "LAUNCH20" }'
 ```
@@ -64,7 +64,7 @@ useful for refunds-as-credit, goodwill, or prepaid balances:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "amountInKobo": 100000, "source": "goodwill" }'
 ```

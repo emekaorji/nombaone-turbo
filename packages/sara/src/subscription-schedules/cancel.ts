@@ -21,7 +21,7 @@ export async function cancelSchedule(
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         eq(subscriptionsTable.reference, subscriptionRef)
       )
     )

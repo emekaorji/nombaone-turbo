@@ -1,26 +1,26 @@
 ---
 title: "Going live"
 type: how-to
-summary: "The checklist to move from a test key to real money — swap the key and host, re-register webhooks, verify signatures live, and confirm idempotency and the money unit before the first charge."
+summary: "The checklist to move from a sandbox key to real money — swap the key and host, re-register webhooks, verify signatures live, and confirm idempotency and the money unit before the first charge."
 canonical: https://docs.nombaone.xyz/guides/going-live
 ---
 
 # Going live
 
-Going live is deliberately small: swap your `nbo_test_` key for `nbo_live_` and
+Going live is deliberately small: swap your `nbo_sandbox_` key for `nbo_live_` and
 your host from `sandbox.api.nombaone.xyz` to `api.nombaone.xyz`. But the two
-environments share nothing — separate data, balances, and webhook endpoints — so
+modes share nothing — separate data, balances, and webhook endpoints — so
 run this checklist before the first real charge.
 
 ## The switch
 
-The key prefix pins everything. There is no environment parameter — a `nbo_live_`
-key reaches only live, a `nbo_test_` key only sandbox. See
+The key prefix pins everything. There is no mode parameter — a `nbo_live_`
+key reaches only live, a `nbo_sandbox_` key only sandbox. See
 [environments](/getting-started/environments).
 
 ```bash
-# Test
-https://sandbox.api.nombaone.xyz/v1   +   nbo_test_…
+# Sandbox
+https://sandbox.api.nombaone.xyz/v1   +   nbo_sandbox_…
 
 # Live
 https://api.nombaone.xyz/v1           +   nbo_live_…
@@ -30,27 +30,27 @@ Load the key from an environment variable so the same code runs against both:
 
 ```ts
 const base = process.env.NOMBAONE_BASE_URL;   // sandbox vs prod
-const key  = process.env.NOMBAONE_SECRET_KEY; // nbo_test_ vs nbo_live_
+const key  = process.env.NOMBAONE_SECRET_KEY; // nbo_sandbox_ vs nbo_live_
 ```
 
 ## Pre-launch checklist
 
 ### Re-create your plans and prices in live
 
-Test and live data are fully isolated — a plan id minted in test does not
+Sandbox and live data are fully isolated — a plan id minted in sandbox does not
 exist in live. Re-create your plans, prices, and coupons with the live key
 (or run your seed script pointed at the live base).
 
 ### Register live webhook endpoints
 
-Webhooks are per-environment. Register your production endpoint with the live
-key and store the new `whsec_…` secret — it is different from your test
+Webhooks are per-mode. Register your production endpoint with the live
+key and store the new `whsec_…` secret — it is different from your sandbox
 secret. Verify signatures against the live secret.
 
 ### Confirm signature verification against the live secret
 
 Fire a real event and confirm your handler verifies it — HMAC over the raw
-body, constant-time compare. A handler that passed in test with the test
+body, constant-time compare. A handler that passed in sandbox with the sandbox
 secret will reject live events until you point it at the live secret. See
 [handle webhooks](/guides/handle-webhooks).
 

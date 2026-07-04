@@ -56,7 +56,7 @@ export async function createPrice(
     .values({
       reference,
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       planId,
       unitAmount: input.unitAmount,
       interval: input.interval,

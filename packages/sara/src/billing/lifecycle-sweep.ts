@@ -10,7 +10,7 @@ import {
   selectTrialEndingSoon,
 } from './queries';
 
-import type { DomainContext, Environment, InfraTxDb } from '../context';
+import type { DomainContext, Mode, InfraTxDb } from '../context';
 
 export interface LifecycleSweepDeps {
   db: InfraTxDb;
@@ -22,9 +22,9 @@ export interface LifecycleSweepDeps {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const ctxOf = (row: { organizationId: string; environment: Environment }): DomainContext => ({
+const ctxOf = (row: { organizationId: string; mode: Mode }): DomainContext => ({
   organizationId: row.organizationId,
-  environment: row.environment,
+  mode: row.mode,
 });
 
 /**

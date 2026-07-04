@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 /**
  * PLAN DTO — a tenant's product/offering. The public `id` is the stable
@@ -13,7 +13,7 @@ export interface PlanResponseData {
   description: string | null;
   status: PlanStatus;
   metadata: Record<string, unknown>;
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
   updatedAt: string;
 }

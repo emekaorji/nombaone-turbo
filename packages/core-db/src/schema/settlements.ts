@@ -4,7 +4,7 @@ import { bigint, check, index, pgEnum, pgTable, text, uniqueIndex, uuid } from '
 import { customersTable } from './customers';
 import { invoicesTable } from './invoices';
 import { organizationsTable } from './organizations';
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 
 export const settlementStatusEnum = pgEnum('settlement_status', [
   'pending',
@@ -31,7 +31,7 @@ export const settlementsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     invoiceId: uuid('invoice_id')
       .notNull()
       .references(() => invoicesTable.id, { onDelete: 'cascade' }),
@@ -54,13 +54,13 @@ export const settlementsTable = pgTable(
     invoiceUnique: uniqueIndex('settlements_invoice_unique').on(table.invoiceId),
     keysetIdx: index('settlements_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),
     statusIdx: index('settlements_status_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.status
     ),
     splitBalances: check(

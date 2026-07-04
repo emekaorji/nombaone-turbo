@@ -78,7 +78,7 @@ async function runIdempotency(
   // Namespace by the authenticated principal so keys never collide across tenants
   // or environments. `req.apiKey` is guaranteed by the upstream auth middleware.
   const scope = req.apiKey
-    ? `${req.apiKey.organizationId}:${req.apiKey.environment}`
+    ? `${req.apiKey.organizationId}:${req.apiKey.mode}`
     : 'anonymous';
   const namespacedKey = `${scope}:${idempotencyKey.trim()}`;
   const requestHash = hashRequest({ path: req.path, body: req.body });

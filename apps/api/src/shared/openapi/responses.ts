@@ -27,7 +27,7 @@ const nenm = (...values: string[]): JsonSchema => ({ type: 'string', enum: value
 const bag = (): JsonSchema => ({ type: 'object', additionalProperties: true });
 const ref = (name: string): JsonSchema => ({ $ref: `#/components/schemas/${name}` });
 const arr = (items: JsonSchema): JsonSchema => ({ type: 'array', items });
-const env = (): JsonSchema => enm('test', 'live');
+const modeEnm = (): JsonSchema => enm('sandbox', 'live');
 const ngn = (): JsonSchema => ({ type: 'string', enum: ['NGN'] });
 
 const obj = (properties: Record<string, JsonSchema>, required: string[]): JsonSchema => ({
@@ -47,7 +47,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     name: str(),
     phone: nstr(),
     metadata: bag(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
     updatedAt: dt(),
   }),
@@ -59,7 +59,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     description: nstr(),
     status: enm('active', 'archived'),
     metadata: bag(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
     updatedAt: dt(),
   }),
@@ -77,7 +77,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     trialPeriodDays: int(),
     active: bool(),
     metadata: bag(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
   }),
 
@@ -102,7 +102,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     items: arr(ref('SubscriptionItem')),
     latestInvoiceId: nstr(),
     currency: ngn(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
   }),
 
@@ -135,7 +135,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     finalizedAt: ndt(),
     paidAt: ndt(),
     voidedAt: ndt(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
   }),
 
@@ -150,7 +150,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     redeemBy: ndt(),
     maxRedemptions: nint(),
     timesRedeemed: int(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
   }),
 
@@ -164,7 +164,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     cyclesRemaining: nint(),
     startAt: dt(),
     endAt: ndt(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
   }),
 
@@ -176,7 +176,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     remainingInKobo: int(),
     source: enm('downgrade_proration', 'manual', 'goodwill', 'coupon'),
     sourceReference: nstr(),
-    environment: env(),
+    mode: modeEnm(),
     voidedAt: ndt(),
     createdAt: dt(),
   }),
@@ -198,7 +198,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     last4: nstr(),
     expMonth: nint(),
     expYear: nint(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
     updatedAt: dt(),
   }),
@@ -348,7 +348,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     subscriptionId: str(),
     status: enm('active', 'released', 'canceled'),
     phases: arr(ref('SchedulePhase')),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
     updatedAt: dt(),
   }),
@@ -365,7 +365,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     amountDueInKobo: int(),
     currency: ngn(),
     lineItems: arr(ref('InvoiceLineItem')),
-    environment: env(),
+    mode: modeEnm(),
   }),
 
   Example: allRequired({
@@ -375,7 +375,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     status: enm('pending', 'settled', 'failed'),
     amountInKobo: int(),
     currency: ngn(),
-    environment: env(),
+    mode: modeEnm(),
     createdAt: dt(),
   }),
 

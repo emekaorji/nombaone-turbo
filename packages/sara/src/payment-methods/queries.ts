@@ -7,7 +7,7 @@ import { emitEvent } from '../events';
 import { buildPage, clampLimit, decodeCursor } from '../pagination';
 import { serializePaymentMethod } from './serialize';
 
-import type { DomainContext, Environment, InfraDb, InfraTxDb } from '../context';
+import type { DomainContext, Mode, InfraDb, InfraTxDb } from '../context';
 import type { Page } from '../pagination';
 import type { ListPaymentMethodsOptions, PaymentMethodResponseData } from './types';
 
@@ -19,12 +19,12 @@ export interface PendingMandate {
 /**
  * Select `consent_pending` direct-debit mandates for the activation sweep — a NIBSS
  * mandate has no consent webhook, so a cron polls each pending mandate's status until
- * it goes ACTIVE. Env-scoped (the sweep runs per environment); the handler rebuilds
+ * it goes ACTIVE. Env-scoped (the sweep runs per mode); the handler rebuilds
  * each mandate's owning-org context to poll it.
  */
 export async function selectPendingMandates(
   db: InfraDb,
-  environment: Environment,
+  mode: Mode,
   limit: number
 ): Promise<PendingMandate[]> {
   return db
@@ -35,7 +35,7 @@ export async function selectPendingMandates(
     .from(paymentMethodsTable)
     .where(
       and(
-        eq(paymentMethodsTable.environment, environment),
+        eq(paymentMethodsTable.mode, mode),
         eq(paymentMethodsTable.kind, 'mandate'),
         eq(paymentMethodsTable.status, 'consent_pending')
       )
@@ -65,7 +65,7 @@ export async function listPaymentMethods(
 
   const tenantScope = and(
     eq(paymentMethodsTable.organizationId, ctx.organizationId),
-    eq(paymentMethodsTable.environment, ctx.environment),
+    eq(paymentMethodsTable.mode, ctx.mode),
     opts.customerRef ? eq(customersTable.reference, opts.customerRef) : undefined
   );
 
@@ -99,9 +99,9 @@ export async function listPaymentMethods(
 }
 
 /**
- * Make one method the customer's default (per environment). Done in one
+ * Make one method the customer's default (per mode). Done in one
  * transaction: clear the customer's existing default, then set this one — so the
- * partial-unique `(customer, environment) where is_default` is never violated.
+ * partial-unique `(customer, mode) where is_default` is never violated.
  */
 export async function setDefaultPaymentMethod(
   txDb: InfraTxDb,
@@ -117,7 +117,7 @@ export async function setDefaultPaymentMethod(
       .where(
         and(
           eq(paymentMethodsTable.customerId, found.method.customerId),
-          eq(paymentMethodsTable.environment, ctx.environment),
+          eq(paymentMethodsTable.mode, ctx.mode),
           eq(paymentMethodsTable.isDefault, true)
         )
       );
@@ -149,7 +149,7 @@ export async function getDefaultForCustomer(
     .where(
       and(
         eq(paymentMethodsTable.organizationId, ctx.organizationId),
-        eq(paymentMethodsTable.environment, ctx.environment),
+        eq(paymentMethodsTable.mode, ctx.mode),
         eq(paymentMethodsTable.customerId, customerId),
         eq(paymentMethodsTable.isDefault, true)
       )
@@ -171,7 +171,7 @@ export async function loadByReference(
     .where(
       and(
         eq(paymentMethodsTable.organizationId, ctx.organizationId),
-        eq(paymentMethodsTable.environment, ctx.environment),
+        eq(paymentMethodsTable.mode, ctx.mode),
         eq(paymentMethodsTable.reference, reference)
       )
     )

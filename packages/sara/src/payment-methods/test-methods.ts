@@ -32,9 +32,9 @@ export async function createTestPaymentMethod(
   input: CreateTestPaymentMethodInput
 ): Promise<PaymentMethodResponseData> {
   // Defence in depth — the route is also only mounted on a test deployment.
-  if (ctx.environment !== 'test') {
+  if (ctx.mode !== 'sandbox') {
     throw AppError.Forbidden(
-      'Test payment methods can only be created in the test environment',
+      'Test payment methods can only be created in sandbox mode',
       undefined,
       NOMBAONE_ERROR_CODES.CLIENT_FORBIDDEN
     );
@@ -49,7 +49,7 @@ export async function createTestPaymentMethod(
     .values({
       reference,
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       customerId: customer.id,
       kind: input.kind,
       status: 'active',

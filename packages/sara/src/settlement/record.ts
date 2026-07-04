@@ -49,7 +49,7 @@ export async function recordSettlement(
     .values({
       reference: mintReference('STL'),
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       invoiceId: input.invoiceId,
       customerId: input.customerId,
       subAccountRef: sub.accountRef,

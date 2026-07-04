@@ -29,7 +29,7 @@ export async function getPriceByReference(
     .where(
       and(
         eq(pricesTable.organizationId, ctx.organizationId),
-        eq(pricesTable.environment, ctx.environment),
+        eq(pricesTable.mode, ctx.mode),
         eq(pricesTable.reference, reference)
       )
     )
@@ -57,7 +57,7 @@ export async function listPrices(
 
   const tenantScope = and(
     eq(pricesTable.organizationId, ctx.organizationId),
-    eq(pricesTable.environment, ctx.environment),
+    eq(pricesTable.mode, ctx.mode),
     planId ? eq(pricesTable.planId, planId) : undefined,
     opts.active !== undefined ? eq(pricesTable.active, opts.active) : undefined
   );

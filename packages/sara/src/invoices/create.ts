@@ -28,7 +28,7 @@ export async function createInvoice(
       .where(
         and(
           eq(invoicesTable.organizationId, ctx.organizationId),
-          eq(invoicesTable.environment, ctx.environment),
+          eq(invoicesTable.mode, ctx.mode),
           eq(invoicesTable.subscriptionId, input.subscriptionId),
           eq(invoicesTable.periodIndex, input.periodIndex)
         )
@@ -48,7 +48,7 @@ export async function createInvoice(
       .values({
         reference,
         organizationId: ctx.organizationId,
-        environment: ctx.environment,
+        mode: ctx.mode,
         customerId: input.customerId,
         subscriptionId: input.subscriptionId ?? null,
         periodIndex: input.periodIndex ?? null,
@@ -73,7 +73,7 @@ export async function createInvoice(
         .where(
           and(
             eq(invoicesTable.organizationId, ctx.organizationId),
-            eq(invoicesTable.environment, ctx.environment),
+            eq(invoicesTable.mode, ctx.mode),
             eq(invoicesTable.subscriptionId, input.subscriptionId),
             eq(invoicesTable.periodIndex, input.periodIndex)
           )
@@ -96,7 +96,7 @@ export async function createInvoice(
       input.lines.map((l) => ({
         reference: mintReference('ILI'),
         organizationId: ctx.organizationId,
-        environment: ctx.environment,
+        mode: ctx.mode,
         invoiceId: row.id,
         subscriptionItemId: l.subscriptionItemId ?? null,
         kind: l.kind,

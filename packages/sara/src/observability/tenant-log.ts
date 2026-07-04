@@ -2,7 +2,7 @@ import type { DomainContext } from '../context';
 
 export interface TenantLogFields {
   organizationId: string;
-  environment: string;
+  mode: string;
   correlationId: string;
 }
 
@@ -14,6 +14,6 @@ export interface TenantLogFields {
  */
 export const withTenantLog = (ctx: DomainContext, correlationId: string): TenantLogFields => ({
   organizationId: ctx.organizationId,
-  environment: ctx.environment,
+  mode: ctx.mode,
   correlationId,
 });

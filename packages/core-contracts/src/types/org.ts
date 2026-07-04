@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 /** An organization = a tenant: the unit of isolation and settlement. */
 export interface OrgResponseData {
@@ -20,5 +20,5 @@ export interface OrgUserResponseData {
 export interface SessionContext {
   organizationId: string;
   userId: string;
-  environment: Environment;
+  mode: Mode;
 }

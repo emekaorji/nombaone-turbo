@@ -1,7 +1,7 @@
 ---
-title: Test payment methods
+title: Sandbox payment methods
 description: Attach a deterministic payment method on the sandbox — its behavior decides the outcome, so you can rehearse success, decline, and card-OTP paths on demand.
-section: test-toolkit
+section: sandbox-toolkit
 order: 2
 ---
 
@@ -13,8 +13,8 @@ rehearse the unhappy paths a happy demo skips.
 ## Create one
 
 ```bash
-curl -X POST https://sandbox.api.nombaone.xyz/v1/test/payment-methods \
-  -H "Authorization: Bearer nbo_test_…" \
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "customerId": "{customerId}", "behavior": "success", "kind": "card" }'
 ```
@@ -44,7 +44,7 @@ rail, `card` for the OTP-prone one.
 </Callout>
 
 <CardGroup cols={2}>
-  <Card title="The test clock" href="/test-toolkit/test-clock">
+  <Card title="The sandbox clock" href="/sandbox-toolkit/clock">
     Advance the cycle to see the method charged again.
   </Card>
   <Card title="Dunning and recovery" href="/guides/dunning-and-recovery">

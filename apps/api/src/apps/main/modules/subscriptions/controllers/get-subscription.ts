@@ -16,7 +16,7 @@ export const getSubscriptionController: RequestHandler = jsonHandler<Subscriptio
     }
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const data = await getSubscriptionByReference(db, ctx, (req.params.id ?? ''));
     return { data };

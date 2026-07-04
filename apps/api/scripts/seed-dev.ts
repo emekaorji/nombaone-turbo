@@ -12,8 +12,9 @@ import type { ApiKeyScope } from '@nombaone/core-contracts/types';
  * you can immediately curl the API. The secret is shown ONCE here (sara never
  * stores it), exactly as a real mint would behave.
  *
- * Run with `pnpm seed:dev`. The org always starts in the `test` ring; the key is
- * minted in this deployment's `env.INFRA_ENVIRONMENT` so it authenticates here.
+ * Run with `pnpm seed:dev`. The key is minted in `sandbox` mode (its prefix is
+ * `nbo_sandbox_`), which authenticates on any deployment — live keys are reserved
+ * for production.
  */
 
 const SCOPES: ApiKeyScope[] = ['example:read', 'example:write'];
@@ -32,7 +33,7 @@ const main = async (): Promise<void> => {
   // Mint a key in THIS deployment's environment so it works against this host.
   const key = await createApiKey(
     db,
-    { organizationId: organization.id, environment: env.INFRA_ENVIRONMENT },
+    { organizationId: organization.id, mode: 'sandbox' },
     { name: 'dev key', scopes: SCOPES, createdByUserId: user.id }
   );
 
@@ -42,7 +43,7 @@ const main = async (): Promise<void> => {
       'Seeded dev tenant:',
       `  organization : ${organization.reference} (${organization.name})`,
       `  owner email  : ${email}`,
-      `  environment  : ${env.INFRA_ENVIRONMENT}`,
+      `  mode         : sandbox`,
       `  api key ref  : ${key.reference}`,
       `  api key      : ${key.secret}   <-- shown once, store it now`,
       `  scopes       : ${key.scopes.join(', ')}`,

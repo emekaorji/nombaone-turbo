@@ -3,7 +3,7 @@ import { and, eq, gt } from 'drizzle-orm';
 
 import { orgSessionsTable } from '@nombaone/core-db/schema';
 
-import type { Environment, InfraDb, InfraTxScope } from '../context';
+import type { Mode, InfraDb, InfraTxScope } from '../context';
 
 /**
  * PARADIGM — OPAQUE-TOKEN sessions. The raw token is a high-entropy random
@@ -31,14 +31,14 @@ const DEFAULT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /**
  * Open a session for an authenticated user and return the RAW token (the only
  * time it is ever materialized). The pinned `environment` is the console's
- * active test/live ring, threaded into every subsequent request's DomainContext.
+ * active sandbox/live mode, threaded into every subsequent request's DomainContext.
  */
 export const createSession = async (
   txDb: InfraTxScope,
   params: {
     userId: string;
     organizationId: string;
-    environment: Environment;
+    mode: Mode;
     ttlMs?: number;
   }
 ): Promise<{ token: string }> => {
@@ -49,7 +49,7 @@ export const createSession = async (
     tokenHash: hashToken(token),
     userId: params.userId,
     organizationId: params.organizationId,
-    environment: params.environment,
+    mode: params.mode,
     expiresAt,
   });
 
@@ -65,14 +65,14 @@ export const createSession = async (
 export const validateSession = async (
   db: InfraDb,
   rawToken: string
-): Promise<{ organizationId: string; userId: string; environment: Environment } | null> => {
+): Promise<{ organizationId: string; userId: string; mode: Mode } | null> => {
   if (!rawToken) return null;
 
   const [row] = await db
     .select({
       organizationId: orgSessionsTable.organizationId,
       userId: orgSessionsTable.userId,
-      environment: orgSessionsTable.environment,
+      mode: orgSessionsTable.mode,
     })
     .from(orgSessionsTable)
     .where(

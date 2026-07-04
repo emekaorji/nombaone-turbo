@@ -16,7 +16,7 @@ export const getPlanController: RequestHandler = jsonHandler<
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
 
   const plan = await getPlanByReference(db, ctx, req.params.id ?? '');

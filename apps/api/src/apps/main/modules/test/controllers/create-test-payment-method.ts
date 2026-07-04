@@ -10,7 +10,7 @@ import type { DomainContext } from '@nombaone/sara/context';
 import type { RequestHandler } from 'express';
 
 /**
- * POST /v1/test/payment-methods — mint a deterministic, chargeable test payment
+ * POST /v1/sandbox/payment-methods — mint a deterministic, chargeable test payment
  * method (test deployments only). Its `behavior` fixes what every charge does.
  */
 export const createTestPaymentMethodController: RequestHandler =
@@ -18,7 +18,7 @@ export const createTestPaymentMethodController: RequestHandler =
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const body = req.body as CreateTestPaymentMethodBody;
     const data = await createTestPaymentMethod(db, ctx, {

@@ -54,7 +54,7 @@ import type { CreateExampleInput, ExampleResponseData } from './types';
  *     webhook + reconciliation. The core resolves the rail by KEY and never
  *     branches on a provider's name.
  *
- * Tenancy: every write is stamped with `ctx.organizationId` / `ctx.environment`;
+ * Tenancy: every write is stamped with `ctx.organizationId` / `ctx.mode`;
  * the handler never trusts org/env from the client.
  *
  * Note on atomicity: `ensureSystemAccounts` and `postTransaction` each open their
@@ -80,7 +80,7 @@ export async function createExample(
     .values({
       reference,
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       kind: input.kind,
       amount: input.amount,
     })

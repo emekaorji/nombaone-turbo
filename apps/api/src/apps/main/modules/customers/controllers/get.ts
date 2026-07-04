@@ -20,7 +20,7 @@ export const getCustomerController: RequestHandler = jsonHandler<
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
 
   const customer = await getCustomerByReference(db, ctx, req.params.id ?? '');

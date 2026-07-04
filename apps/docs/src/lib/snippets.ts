@@ -21,7 +21,7 @@ export const LANG_LABEL: Record<SnippetLang, string> = {
 };
 
 const BASE = "https://sandbox.api.nombaone.xyz";
-const KEY = "nbo_test_…";
+const KEY = "nbo_sandbox_…";
 
 export interface SnippetInput {
   method: string;

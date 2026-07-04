@@ -108,7 +108,7 @@ export async function getOrgBillingSettings(
     .where(
       and(
         eq(orgBillingSettingsTable.organizationId, ctx.organizationId),
-        eq(orgBillingSettingsTable.environment, ctx.environment)
+        eq(orgBillingSettingsTable.mode, ctx.mode)
       )
     )
     .limit(1);
@@ -132,11 +132,11 @@ export async function upsertOrgBillingSettings(
     .insert(orgBillingSettingsTable)
     .values({
       organizationId: ctx.organizationId,
-      environment: ctx.environment,
+      mode: ctx.mode,
       ...patch,
     })
     .onConflictDoUpdate({
-      target: [orgBillingSettingsTable.organizationId, orgBillingSettingsTable.environment],
+      target: [orgBillingSettingsTable.organizationId, orgBillingSettingsTable.mode],
       set: { ...patch, updatedAt: new Date() },
     })
     .returning();

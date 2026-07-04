@@ -61,14 +61,14 @@ export async function POST(request: Request): Promise<Response> {
     return error(
       422,
       "LIVE_KEY_REJECTED",
-      "The playground only accepts test keys (nbo_test_…). Never paste a live key here.",
+      "The playground only accepts sandbox keys (nbo_sandbox_…). Never paste a live key here.",
     );
   }
-  if (apiKey && !apiKey.startsWith("nbo_test_")) {
+  if (apiKey && !apiKey.startsWith("nbo_sandbox_")) {
     return error(
       422,
       "INVALID_KEY_FORMAT",
-      "API key must be an Nombaone test key (nbo_test_…).",
+      "API key must be an Nombaone test key (nbo_sandbox_…).",
     );
   }
 
@@ -95,7 +95,7 @@ export async function POST(request: Request): Promise<Response> {
   // Use a demo sandbox key if the caller did not bring one (GET reads only).
   const effectiveKey = apiKey || (method === "GET" ? process.env.INFRA_DEMO_SANDBOX_KEY : "");
   if (!effectiveKey) {
-    return error(401, "MISSING_KEY", "Paste a test key (nbo_test_…) to send this request.");
+    return error(401, "MISSING_KEY", "Paste a test key (nbo_sandbox_…) to send this request.");
   }
 
   const upstreamUrl = `${INFRA_API_BASE}${path}`;

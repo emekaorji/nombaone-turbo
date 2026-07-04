@@ -8,7 +8,7 @@
   "servers": [
     {
       "url": "http://localhost:8000/v1",
-      "description": "test mode (test-environment API keys)"
+      "description": "One base URL for both modes — the API key prefix (nbo_sandbox_ / nbo_live_) selects sandbox vs live."
     }
   ],
   "components": {
@@ -194,10 +194,10 @@
             "type": "object",
             "additionalProperties": true
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -217,7 +217,7 @@
           "name",
           "phone",
           "metadata",
-          "environment",
+          "mode",
           "createdAt",
           "updatedAt"
         ]
@@ -252,10 +252,10 @@
             "type": "object",
             "additionalProperties": true
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -275,7 +275,7 @@
           "description",
           "status",
           "metadata",
-          "environment",
+          "mode",
           "createdAt",
           "updatedAt"
         ]
@@ -340,10 +340,10 @@
             "type": "object",
             "additionalProperties": true
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -365,7 +365,7 @@
           "trialPeriodDays",
           "active",
           "metadata",
-          "environment",
+          "mode",
           "createdAt"
         ]
       },
@@ -489,10 +489,10 @@
               "NGN"
             ]
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -521,7 +521,7 @@
           "items",
           "latestInvoiceId",
           "currency",
-          "environment",
+          "mode",
           "createdAt"
         ]
       },
@@ -661,10 +661,10 @@
             "format": "date-time",
             "nullable": true
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -695,7 +695,7 @@
           "finalizedAt",
           "paidAt",
           "voidedAt",
-          "environment",
+          "mode",
           "createdAt"
         ]
       },
@@ -746,10 +746,10 @@
           "timesRedeemed": {
             "type": "integer"
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -769,7 +769,7 @@
           "redeemBy",
           "maxRedemptions",
           "timesRedeemed",
-          "environment",
+          "mode",
           "createdAt"
         ]
       },
@@ -816,10 +816,10 @@
             "format": "date-time",
             "nullable": true
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -838,7 +838,7 @@
           "cyclesRemaining",
           "startAt",
           "endAt",
-          "environment",
+          "mode",
           "createdAt"
         ]
       },
@@ -876,10 +876,10 @@
             "type": "string",
             "nullable": true
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -901,7 +901,7 @@
           "remainingInKobo",
           "source",
           "sourceReference",
-          "environment",
+          "mode",
           "voidedAt",
           "createdAt"
         ]
@@ -987,10 +987,10 @@
             "type": "integer",
             "nullable": true
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -1014,7 +1014,7 @@
           "last4",
           "expMonth",
           "expYear",
-          "environment",
+          "mode",
           "createdAt",
           "updatedAt"
         ]
@@ -1755,10 +1755,10 @@
               "$ref": "#/components/schemas/SchedulePhase"
             }
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -1777,7 +1777,7 @@
           "subscriptionId",
           "status",
           "phases",
-          "environment",
+          "mode",
           "createdAt",
           "updatedAt"
         ]
@@ -1835,10 +1835,10 @@
               "$ref": "#/components/schemas/InvoiceLineItem"
             }
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           }
@@ -1855,7 +1855,7 @@
           "amountDueInKobo",
           "currency",
           "lineItems",
-          "environment"
+          "mode"
         ]
       },
       "Example": {
@@ -1894,10 +1894,10 @@
               "NGN"
             ]
           },
-          "environment": {
+          "mode": {
             "type": "string",
             "enum": [
-              "test",
+              "sandbox",
               "live"
             ]
           },
@@ -1913,7 +1913,7 @@
           "status",
           "amountInKobo",
           "currency",
-          "environment",
+          "mode",
           "createdAt"
         ]
       },
@@ -8522,9 +8522,9 @@
         }
       }
     },
-    "/v1/test/payment-methods": {
+    "/v1/sandbox/payment-methods": {
       "post": {
-        "summary": "POST /v1/test/payment-methods",
+        "summary": "POST /v1/sandbox/payment-methods",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8625,9 +8625,9 @@
         }
       }
     },
-    "/v1/test/subscriptions/{id}/advance-cycle": {
+    "/v1/sandbox/subscriptions/{id}/advance-cycle": {
       "post": {
-        "summary": "POST /v1/test/subscriptions/{id}/advance-cycle",
+        "summary": "POST /v1/sandbox/subscriptions/{id}/advance-cycle",
         "security": [
           {
             "ApiKeyAuth": []
@@ -8697,9 +8697,9 @@
         }
       }
     },
-    "/v1/test/webhooks/simulate": {
+    "/v1/sandbox/webhooks/simulate": {
       "post": {
-        "summary": "POST /v1/test/webhooks/simulate",
+        "summary": "POST /v1/sandbox/webhooks/simulate",
         "security": [
           {
             "ApiKeyAuth": []

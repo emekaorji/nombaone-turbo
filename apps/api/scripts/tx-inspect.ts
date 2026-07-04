@@ -5,8 +5,8 @@ import { env } from '../src/shared/config/env';
 import { getNombaClient } from '../src/shared/config/nomba';
 
 async function main(): Promise<void> {
-  const sub = env.NOMBA_SUBACCOUNT_ID ?? '';
-  const c = getNombaClient();
+  const sub = env.NOMBA_LIVE_SUBACCOUNT_ID ?? '';
+  const c = getNombaClient('live');
   const res = await c.request<{ data?: { results?: Record<string, unknown>[] } }>({
     method: 'GET',
     endpoint: `/v1/transactions/accounts/${sub}?limit=15`,

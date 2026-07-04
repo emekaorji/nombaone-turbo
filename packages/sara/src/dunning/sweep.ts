@@ -2,12 +2,12 @@ import { coerceFailureReason } from '../nomba/failure-taxonomy';
 import { executeDueAttempt, scheduleFirstAttempt } from './attempt';
 import { selectDueDunningAttempts, selectPastDueNeedingDunning } from './queries';
 
-import type { Environment } from '@nombaone/core-contracts/types';
+import type { Mode } from '@nombaone/core-contracts/types';
 import type { DomainContext, InfraTxDb } from '../context';
 
 export interface DunningSweepDeps {
   db: InfraTxDb;
-  environment: Environment;
+  mode: Mode;
   now: Date;
   batchSize: number;
 }
@@ -17,9 +17,9 @@ export interface DunningSweepResult {
   executed: number; // due attempts run this tick
 }
 
-const ctxOf = (row: { organizationId: string; environment: Environment }): DomainContext => ({
+const ctxOf = (row: { organizationId: string; mode: Mode }): DomainContext => ({
   organizationId: row.organizationId,
-  environment: row.environment,
+  mode: row.mode,
 });
 
 /**
@@ -31,9 +31,9 @@ const ctxOf = (row: { organizationId: string; environment: Environment }): Domai
  * A tick that finds nothing due is a no-op.
  */
 export async function runDunningSweep(deps: DunningSweepDeps): Promise<DunningSweepResult> {
-  const { db, environment, now, batchSize } = deps;
+  const { db, mode, now, batchSize } = deps;
 
-  const needing = await selectPastDueNeedingDunning(db, environment, batchSize);
+  const needing = await selectPastDueNeedingDunning(db, mode, batchSize);
   let started = 0;
   for (const { invoice, subscription } of needing) {
     const ctx = ctxOf(invoice);
@@ -46,7 +46,7 @@ export async function runDunningSweep(deps: DunningSweepDeps): Promise<DunningSw
     if (row) started += 1;
   }
 
-  const due = await selectDueDunningAttempts(db, environment, now, batchSize);
+  const due = await selectDueDunningAttempts(db, mode, now, batchSize);
   let executed = 0;
   for (const attempt of due) {
     await executeDueAttempt(db, ctxOf(attempt), attempt);

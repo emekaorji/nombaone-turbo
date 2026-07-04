@@ -2,7 +2,7 @@ import { mapGatewayMessage } from '../nomba/failure-taxonomy';
 import { NOMBA_ENDPOINTS } from '../nomba/endpoints';
 import { koboToNombaAmount } from '../nomba/money';
 
-import type { NombaClient } from '../nomba/client';
+import type { NombaClientFactory } from '../nomba/injected';
 import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
 
 /**
@@ -13,7 +13,7 @@ import type { RailAdapter, RailCollectInput, RailCollectResult } from './types';
  * ceiling — an over-ceiling bill fails here (06 triggers new-mandate + re-consent;
  * we NEVER split a debit to sneak under the cap).
  */
-export function createMandateRail(client: NombaClient): RailAdapter {
+export function createMandateRail(getClient: NombaClientFactory): RailAdapter {
   return {
     key: 'mandate',
     direction: 'pull',
@@ -28,6 +28,7 @@ export function createMandateRail(client: NombaClient): RailAdapter {
         return { status: 'failed', failureReason: 'mandate_max_amount_exceeded' };
       }
 
+      const client = getClient(input.mode);
       const res = await client.request<Record<string, unknown>>({
         method: 'POST',
         endpoint: NOMBA_ENDPOINTS.mandateDebit,

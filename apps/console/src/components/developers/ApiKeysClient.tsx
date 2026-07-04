@@ -4,7 +4,7 @@ import { Code } from 'iconsax-react';
 
 import { Button } from '@nombaone/ui/components/ui/button';
 import type { ApiKeyScope } from '@nombaone/core-contracts/types';
-import type { Environment } from '@nombaone/sara/context';
+import type { Mode } from '@nombaone/sara/context';
 
 import {
   Table,
@@ -30,7 +30,7 @@ export interface ApiKeyView {
   name: string;
   keyPrefix: string;
   scopes: ApiKeyScope[];
-  environment: Environment;
+  mode: Mode;
   lastUsedAt: string | null;
   revokedAt: string | null;
   createdAt: string;

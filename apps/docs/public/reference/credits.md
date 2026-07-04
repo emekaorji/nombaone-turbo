@@ -22,7 +22,7 @@ goodwill, or prepaid balances. Credits are a sub-resource of the
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
-  -H "Authorization: Bearer nbo_test_…" \
+  -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -d '{ "amountInKobo": 100000, "source": "goodwill" }'
 ```

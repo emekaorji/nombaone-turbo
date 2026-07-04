@@ -45,7 +45,7 @@ export const createInboundWebhookWorker = (): Worker<
 
             // Invoice settlement first: if OUR reference resolves to an invoice, requery
             // + confirm (E4). Otherwise fall through to the payment-method inbound path.
-            const invoice = await processInboundInvoiceEvent(db, getNombaClient(), {
+            const invoice = await processInboundInvoiceEvent(db, getNombaClient, {
               requestId,
               eventType,
               payload,
@@ -64,7 +64,7 @@ export const createInboundWebhookWorker = (): Worker<
             // A dunning RETRY charge is keyed on the attempt's DUN reference, so its
             // async result carries that ref (not an invoice ref). Route it to the
             // dunning bridge before the payment-method fallthrough (item 9).
-            const dunning = await processInboundDunningEvent(db, getNombaClient(), {
+            const dunning = await processInboundDunningEvent(db, getNombaClient, {
               requestId,
               eventType,
               payload,

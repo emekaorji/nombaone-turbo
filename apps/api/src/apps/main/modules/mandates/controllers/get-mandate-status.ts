@@ -20,10 +20,10 @@ export const getMandateStatusController: RequestHandler = jsonHandler<
   }
   const ctx: DomainContext = {
     organizationId: req.apiKey.organizationId,
-    environment: req.apiKey.environment,
+    mode: req.apiKey.mode,
   };
 
-  const method = await pollMandateActive(getNombaClient(), db, ctx, {
+  const method = await pollMandateActive(getNombaClient(ctx.mode), db, ctx, {
     reference: req.params.id ?? '',
   });
 

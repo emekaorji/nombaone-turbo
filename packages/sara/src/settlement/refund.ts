@@ -36,7 +36,7 @@ export async function refundSettlement(
       .where(
         and(
           eq(settlementsTable.organizationId, ctx.organizationId),
-          eq(settlementsTable.environment, ctx.environment),
+          eq(settlementsTable.mode, ctx.mode),
           eq(settlementsTable.reference, input.reference)
         )
       )
@@ -84,7 +84,7 @@ export async function refundSettlement(
       .values({
         reference: mintReference('REF'),
         organizationId: ctx.organizationId,
-        environment: ctx.environment,
+        mode: ctx.mode,
         settlementId: settlement.id,
         subAccountRef: settlement.subAccountRef,
         amountKobo: refundKobo,

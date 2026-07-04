@@ -24,6 +24,6 @@ app.use((req, _res, next) => {
 app.use('/webhooks', createWebhookApp());
 createServer(app).listen(env.PORT, () => {
   console.log(
-    `[receiver] webhook-only on ${env.PORT} — NO workers/scheduler; debug=${env.NOMBA_WEBHOOK_DEBUG}; base=${env.NOMBA_BASE_URL}`
+    `[receiver] webhook-only on ${env.PORT} — NO workers/scheduler; debug=${env.NOMBA_WEBHOOK_DEBUG}; base=${env.NOMBA_LIVE_BASE_URL}`
   );
 });

@@ -58,7 +58,7 @@ export async function updateCardOnSubscription(
         .where(
           and(
             eq(paymentMethodsTable.organizationId, ctx.organizationId),
-            eq(paymentMethodsTable.environment, ctx.environment),
+            eq(paymentMethodsTable.mode, ctx.mode),
             eq(paymentMethodsTable.reference, input.paymentMethodReference),
             eq(paymentMethodsTable.customerId, sub.customerId)
           )
@@ -78,7 +78,7 @@ export async function updateCardOnSubscription(
         .values({
           reference: mintReference('PMT'),
           organizationId: ctx.organizationId,
-          environment: ctx.environment,
+          mode: ctx.mode,
           customerId: sub.customerId,
           kind: 'card',
           status: 'active',

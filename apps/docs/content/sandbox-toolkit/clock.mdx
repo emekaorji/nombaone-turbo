@@ -1,12 +1,12 @@
 ---
-title: The test clock
+title: The sandbox clock
 description: Advance a subscription's next cycle on demand — rehearse a renewal, a proration, or a dunning retry in seconds instead of waiting a real billing period.
-section: test-toolkit
+section: sandbox-toolkit
 order: 3
 ---
 
 A subscription bills on a repeating cycle — monthly, yearly. You can't wait a
-month to test the second charge. The **test clock** advances a subscription's next
+month to test the second charge. The **sandbox clock** advances a subscription's next
 cycle immediately, running the same billing loop the scheduler would run on the
 real billing date: open the cycle, finalize the invoice, collect it, post to the
 ledger.
@@ -15,8 +15,8 @@ ledger.
 
 ```bash
 curl -X POST \
-  https://sandbox.api.nombaone.xyz/v1/test/subscriptions/{id}/advance-cycle \
-  -H "Authorization: Bearer nbo_test_…"
+  https://sandbox.api.nombaone.xyz/v1/sandbox/subscriptions/{id}/advance-cycle \
+  -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
 No body — it advances the target subscription by exactly one cycle and returns the
@@ -38,17 +38,17 @@ updated subscription with its new period and the invoice the cycle produced.
   will do. See [how billing works](/concepts/how-billing-works).
 </Callout>
 
-<Callout type="warning" title="Test deployment only">
-  `advance-cycle` exists only on the sandbox. In live, cycles advance on their real
+<Callout type="warning" title="Sandbox mode only">
+  `advance-cycle` exists only in sandbox mode. In live, cycles advance on their real
   billing dates, driven by the scheduler — there is no way to force a live charge
   early.
 </Callout>
 
 <CardGroup cols={2}>
-  <Card title="Test payment methods" href="/test-toolkit/test-payment-methods">
+  <Card title="Sandbox payment methods" href="/sandbox-toolkit/payment-methods">
     Choose the outcome the advanced cycle produces.
   </Card>
-  <Card title="Simulate webhooks" href="/test-toolkit/simulate-webhooks">
+  <Card title="Simulate webhooks" href="/sandbox-toolkit/simulate-webhooks">
     Fire the events a cycle would emit, directly.
   </Card>
 </CardGroup>

@@ -38,7 +38,7 @@ export async function updateSubscription(
       .where(
         and(
           eq(paymentMethodsTable.organizationId, ctx.organizationId),
-          eq(paymentMethodsTable.environment, ctx.environment),
+          eq(paymentMethodsTable.mode, ctx.mode),
           eq(paymentMethodsTable.reference, input.defaultPaymentMethodRef)
         )
       )

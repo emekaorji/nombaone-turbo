@@ -1,6 +1,6 @@
 import { bigint, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 import { invoicesTable } from './invoices';
 import { organizationsTable } from './organizations';
 import { subscriptionItemsTable } from './subscription-items';
@@ -28,7 +28,7 @@ export const invoiceLineItemsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     invoiceId: uuid('invoice_id')
       .notNull()
       .references(() => invoicesTable.id, { onDelete: 'cascade' }),
@@ -50,7 +50,7 @@ export const invoiceLineItemsTable = pgTable(
     referenceUnique: uniqueIndex('invoice_line_items_reference_unique').on(table.reference),
     invoiceIdx: index('invoice_line_items_invoice_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.invoiceId
     ),
   })

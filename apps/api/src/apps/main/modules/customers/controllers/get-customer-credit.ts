@@ -16,7 +16,7 @@ export const getCustomerCreditController: RequestHandler = jsonHandler<CreditBal
     }
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const data = await getCreditBalanceResponse(db, ctx, req.params.id ?? '');
     return { data };

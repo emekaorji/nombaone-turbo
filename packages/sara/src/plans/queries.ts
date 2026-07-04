@@ -31,7 +31,7 @@ export async function listPlans(
 
   const tenantScope = and(
     eq(plansTable.organizationId, ctx.organizationId),
-    eq(plansTable.environment, ctx.environment),
+    eq(plansTable.mode, ctx.mode),
     opts.status ? eq(plansTable.status, opts.status) : undefined
   );
 
@@ -74,7 +74,7 @@ export async function resolvePlanId(
     .where(
       and(
         eq(plansTable.organizationId, ctx.organizationId),
-        eq(plansTable.environment, ctx.environment),
+        eq(plansTable.mode, ctx.mode),
         eq(plansTable.reference, reference)
       )
     )

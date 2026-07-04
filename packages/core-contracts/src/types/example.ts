@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 /**
  * EXAMPLE DTO — part of the deletable example slice. Demonstrates that the public
@@ -16,6 +16,6 @@ export interface ExampleResponseData {
   status: ExampleStatus;
   amountInKobo: number; // kobo
   currency: 'NGN';
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
 }

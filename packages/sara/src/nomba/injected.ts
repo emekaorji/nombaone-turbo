@@ -1,18 +1,33 @@
 import type { NombaClient } from './client';
+import type { Mode } from '../context';
 
 /**
- * A process-level Nomba client injected once at boot (`registerNombaRails`, and the
- * e2e harness's `__setNombaClient`). It lets the billing/dunning layer mint a
- * hosted-checkout link for OTP/3DS completion WITHOUT threading a `NombaClient`
- * through every collect/dunning call site (rails already bake their client in at
- * registration; this mirrors that boot-time injection for the one place that needs
- * a raw checkout call). Unset before boot / in pure unit tests ⇒ the mint returns
- * `null` and the caller still emits the action event, just without a link.
+ * A process-level Nomba client FACTORY injected once at boot (`registerNombaRails`,
+ * and the e2e harness's `__setNombaClient`). It lets the billing/dunning layer mint
+ * a hosted-checkout link for OTP/3DS completion WITHOUT threading a `NombaClient`
+ * through every collect/dunning call site (rails resolve their client by `ctx.mode`
+ * at collect time; this mirrors that for the one place that needs a raw checkout
+ * call).
+ *
+ * The factory selects the client for the request's MODE (`sandbox` | `live`), so a
+ * sandbox link is minted against sandbox Nomba and a live link against live Nomba —
+ * never crossed. Unset before boot / in pure unit tests, or unconfigured for the
+ * mode ⇒ the mint returns `null` and the caller still emits the action event, just
+ * without a link.
  */
-let billingClient: NombaClient | null = null;
+export type NombaClientFactory = (mode: Mode) => NombaClient;
 
-export const setBillingNombaClient = (client: NombaClient | null): void => {
-  billingClient = client;
+let billingClientFactory: NombaClientFactory | null = null;
+
+export const setBillingNombaClientFactory = (factory: NombaClientFactory | null): void => {
+  billingClientFactory = factory;
 };
 
-export const getBillingNombaClient = (): NombaClient | null => billingClient;
+export const getBillingNombaClient = (mode: Mode): NombaClient | null => {
+  if (!billingClientFactory) return null;
+  try {
+    return billingClientFactory(mode);
+  } catch {
+    return null;
+  }
+};

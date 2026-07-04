@@ -5,7 +5,7 @@ import { getNombaClient } from '../src/shared/config/nomba';
 
 async function tryGet(label: string, endpoint: string): Promise<void> {
   try {
-    const res = await getNombaClient().request({ method: 'GET', endpoint });
+    const res = await getNombaClient('live').request({ method: 'GET', endpoint });
     console.log(`\n### ${label} [${res.status}] ${endpoint}`);
     console.log(JSON.stringify(res.data));
   } catch (e) {

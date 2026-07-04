@@ -9,7 +9,7 @@ declare global {
       apiKey?: {
         apiKeyId: string;
         organizationId: string;
-        environment: 'test' | 'live';
+        mode: 'sandbox' | 'live';
         scopes: string[];
       };
       pagination?: { limit: number; cursor?: string };

@@ -46,12 +46,12 @@ interface LimiterConfig {
  */
 async function resolveLimiterConfig(
   organizationId: string,
-  environment: 'test' | 'live'
+  mode: 'sandbox' | 'live'
 ): Promise<LimiterConfig> {
-  const cacheKey = `ratelimit:cfg:${organizationId}:${environment}`;
+  const cacheKey = `ratelimit:cfg:${organizationId}:${mode}`;
   const cached = await redis.get(cacheKey);
   if (cached) return JSON.parse(cached) as LimiterConfig;
-  const ctx = { organizationId, environment };
+  const ctx = { organizationId, mode };
   const [{ perMinute }, { monthly }] = await Promise.all([
     resolveRateLimit(db, ctx),
     resolveQuota(db, ctx),
@@ -74,17 +74,17 @@ export const rateLimit: RequestHandler = async (req, res, next) => {
     return;
   }
 
-  const { organizationId, environment } = req.apiKey;
+  const { organizationId, mode } = req.apiKey;
   const redisKey = `ratelimit:${req.apiKey.apiKeyId}:${Math.floor(Date.now() / 1000 / WINDOW_SECONDS)}`;
 
   try {
-    const cfg = await resolveLimiterConfig(organizationId, environment);
+    const cfg = await resolveLimiterConfig(organizationId, mode);
 
     // Monthly quota (per org) — coarse, Redis-authoritative in-window. `null` ⇒ off.
     if (cfg.monthlyQuota != null) {
       const now = new Date();
       const period = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-      const quotaKey = `quota:${organizationId}:${environment}:${period}`;
+      const quotaKey = `quota:${organizationId}:${mode}:${period}`;
       const used = await redis.incr(quotaKey);
       if (used === 1) await redis.expire(quotaKey, 40 * 24 * 3600); // > one month
       if (used > cfg.monthlyQuota) {

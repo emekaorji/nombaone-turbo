@@ -19,7 +19,7 @@ import { getEnvironment } from '@/lib/environment';
  * reloads without a hydration flash.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [user, environment, cookieStore] = await Promise.all([
+  const [user, mode, cookieStore] = await Promise.all([
     requireUser(),
     getEnvironment(),
     cookies(),
@@ -31,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <SidebarProvider defaultOpen={sidebarOpen}>
         <AppSidebar user={user} />
         <SidebarInset>
-          <Topbar environment={environment} />
+          <Topbar mode={mode} />
           <div className="flex-1 px-6 py-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>

@@ -10,7 +10,7 @@ import {
   organizationsTable,
   type AdminAuditLogRow,
 } from '@nombaone/core-db/schema';
-import type { Environment } from '@nombaone/sara/context';
+import type { Mode } from '@nombaone/sara/context';
 
 import { getDb } from '@/lib/db';
 
@@ -22,7 +22,7 @@ import { getDb } from '@/lib/db';
  * looks ACROSS every tenant, so the panel owns its own cross-org reads here.
  *
  * Two invariants hold for all of them:
- *   • the operator's selected environment is passed in and applied in the WHERE
+ *   • the operator's selected mode is passed in and applied in the WHERE
  *     clause SERVER-SIDE — the env cookie is a preference, never authority, so
  *     each read re-filters by the ring;
  *   • the public `reference` is the surfaced id; the internal UUID never leaves
@@ -45,7 +45,7 @@ export type DashboardStats = {
 };
 
 /** Platform headline counters + a ledger zero-sum snapshot for one ring. */
-export async function getDashboardStats(environment: Environment): Promise<DashboardStats> {
+export async function getDashboardStats(mode: Mode): Promise<DashboardStats> {
   const db = getDb();
 
   const [[orgCount], [exampleCount], [operatorCount], [ledger]] = await Promise.all([
@@ -53,7 +53,7 @@ export async function getDashboardStats(environment: Environment): Promise<Dashb
     db
       .select({ count: sql<number>`count(*)` })
       .from(examplesTable)
-      .where(eq(examplesTable.environment, environment)),
+      .where(eq(examplesTable.mode, mode)),
     db.select({ count: sql<number>`count(*)` }).from(operatorsTable),
     db
       .select({
@@ -65,7 +65,7 @@ export async function getDashboardStats(environment: Environment): Promise<Dashb
         ledgerTransactionsTable,
         eq(ledgerEntriesTable.transactionId, ledgerTransactionsTable.id)
       )
-      .where(eq(ledgerTransactionsTable.environment, environment)),
+      .where(eq(ledgerTransactionsTable.mode, mode)),
   ]);
 
   const totalDebits = Number(ledger?.totalDebits ?? 0);
@@ -89,7 +89,7 @@ export type PlatformExampleRow = {
   organizationReference: string;
   kind: string;
   amount: number;
-  environment: Environment;
+  mode: Mode;
   attemptCount: number;
   createdAt: string;
 };
@@ -101,7 +101,7 @@ export type PlatformExampleRow = {
  * read view).
  */
 export async function listPlatformExamples(
-  environment: Environment,
+  mode: Mode,
   limit = 50
 ): Promise<PlatformExampleRow[]> {
   const rows = await getDb()
@@ -111,13 +111,13 @@ export async function listPlatformExamples(
       organizationReference: organizationsTable.reference,
       kind: examplesTable.kind,
       amount: examplesTable.amount,
-      environment: examplesTable.environment,
+      mode: examplesTable.mode,
       attemptCount: examplesTable.attemptCount,
       createdAt: examplesTable.createdAt,
     })
     .from(examplesTable)
     .innerJoin(organizationsTable, eq(examplesTable.organizationId, organizationsTable.id))
-    .where(eq(examplesTable.environment, environment))
+    .where(eq(examplesTable.mode, mode))
     .orderBy(desc(examplesTable.createdAt), desc(examplesTable.id))
     .limit(limit);
 
@@ -127,7 +127,7 @@ export async function listPlatformExamples(
     organizationReference: row.organizationReference,
     kind: row.kind,
     amount: Number(row.amount),
-    environment: row.environment as Environment,
+    mode: row.mode as Mode,
     attemptCount: row.attemptCount,
     createdAt: new Date(row.createdAt).toISOString(),
   }));
@@ -178,7 +178,7 @@ export type PlatformReconciliation = {
  * transactions in the ring.
  */
 export async function getPlatformReconciliation(
-  environment: Environment
+  mode: Mode
 ): Promise<PlatformReconciliation> {
   const [totals] = await getDb()
     .select({
@@ -190,7 +190,7 @@ export async function getPlatformReconciliation(
       ledgerTransactionsTable,
       eq(ledgerEntriesTable.transactionId, ledgerTransactionsTable.id)
     )
-    .where(eq(ledgerTransactionsTable.environment, environment));
+    .where(eq(ledgerTransactionsTable.mode, mode));
 
   const totalDebits = Number(totals?.totalDebits ?? 0);
   const totalCredits = Number(totals?.totalCredits ?? 0);

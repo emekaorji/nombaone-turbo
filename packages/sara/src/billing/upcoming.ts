@@ -63,6 +63,6 @@ export async function getUpcomingInvoice(
         quantity,
       },
     ],
-    environment: sub.environment,
+    mode: sub.mode,
   };
 }

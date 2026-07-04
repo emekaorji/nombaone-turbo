@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 /**
  * CUSTOMER DTO — a tenant's end-payer (subscriber). The public `id` is the
@@ -12,7 +12,7 @@ export interface CustomerResponseData {
   name: string;
   phone: string | null;
   metadata: Record<string, unknown>;
-  environment: Environment;
+  mode: Mode;
   createdAt: string;
   updatedAt: string;
 }

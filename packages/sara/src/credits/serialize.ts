@@ -12,7 +12,7 @@ export const serializeCreditGrant = (
   remainingInKobo: row.remaining,
   source: row.source,
   sourceReference: row.sourceReference,
-  environment: row.environment,
+  mode: row.mode,
   voidedAt: row.voidedAt ? new Date(row.voidedAt).toISOString() : null,
   createdAt: new Date(row.createdAt).toISOString(),
 });

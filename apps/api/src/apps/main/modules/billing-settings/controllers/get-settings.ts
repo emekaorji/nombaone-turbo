@@ -14,7 +14,7 @@ export const getBillingSettingsController: RequestHandler =
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
     const ctx: DomainContext = {
       organizationId: req.apiKey.organizationId,
-      environment: req.apiKey.environment,
+      mode: req.apiKey.mode,
     };
     const settings = await getOrgBillingSettings(db, ctx);
     return { data: serializeBillingSettings(settings) };

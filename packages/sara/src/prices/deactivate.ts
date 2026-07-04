@@ -27,7 +27,7 @@ export async function deactivatePrice(
     .where(
       and(
         eq(pricesTable.organizationId, ctx.organizationId),
-        eq(pricesTable.environment, ctx.environment),
+        eq(pricesTable.mode, ctx.mode),
         eq(pricesTable.reference, reference)
       )
     )

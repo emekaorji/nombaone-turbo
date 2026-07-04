@@ -13,7 +13,7 @@ import type { RequestHandler } from 'express';
 export const updateTenantSettingsController: RequestHandler = jsonHandler<TenantSettingsResponseData>(
   async (req) => {
     if (!req.apiKey) throw AppError.Unauthorized('API key required');
-    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, environment: req.apiKey.environment };
+    const ctx: DomainContext = { organizationId: req.apiKey.organizationId, mode: req.apiKey.mode };
     return { data: await updateTenantSettings(db, ctx, req.body as UpdateTenantSettingsBody) };
   }
 );

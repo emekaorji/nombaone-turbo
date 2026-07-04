@@ -11,7 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import { createdAt, environmentEnum, idPk, referenceCol, updatedAt } from './shared';
+import { createdAt, modeEnum, idPk, referenceCol, updatedAt } from './shared';
 import { customersTable } from './customers';
 import { organizationsTable } from './organizations';
 import { paymentMethodsTable } from './payment-methods';
@@ -50,7 +50,7 @@ export const subscriptionsTable = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizationsTable.id, { onDelete: 'cascade' }),
-    environment: environmentEnum('environment').notNull(),
+    mode: modeEnum('mode').notNull(),
     customerId: uuid('customer_id')
       .notNull()
       .references(() => customersTable.id, { onDelete: 'restrict' }),
@@ -88,25 +88,25 @@ export const subscriptionsTable = pgTable(
     referenceUnique: uniqueIndex('subscriptions_reference_unique').on(table.reference),
     keysetIdx: index('subscriptions_keyset_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.createdAt.desc(),
       table.id.desc()
     ),
     customerIdx: index('subscriptions_customer_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.customerId
     ),
     statusIdx: index('subscriptions_status_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.status
     ),
     // The 04 due-selection cursor index (B7/B11): find subscriptions whose
     // next_billing_at ≤ now without a seq scan.
     dueIdx: index('subscriptions_due_idx').on(
       table.organizationId,
-      table.environment,
+      table.mode,
       table.nextBillingAt
     ),
     // The CROSS-TENANT sweep due query (findDueSubscriptions) does not pin org/env,

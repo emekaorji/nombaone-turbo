@@ -1,4 +1,4 @@
-import type { Environment } from './common';
+import type { Mode } from './common';
 
 /** Fine-grained scopes gate each endpoint via requireScope(). Extend per domain. */
 export type ApiKeyScope =
@@ -32,10 +32,10 @@ export type ApiKeyScope =
 export interface ApiKeyResponseData {
   id: string; // public reference
   name: string;
-  /** First chars of the secret, for display only (e.g. `nbo_test_a1b2…`). */
+  /** First chars of the secret, for display only (e.g. `nbo_sandbox_a1b2…`). */
   keyPrefix: string;
   scopes: ApiKeyScope[];
-  environment: Environment;
+  mode: Mode;
   lastUsedAt: string | null;
   revokedAt: string | null;
   createdAt: string;

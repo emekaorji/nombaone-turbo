@@ -49,8 +49,8 @@ async function main(): Promise<void> {
   });
   console.log(`[seed] organization ${organization.reference}`);
 
-  // New tenants start in the `test` ring.
-  const ctx: DomainContext = { organizationId: organization.id, environment: 'test' };
+  // New tenants start in the `sandbox` mode.
+  const ctx: DomainContext = { organizationId: organization.id, mode: 'sandbox' };
 
   // 2. API keys (the secret is logged once here for local convenience only).
   const key = await createApiKey(txDb, ctx, {

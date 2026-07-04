@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import type { Environment } from '@nombaone/sara/context';
+import type { Mode } from '@nombaone/sara/context';
 import {
   Select,
   SelectContent,
@@ -14,12 +14,12 @@ import { setEnvironment } from './env-actions';
 import { cn } from '@/lib/cn';
 
 /**
- * Topbar environment switcher. The selected ring (test|live) is a SERVER-SIDE
+ * Topbar environment switcher. The selected ring (sandbox|live) is a SERVER-SIDE
  * preference cookie, not authority — flipping it persists via `setEnvironment`
  * and the layout revalidation re-renders every scoped read filtered to the new
  * ring. `live` is the staff default.
  */
-export function EnvSwitcher({ value }: { value: Environment }) {
+export function EnvSwitcher({ value }: { value: Mode }) {
   const [pending, startTransition] = useTransition();
 
   return (
@@ -27,12 +27,12 @@ export function EnvSwitcher({ value }: { value: Environment }) {
       value={value}
       onValueChange={(next) => {
         startTransition(async () => {
-          await setEnvironment(next as Environment);
+          await setEnvironment(next as Mode);
         });
       }}
     >
       <SelectTrigger
-        aria-label="Environment"
+        aria-label="Mode"
         className={cn('h-9 w-[112px] gap-2 font-medium', pending && 'opacity-70')}
       >
         <span
@@ -46,7 +46,7 @@ export function EnvSwitcher({ value }: { value: Environment }) {
       </SelectTrigger>
       <SelectContent align="end">
         <SelectItem value="live">Live</SelectItem>
-        <SelectItem value="test">Test</SelectItem>
+        <SelectItem value="sandbox">Sandbox</SelectItem>
       </SelectContent>
     </Select>
   );

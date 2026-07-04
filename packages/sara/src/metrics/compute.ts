@@ -41,7 +41,7 @@ export async function computeMrr(db: InfraDb, ctx: DomainContext): Promise<numbe
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         inArray(subscriptionsTable.status, [...ACTIVE_STATES])
       )
     );
@@ -55,7 +55,7 @@ export async function countActive(db: InfraDb, ctx: DomainContext): Promise<numb
     .where(
       and(
         eq(subscriptionsTable.organizationId, ctx.organizationId),
-        eq(subscriptionsTable.environment, ctx.environment),
+        eq(subscriptionsTable.mode, ctx.mode),
         inArray(subscriptionsTable.status, [...ACTIVE_STATES])
       )
     );
@@ -75,7 +75,7 @@ async function countEvents(
     .where(
       and(
         eq(domainEventsTable.organizationId, ctx.organizationId),
-        eq(domainEventsTable.environment, ctx.environment),
+        eq(domainEventsTable.mode, ctx.mode),
         eq(domainEventsTable.type, type),
         between(domainEventsTable.createdAt, from, to)
       )
@@ -90,7 +90,7 @@ export async function dunningFunnel(db: InfraDb, ctx: DomainContext): Promise<Du
     .where(
       and(
         eq(dunningAttemptsTable.organizationId, ctx.organizationId),
-        eq(dunningAttemptsTable.environment, ctx.environment)
+        eq(dunningAttemptsTable.mode, ctx.mode)
       )
     );
   const f: DunningFunnelData = {

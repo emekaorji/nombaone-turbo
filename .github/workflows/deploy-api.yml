@@ -54,15 +54,12 @@ jobs:
             echo "API affected: false"
           fi
 
-  # Two DO apps run the SAME @nombaone/api code from main: production (live ring)
-  # and sandbox (test ring). They differ only by which DigitalOcean app they hit —
-  # each app carries its own env (INFRA_ENVIRONMENT, INFRA_DATABASE_URL, …) in the
-  # DO dashboard. Both gate on the single check-affected above, so the expensive
-  # install/turbo step runs once and the two deploys fan out in parallel.
-  #
-  # Not a matrix: GitHub can't index `secrets` by a matrix variable
-  # (secrets[matrix.x] is unsupported), and each target needs its own app-name
-  # secret — so two explicit jobs are the unambiguous form.
+  # ONE production DigitalOcean app runs @nombaone/api and serves BOTH account
+  # modes (sandbox + live) from a single database — the mode is chosen per request
+  # from the API-key prefix, never from the deployment (see the environment↔mode
+  # migration). There is no separate "sandbox deployment": `sandbox.api.nombaone.xyz`
+  # is just a Cloudflare CNAME alias of `api.nombaone.xyz` pointing at this same app.
+  # `development` is local-only (undeployed), so production is the only deploy target.
 
   deploy-production:
     name: Deploy production
@@ -78,20 +75,4 @@ jobs:
         with:
           token: ${{ secrets.DO_ACCESS_TOKEN }}
           app_name: ${{ secrets.DO_APP_NAME_API }}
-          print_build_logs: false
-
-  deploy-sandbox:
-    name: Deploy sandbox
-    runs-on: ubuntu-latest
-    needs: check-affected
-    if: needs.check-affected.outputs.affected == 'true'
-    environment: sandbox
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to DigitalOcean App Platform
-        uses: digitalocean/app_action/deploy@v2
-        with:
-          token: ${{ secrets.DO_ACCESS_TOKEN }}
-          app_name: ${{ secrets.DO_APP_NAME_API_SANDBOX }}
           print_build_logs: false

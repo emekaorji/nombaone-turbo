@@ -22,7 +22,7 @@ export async function loadCouponRow(
     .where(
       and(
         eq(couponsTable.organizationId, ctx.organizationId),
-        eq(couponsTable.environment, ctx.environment),
+        eq(couponsTable.mode, ctx.mode),
         eq(couponsTable.reference, reference)
       )
     )
@@ -45,7 +45,7 @@ export async function getCouponByReferenceOrCode(
     .where(
       and(
         eq(couponsTable.organizationId, ctx.organizationId),
-        eq(couponsTable.environment, ctx.environment),
+        eq(couponsTable.mode, ctx.mode),
         or(eq(couponsTable.reference, refOrCode), eq(couponsTable.code, refOrCode))
       )
     )
@@ -73,7 +73,7 @@ export async function listCoupons(
   const cursor = decodeCursor(opts.cursor);
   const tenantScope = and(
     eq(couponsTable.organizationId, ctx.organizationId),
-    eq(couponsTable.environment, ctx.environment)
+    eq(couponsTable.mode, ctx.mode)
   );
   const keyset = cursor
     ? or(

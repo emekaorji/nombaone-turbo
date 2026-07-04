@@ -26,8 +26,8 @@ import { useMounted } from "@/lib/use-client-value";
 const STOPS = [
   {
     n: "01",
-    title: "Grab a test key",
-    body: "An nbo_test_ key from the Console. Sandbox money, real shapes.",
+    title: "Grab a sandbox key",
+    body: "An nbo_sandbox_ key from the Console. Sandbox money, real shapes.",
   },
   {
     n: "02",
