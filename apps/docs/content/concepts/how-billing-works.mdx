@@ -47,6 +47,29 @@ churn — each fire a webhook event you can branch on. Document your handlers fo
 `invoice.payment_failed`, `invoice.action_required`, and `invoice.payment_recovered`, not
 just `invoice.paid`.
 
+Click a state to see what moves a subscription out of it, and which webhook fires:
+
+<LifecycleStateMachine
+  resource="subscription"
+  states={[
+    { id: "trialing", label: "trialing", tone: "active", initial: true, description: "A trial is running; no charge yet." },
+    { id: "active", label: "active", tone: "success", initial: true, description: "Billing normally each cycle. A subscription with no trial starts here." },
+    { id: "past_due", label: "past_due", tone: "warning", description: "A charge failed; dunning owns recovery. On a thin balance this is 'not yet,' not 'no.'" },
+    { id: "paused", label: "paused", tone: "neutral", description: "Billing suspended on purpose." },
+    { id: "canceled", label: "canceled", tone: "danger", terminal: true, description: "Ended; no further cycles." },
+  ]}
+  transitions={[
+    { from: "trialing", to: "active", trigger: "The trial ends and the first charge succeeds", webhook: "subscription.activated" },
+    { from: "trialing", to: "canceled", trigger: "Canceled during the trial", webhook: "subscription.canceled" },
+    { from: "active", to: "past_due", trigger: "A cycle's charge fails", webhook: "invoice.payment_failed" },
+    { from: "past_due", to: "active", trigger: "A dunning retry (or completed OTP) recovers the charge", webhook: "invoice.payment_recovered" },
+    { from: "past_due", to: "canceled", trigger: "Dunning is exhausted — involuntary churn", webhook: "subscription.churned" },
+    { from: "active", to: "paused", trigger: "Billing is suspended on purpose", webhook: "subscription.paused" },
+    { from: "paused", to: "active", trigger: "Billing resumes", webhook: "subscription.resumed" },
+    { from: "active", to: "canceled", trigger: "Canceled voluntarily", webhook: "subscription.canceled" },
+  ]}
+/>
+
 ## What makes this hard here
 
 Billing engines from elsewhere assume a card on file and a full balance. Neither holds in

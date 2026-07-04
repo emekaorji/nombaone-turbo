@@ -133,6 +133,14 @@ an agent can read but never move money:
 > stays behind the test-keyed playground. The server is discoverable at
 > [`/.well-known/mcp.json`](https://docs.nombaone.xyz/.well-known/mcp.json).
 
+## Ask AI — grounded in these docs
+
+Every page has an **Ask AI** button. It answers only from this documentation and
+the API schema — the same corpus behind `llms-full.txt` and the MCP server — so it
+cites its sources, expresses money in integer kobo, and says "I don't have that in
+the docs" rather than inventing an endpoint. It's the fastest way to get a grounded
+answer without leaving the page.
+
 ## What's honest about this
 
 - **The same bytes.** The `.md` mirror is the same content the HTML renders, not a
@@ -739,6 +747,29 @@ churn — each fire a webhook event you can branch on. Document your handlers fo
 `invoice.payment_failed`, `invoice.action_required`, and `invoice.payment_recovered`, not
 just `invoice.paid`.
 
+Click a state to see what moves a subscription out of it, and which webhook fires:
+
+<LifecycleStateMachine
+resource="subscription"
+states={[
+{ id: "trialing", label: "trialing", tone: "active", initial: true, description: "A trial is running; no charge yet." },
+{ id: "active", label: "active", tone: "success", initial: true, description: "Billing normally each cycle. A subscription with no trial starts here." },
+{ id: "past_due", label: "past_due", tone: "warning", description: "A charge failed; dunning owns recovery. On a thin balance this is 'not yet,' not 'no.'" },
+{ id: "paused", label: "paused", tone: "neutral", description: "Billing suspended on purpose." },
+{ id: "canceled", label: "canceled", tone: "danger", terminal: true, description: "Ended; no further cycles." },
+]}
+transitions={[
+{ from: "trialing", to: "active", trigger: "The trial ends and the first charge succeeds", webhook: "subscription.activated" },
+{ from: "trialing", to: "canceled", trigger: "Canceled during the trial", webhook: "subscription.canceled" },
+{ from: "active", to: "past_due", trigger: "A cycle's charge fails", webhook: "invoice.payment_failed" },
+{ from: "past_due", to: "active", trigger: "A dunning retry (or completed OTP) recovers the charge", webhook: "invoice.payment_recovered" },
+{ from: "past_due", to: "canceled", trigger: "Dunning is exhausted — involuntary churn", webhook: "subscription.churned" },
+{ from: "active", to: "paused", trigger: "Billing is suspended on purpose", webhook: "subscription.paused" },
+{ from: "paused", to: "active", trigger: "Billing resumes", webhook: "subscription.resumed" },
+{ from: "active", to: "canceled", trigger: "Canceled voluntarily", webhook: "subscription.canceled" },
+]}
+/>
+
 ## What makes this hard here
 
 Billing engines from elsewhere assume a card on file and a full balance. Neither holds in
@@ -994,6 +1025,8 @@ on the matching entry.
 > A good error tells you exactly what went wrong and what to do next. Every code here has
 > a `hint` written to be actioned — read it, branch on the code, and move on.
 
+Got an error response in hand? Paste it here to jump straight to the fix:
+
 > **Interactive — `<ErrorReference>`.** View and run it live at https://docs.nombaone.xyz/errors
 
 ---
@@ -1201,6 +1234,11 @@ that also joins its ledger postings and webhooks.
 >
 > `15000` means ₦150.00. The API never uses floats or decimal strings for money.
 
+## Pick your stack
+
+Each is a self-contained path to a real `201` in your own language — no monolithic
+tutorial in a stack you don't use.
+
 ## In your language
 
 The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.
@@ -1212,6 +1250,230 @@ Pick your tab; it's remembered across the docs.
 The full rules for the per-organization secret key.
 - **[The example endpoint](/reference/examples)** — 
 The worked reference: every request and response field.
+
+---
+
+---
+title: "cURL quickstart"
+type: tutorial
+summary: "Reach a real 201 with cURL — create your first plan on the Nomba One sandbox in a few lines."
+canonical: https://docs.nombaone.xyz/getting-started/quickstart/curl
+---
+
+# cURL quickstart
+
+Create your first plan on the Nomba One sandbox with **cURL**. This is a real
+call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+you go live.
+
+## 1 · Get a test key
+
+Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Just a shell. Export your key: `export NOMBAONE_SECRET_KEY=nbo_test_…`.
+
+## 2 · Create a plan
+
+A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+its [prices](/guides/create-plans-and-prices) are **integer kobo**.
+
+## Next
+
+- **[Your first subscription](/getting-started/your-first-subscription)** — 
+The full plan → price → customer → subscription flow to a live 201.
+- **[Authentication](/getting-started/authentication)** — 
+The secret-key rules and how the prefix pins the environment.
+
+---
+
+---
+title: "Go quickstart"
+type: tutorial
+summary: "Reach a real 201 with Go — create your first plan on the Nomba One sandbox in a few lines."
+canonical: https://docs.nombaone.xyz/getting-started/quickstart/go
+---
+
+# Go quickstart
+
+Create your first plan on the Nomba One sandbox with **Go**. This is a real
+call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+you go live.
+
+## 1 · Get a test key
+
+Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Standard library only — `net/http`, no dependency. Read the key from `os.Getenv("NOMBAONE_SECRET_KEY")`.
+
+## 2 · Create a plan
+
+A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+its [prices](/guides/create-plans-and-prices) are **integer kobo**.
+
+## Next
+
+- **[Your first subscription](/getting-started/your-first-subscription)** — 
+The full plan → price → customer → subscription flow to a live 201.
+- **[Authentication](/getting-started/authentication)** — 
+The secret-key rules and how the prefix pins the environment.
+
+---
+
+---
+title: "Next.js quickstart"
+type: tutorial
+summary: "Reach a real 201 with Next.js — create your first plan on the Nomba One sandbox in a few lines."
+canonical: https://docs.nombaone.xyz/getting-started/quickstart/nextjs
+---
+
+# Next.js quickstart
+
+Create your first plan on the Nomba One sandbox with **Next.js**. This is a real
+call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+you go live.
+
+## 1 · Get a test key
+
+Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Call from a **route handler** or server action — never the browser. `fetch` is built in; read the key from `process.env.NOMBAONE_SECRET_KEY`.
+
+## 2 · Create a plan
+
+A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+its [prices](/guides/create-plans-and-prices) are **integer kobo**.
+
+## Next
+
+- **[Your first subscription](/getting-started/your-first-subscription)** — 
+The full plan → price → customer → subscription flow to a live 201.
+- **[Authentication](/getting-started/authentication)** — 
+The secret-key rules and how the prefix pins the environment.
+
+---
+
+---
+title: "Node.js quickstart"
+type: tutorial
+summary: "Reach a real 201 with Node.js — create your first plan on the Nomba One sandbox in a few lines."
+canonical: https://docs.nombaone.xyz/getting-started/quickstart/node
+---
+
+# Node.js quickstart
+
+Create your first plan on the Nomba One sandbox with **Node.js**. This is a real
+call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+you go live.
+
+## 1 · Get a test key
+
+Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+No SDK needed — Node 18+ has `fetch` built in. Load the key from `process.env.NOMBAONE_SECRET_KEY`.
+
+## 2 · Create a plan
+
+A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+its [prices](/guides/create-plans-and-prices) are **integer kobo**.
+
+## Next
+
+- **[Your first subscription](/getting-started/your-first-subscription)** — 
+The full plan → price → customer → subscription flow to a live 201.
+- **[Authentication](/getting-started/authentication)** — 
+The secret-key rules and how the prefix pins the environment.
+
+---
+
+---
+title: "PHP quickstart"
+type: tutorial
+summary: "Reach a real 201 with PHP — create your first plan on the Nomba One sandbox in a few lines."
+canonical: https://docs.nombaone.xyz/getting-started/quickstart/php
+---
+
+# PHP quickstart
+
+Create your first plan on the Nomba One sandbox with **PHP**. This is a real
+call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+you go live.
+
+## 1 · Get a test key
+
+Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+The `curl` extension ships with PHP. Read the key from `getenv("NOMBAONE_SECRET_KEY")`.
+
+## 2 · Create a plan
+
+A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+its [prices](/guides/create-plans-and-prices) are **integer kobo**.
+
+## Next
+
+- **[Your first subscription](/getting-started/your-first-subscription)** — 
+The full plan → price → customer → subscription flow to a live 201.
+- **[Authentication](/getting-started/authentication)** — 
+The secret-key rules and how the prefix pins the environment.
+
+---
+
+---
+title: "Python quickstart"
+type: tutorial
+summary: "Reach a real 201 with Python — create your first plan on the Nomba One sandbox in a few lines."
+canonical: https://docs.nombaone.xyz/getting-started/quickstart/python
+---
+
+# Python quickstart
+
+Create your first plan on the Nomba One sandbox with **Python**. This is a real
+call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+you go live.
+
+## 1 · Get a test key
+
+Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Install the HTTP client: `pip install requests`. Read the key from `NOMBAONE_SECRET_KEY`.
+
+## 2 · Create a plan
+
+A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+its [prices](/guides/create-plans-and-prices) are **integer kobo**.
+
+## Next
+
+- **[Your first subscription](/getting-started/your-first-subscription)** — 
+The full plan → price → customer → subscription flow to a live 201.
+- **[Authentication](/getting-started/authentication)** — 
+The secret-key rules and how the prefix pins the environment.
+
+---
+
+---
+title: "Ruby quickstart"
+type: tutorial
+summary: "Reach a real 201 with Ruby — create your first plan on the Nomba One sandbox in a few lines."
+canonical: https://docs.nombaone.xyz/getting-started/quickstart/ruby
+---
+
+# Ruby quickstart
+
+Create your first plan on the Nomba One sandbox with **Ruby**. This is a real
+call that returns a `201`; only the key (`nbo_test_…`) and the host change when
+you go live.
+
+## 1 · Get a test key
+
+Grab a `nbo_test_…` key — see [authentication](/getting-started/authentication).
+Standard library only — `net/http`. Read the key from `ENV['NOMBAONE_SECRET_KEY']`.
+
+## 2 · Create a plan
+
+A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+its [prices](/guides/create-plans-and-prices) are **integer kobo**.
+
+## Next
+
+- **[Your first subscription](/getting-started/your-first-subscription)** — 
+The full plan → price → customer → subscription flow to a live 201.
+- **[Authentication](/getting-started/authentication)** — 
+The secret-key rules and how the prefix pins the environment.
 
 ---
 

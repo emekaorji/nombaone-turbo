@@ -20,4 +20,6 @@ on the matching entry.
 > A good error tells you exactly what went wrong and what to do next. Every code here has
 > a `hint` written to be actioned — read it, branch on the code, and move on.
 
+Got an error response in hand? Paste it here to jump straight to the fix:
+
 > **Interactive — `<ErrorReference>`.** View and run it live at https://docs.nombaone.xyz/errors
