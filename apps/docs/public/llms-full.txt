@@ -4394,20 +4394,21 @@ All money fields are integer kobo (e.g. `250000` = ₦2,500.00).
 - `CLIENT_VALIDATION_FAILED` — One or more fields are invalid. Read the `fields` map in this response — each key is a field path and its messages tell you exactly what to fix.
 - `CLIENT_FORBIDDEN` — Your key is valid but not allowed to perform this action. Confirm the resource belongs to your organization and that your key has the required scope.
 - `CLIENT_ROUTE_NOT_FOUND` — No route matches this method and path. Check the HTTP verb and the URL (including the `/v1` version prefix) against the API reference.
-- `CLIENT_RESOURCE_NOT_FOUND` — No resource exists at that id in this environment. Verify the id and confirm your key targets the same environment (test vs live) the resource lives in.
+- `CLIENT_RESOURCE_NOT_FOUND` — No resource exists at that id in this mode. Verify the id and confirm your key targets the same mode (sandbox vs live) the resource lives in.
 - `CLIENT_CONFLICT` — This request conflicts with the current state of the resource. Re-fetch it to see its latest state, then retry with values consistent with that state.
 - `INVALID_CURSOR` — The pagination `cursor` is malformed or expired. Drop the `cursor` to start from the first page, then page forward using only the `nextCursor` values we return.
 - `API_KEY_MISSING` — Send your secret key as `Authorization: Bearer <key>`. Create one in the dashboard under API keys if you do not have it.
 - `API_KEY_INVALID` — That key is not recognized. Copy it fresh from the dashboard (it may have been rotated or revoked) and send the whole `nbo_sandbox_`/`nbo_live_` string with no extra whitespace.
 - `API_KEY_SCOPE_FORBIDDEN` — Your key lacks the scope this endpoint needs. Grant the required scope (e.g. `customers:write`) to the key in the dashboard, or use a key that already has it.
-- `API_KEY_ENVIRONMENT_MISMATCH` — You used a live key against a test host (or vice-versa). Use the key whose prefix (`nbo_sandbox_`/`nbo_live_`) matches the environment you're calling.
+- `API_KEY_ENVIRONMENT_MISMATCH` — A `nbo_live_` key is only accepted on the production deployment. Use your `nbo_sandbox_` key to build against sandbox, and switch to the `nbo_live_` key once you go live in production.
+- `API_KEY_HOST_MISMATCH` — Your key's mode does not match the host you called. Send `nbo_sandbox_` keys to the sandbox host and `nbo_live_` keys to the live host — the base URL and the key prefix must agree.
 - `IDEMPOTENCY_KEY_MISSING` — Send a unique `Idempotency-Key` header on this request; reuse the same key to safely retry the same operation.
 - `IDEMPOTENCY_KEY_REUSED` — You reused an `Idempotency-Key` with a different request body. Use a new key for a new operation, or resend the identical body to replay the original result.
 - `IDEMPOTENCY_IN_PROGRESS` — A request with this `Idempotency-Key` is still being processed. Wait briefly and retry with the same key to get the final result.
 - `RATE_LIMIT_EXCEEDED` — You're sending requests too quickly. Back off and retry after the interval in the `Retry-After` header.
 - `PLATFORM_MAINTENANCE` — The platform is briefly paused for maintenance and is rejecting writes. Reads still work; retry your write after a short wait.
 - `WEBHOOK_SIGNATURE_INVALID` — The webhook signature did not verify. Confirm you are using the correct signing secret for this endpoint and verifying against the exact raw request body (no re-serialization).
-- `CUSTOMER_NOT_FOUND` — No customer exists with that id in this environment. Check the id, and confirm you are using the key for the same environment (test vs live) the customer was created in.
+- `CUSTOMER_NOT_FOUND` — No customer exists with that id in this mode. Check the id, and confirm you are using the key for the same mode (sandbox vs live) the customer was created in.
 - `CUSTOMER_EMAIL_TAKEN` — A customer with this email already exists in your organization. Reuse the existing customer, or create this one with a different email.
 - `PLAN_NOT_FOUND` — No plan exists with that id in this environment. Verify the plan id, and that your key matches the environment the plan was created in.
 - `PLAN_NAME_TAKEN` — A plan with this name already exists in your organization. Pick a different name, or update the existing plan instead of creating a new one.

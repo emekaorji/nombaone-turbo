@@ -23,6 +23,18 @@ const envSchema = z.object({
   REDIS_URL: z.string().url(),
   INFRA_PII_ENCRYPTION_KEY: z.string().min(1),
   /**
+   * Host-based key guard (DX safety, NOT the isolation boundary — that's the key
+   * prefix + RLS). A request that arrives on the LIVE host must carry a `nbo_live_`
+   * key, and one on the SANDBOX host a `nbo_sandbox_` key — so a developer can't
+   * accidentally use the wrong key against the wrong URL. Both hosts are the SAME
+   * deployment (a CNAME alias); this only inspects the client-facing hostname.
+   * A request whose host matches NEITHER (localhost, tunnels, DO-internal, tests)
+   * is NOT enforced — the guard fails OPEN, never locking out real traffic. Set a
+   * value to `''` to disable that side.
+   */
+  INFRA_LIVE_API_HOST: z.string().default('api.nombaone.xyz'),
+  INFRA_SANDBOX_API_HOST: z.string().default('sandbox.api.nombaone.xyz'),
+  /**
    * Shared secret used to verify INBOUND provider webhooks (the `/inbound/:provider`
    * route HMACs the raw body against this). One secret per deployment keeps the
    * generic boilerplate simple; a multi-provider build resolves a per-provider

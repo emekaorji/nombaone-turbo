@@ -79,6 +79,7 @@
                   "API_KEY_INVALID",
                   "API_KEY_SCOPE_FORBIDDEN",
                   "API_KEY_ENVIRONMENT_MISMATCH",
+                  "API_KEY_HOST_MISMATCH",
                   "IDEMPOTENCY_KEY_MISSING",
                   "IDEMPOTENCY_KEY_REUSED",
                   "IDEMPOTENCY_IN_PROGRESS",
