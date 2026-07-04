@@ -72,6 +72,7 @@ export const NOMBAONE_ERROR_CODES = {
   API_KEY_INVALID: 'API_KEY_INVALID',
   API_KEY_SCOPE_FORBIDDEN: 'API_KEY_SCOPE_FORBIDDEN',
   API_KEY_ENVIRONMENT_MISMATCH: 'API_KEY_ENVIRONMENT_MISMATCH',
+  API_KEY_HOST_MISMATCH: 'API_KEY_HOST_MISMATCH',
 
   // ---- Console / operator session auth ----
   AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
@@ -268,6 +269,7 @@ export const PUBLIC_ERROR_CODES: ReadonlySet<NombaoneErrorCode> = new Set([
   NOMBAONE_ERROR_CODES.API_KEY_INVALID,
   NOMBAONE_ERROR_CODES.API_KEY_SCOPE_FORBIDDEN,
   NOMBAONE_ERROR_CODES.API_KEY_ENVIRONMENT_MISMATCH,
+  NOMBAONE_ERROR_CODES.API_KEY_HOST_MISMATCH,
   NOMBAONE_ERROR_CODES.IDEMPOTENCY_KEY_MISSING,
   NOMBAONE_ERROR_CODES.IDEMPOTENCY_KEY_REUSED,
   NOMBAONE_ERROR_CODES.IDEMPOTENCY_IN_PROGRESS,
@@ -377,7 +379,7 @@ export const ERROR_CODE_META: Record<NombaoneErrorCode, ErrorCodeMeta> = {
     docUrl: `${DOCS_ERRORS_BASE}#CLIENT_ROUTE_NOT_FOUND`,
   },
   CLIENT_RESOURCE_NOT_FOUND: {
-    hint: 'No resource exists at that id in this environment. Verify the id and confirm your key targets the same environment (test vs live) the resource lives in.',
+    hint: 'No resource exists at that id in this mode. Verify the id and confirm your key targets the same mode (sandbox vs live) the resource lives in.',
     docUrl: `${DOCS_ERRORS_BASE}#CLIENT_RESOURCE_NOT_FOUND`,
   },
   CLIENT_CONFLICT: {
@@ -403,8 +405,12 @@ export const ERROR_CODE_META: Record<NombaoneErrorCode, ErrorCodeMeta> = {
     docUrl: `${DOCS_ERRORS_BASE}#API_KEY_SCOPE_FORBIDDEN`,
   },
   API_KEY_ENVIRONMENT_MISMATCH: {
-    hint: "You used a live key against a test host (or vice-versa). Use the key whose prefix (`nbo_sandbox_`/`nbo_live_`) matches the environment you're calling.",
+    hint: 'A `nbo_live_` key is only accepted on the production deployment. Use your `nbo_sandbox_` key to build against sandbox, and switch to the `nbo_live_` key once you go live in production.',
     docUrl: `${DOCS_ERRORS_BASE}#API_KEY_ENVIRONMENT_MISMATCH`,
+  },
+  API_KEY_HOST_MISMATCH: {
+    hint: 'Your key\'s mode does not match the host you called. Send `nbo_sandbox_` keys to the sandbox host and `nbo_live_` keys to the live host — the base URL and the key prefix must agree.',
+    docUrl: `${DOCS_ERRORS_BASE}#API_KEY_HOST_MISMATCH`,
   },
 
   // ---- Console / operator session auth ----
@@ -559,7 +565,7 @@ export const ERROR_CODE_META: Record<NombaoneErrorCode, ErrorCodeMeta> = {
 
   // ---- Customers ----
   CUSTOMER_NOT_FOUND: {
-    hint: 'No customer exists with that id in this environment. Check the id, and confirm you are using the key for the same environment (test vs live) the customer was created in.',
+    hint: 'No customer exists with that id in this mode. Check the id, and confirm you are using the key for the same mode (sandbox vs live) the customer was created in.',
     docUrl: `${DOCS_ERRORS_BASE}#CUSTOMER_NOT_FOUND`,
   },
   CUSTOMER_EMAIL_TAKEN: {

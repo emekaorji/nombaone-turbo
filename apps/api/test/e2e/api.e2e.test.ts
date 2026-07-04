@@ -127,6 +127,36 @@ describe('api e2e', () => {
     expect(res.body.error.code).toBe('API_KEY_ENVIRONMENT_MISMATCH');
   });
 
+  // ── Host guard (DX): the key's mode must match the host it arrives on ────────
+  // (defaults: live host `api.nombaone.xyz`, sandbox host `sandbox.api.nombaone.xyz`).
+  it('sandbox key on the LIVE host → 401 host mismatch, with an actionable message', async () => {
+    const res = await request(harness.app)
+      .get('/v1/examples')
+      .set('Authorization', `Bearer ${bearer}`) // bearer is a sandbox key
+      .set('Host', 'api.nombaone.xyz');
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('API_KEY_HOST_MISMATCH');
+    // names both sides so the fix is obvious
+    expect(res.body.error.message).toContain('api.nombaone.xyz');
+    expect(res.body.error.message).toContain('sandbox.api.nombaone.xyz');
+  });
+
+  it('sandbox key on the SANDBOX host → accepted (guard does not over-reject)', async () => {
+    const res = await request(harness.app)
+      .get('/v1/examples')
+      .set('Authorization', `Bearer ${bearer}`)
+      .set('Host', 'sandbox.api.nombaone.xyz');
+    expect(res.status).toBe(200);
+  });
+
+  it('an unrecognised host (localhost / tests) is NOT enforced — guard fails open', async () => {
+    // supertest sends Host 127.0.0.1 by default → matches neither production host.
+    const res = await request(harness.app)
+      .get('/v1/examples')
+      .set('Authorization', `Bearer ${bearer}`);
+    expect(res.status).toBe(200);
+  });
+
   it('POST without Idempotency-Key → 400', async () => {
     const res = await auth(request(harness.app).post('/v1/examples')).send({
       kind: 'standard',
