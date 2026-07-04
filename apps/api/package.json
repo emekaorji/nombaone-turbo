@@ -12,7 +12,9 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "seed:dev": "tsx scripts/seed-dev.ts",
-    "gen:openapi": "tsx --env-file=.env scripts/gen-openapi.ts"
+    "gen:openapi": "tsx --env-file=.env scripts/gen-openapi.ts",
+    "provision:docs-key": "tsx --env-file=.env scripts/provision-docs-key.ts",
+    "verify:key": "tsx --env-file=.env scripts/verify-docs-key.ts"
   },
   "dependencies": {
     "@nombaone/core-contracts": "workspace:*",

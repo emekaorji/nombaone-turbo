@@ -1,4 +1,4 @@
-name: nombaone-api-production
+name: nombaone-api-sandbox
 region: fra
 
 services:
