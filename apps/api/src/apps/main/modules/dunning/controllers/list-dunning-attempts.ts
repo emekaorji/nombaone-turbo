@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { getDunningStateBySubscriptionRef, serializeDunningAttempt } from '@/domain/dunning';
+import { getDunningStateBySubscriptionRef, serializeDunningAttempt } from '@shared/services/dunning';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

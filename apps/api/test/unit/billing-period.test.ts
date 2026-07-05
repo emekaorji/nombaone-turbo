@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { railKeyForMethod, rollPeriod } from '@/domain/billing';
+import { railKeyForMethod, rollPeriod } from '@shared/services/billing';
 
 describe('billing/rollPeriod — naive UTC roll (04 owns anchor/EOM math)', () => {
   const base = new Date('2026-01-15T00:00:00Z');

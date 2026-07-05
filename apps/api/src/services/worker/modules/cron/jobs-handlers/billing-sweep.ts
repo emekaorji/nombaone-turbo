@@ -1,5 +1,5 @@
 import { enqueueBilling } from '@nombaone/queue';
-import { runBillingSweep } from '@/domain/billing';
+import { runBillingSweep } from '@shared/services/billing';
 import { ALL_MODES } from '@nombaone/sara/context';
 
 import { db } from '@shared/config/db';

@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { payoutToTenant } from '@/domain/settlement';
+import { payoutToTenant } from '@shared/services/settlement';
 
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';

@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { issueVirtualAccount } from '@/domain/payment-methods';
+import { issueVirtualAccount } from '@shared/services/payment-methods';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

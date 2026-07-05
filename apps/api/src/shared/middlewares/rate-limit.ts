@@ -1,5 +1,5 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { resolveQuota, resolveRateLimit } from '@/domain/tenant-config';
+import { resolveQuota, resolveRateLimit } from '@shared/services/tenant-config';
 
 import { db } from '../config/db';
 import { env } from '../config/env';

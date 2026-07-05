@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { listInvoices } from '@/domain/invoices';
+import { listInvoices } from '@shared/services/invoices';
 
 import { db } from '@shared/config/db';
 import { paginatedHandler } from '@shared/http';

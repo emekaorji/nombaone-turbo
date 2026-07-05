@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { getSettlementByReference } from '@/domain/settlement';
+import { getSettlementByReference } from '@shared/services/settlement';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

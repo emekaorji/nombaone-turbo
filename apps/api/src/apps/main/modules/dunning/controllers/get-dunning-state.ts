@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { buildDunningState } from '@/domain/dunning';
+import { buildDunningState } from '@shared/services/dunning';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

@@ -9,7 +9,7 @@ import {
   isDue,
   isLeapYear,
   periodBounds,
-} from '@/domain/billing';
+} from '@shared/services/billing';
 
 const monthly = { interval: 'month' as const, intervalCount: 1 };
 const annual = { interval: 'year' as const, intervalCount: 1 };

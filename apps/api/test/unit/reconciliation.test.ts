@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { assertZeroSum } from '@/domain/reconciliation';
+import { assertZeroSum } from '@shared/services/reconciliation';
 
 /**
  * Pure zero-sum assertion: a healthy ledger has totalDebits === totalCredits.

@@ -10,10 +10,10 @@ import {
   subscriptionItemsTable,
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
-import { runCycle, runBillingSweep, type BillingSweepEnqueueJob } from '@/domain/billing';
-import { createCustomer } from '@/domain/customers';
-import { createPlan } from '@/domain/plans';
-import { createPrice } from '@/domain/prices';
+import { runCycle, runBillingSweep, type BillingSweepEnqueueJob } from '@shared/services/billing';
+import { createCustomer } from '@shared/services/customers';
+import { createPlan } from '@shared/services/plans';
+import { createPrice } from '@shared/services/prices';
 import { registerRail } from '@nombaone/sara/rails';
 import { mintReference } from '@nombaone/sara/reference';
 

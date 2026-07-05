@@ -3,9 +3,9 @@ import http from 'node:http';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { createCustomer } from '@/domain/customers';
-import { createPlan } from '@/domain/plans';
-import { createPrice } from '@/domain/prices';
+import { createCustomer } from '@shared/services/customers';
+import { createPlan } from '@shared/services/plans';
+import { createPrice } from '@shared/services/prices';
 import { registerRail } from '@nombaone/sara/rails';
 
 import { startHarness, type Harness } from '../helpers/harness';

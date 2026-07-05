@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { assertRedeemable } from '@/domain/coupons';
-import { computeDiscountLine } from '@/domain/discounts';
+import { assertRedeemable } from '@shared/services/coupons';
+import { computeDiscountLine } from '@shared/services/discounts';
 
 import type { CouponRow } from '@nombaone/core-db/schema';
 

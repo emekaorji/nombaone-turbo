@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { billingDateParts } from '@/domain/billing';
+import { billingDateParts } from '@shared/services/billing';
 import {
   classifyDunningBranch,
   graceAccessUntil,
@@ -10,7 +10,7 @@ import {
   PLATFORM_DEFAULT_DUNNING_POLICY,
   rawNextAttemptAt,
   type ResolvedDunningPolicy,
-} from '@/domain/dunning';
+} from '@shared/services/dunning';
 
 const policy = (over: Partial<ResolvedDunningPolicy> = {}): ResolvedDunningPolicy => ({
   ...PLATFORM_DEFAULT_DUNNING_POLICY,

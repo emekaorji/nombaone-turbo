@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { billingDateParts, periodBounds, reanchorForIntervalSwitch } from '@/domain/billing';
-import { buildIntervalSwitchLines, prorationNet } from '@/domain/proration';
+import { billingDateParts, periodBounds, reanchorForIntervalSwitch } from '@shared/services/billing';
+import { buildIntervalSwitchLines, prorationNet } from '@shared/services/proration';
 
 const MONTH = { interval: 'month' as const, intervalCount: 1 };
 

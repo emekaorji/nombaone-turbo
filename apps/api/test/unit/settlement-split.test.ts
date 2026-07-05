@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertSplitBalances, buildSplitRequest } from '@/domain/settlement';
+import { assertSplitBalances, buildSplitRequest } from '@shared/services/settlement';
 
 const ctx = { organizationId: 'org', mode: 'sandbox' as const };
 

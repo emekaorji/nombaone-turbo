@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createPriceBody } from '@nombaone/core-contracts/validations';
 import { NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { assertPlanArchivable } from '@/domain/plans';
+import { assertPlanArchivable } from '@shared/services/plans';
 import { mintReference } from '@nombaone/sara/reference';
 
 import type { DomainContext, InfraReadScope } from '@nombaone/sara/context';

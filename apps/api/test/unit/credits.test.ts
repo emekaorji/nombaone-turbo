@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { consumeGrants } from '@/domain/credits';
+import { consumeGrants } from '@shared/services/credits';
 
 const grants = (remainings: number[]): Array<{ id: string; reference: string; remaining: number }> =>
   remainings.map((remaining, i) => ({ id: `g${i}`, reference: `crg${i}`, remaining }));

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { assertLineItemsSumToTotal, deriveInvoiceStatus } from '@/domain/invoices';
+import { assertLineItemsSumToTotal, deriveInvoiceStatus } from '@shared/services/invoices';
 
 describe('invoices/lineItems — J4 sum invariant (pure)', () => {
   it('passes when signed lines sum to the total', () => {

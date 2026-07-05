@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { customersTable, organizationsTable } from '@nombaone/core-db/schema';
 import { runWithModeContext } from '@nombaone/core-db/rls';
-import { createCustomer } from '@/domain/customers';
+import { createCustomer } from '@shared/services/customers';
 
 import { startHarness, type Harness } from '../helpers/harness';
 

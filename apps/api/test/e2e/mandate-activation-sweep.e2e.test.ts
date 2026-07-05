@@ -2,8 +2,8 @@ import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { customersTable, domainEventsTable, paymentMethodsTable } from '@nombaone/core-db/schema';
-import { createCustomer } from '@/domain/customers';
-import { pollMandateActive, selectPendingMandates } from '@/domain/payment-methods';
+import { createCustomer } from '@shared/services/customers';
+import { pollMandateActive, selectPendingMandates } from '@shared/services/payment-methods';
 import { mintReference } from '@nombaone/sara/reference';
 
 import { startHarness, type Harness } from '../helpers/harness';

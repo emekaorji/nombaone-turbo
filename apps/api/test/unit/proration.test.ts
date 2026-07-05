@@ -8,9 +8,9 @@ import {
   prorate,
   prorationNet,
   resolvePartialCollection,
-} from '@/domain/proration';
+} from '@shared/services/proration';
 
-import type { BuildProrationInput } from '@/domain/proration';
+import type { BuildProrationInput } from '@shared/services/proration';
 
 describe('proration/prorate — floor-division, no float (J1/C3)', () => {
   it('floors exactly', () => {

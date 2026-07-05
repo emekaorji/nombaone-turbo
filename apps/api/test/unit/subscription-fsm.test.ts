@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { assertLegalTransition, isLegalTransition, LEGAL_TRANSITIONS } from '@/domain/subscriptions';
+import { assertLegalTransition, isLegalTransition, LEGAL_TRANSITIONS } from '@shared/services/subscriptions';
 
 import type { SubscriptionStatus } from '@nombaone/core-contracts/types';
 

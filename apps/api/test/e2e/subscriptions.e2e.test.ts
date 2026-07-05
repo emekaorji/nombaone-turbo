@@ -19,15 +19,15 @@ import {
   runBillingSweep,
   runCycle,
   runLifecycleSweep,
-} from '@/domain/billing';
-import { applyCreditsOldestFirst } from '@/domain/credits';
-import { createCustomer } from '@/domain/customers';
+} from '@shared/services/billing';
+import { applyCreditsOldestFirst } from '@shared/services/credits';
+import { createCustomer } from '@shared/services/customers';
 import { upsertOrgBillingSettings } from '@nombaone/sara/org';
-import { createPlan } from '@/domain/plans';
-import { createPrice } from '@/domain/prices';
+import { createPlan } from '@shared/services/plans';
+import { createPrice } from '@shared/services/prices';
 import { registerRail } from '@nombaone/sara/rails';
 import { mintReference } from '@nombaone/sara/reference';
-import { churnFromPastDue, enterPastDue, loadSubscriptionRow } from '@/domain/subscriptions';
+import { churnFromPastDue, enterPastDue, loadSubscriptionRow } from '@shared/services/subscriptions';
 
 import { startHarness, type Harness } from '../helpers/harness';
 

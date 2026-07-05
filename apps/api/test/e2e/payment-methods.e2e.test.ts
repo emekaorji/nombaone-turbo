@@ -8,7 +8,7 @@ import {
   type NombaClient,
   type NombaRequest,
 } from '@nombaone/sara/nomba';
-import { processInboundNombaEvent } from '@/domain/payment-methods';
+import { processInboundNombaEvent } from '@shared/services/payment-methods';
 
 import { startHarness, type Harness } from '../helpers/harness';
 

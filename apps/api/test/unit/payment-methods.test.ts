@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { serializePaymentMethod } from '@/domain/payment-methods';
+import { serializePaymentMethod } from '@shared/services/payment-methods';
 
 import type { PaymentMethodRow } from '@nombaone/core-db/schema';
 

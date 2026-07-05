@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { updateCoupon } from '@/domain/coupons';
+import { updateCoupon } from '@shared/services/coupons';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

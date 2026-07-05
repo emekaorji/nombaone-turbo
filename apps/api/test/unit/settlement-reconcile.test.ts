@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { reconcileSettlements } from '@/domain/settlement';
-import { diffAgainstNomba } from '@/domain/reconciliation';
-import { withTenantLog } from '@/domain/observability';
+import { reconcileSettlements } from '@shared/services/settlement';
+import { diffAgainstNomba } from '@shared/services/reconciliation';
 
 describe('settlement/reconcile — J7 ★ settlement-leg diff', () => {
   it('matches by merchant_tx_ref and surfaces orphans / missing / drift', () => {
@@ -41,15 +40,5 @@ describe('reconciliation/nomba — J7 ★ charge-leg diff (O partial-failure)', 
     expect(d.find((x) => x.class === 'local_paid_missing_at_nomba')?.reference).toBe('nboCinv');
     expect(d.find((x) => x.class === 'settled_at_nomba_missing_locally')?.reference).toBe('nboDinv');
     expect(d).toHaveLength(3); // A matched → no discrepancy
-  });
-});
-
-describe('observability/tenant-log — H8 / M1 field bag', () => {
-  it('binds organizationId + environment + correlationId (no PII)', () => {
-    expect(withTenantLog({ organizationId: 'org_1', mode: 'sandbox' }, 'req_9')).toEqual({
-      organizationId: 'org_1',
-      mode: 'sandbox',
-      correlationId: 'req_9',
-    });
   });
 });

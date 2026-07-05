@@ -1,10 +1,10 @@
-import { confirmInvoiceFromWebhook } from '@/domain/billing';
-import { getReconcilableInvoicesSince, type ReconcilableInvoice } from '@/domain/invoices';
+import { confirmInvoiceFromWebhook } from '@shared/services/billing';
+import { getReconcilableInvoicesSince, type ReconcilableInvoice } from '@shared/services/invoices';
 import {
   diffAgainstNomba,
   type LocalPaidInvoice,
   type NombaChargeTransaction,
-} from '@/domain/reconciliation';
+} from '@shared/services/reconciliation';
 
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
@@ -13,7 +13,7 @@ import { logger } from '@shared/observability/logger';
 import { recordReconcileDiscrepancy, recordReconcileHealed } from '@shared/observability/prometheus';
 
 import type { DomainContext } from '@nombaone/sara/context';
-import type { InboundVerification } from '@/domain/billing';
+import type { InboundVerification } from '@shared/services/billing';
 import type { RequeryResult } from '@nombaone/sara/nomba';
 
 export interface ReconcileNombaResult {
