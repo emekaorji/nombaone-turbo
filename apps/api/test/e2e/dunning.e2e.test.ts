@@ -10,14 +10,14 @@ import {
   paymentMethodsTable,
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
-import { runCycle } from '@nombaone/sara/billing';
-import { createCustomer } from '@nombaone/sara/customers';
-import { processInboundDunningEvent, runDunningSweep } from '@nombaone/sara/dunning';
-import { createPlan } from '@nombaone/sara/plans';
-import { createPrice } from '@nombaone/sara/prices';
+import { runCycle } from '@shared/services/billing';
+import { createCustomer } from '@shared/services/customers';
+import { processInboundDunningEvent, runDunningSweep } from '@shared/services/dunning';
+import { createPlan } from '@shared/services/plans';
+import { createPrice } from '@shared/services/prices';
 import { registerRail } from '@nombaone/sara/rails';
 import { mintReference } from '@nombaone/sara/reference';
-import { loadSubscriptionRow } from '@nombaone/sara/subscriptions';
+import { loadSubscriptionRow } from '@shared/services/subscriptions';
 
 import { startHarness, type Harness } from '../helpers/harness';
 

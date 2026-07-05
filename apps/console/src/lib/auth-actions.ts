@@ -15,7 +15,7 @@ import {
   requestPasswordReset,
   resetPassword,
   revokeSession,
-} from '@nombaone/sara/auth';
+} from './auth';
 import type { PoolDatabase } from '@nombaone/core-db/pool';
 
 import { db } from './db';

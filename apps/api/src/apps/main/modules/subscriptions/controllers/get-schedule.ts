@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { getActiveScheduleForSubscription } from '@nombaone/sara/subscription-schedules';
+import { getActiveScheduleForSubscription } from '@shared/services/subscription-schedules';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { createCoupon } from '@nombaone/sara/coupons';
+import { createCoupon } from '@shared/services/coupons';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

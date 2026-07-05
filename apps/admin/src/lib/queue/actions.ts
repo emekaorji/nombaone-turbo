@@ -1,7 +1,7 @@
 'use server';
 
 import { schedulerQueue, SCHEDULER_QUEUE_NAME } from '@nombaone/queue';
-import { recordAudit } from '@nombaone/sara/audit';
+import { recordAudit } from '@/lib/audit';
 
 import { actionError, actionOk, withRevalidation, type ActionResult } from '@/lib/action-helpers';
 import { requireCapability } from '@/lib/rbac';

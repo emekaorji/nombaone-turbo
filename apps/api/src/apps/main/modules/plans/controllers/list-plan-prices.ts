@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { listPricesForPlan } from '@nombaone/sara/prices';
+import { listPricesForPlan } from '@shared/services/prices';
 
 import { db } from '@shared/config/db';
 import { paginatedHandler } from '@shared/http';

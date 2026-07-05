@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { listSettlements } from '@nombaone/sara/settlement';
+import { listSettlements } from '@shared/services/settlement';
 
 import { db } from '@shared/config/db';
 import { paginatedHandler } from '@shared/http';

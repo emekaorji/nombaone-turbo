@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { listCoupons } from '@nombaone/sara/coupons';
+import { listCoupons } from '@shared/services/coupons';
 
 import { db } from '@shared/config/db';
 import { paginatedHandler } from '@shared/http';

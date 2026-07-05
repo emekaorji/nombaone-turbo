@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { listPaymentMethods } from '@nombaone/sara/payment-methods';
+import { listPaymentMethods } from '@shared/services/payment-methods';
 
 import { db } from '@shared/config/db';
 import { paginatedHandler } from '@shared/http';

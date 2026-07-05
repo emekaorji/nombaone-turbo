@@ -21,7 +21,7 @@
 import './load-env';
 
 import { createPoolDb } from '@nombaone/core-db/pool';
-import { signupOrganization, findUserByEmail } from '@nombaone/sara/auth';
+import { signupOrganization, findUserByEmail } from '../src/lib/auth';
 import { createApiKey } from '@nombaone/sara/api-keys';
 import { createWebhookEndpoint } from '@nombaone/sara/webhooks';
 import { createExample } from '@nombaone/sara/example';

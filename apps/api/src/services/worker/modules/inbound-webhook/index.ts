@@ -1,9 +1,9 @@
 import { Worker } from 'bullmq';
 
 import { INBOUND_WEBHOOK_QUEUE_NAME, connection } from '@nombaone/queue';
-import { processInboundInvoiceEvent } from '@nombaone/sara/billing';
-import { processInboundDunningEvent } from '@nombaone/sara/dunning';
-import { processInboundNombaEvent } from '@nombaone/sara/payment-methods';
+import { processInboundInvoiceEvent } from '@shared/services/billing';
+import { processInboundDunningEvent } from '@shared/services/dunning';
+import { processInboundNombaEvent } from '@shared/services/payment-methods';
 
 import { db } from '@shared/config/db';
 import { getNombaClient } from '@shared/config/nomba';

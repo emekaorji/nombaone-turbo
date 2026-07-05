@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { simulateWebhookEvent } from '@nombaone/sara/webhooks';
+import { simulateWebhookEvent } from '@shared/services/webhooks-simulate';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

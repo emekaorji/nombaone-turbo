@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { getPriceByReference } from '@nombaone/sara/prices';
+import { getPriceByReference } from '@shared/services/prices';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

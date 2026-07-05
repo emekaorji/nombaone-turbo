@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { computeBillingMetrics } from '@nombaone/sara/metrics';
+import { computeBillingMetrics } from '@shared/services/metrics';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

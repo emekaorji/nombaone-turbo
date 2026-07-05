@@ -1,5 +1,5 @@
 import { ALL_MODES } from '@nombaone/sara/context';
-import { runDunningSweep } from '@nombaone/sara/dunning';
+import { runDunningSweep } from '@shared/services/dunning';
 
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';

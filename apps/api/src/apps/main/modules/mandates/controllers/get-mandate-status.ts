@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { pollMandateActive } from '@nombaone/sara/payment-methods';
+import { pollMandateActive } from '@shared/services/payment-methods';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

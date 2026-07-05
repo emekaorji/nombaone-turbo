@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { getPlanByReference } from '@nombaone/sara/plans';
+import { getPlanByReference } from '@shared/services/plans';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

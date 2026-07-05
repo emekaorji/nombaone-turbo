@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import { createApiKey } from '@nombaone/sara/api-keys';
-import { signupOrganization } from '@nombaone/sara/auth';
+import { seedTestOrganization } from './_seed';
 import { organizationsTable } from '@nombaone/core-db/schema';
 
 import { db, pool } from '../src/shared/config/db';
@@ -60,7 +60,7 @@ const main = async (): Promise<void> => {
   let created = false;
 
   if (!organization) {
-    const result = await signupOrganization(db, {
+    const result = await seedTestOrganization(db, {
       organizationName: ORG_NAME,
       name: 'Docs Owner',
       email: OWNER_EMAIL,

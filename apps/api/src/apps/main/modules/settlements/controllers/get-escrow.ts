@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { getAvailableForPayout, serializeEscrow } from '@nombaone/sara/settlement';
+import { getAvailableForPayout, serializeEscrow } from '@shared/services/settlement';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

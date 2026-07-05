@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { customersTable, invoicesTable } from '@nombaone/core-db/schema';
-import { createCustomer } from '@nombaone/sara/customers';
+import { createCustomer } from '@shared/services/customers';
 import { mintReference } from '@nombaone/sara/reference';
 
 import { startHarness, type Harness } from '../helpers/harness';
