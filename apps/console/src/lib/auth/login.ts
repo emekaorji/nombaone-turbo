@@ -1,12 +1,12 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
-import { decryptPii } from '../crypto';
+import { decryptPii } from '@nombaone/sara/crypto';
 import { findUserByEmail } from './users';
-import { verifyPassword } from './password';
-import { verifyTotp } from './totp';
+import { verifyPassword } from '@nombaone/sara/auth';
+import { verifyTotp } from '@nombaone/sara/auth';
 import { createSession } from './session';
 
-import type { InfraTxDb } from '../context';
+import type { InfraTxDb } from '@nombaone/sara/context';
 
 /**
  * PARADIGM — TWO-FACTOR LOGIN where the second factor is a RESULT, not an error.

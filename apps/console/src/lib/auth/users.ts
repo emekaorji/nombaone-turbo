@@ -2,12 +2,12 @@ import { eq } from 'drizzle-orm';
 
 import { orgUsersTable, type OrgUserRow } from '@nombaone/core-db/schema';
 
-import { mintReference } from '../reference';
-import { encryptPii } from '../crypto';
-import { hashPassword } from './password';
+import { mintReference } from '@nombaone/sara/reference';
+import { encryptPii } from '@nombaone/sara/crypto';
+import { hashPassword } from '@nombaone/sara/auth';
 
-import type { InfraReadScope, InfraTxScope } from '../context';
-import type { OrgUserRole } from './rbac';
+import type { InfraReadScope, InfraTxScope } from '@nombaone/sara/context';
+import type { OrgUserRole } from '@nombaone/sara/auth';
 
 /**
  * PARADIGM — the console-user repository. A console user belongs to exactly ONE

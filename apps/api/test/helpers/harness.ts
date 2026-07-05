@@ -115,7 +115,7 @@ export const startHarness = async (): Promise<Harness> => {
   const { createWebhookApp } = await import('../../src/apps/webhook/server');
   const { db, pool } = await import('../../src/shared/config/db');
   const { redis } = await import('../../src/shared/config/redis');
-  const { signupOrganization } = await import('@nombaone/sara/auth');
+  const { seedTestOrganization } = await import('../../scripts/_seed');
   const { createApiKey } = await import('@nombaone/sara/api-keys');
   const { platformConfigTable } = await import('@nombaone/core-db/schema');
   const { __setNombaClient } = await import('../../src/shared/config/nomba');
@@ -127,7 +127,7 @@ export const startHarness = async (): Promise<Harness> => {
 
   const seedOrg: Harness['seedOrg'] = async (name = 'Test Org') => {
     const suffix = Math.random().toString(36).slice(2, 10);
-    const { organization } = await signupOrganization(db, {
+    const { organization } = await seedTestOrganization(db, {
       organizationName: `${name} ${suffix}`,
       name: 'Test Owner',
       email: `owner+${suffix}@test.local`,

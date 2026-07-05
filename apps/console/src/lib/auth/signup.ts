@@ -5,11 +5,11 @@ import {
   type OrgUserRow,
 } from '@nombaone/core-db/schema';
 
-import { mintReference } from '../reference';
+import { mintReference } from '@nombaone/sara/reference';
 import { createOrgUser, findUserByEmail } from './users';
 import { createSession } from './session';
 
-import type { InfraTxDb } from '../context';
+import type { InfraTxDb } from '@nombaone/sara/context';
 
 /**
  * PARADIGM — TENANT GENESIS is one ATOMIC transaction. Bringing a new tenant to

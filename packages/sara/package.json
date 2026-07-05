@@ -16,7 +16,6 @@
     "./org": "./src/org/index.ts",
     "./idempotency": "./src/idempotency/index.ts",
     "./webhooks": "./src/webhooks/index.ts",
-    "./audit": "./src/audit/index.ts",
     "./nomba": "./src/nomba/index.ts",
     "./nomba/*": "./src/nomba/*.ts",
     "./org/*": "./src/org/*.ts",

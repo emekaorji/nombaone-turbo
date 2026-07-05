@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { operatorsTable } from '@nombaone/core-db/schema';
 import { verifyPassword, verifyTotp } from '@nombaone/sara/auth';
 import { decryptPii } from '@nombaone/sara/crypto';
-import { recordAudit } from '@nombaone/sara/audit';
+import { recordAudit } from '@/lib/audit';
 
 import { getDb } from '@/lib/db';
 import {

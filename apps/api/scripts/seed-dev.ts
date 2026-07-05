@@ -1,5 +1,5 @@
 import { createApiKey } from '@nombaone/sara/api-keys';
-import { signupOrganization } from '@nombaone/sara/auth';
+import { seedTestOrganization } from './_seed';
 
 import { db, pool } from '../src/shared/config/db';
 import { env } from '../src/shared/config/env';
@@ -23,7 +23,7 @@ const main = async (): Promise<void> => {
   const suffix = Date.now().toString(36);
   const email = `dev+${suffix}@nombaone.local`;
 
-  const { organization, user } = await signupOrganization(db, {
+  const { organization, user } = await seedTestOrganization(db, {
     organizationName: `Dev Org ${suffix}`,
     name: 'Dev Owner',
     email,

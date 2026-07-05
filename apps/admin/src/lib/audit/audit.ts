@@ -1,6 +1,6 @@
 import { adminAuditLogTable } from '@nombaone/core-db/schema';
 
-import type { InfraDb } from '../context';
+import type { InfraDb } from '@nombaone/sara/context';
 
 /**
  * PARADIGM — the append-only operator audit trail.

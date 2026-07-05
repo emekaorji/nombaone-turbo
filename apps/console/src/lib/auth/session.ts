@@ -3,7 +3,7 @@ import { and, eq, gt } from 'drizzle-orm';
 
 import { orgSessionsTable } from '@nombaone/core-db/schema';
 
-import type { Mode, InfraDb, InfraTxScope } from '../context';
+import type { Mode, InfraDb, InfraTxScope } from '@nombaone/sara/context';
 
 /**
  * PARADIGM — OPAQUE-TOKEN sessions. The raw token is a high-entropy random

@@ -2,8 +2,8 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-import { validateSession } from '@nombaone/sara/auth';
-import { findUserById } from '@nombaone/sara/auth';
+import { validateSession } from './auth';
+import { findUserById } from './auth';
 import type { OrgUserRole } from '@nombaone/sara/auth';
 import type { Mode } from '@nombaone/sara/context';
 

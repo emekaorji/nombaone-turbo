@@ -6,7 +6,7 @@ import { passwordResetTokensTable } from '@nombaone/core-db/schema';
 
 import { findUserByEmail, updateUserPassword } from './users';
 
-import type { InfraDb, InfraTxDb } from '../context';
+import type { InfraDb, InfraTxDb } from '@nombaone/sara/context';
 
 /**
  * PARADIGM — single-use, hashed, expiring reset tokens with NO user enumeration.
