@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { refundSettlement } from '@nombaone/sara/settlement';
+import { refundSettlement } from '@/domain/settlement';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

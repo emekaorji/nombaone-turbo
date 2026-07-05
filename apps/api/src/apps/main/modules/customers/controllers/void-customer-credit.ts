@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { voidCreditGrant } from '@nombaone/sara/credits';
+import { voidCreditGrant } from '@/domain/credits';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

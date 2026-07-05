@@ -1,4 +1,4 @@
-import { runLifecycleSweep } from '@nombaone/sara/billing';
+import { runLifecycleSweep } from '@/domain/billing';
 
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';

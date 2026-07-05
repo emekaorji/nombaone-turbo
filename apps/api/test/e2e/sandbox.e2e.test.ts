@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { createCustomer } from '@nombaone/sara/customers';
+import { createCustomer } from '@/domain/customers';
 
 import { startHarness, type Harness } from '../helpers/harness';
 

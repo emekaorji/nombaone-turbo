@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { getSubscriptionByReference } from '@nombaone/sara/subscriptions';
+import { getSubscriptionByReference } from '@/domain/subscriptions';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

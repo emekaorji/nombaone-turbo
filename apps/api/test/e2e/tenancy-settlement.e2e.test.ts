@@ -12,12 +12,12 @@ import {
   settlementsTable,
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
-import { createCustomer } from '@nombaone/sara/customers';
-import { createPlan } from '@nombaone/sara/plans';
-import { createPrice } from '@nombaone/sara/prices';
+import { createCustomer } from '@/domain/customers';
+import { createPlan } from '@/domain/plans';
+import { createPrice } from '@/domain/prices';
 import { registerRail } from '@nombaone/sara/rails';
 import { mintReference } from '@nombaone/sara/reference';
-import { selectDueSubscriptionsFair } from '@nombaone/sara/scheduling';
+import { selectDueSubscriptionsFair } from '@/domain/scheduling';
 
 import { startHarness, type Harness } from '../helpers/harness';
 
@@ -217,7 +217,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
 
   // ── K3 ⚠ cross-tenant concurrency — two tenants' cycles don't cross-contaminate ─
   it('K3 ⚠ — two tenants billing concurrently each charge their OWN subscription exactly once', async () => {
-    const { runCycle } = await import('@nombaone/sara/billing');
+    const { runCycle } = await import('@/domain/billing');
     const a = await seedCardSub(ctxA, bearerA, 300000);
     const bSub = await seedCardSub(ctxB, bearerB, 700000);
     await harness.db.update(subscriptionsTable).set({ nextBillingAt: new Date(Date.now() - 60_000) }).where(eq(subscriptionsTable.id, a.subId));

@@ -6,7 +6,6 @@ import {
 } from '@nombaone/core-db/schema';
 
 import { mintReference } from '../reference';
-import { ensureSystemAccounts } from '../config';
 import { createOrgUser, findUserByEmail } from './users';
 import { createSession } from './session';
 
@@ -67,12 +66,10 @@ export const signupOrganization = async (
       role: 'owner',
     });
 
-    // Provision the generic system accounts (cash, platform_revenue, …) the
-    // ledger relies on, scoped to the new tenant's starting environment.
-    await ensureSystemAccounts(tx, {
-      organizationId: organization.id,
-      mode: SIGNUP_ENVIRONMENT,
-    });
+    // System ledger accounts (cash, platform_revenue, …) are provisioned lazily:
+    // every ledger-posting site calls `ensureAccount` idempotently before posting,
+    // so there is no need to create them eagerly here (and doing so would couple
+    // tenant genesis — an app/console concern — to the api-owned money engine).
 
     const { token } = await createSession(tx, {
       userId: user.id,

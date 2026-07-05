@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { updateTenantSettings } from '@nombaone/sara/tenant-config';
+import { updateTenantSettings } from '@/domain/tenant-config';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

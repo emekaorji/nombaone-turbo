@@ -1,8 +1,8 @@
 import { Worker } from 'bullmq';
 
 import { BILLING_QUEUE_NAME, connection } from '@nombaone/queue';
-import { runCycle } from '@nombaone/sara/billing';
-import { getSubscriptionByReference } from '@nombaone/sara/subscriptions';
+import { runCycle } from '@/domain/billing';
+import { getSubscriptionByReference } from '@/domain/subscriptions';
 import { NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { db } from '@shared/config/db';

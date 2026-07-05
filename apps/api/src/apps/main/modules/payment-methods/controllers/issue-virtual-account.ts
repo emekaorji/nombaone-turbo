@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { issueVirtualAccount } from '@nombaone/sara/payment-methods';
+import { issueVirtualAccount } from '@/domain/payment-methods';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

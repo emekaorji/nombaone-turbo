@@ -1,4 +1,4 @@
-import { pollMandateActive, selectPendingMandates } from '@nombaone/sara/payment-methods';
+import { pollMandateActive, selectPendingMandates } from '@/domain/payment-methods';
 
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';

@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { getInvoiceByReference } from '@nombaone/sara/invoices';
+import { getInvoiceByReference } from '@/domain/invoices';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { createCustomer } from '@nombaone/sara/customers';
+import { createCustomer } from '@/domain/customers';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

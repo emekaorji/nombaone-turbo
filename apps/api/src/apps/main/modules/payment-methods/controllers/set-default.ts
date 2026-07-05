@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { setDefaultPaymentMethod } from '@nombaone/sara/payment-methods';
+import { setDefaultPaymentMethod } from '@/domain/payment-methods';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

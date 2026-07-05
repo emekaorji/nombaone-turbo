@@ -1,5 +1,5 @@
 import { AppError } from '@nombaone/errors';
-import { changeSubscription } from '@nombaone/sara/billing';
+import { changeSubscription } from '@/domain/billing';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

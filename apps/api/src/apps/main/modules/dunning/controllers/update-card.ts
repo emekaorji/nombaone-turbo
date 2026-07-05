@@ -1,6 +1,6 @@
 import { AppError } from '@nombaone/errors';
-import { updateCardOnSubscription } from '@nombaone/sara/dunning';
-import { serializePaymentMethod } from '@nombaone/sara/payment-methods';
+import { updateCardOnSubscription } from '@/domain/dunning';
+import { serializePaymentMethod } from '@/domain/payment-methods';
 
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';

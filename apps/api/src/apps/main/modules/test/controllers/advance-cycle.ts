@@ -1,7 +1,7 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { runCycle } from '@nombaone/sara/billing';
-import { getInvoiceByReference } from '@nombaone/sara/invoices';
-import { getSubscriptionByReference } from '@nombaone/sara/subscriptions';
+import { runCycle } from '@/domain/billing';
+import { getInvoiceByReference } from '@/domain/invoices';
+import { getSubscriptionByReference } from '@/domain/subscriptions';
 
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
