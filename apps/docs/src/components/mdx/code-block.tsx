@@ -4,7 +4,7 @@ import { Children, isValidElement, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
-import { CopyButton } from "./copy-button";
+import { CodeShell } from "./code-shell";
 import { useInsideTabs } from "./inside-tabs-context";
 
 /**
@@ -29,7 +29,7 @@ interface PreProps {
 }
 
 /** Recursively flatten a React children tree into its text content. */
-function extractText(node: ReactNode): string {
+export function extractText(node: ReactNode): string {
   if (node == null || node === false) return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(extractText).join("");
@@ -43,40 +43,29 @@ export function Pre({ children, title, raw, className, ...rest }: PreProps) {
   const language = rest["data-language"];
   const code = raw ?? extractText(children);
   // Inside a tab group the tab label already names the language, so the
-  // caption is redundant; drop it. Standalone fenced blocks keep theirs.
+  // caption is redundant; drop it. Standalone fenced blocks keep theirs. A
+  // `<CodeGroup>` also owns the copy button (in its tab strip), so suppress
+  // this block's own copy there; a generic `<Tabs>` keeps the hover copy.
   const insideTabs = useInsideTabs();
   const showCaption = !insideTabs && Boolean(title || language);
+  const hideCopy = insideTabs === "code-group";
+
+  // Inside a tab group the tab label already names the language, so no bar here.
+  const bar = showCaption ? (
+    <>
+      <span className="font-mono text-xs font-medium text-muted-foreground">{title ?? language}</span>
+      {language && title && (
+        <span className="ml-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground/70">
+          {language}
+        </span>
+      )}
+    </>
+  ) : undefined;
 
   return (
-    <figure className="group not-prose my-6 overflow-hidden rounded-lg border border-border bg-[var(--code-bg)] text-[13px] shadow-sm">
-      {showCaption && (
-        <figcaption className="flex items-center justify-between border-b border-border/70 bg-[var(--code-titlebar-bg)] px-4 py-2">
-          <span className="font-mono text-xs font-medium text-muted-foreground">
-            {title ?? language}
-          </span>
-          {language && title && (
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/70">
-              {language}
-            </span>
-          )}
-        </figcaption>
-      )}
-      <div className="relative">
-        <CopyButton
-          value={code}
-          className="absolute right-3 top-3 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-        />
-        <pre
-          {...rest}
-          className={cn(
-            "overflow-x-auto px-4 py-4 font-mono leading-relaxed [&>code]:grid [&>code]:bg-transparent",
-            className,
-          )}
-        >
-          {children}
-        </pre>
-      </div>
-    </figure>
+    <CodeShell bar={bar} copyValue={code} className="my-6" hideCopy={hideCopy} preProps={rest} preClassName={className}>
+      {children}
+    </CodeShell>
   );
 }
 

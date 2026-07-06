@@ -114,7 +114,7 @@
   --logo-invert: 1;
 
   /* --- docs-specific surfaces (layered on the NOMBAONE.pen palette) --- */
-  --code-bg: #16181c; /* slightly lifted above --background so code sits above the page */
+  --code-bg: #0d0d0d; /* neutral, subtly lifted above --background (no blue tint) */
   --code-titlebar-bg: var(--surface-2);
   --doc-shell-max: 52rem; /* ~832px reading measure */
 }
@@ -156,7 +156,7 @@
   --logo-invert: 0;
 
   /* docs-specific: code surfaces read cleanly on the light page (not pure white) */
-  --code-bg: #f6f6f6;
+  --code-bg: #fafafa;
   --code-titlebar-bg: #ffffff;
 }
 

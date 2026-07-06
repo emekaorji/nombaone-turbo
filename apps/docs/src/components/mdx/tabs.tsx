@@ -4,6 +4,8 @@ import { Children, isValidElement, useState, type ReactElement, type ReactNode }
 
 import { cn } from "@/lib/cn";
 
+import { extractText } from "./code-block";
+import { CopyButton } from "./copy-button";
 import { InsideTabsContext } from "./inside-tabs-context";
 
 /**
@@ -48,7 +50,7 @@ export function Tabs({ children }: { children: ReactNode }) {
     <div className="not-prose my-6 overflow-hidden rounded-lg border border-border">
       <TabStrip items={tabs.map((tab) => ({ key: tab.props.label, label: tab.props.label }))} active={active} onSelect={setActive} />
       <div className="bg-card px-4 py-4 text-sm leading-relaxed text-foreground [&_pre]:my-0 [&_figure]:my-0 [&_figure]:border-0 [&_figure]:shadow-none">
-        <InsideTabsContext.Provider value={true}>{tabs[active]}</InsideTabsContext.Provider>
+        <InsideTabsContext.Provider value="tabs">{tabs[active]}</InsideTabsContext.Provider>
       </div>
     </div>
   );
@@ -60,11 +62,22 @@ export function CodeGroup({ children }: { children: ReactNode }) {
 
   if (tabs.length === 0) return null;
 
+  // The strip is this group's title bar, so it hosts the copy button for the
+  // active tab (the inner block suppresses its own copy via the "code-group"
+  // context). Recover the active block's raw text from its rendered subtree.
+  const activeCode = extractText(tabs[active]);
+
   return (
     <div className="not-prose my-6 overflow-hidden rounded-lg border border-border bg-[var(--code-bg)]">
-      <TabStrip items={tabs.map((tab) => ({ key: tab.props.label, label: tab.props.label }))} active={active} onSelect={setActive} variant="code" />
+      <TabStrip
+        items={tabs.map((tab) => ({ key: tab.props.label, label: tab.props.label }))}
+        active={active}
+        onSelect={setActive}
+        variant="code"
+        trailing={<CopyButton value={activeCode} />}
+      />
       <div className="[&_figure]:my-0 [&_figure]:rounded-none [&_figure]:border-0 [&_figure]:shadow-none">
-        <InsideTabsContext.Provider value={true}>{tabs[active]}</InsideTabsContext.Provider>
+        <InsideTabsContext.Provider value="code-group">{tabs[active]}</InsideTabsContext.Provider>
       </div>
     </div>
   );
@@ -88,11 +101,14 @@ export function TabStrip({
   active,
   onSelect,
   variant = "default",
+  trailing,
 }: {
   items: TabStripItem[];
   active: number;
   onSelect: (index: number) => void;
   variant?: "default" | "code";
+  /** Optional right-aligned content (e.g. a copy button for the active tab). */
+  trailing?: ReactNode;
 }) {
   return (
     <div
@@ -128,6 +144,7 @@ export function TabStrip({
           </button>
         );
       })}
+      {trailing && <div className="ml-auto flex items-center pr-1">{trailing}</div>}
     </div>
   );
 }

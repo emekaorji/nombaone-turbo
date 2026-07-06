@@ -110,7 +110,7 @@ export function RailSwitcher() {
       </div>
 
       <p className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
-        The core never learns the rail's name — it calls one “collect for this reference” verb, and
+        The core never learns the rail&apos;s name — it calls one “collect for this reference” verb, and
         each rail adapts it.
       </p>
     </div>

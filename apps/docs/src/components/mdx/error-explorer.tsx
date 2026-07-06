@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import Link from "next/link";
+
 import { ERROR_CODE_META, PUBLIC_ERROR_CODES } from "@nombaone/errors";
 
 /**
@@ -70,17 +72,17 @@ export function ErrorExplorer() {
                 )}
               </div>
               {meta.hint && <p className="mt-2 text-sm leading-relaxed text-foreground">{meta.hint}</p>}
-              <a
+              <Link
                 href={`/errors#${code}`}
                 className="mt-2 inline-block text-sm font-medium text-[--accent] hover:underline"
               >
                 Open in the error reference →
-              </a>
+              </Link>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
               No known error code found in that text. Paste the full response, or check the{" "}
-              <a href="/errors" className="text-[--accent] hover:underline">error reference</a>.
+              <Link href="/errors" className="text-[--accent] hover:underline">error reference</Link>.
             </p>
           )}
         </div>

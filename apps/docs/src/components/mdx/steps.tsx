@@ -46,7 +46,7 @@ function StepRow({
 export function Step({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
-      {title && <p className="text-[15px] font-semibold text-foreground">{title}</p>}
+      {title && <p className="text-[16px] font-semibold text-foreground">{title}</p>}
       <div
         className={cn(
           "space-y-3 text-sm leading-relaxed text-muted-foreground",

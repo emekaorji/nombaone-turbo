@@ -4,6 +4,8 @@ import { Children, isValidElement, useState, type ReactElement, type ReactNode }
 
 import { cn } from "@/lib/cn";
 
+import { extractText } from "./code-block";
+import { CopyButton } from "./copy-button";
 import { InsideTabsContext } from "./inside-tabs-context";
 import { TabStrip, type TabStripItem } from "./tabs";
 
@@ -33,8 +35,9 @@ import { TabStrip, type TabStripItem } from "./tabs";
  * flush. `<ResponseExample>` colors each tab's status chip by tone:
  * `<400` success (green), `400–499` client error (red), `>=500` server error
  * (also the error ramp, with a distinct label). The panel is wrapped in
- * `<InsideTabsContext.Provider value={true}>` so the inner block's caption is
- * suppressed (the tab already names the variant).
+ * `<InsideTabsContext.Provider value="code-group">` so the inner block's caption is
+ * suppressed (the tab already names the variant), and the strip hosts the copy
+ * button for the active case.
  */
 
 // ---------------------------------------------------------------------------
@@ -111,9 +114,15 @@ export function ResponseExample({ children }: { children: ReactNode }) {
 
   return (
     <div className="not-prose my-6 overflow-hidden rounded-lg border border-border bg-[var(--code-bg)]">
-      <TabStrip items={items} active={active} onSelect={setActive} variant="code" />
+      <TabStrip
+        items={items}
+        active={active}
+        onSelect={setActive}
+        variant="code"
+        trailing={<CopyButton value={extractText(cases[active])} />}
+      />
       <div className="[&_figure]:my-0 [&_figure]:rounded-none [&_figure]:border-0 [&_figure]:shadow-none">
-        <InsideTabsContext.Provider value={true}>{cases[active]}</InsideTabsContext.Provider>
+        <InsideTabsContext.Provider value="code-group">{cases[active]}</InsideTabsContext.Provider>
       </div>
     </div>
   );
@@ -155,9 +164,15 @@ export function RequestExample({ children }: { children: ReactNode }) {
 
   return (
     <div className="not-prose my-6 overflow-hidden rounded-lg border border-border bg-[var(--code-bg)]">
-      <TabStrip items={items} active={active} onSelect={setActive} variant="code" />
+      <TabStrip
+        items={items}
+        active={active}
+        onSelect={setActive}
+        variant="code"
+        trailing={<CopyButton value={extractText(variants[active])} />}
+      />
       <div className="[&_figure]:my-0 [&_figure]:rounded-none [&_figure]:border-0 [&_figure]:shadow-none">
-        <InsideTabsContext.Provider value={true}>{variants[active]}</InsideTabsContext.Provider>
+        <InsideTabsContext.Provider value="code-group">{variants[active]}</InsideTabsContext.Provider>
       </div>
     </div>
   );
