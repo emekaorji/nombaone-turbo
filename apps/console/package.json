@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "type-check": "tsc --noEmit",
-    "seed:local": "tsx scripts/seed-local.ts"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@nombaone/errors": "workspace:*",

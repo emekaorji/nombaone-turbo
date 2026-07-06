@@ -73,9 +73,11 @@
   --r-xl: 20px;
   --r-full: 999px;
 
-  /* --- fonts (real Geist values arrive via next/font on <html>) --- */
+  /* --- fonts (real values arrive via next/font on <html>) ---
+     --font-mono-loaded is swapped in layout.tsx while we trial code faces
+     (Commit Mono → Martian Mono → JetBrains Mono); this stack stays put. */
   --font-sans: var(--font-geist-sans), "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+  --font-mono: var(--font-mono-loaded), ui-monospace, "SF Mono", Menlo, Monaco, monospace;
 
   /* --- semantic tokens: DARK (default) --- */
   --background: #040404;

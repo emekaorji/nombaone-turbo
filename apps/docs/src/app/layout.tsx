@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Martian_Mono } from 'next/font/google';
 
 import { SearchProvider } from '@/components/chrome/search-provider';
 import { SidebarNav } from '@/components/chrome/sidebar-nav';
@@ -16,9 +16,12 @@ const geistSans = Geist({
   subsets: ['latin'],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+// Code-face trial #2: Martian Mono (Google Fonts, variable).
+// Swap this block per round; `--font-mono-loaded` is the stable hook in globals.css.
+const mono = Martian_Mono({
+  variable: '--font-mono-loaded',
   subsets: ['latin'],
+  display: 'swap',
 });
 
 const DESCRIPTION =
@@ -95,7 +98,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${geistSans.variable} ${mono.variable}`}
       suppressHydrationWarning
       data-scroll-behavior="smooth"
     >
