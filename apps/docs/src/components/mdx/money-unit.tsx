@@ -75,7 +75,7 @@ export function MoneyUnit() {
           <p className="mt-1 text-muted-foreground">
             If you sent{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono">{valid ? nairaNum : 0}</code>{" "}
-            where kobo is expected, you'd charge{" "}
+            where kobo is expected, you&apos;d charge{" "}
             <strong className="text-foreground">{nairaFmt.format(nairaNum / 100)}</strong> — 100× too
             little. The name ends in <code className="font-mono">InKobo</code> so the unit is never in
             doubt.

@@ -7,7 +7,7 @@ import { KeyRound, Loader2, Play, ShieldAlert, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useMounted } from "@/lib/use-client-value";
 
-import { CopyButton } from "./copy-button";
+import { HighlightedCode } from "./highlighted-code";
 
 import type { ReactNode } from "react";
 
@@ -461,45 +461,46 @@ function ResponsePanel({ state }: { state: ResponseState }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border" aria-live="polite">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/50 px-4 py-2">
-        <span
-          className={cn(
-            "rounded-md px-2 py-0.5 font-mono text-xs font-bold",
-            state.ok
-              ? "bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-400"
-              : "bg-error-50 text-error-700 dark:bg-error-900/30 dark:text-error-400",
-          )}
-        >
-          {state.status}
-        </span>
-        {state.requestId && (
-          <code className="font-mono text-[11px] text-muted-foreground">
-            X-Request-Id: {state.requestId}
-          </code>
-        )}
-        <CopyButton value={state.body} className="ml-auto" />
-      </div>
-      <pre className="max-h-96 overflow-auto bg-[var(--code-bg)] px-4 py-3 font-mono text-[12.5px] leading-relaxed text-foreground">
-        {state.body}
-      </pre>
+    <div aria-live="polite">
+      <HighlightedCode
+        code={state.body}
+        lang="json"
+        preClassName="max-h-96 overflow-auto"
+        bar={
+          <>
+            <span
+              className={cn(
+                "rounded-md px-2 py-0.5 font-mono text-xs font-bold",
+                state.ok
+                  ? "bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-400"
+                  : "bg-error-50 text-error-700 dark:bg-error-900/30 dark:text-error-400",
+              )}
+            >
+              {state.status}
+            </span>
+            {state.requestId && (
+              <code className="font-mono text-[11px] text-muted-foreground">
+                X-Request-Id: {state.requestId}
+              </code>
+            )}
+          </>
+        }
+      />
     </div>
   );
 }
 
 function Snippet({ label, value }: { label: string; value: string }) {
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-[var(--code-bg)]">
-      <div className="flex items-center justify-between border-b border-border bg-[var(--code-titlebar-bg)] px-3 py-1.5">
+    <HighlightedCode
+      code={value}
+      lang={label.toLowerCase() === "curl" ? "curl" : "typescript"}
+      bar={
         <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
-        <CopyButton value={value} />
-      </div>
-      <pre className="overflow-x-auto px-3 py-2.5 font-mono text-[12.5px] leading-relaxed text-foreground">
-        {value}
-      </pre>
-    </div>
+      }
+    />
   );
 }
 

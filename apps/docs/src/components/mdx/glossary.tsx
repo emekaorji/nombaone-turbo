@@ -17,7 +17,7 @@ export function Glossary() {
       {entries.map((entry) => (
         <div key={entry.term} id={entry.term.replace(/\s+/g, "-")} className="grid gap-1 py-4 sm:grid-cols-[10rem_1fr] sm:gap-6">
           <dt className="font-mono text-sm font-semibold text-accent">{entry.term}</dt>
-          <dd className="text-[15px] leading-7 text-foreground/85">
+          <dd className="text-[16px] leading-7 text-foreground/85">
             {entry.definition}
             {entry.conceptSlug && (
               <>

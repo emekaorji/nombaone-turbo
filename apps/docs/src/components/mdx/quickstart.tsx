@@ -9,6 +9,8 @@ import { cn } from "@/lib/cn";
 
 import { useMounted } from "@/lib/use-client-value";
 
+import { HighlightedCode } from "./highlighted-code";
+
 /**
  * `<Quickstart>`: the home-page hero. Not a generic landing: a branded
  * "zero → first call" path with a genuinely runnable first call. The three
@@ -93,7 +95,7 @@ export function Quickstart() {
           <h1 className="mt-4 max-w-2xl text-balance text-[34px] font-bold leading-[1.1] tracking-tight text-foreground sm:text-[40px]">
             Move money, not plumbing.
           </h1>
-          <p className="mt-3 max-w-xl text-[15px] leading-7 text-foreground/75">
+          <p className="mt-3 max-w-xl text-[16px] leading-7 text-foreground/75">
             Wallets, a double-entry ledger, and Nigerian rails behind one typed
             API. Press buttons below. We&apos;ll take the blame if the sandbox
             sulks.
@@ -199,9 +201,7 @@ export function Quickstart() {
                     : "the sandbox replied"}
                 </span>
               </p>
-              <pre className="overflow-x-auto rounded-lg bg-[var(--code-bg)] px-3 py-3 font-mono text-xs leading-relaxed text-foreground/90">
-                {run.body}
-              </pre>
+              <HighlightedCode code={run.body} lang="json" />
             </div>
           )}
         </div>
