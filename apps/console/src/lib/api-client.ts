@@ -9,7 +9,16 @@ import { and, eq } from 'drizzle-orm';
 
 import type { SessionMode } from '@/lib/auth';
 
-const API_BASE = process.env.NOMBAONE_API_URL ?? 'http://localhost:8000/v1';
+/**
+ * The apps/api base URL for a given account mode. One console deployment serves
+ * BOTH modes, so the host is selected per request from the session's mode — live
+ * mode → the live engine, sandbox mode → the sandbox engine. Falls back to a
+ * single URL (dev) then localhost. See workbench/environment-migration.md.
+ */
+function apiBase(mode: SessionMode): string {
+  const modeUrl = mode === 'live' ? process.env.NOMBAONE_LIVE_API_URL : process.env.NOMBAONE_SANDBOX_API_URL;
+  return modeUrl ?? process.env.NOMBAONE_API_URL ?? 'http://localhost:8000/v1';
+}
 
 /** Scopes the console needs to drive every engine write on a merchant's behalf. */
 const BRIDGE_SCOPES = [
@@ -107,7 +116,7 @@ export async function callApi<T = unknown>(
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, { method, headers, body, cache: 'no-store' });
+    res = await fetch(`${apiBase(session.mode)}${path}`, { method, headers, body, cache: 'no-store' });
   } catch {
     throw new ApiError('Could not reach the billing engine. Is apps/api running?', { status: 503, code: 'api_unreachable' });
   }
