@@ -1,7 +1,7 @@
 ---
 title: "Ruby quickstart"
-type: tutorial
-summary: "Reach a real 201 with Ruby — create your first plan on the Nomba One sandbox in a few lines."
+type: reference
+summary: "Reach a real 201 with Ruby: create your first plan on the Nomba One sandbox in a few lines."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart/ruby
 ---
 
@@ -13,17 +13,17 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
-Standard library only — `net/http`. Read the key from `ENV['NOMBAONE_SECRET_KEY']`.
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
+Standard library only: `net/http`. Read the key from `ENV['NOMBAONE_SECRET_KEY']`.
 
 ## 2 · Create a plan
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`: its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next
 
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 The full plan → price → customer → subscription flow to a live 201.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The secret-key rules and how the prefix pins the environment.

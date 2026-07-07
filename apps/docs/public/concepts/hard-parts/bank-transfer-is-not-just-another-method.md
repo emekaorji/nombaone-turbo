@@ -1,6 +1,6 @@
 ---
 title: "Why bank transfer isn't just another payment method"
-type: explanation
+type: reference
 summary: "You can charge a card. You cannot charge a bank transfer. The whole billing model changes."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/bank-transfer-is-not-just-another-method
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Dunning"
 type: reference
-summary: "Recovery attempts and state for a past-due subscription — read where recovery stands and the full attempt history. A sub-resource of the subscription."
+summary: "Recovery attempts and state for a past-due subscription: read where recovery stands and the full attempt history. A sub-resource of the subscription."
 canonical: https://docs.nombaone.xyz/reference/dunning
 ---
 
@@ -16,7 +16,7 @@ branch are explained in [dunning and recovery](/guides/dunning-and-recovery).
 
 | Method | Path | What it does |
 |---|---|---|
-| `GET` | `/v1/subscriptions/{id}/dunning` | Current dunning state — where recovery stands. |
+| `GET` | `/v1/subscriptions/{id}/dunning` | Current dunning state: where recovery stands. |
 | `GET` | `/v1/subscriptions/{id}/dunning/attempts` | The full history of collection attempts. |
 
 ```bash
@@ -27,5 +27,5 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
 > **past_due is not canceled**
 >
 > On a thin balance a failed charge is usually "not yet." Read the dunning state
-> before cutting access — let recovery run. See
+> before cutting access. Let recovery run. See
 > [dunning for thin balances](/concepts/hard-parts/dunning-for-thin-balances).

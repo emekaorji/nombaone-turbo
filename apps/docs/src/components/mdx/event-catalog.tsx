@@ -23,7 +23,7 @@ const GROUPS: { title: string; prefix: string; blurb: string }[] = [
   {
     title: "Subscription",
     prefix: "subscription.",
-    blurb: "The lifecycle of a subscription — created, activated, paused, canceled, churned.",
+    blurb: "The lifecycle of a subscription: created, activated, paused, canceled, churned.",
   },
   {
     title: "Invoice",

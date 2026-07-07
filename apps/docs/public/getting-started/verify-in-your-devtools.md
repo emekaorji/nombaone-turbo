@@ -1,7 +1,7 @@
 ---
 title: "Verify us in your devtools"
 type: tutorial
-summary: "The sandbox sends no organic webhooks, so we hand you a real signed event — register an endpoint, fire it, and watch the signature verify in your own logs."
+summary: "The sandbox sends no organic webhooks, so we hand you a real signed event: register an endpoint, fire it, and watch the signature verify in your own logs."
 canonical: https://docs.nombaone.xyz/getting-started/verify-in-your-devtools
 ---
 
@@ -9,7 +9,7 @@ canonical: https://docs.nombaone.xyz/getting-started/verify-in-your-devtools
 
 Here is the honest truth most payment docs won't tell you: the Nomba sandbox
 does **not** push webhooks on its own. So instead of pretending, we hand you a
-**real, signed event** — byte-for-byte identical to production — that you fire on
+**real, signed event**, byte-for-byte identical to production, that you fire on
 demand and watch land in your own tunnel. This page proves the pipe end to end:
 register → fire → verify.
 
@@ -18,7 +18,7 @@ register → fire → verify.
 > The event you fire below is a genuine signed payload from the sandbox instrument,
 > the same shape and the same signature scheme as a live event. Nothing here is
 > faked or `setTimeout`-ed. `simulate` is the honest substitute for organic
-> sandbox delivery — it is sandbox-mode-only and at-least-once (dedupe on the
+> sandbox delivery. It is sandbox-mode-only and at-least-once (dedupe on the
 > event id).
 
 ## 1 · Register an endpoint
@@ -37,7 +37,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 The response includes the endpoint's **signing secret** (`whsec_…`), shown once.
-Store it server-side — you need it to verify every delivery.
+Store it server-side. You need it to verify every delivery.
 
 ## 2 · Fire a real signed event
 
@@ -70,19 +70,19 @@ production sends.
 
 Never trust a webhook you haven't verified. Every delivery is signed
 `HMAC_SHA256(` `${timestamp}.${rawBody}` `, secret)` over the **raw** request
-body — verify before you parse. Compare in constant time.
+body. Verify before you parse. Compare in constant time.
 
 > **Verify the raw bytes, before parsing**
 >
 > Compute the HMAC over the exact bytes you received, not over a re-serialized
-> object — `JSON.parse` then `JSON.stringify` can reorder keys and change the
+> object: `JSON.parse` then `JSON.stringify` can reorder keys and change the
 > bytes, and the signature will no longer match. Read the raw body first.
 
-Here is the verifier, running the real recipe in your browser with Web Crypto —
-paste a body, timestamp, and secret and watch it compute the signature the
+Here is the verifier, running the real recipe in your browser with Web Crypto.
+Paste a body, timestamp, and secret and watch it compute the signature the
 server expects:
 
-> **Interactive — `<WebhookVerifier>`.** View and run it live at https://docs.nombaone.xyz/getting-started/verify-in-your-devtools
+> **Interactive: `<WebhookVerifier>`.** View and run it live at https://docs.nombaone.xyz/getting-started/verify-in-your-devtools
 
 The reference implementation for your server:
 
@@ -119,12 +119,12 @@ def verify(raw_body: bytes, header: str, secret: str) -> None:
 
 ## Then respond fast, and dedupe
 
-Return `2xx` quickly and do the work asynchronously — a slow handler looks like a
+Return `2xx` quickly and do the work asynchronously. A slow handler looks like a
 failure and gets retried. Because delivery is at-least-once, **dedupe on the
 event id**: the same event may arrive twice, and
 [retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge).
 
-- **[Handle webhooks (guide)](/guides/handle-webhooks)** — 
+- **[Handle webhooks (guide)](/guides/handle-webhooks)**: 
 The full receive → verify → dedupe → act pattern for one correct balance.
-- **[Event catalog](/webhooks/event-catalog)** — 
+- **[Event catalog](/webhooks/event-catalog)**: 
 Every event type, when it fires, and its payload shape.

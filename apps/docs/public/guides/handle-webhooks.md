@@ -1,7 +1,7 @@
 ---
 title: "Handle webhooks"
 type: how-to
-summary: "Receive events, verify the signature, dedupe on the event id, and act — the four-step pattern that keeps one correct balance no matter how many times an event arrives."
+summary: "Receive events, verify the signature, dedupe on the event id, and act: the four-step pattern that keeps one correct balance no matter how many times an event arrives."
 canonical: https://docs.nombaone.xyz/guides/handle-webhooks
 ---
 
@@ -9,7 +9,7 @@ canonical: https://docs.nombaone.xyz/guides/handle-webhooks
 
 Webhooks are how nombaone tells your server what happened: an invoice was paid, a
 charge failed, a card needs OTP, a transfer arrived. Handling them correctly is
-four steps — **receive, verify, dedupe, act** — and getting any one wrong is how
+four steps (**receive, verify, dedupe, act**), and getting any one wrong is how
 balances drift. This guide is the pattern; to see events land in your own logs
 first, do [verify us in your devtools](/getting-started/verify-in-your-devtools).
 
@@ -26,10 +26,10 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 The response returns a **signing secret** (`whsec_…`), shown once. Store it
-server-side. Register endpoints per mode — a sandbox event only reaches your
+server-side. Register endpoints per mode: a sandbox event only reaches your
 sandbox endpoint.
 
-## 2 · Verify the signature — on the raw body
+## 2 · Verify the signature: on the raw body
 
 Every delivery carries a signature over `` `${timestamp}.${rawBody}` ``. Verify
 **before you parse**: compute the HMAC over the exact bytes received, and compare
@@ -52,15 +52,15 @@ export function verifyWebhook(rawBody: string, header: string, secret: string) {
 >
 > Read the raw request body and HMAC those exact bytes. `JSON.parse` then
 > `JSON.stringify` can reorder keys, changing the bytes so the signature no
-> longer matches. Frameworks that auto-parse the body will break verification —
-> capture the raw body first.
+> longer matches. Frameworks that auto-parse the body will break verification.
+> Capture the raw body first.
 
 ## 3 · Dedupe on the event id
 
 Delivery is **at-least-once**: the same event can arrive more than once (a retry,
 a network hiccup). Record each `event.id` you've processed and skip repeats. The
 handler must be idempotent, because
-[retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge) —
+[retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge):
 reacting twice to one `invoice.paid` must not credit a balance twice.
 
 ```ts
@@ -71,7 +71,7 @@ await markSeen(event.id);
 ## 4 · Respond fast, act async
 
 Return `2xx` immediately, then do the work. A slow handler reads as a failure and
-gets retried — which is fine (you dedupe), but keeping the response fast avoids
+gets retried, which is fine (you dedupe), but keeping the response fast avoids
 pile-ups.
 
 ```ts
@@ -90,23 +90,23 @@ export async function POST(req: Request) {
 
 Handle the unhappy paths, not just `invoice.paid`:
 
-- **`invoice.paid`** — a cycle collected. Grant access, extend the period.
-- **`invoice.payment_failed`** — a charge failed; the subscription is `past_due`
+- **`invoice.paid`**: a cycle collected. Grant access, extend the period.
+- **`invoice.payment_failed`**: a charge failed; the subscription is `past_due`
 and [dunning](/guides/dunning-and-recovery) is retrying. Don't cancel access
-yet — on a thin balance this is "not yet."
-- **`invoice.action_required`** — a card needs OTP; the payload carries a fresh
+yet: on a thin balance this is "not yet."
+- **`invoice.action_required`**: a card needs OTP; the payload carries a fresh
 checkout link to send the customer.
-- **`invoice.payment_recovered`** — dunning (or the customer completing OTP)
+- **`invoice.payment_recovered`**: dunning (or the customer completing OTP)
 succeeded; restore normal state.
 
 > **Missed one? Re-fetch, don't guess**
 >
-> If your endpoint was down, don't reconstruct state from missed webhooks — read
+> If your endpoint was down, don't reconstruct state from missed webhooks. Read
 > the resource (`GET /v1/subscriptions/{id}`) or replay a delivery
 > (`POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`). The API is the
 > source of truth; webhooks are a notification, not the ledger.
 
-- **[Event catalog](/webhooks/event-catalog)** — 
+- **[Event catalog](/webhooks/event-catalog)**: 
 Every event type, when it fires, and its payload.
-- **[Dunning and recovery](/guides/dunning-and-recovery)** — 
+- **[Dunning and recovery](/guides/dunning-and-recovery)**: 
 What happens between payment_failed and payment_recovered.

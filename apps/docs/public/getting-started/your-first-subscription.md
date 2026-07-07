@@ -1,30 +1,30 @@
 ---
 title: "Your first subscription"
 type: tutorial
-summary: "Create a plan, a price, a customer, and a subscription that bills — five real calls to a live 201, end to end."
+summary: "Create a plan, a price, a customer, and a subscription that bills: five real calls to a live 201, end to end."
 canonical: https://docs.nombaone.xyz/getting-started/your-first-subscription
 ---
 
 # Your first subscription
 
 By the end of this page you will have a **real subscription** billing in sandbox
-mode — created with five calls, in about ten minutes, with no mocks. Each
+mode, created with five calls, in about ten minutes, with no mocks. Each
 call below is the genuine request your server will make in production; only the
 key (`nbo_sandbox_…`) and the host (`sandbox.api.nombaone.xyz`) change when you go
 live.
 
 The minimal path is four resources and one deterministic test card:
 
-1. a **plan** — the thing customers subscribe to,
-2. a **price** on that plan — how much, how often,
+1. a **plan**, the thing customers subscribe to,
+2. a **price** on that plan, how much, how often,
 3. a **customer**,
 4. a **test payment method** that succeeds on cue,
-5. the **subscription** — which produces the first invoice and collects it.
+5. the **subscription**, which produces the first invoice and collects it.
 
 > **Get a sandbox key first**
 >
 > Every call authenticates with `Authorization: Bearer nbo_sandbox_…`. If you don't
-> have a key yet, see [authentication](/getting-started/authentication) — it
+> have a key yet, see [authentication](/getting-started/authentication). It
 > takes one step. Keep the key server-side.
 
 ### Create a plan
@@ -54,7 +54,7 @@ const plan = await nbo("/v1/plans", {
 // plan.data.id → "nbo…pln"
 ```
 
-The response `data.id` is the plan's **reference** — save it; the next call
+The response `data.id` is the plan's **reference**. Save it; the next call
 needs it.
 
 ### Add a price
@@ -83,7 +83,7 @@ const price = await nbo(`/v1/plans/${plan.data.id}/prices`, {
 // price.data.id → "nbo…prc"
 ```
 
-> **Money is integer kobo — the 100× trap**
+> **Money is integer kobo: the 100× trap**
 >
 > Send `250000`, not `2500`. Every money field ends in `InKobo` so the unit
 > is never in doubt. Sending naira where kobo is expected overcharges by
@@ -143,13 +143,13 @@ const method = await nbo("/v1/sandbox/payment-methods", {
 > **Sandbox mode only**
 >
 > `POST /v1/sandbox/payment-methods` exists only in sandbox mode. In live, a
-> customer attaches a real card, mandate, or transfer instruction — see
+> customer attaches a real card, mandate, or transfer instruction. See
 > [multi-rail: push and pull](/concepts/multi-rail-push-and-pull).
 
 ### Start the subscription
 
 Put it together: subscribe the customer to the price, paying with the test
-method. This produces the **first invoice** and collects it — and because
+method. This produces the **first invoice** and collects it, and because
 the method is `success`, it comes back **active** with a paid invoice.
 
 **cURL**
@@ -199,14 +199,14 @@ A `201` with the standard envelope confirms it:
 }
 ```
 
-That's a real subscription. `data.id` is its public reference — the same id
+That's a real subscription. `data.id` is its public reference: the same id
 joins its invoices, its [ledger](/concepts/the-ledger) postings, and its
 webhooks.
 
 ## What just happened
 
 The subscription opened a cycle, finalized an invoice for ₦2,500, collected it
-over the test method, and posted the movement to the ledger — the whole
+over the test method, and posted the movement to the ledger: the whole
 [billing loop](/concepts/how-billing-works), once. Next period it runs again on
 its own.
 
@@ -215,16 +215,16 @@ its own.
 The four calls above are the happy path. The parts that make billing real in
 Nigeria are one link away:
 
-- **[When the charge fails](/concepts/hard-parts/dunning-for-thin-balances)** — 
+- **[When the charge fails](/concepts/hard-parts/dunning-for-thin-balances)**: 
 Thin balances mean a failed charge is usually "not yet," not "no." Dunning
 owns recovery.
-- **[Cards need OTP](/concepts/hard-parts/card-tokens-expire)** — 
+- **[Cards need OTP](/concepts/hard-parts/card-tokens-expire)**: 
 A recurring card charge in Nigeria often hits a bank OTP step. See how the
 engine recovers with a fresh checkout link.
-- **[Pick a rail](/concepts/multi-rail-push-and-pull)** — 
-Card, direct debit, and bank transfer bill differently — one is pushed, not
+- **[Pick a rail](/concepts/multi-rail-push-and-pull)**: 
+Card, direct debit, and bank transfer bill differently. One is pushed, not
 pulled.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Everything above fires an event. Receive, verify, and dedupe them to keep one
 correct balance.
 

@@ -1,6 +1,6 @@
 ---
 title: "Quickstart"
-type: tutorial
+type: reference
 summary: "Get a sandbox secret key and make your first authenticated call to the nombaone API."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart
 ---
@@ -15,7 +15,7 @@ in sandbox mode.
 
 Sign up and your organization is provisioned with a **sandbox** secret key that
 looks like `nbo_sandbox_…`. This key is scoped to your organization and pinned
-to sandbox mode — it can only ever touch sandbox data. Keep it
+to sandbox mode: it can only ever touch sandbox data. Keep it
 server-side; never ship it to a browser or a mobile app.
 
 ### Send your first request
@@ -36,7 +36,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
 
 A success returns the standard envelope: `success`, a `statusCode`, the
 resource in `data`, and a `meta.requestId` you can quote in support
-requests. The resource's `id` is its **reference** — the stable public id
+requests. The resource's `id` is its **reference**: the stable public id
 that also joins its ledger postings and webhooks.
 
 ```json
@@ -62,17 +62,17 @@ that also joins its ledger postings and webhooks.
 
 ## Pick your stack
 
-Each is a self-contained path to a real `201` in your own language — no monolithic
+Each is a self-contained path to a real `201` in your own language. No monolithic
 tutorial in a stack you don't use.
 
 ## In your language
 
-The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.
+The same first call (creating a plan) in cURL, Node, Python, Go, PHP, or Ruby.
 Pick your tab; it's remembered across the docs.
 
 ## Next steps
 
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The full rules for the per-organization secret key.
-- **[The example endpoint](/reference/examples)** — 
+- **[The example endpoint](/reference/examples)**: 
 The worked reference: every request and response field.

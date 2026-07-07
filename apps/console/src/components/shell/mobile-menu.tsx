@@ -3,11 +3,11 @@
 import { Ellipsis, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { Sidebar } from './sidebar';
+import { Sidebar, type ShellOrg, type ShellUser } from './sidebar';
 
 /** Mobile nav drawer — reuses the designed Sidebar as a slide-over. Triggered from the topbar (icon) and bottom nav (tab).
  *  Closes on overlay tap, the X button, or any tap inside (a nav-link tap navigates and dismisses). */
-export function MobileMenu({ variant }: { variant: 'icon' | 'tab' }) {
+export function MobileMenu({ variant, user, org }: { variant: 'icon' | 'tab'; user: ShellUser; org: ShellOrg }) {
   const [open, setOpen] = useState(false);
 
   // Lock body scroll while open.
@@ -46,7 +46,7 @@ export function MobileMenu({ variant }: { variant: 'icon' | 'tab' }) {
           <div className="absolute left-0 top-0 h-full w-[264px] shadow-[8px_0_32px_rgba(0,0,0,0.5)]">
             {/* Any tap inside (nav link, etc.) also dismisses the drawer. */}
             <div className="h-full" onClick={() => setOpen(false)}>
-              <Sidebar />
+              <Sidebar user={user} org={org} />
             </div>
             <button
               onClick={() => setOpen(false)}

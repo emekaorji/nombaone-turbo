@@ -1,6 +1,6 @@
 ---
 title: "Settlement without spreadsheets: splitting one charge across many payees"
-type: explanation
+type: reference
 summary: "One charge often belongs to several parties. Splitting it by hand is where money goes missing."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/settlement-without-spreadsheets
 ---

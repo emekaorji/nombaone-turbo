@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 
 import { isActiveHref } from '@/lib/nav';
 import { MobileMenu } from './mobile-menu';
+import type { ShellOrg, ShellUser } from './sidebar';
 
 const tabs = [
   { label: 'Home', href: '/', icon: LayoutDashboard },
@@ -14,7 +15,7 @@ const tabs = [
   { label: 'Build', href: '/developers', icon: Code },
 ];
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ user, org }: { user: ShellUser; org: ShellOrg }) {
   const pathname = usePathname();
   return (
     <nav className="flex h-[62px] shrink-0 items-stretch border-t border-border bg-background px-1 lg:hidden">
@@ -30,7 +31,7 @@ export function MobileBottomNav() {
           </Link>
         );
       })}
-      <MobileMenu variant="tab" />
+      <MobileMenu variant="tab" user={user} org={org} />
     </nav>
   );
 }

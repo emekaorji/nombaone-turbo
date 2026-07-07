@@ -1,14 +1,14 @@
 ---
 title: "Dunning and recovery"
 type: how-to
-summary: "Recover a failed charge on a thin balance the Nigerian way — retries tuned for \"not yet,\" a card-OTP checkout link, and the events that tell you when to restore access."
+summary: "Recover a failed charge on a thin balance the Nigerian way: retries tuned for \"not yet,\" a card-OTP checkout link, and the events that tell you when to restore access."
 canonical: https://docs.nombaone.xyz/guides/dunning-and-recovery
 ---
 
 # Dunning and recovery
 
 When a charge fails, most billing systems assume "no." In Nigeria the honest read
-is usually **"not yet"** — the balance is thin and will top up, or the card needs
+is usually **"not yet"**: the balance is thin and will top up, or the card needs
 a one-time OTP. Dunning is the engine's recovery loop for exactly this, and it is
 tuned for recovery, not just blind retries. See
 [dunning for thin balances](/concepts/hard-parts/dunning-for-thin-balances) for
@@ -20,8 +20,8 @@ When a cycle's collection fails, the subscription moves to `past_due` and dunnin
 takes over automatically:
 
 1. `invoice.payment_failed` fires with a **real failure reason** to branch on
-(insufficient funds, card expired, OTP required — not a generic "declined").
-2. Dunning schedules retries on its own cadence — no action needed from you.
+(insufficient funds, card expired, OTP required, not a generic "declined").
+2. Dunning schedules retries on its own cadence, no action needed from you.
 3. Each retry either recovers (→ `invoice.payment_recovered`, subscription
 `active`) or exhausts the schedule (→ the subscription stays `past_due` or
 cancels, per your policy).
@@ -37,10 +37,10 @@ cancels, per your policy).
 
 A recurring **card** charge in Nigeria often triggers a bank OTP/3-D Secure step
 that can't complete headlessly. When that happens, dunning does not silently
-retry forever — it emits `invoice.action_required` with a **fresh checkout link**.
+retry forever. It emits `invoice.action_required` with a **fresh checkout link**.
 Send the customer to it; when they complete OTP there, the invoice settles and
 the subscription recovers. This is the product answer to a rail that can't be
-pulled silently — see [card tokens expire](/concepts/hard-parts/card-tokens-expire).
+pulled silently. See [card tokens expire](/concepts/hard-parts/card-tokens-expire).
 
 ## Inspect the dunning state
 
@@ -73,12 +73,12 @@ Use `requires_otp` to rehearse the checkout-link branch, and
 
 ## The events to handle
 
-- **`invoice.payment_failed`** — entered dunning. Log it; don't churn yet.
-- **`invoice.action_required`** — send the customer the checkout link in the payload.
-- **`invoice.payment_recovered`** — restore normal access.
-- **`subscription.canceled`** — dunning exhausted (if your policy cancels). Now cut access.
+- **`invoice.payment_failed`**: entered dunning. Log it; don't churn yet.
+- **`invoice.action_required`**: send the customer the checkout link in the payload.
+- **`invoice.payment_recovered`**: restore normal access.
+- **`subscription.canceled`**: dunning exhausted (if your policy cancels). Now cut access.
 
-- **[Why thin balances change dunning](/concepts/hard-parts/dunning-for-thin-balances)** — 
+- **[Why thin balances change dunning](/concepts/hard-parts/dunning-for-thin-balances)**: 
 The reasoning behind the retry cadence.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Receive and verify these events correctly.

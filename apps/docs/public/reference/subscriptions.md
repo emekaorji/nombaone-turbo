@@ -1,15 +1,15 @@
 ---
 title: "Subscriptions"
 type: reference
-summary: "The engine's lifecycle surface — create, change, pause, resume, cancel, inspect dunning, and preview the upcoming invoice. Generated from the live schema."
+summary: "The engine's lifecycle surface: create, change, pause, resume, cancel, inspect dunning, and preview the upcoming invoice. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/subscriptions
 ---
 
 # Subscriptions
 
 A **subscription** puts a customer on a price and bills it every cycle. It is the
-engine's richest resource: beyond create and read, it exposes the whole lifecycle
-— plan changes with proration, pause/resume, cancel/resubscribe, scheduled
+engine's richest resource: beyond create and read, it exposes the whole lifecycle,
+plan changes with proration, pause/resume, cancel/resubscribe, scheduled
 changes, dunning inspection, and the upcoming-invoice preview.
 
 For the concepts underneath, see [how billing works](/concepts/how-billing-works)
@@ -17,7 +17,7 @@ and the [subscription state machine](/concepts/how-billing-works#the-subscriptio
 for the workflows, see [start a subscription](/guides/start-a-subscription) and
 [proration and plan changes](/guides/proration-and-plan-changes).
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/subscriptions
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/subscriptions
 
 > **Money-moving operations take an Idempotency-Key**
 >

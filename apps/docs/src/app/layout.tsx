@@ -1,4 +1,4 @@
-import { Geist, Martian_Mono } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 
 import { SearchProvider } from '@/components/chrome/search-provider';
 import { SidebarNav } from '@/components/chrome/sidebar-nav';
@@ -16,21 +16,18 @@ const geistSans = Geist({
   subsets: ['latin'],
 });
 
-// Code-face trial #2: Martian Mono (Google Fonts, variable).
-// Swap this block per round; `--font-mono-loaded` is the stable hook in globals.css.
-const mono = Martian_Mono({
-  variable: '--font-mono-loaded',
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
   subsets: ['latin'],
-  display: 'swap',
 });
 
 const DESCRIPTION =
-  'Developer documentation for Nomba One — a subscription-billing engine on Nomba (Nigerian payments): plans, cycles, proration, dunning, and settlement over card, direct debit, bank transfer, and crypto. Integer-kobo money on a double-entry ledger.';
+  'Developer documentation for Nomba One, a subscription-billing engine on Nomba (Nigerian payments): plans, cycles, proration, dunning, and settlement over card, direct debit, bank transfer, and crypto. Integer-kobo money on a double-entry ledger.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://docs.nombaone.xyz'),
   title: {
-    default: 'Nomba One — Developer Docs',
+    default: 'Nomba One: Developer Docs',
     template: '%s - Nomba One Docs',
   },
   description: DESCRIPTION,
@@ -58,12 +55,12 @@ export const metadata: Metadata = {
     locale: 'en_NG',
     url: 'https://docs.nombaone.xyz',
     siteName: 'Nomba One Docs',
-    title: 'Nomba One — Developer Docs',
+    title: 'Nomba One: Developer Docs',
     description: DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Nomba One — Developer Docs',
+    title: 'Nomba One: Developer Docs',
     description: DESCRIPTION,
     creator: '@nomba',
     site: '@nomba',
@@ -98,7 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${mono.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
       data-scroll-behavior="smooth"
     >

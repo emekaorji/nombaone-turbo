@@ -4,16 +4,17 @@ import { useState } from "react";
 
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/cn";
 
 import { MethodChip } from "./method-chip";
-import { SidebarViewToggle, type SidebarView } from "./sidebar-view-toggle";
+import { SearchTrigger } from "./search-trigger";
 
 import {
   API_SECTION,
   DOCS_SECTIONS,
+  findSection,
   type Badge,
   type ManifestItem,
   type ManifestSection,
@@ -32,44 +33,42 @@ import {
  * rail and the mobile drawer (`onNavigate` closes the drawer on selection).
  */
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
-  const router = useRouter();
-
-  // Path drives the default; an explicit toggle press overrides it until the
-  // user navigates somewhere new (we key the override off the resolved view so
-  // it never sticks once the path agrees).
-  const pathView: SidebarView = pathname?.startsWith("/api") ? "api" : "docs";
-  const [override, setOverride] = useState<SidebarView | null>(null);
-  const view = override ?? pathView;
-
-  const onToggle = (next: SidebarView) => {
-    setOverride(next === pathView ? null : next);
-    // Mirror dynamic.xyz: jumping to the API view lands you on the overview if
-    // you're not already somewhere under `/api`.
-    if (next === "api" && !pathname?.startsWith("/api")) {
-      router.push("/api");
-    }
-  };
+  // Each top-nav destination powers its own sidebar, resolved from the section
+  // the current page belongs to: the flattened API reference for the API
+  // section, a single-section tree for every `standalone` section (AI, Best
+  // practices, CLI/SDKs, Release notes), and the shared prose tree otherwise.
+  const pathname = usePathname() ?? "";
+  const section = findSection(pathname);
 
   return (
     <div className="flex flex-col">
-      <div className="px-3 pt-6">
-        <SidebarViewToggle view={view} onChange={onToggle} />
+      <div className="sticky top-0 z-10 bg-background px-3 pb-2 pt-4">
+        <SearchTrigger />
       </div>
-      {view === "api" ? (
+      {section?.kind === "api" ? (
         <ApiNav onNavigate={onNavigate} />
+      ) : section?.standalone ? (
+        <SectionsNav label={section.title} sections={[section]} onNavigate={onNavigate} />
       ) : (
-        <DocsNav onNavigate={onNavigate} />
+        <SectionsNav label="Documentation" sections={DOCS_SECTIONS} onNavigate={onNavigate} />
       )}
     </div>
   );
 }
 
-/** The "Docs" view: the non-API sections, each a collapsible group. */
-function DocsNav({ onNavigate }: { onNavigate?: () => void }) {
+/** A grouped sidebar view (Docs, AI): each section a collapsible group. */
+function SectionsNav({
+  label,
+  sections,
+  onNavigate,
+}: {
+  label: string;
+  sections: ManifestSection[];
+  onNavigate?: () => void;
+}) {
   return (
-    <nav aria-label="Documentation" className="flex flex-col gap-6 px-3 py-6">
-      {DOCS_SECTIONS.map((section) => (
+    <nav aria-label={label} className="flex flex-col gap-6 px-3 py-6">
+      {sections.map((section) => (
         <DocsSection key={section.key} section={section} onNavigate={onNavigate} />
       ))}
     </nav>

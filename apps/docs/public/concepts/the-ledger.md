@@ -1,31 +1,31 @@
 ---
 title: "The double-entry ledger"
 type: explanation
-summary: "The source of truth beneath every invoice, charge, refund, and settlement — how double-entry recording keeps the money provably correct."
+summary: "The source of truth beneath every invoice, charge, refund, and settlement: how double-entry recording keeps the money provably correct."
 canonical: https://docs.nombaone.xyz/concepts/the-ledger
 ---
 
 # The double-entry ledger
 
 Underneath every subscription, invoice, and payout is a **double-entry ledger**. It is the
-source of truth: not the invoice status, not a cached balance, not a webhook — the ledger.
+source of truth: not the invoice status, not a cached balance, not a webhook. The ledger.
 Every other number the API returns is derived from it.
 
 ## Debits and credits, not signs
 
 Each money movement is recorded as a **transaction** made of balanced **legs**. Every leg
-is a positive integer-kobo amount with a **direction** — a debit or a credit — against an
+is a positive integer-kobo amount with a **direction** (a debit or a credit) against an
 **account**. The direction, not a plus-or-minus sign, carries the meaning. A transaction is
 only valid if its debits equal its credits: the books always balance, by construction.
 
 For example, a paid ₦5,000 invoice posts a `charge` transaction that debits cash and
-credits the revenue it recognizes — every kobo accounted for, on both sides.
+credits the revenue it recognizes: every kobo accounted for, on both sides.
 
 ## Why this matters
 
 - **Nothing silently drifts.** A cached "balance" can be wrong; a ledger that must balance
 cannot hide a missing kobo. Balances are read from the ledger, not stored beside it.
-- **Every movement is auditable.** A refund, a credit grant, a settlement, a payout — each
+- **Every movement is auditable.** A refund, a credit grant, a settlement, a payout: each
 is a transaction you can trace, with legs that name exactly what moved and where.
 - **Reversals are first-class.** A refund does not "undo" a charge by mutation; it posts a
 new, balanced reversing transaction, so the history stays complete and honest.
@@ -33,7 +33,7 @@ new, balanced reversing transaction, so the history stays complete and honest.
 > **One reference ties it together**
 >
 > A resource, its ledger postings, and its webhooks all share one public reference (`nbo…`).
-> Given an invoice reference you can find its charge, its settlement, and its events — one
+> Given an invoice reference you can find its charge, its settlement, and its events: one
 > concept, one name, [everywhere](/reference/glossary).
 
 ## Idempotency lives here too
@@ -41,9 +41,9 @@ new, balanced reversing transaction, so the history stays complete and honest.
 Because the ledger is the source of truth, idempotency is enforced against it: a money
 movement claims its effect atomically, so a retried or replayed request resolves to exactly
 one posting. This is how "[retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)"
-stays true — the ledger only ever records the movement once.
+stays true: the ledger only ever records the movement once.
 
 Send the same `Idempotency-Key` twice and you get one subscription back; change the key and
 you get a new one. Try it:
 
-> **Interactive — `<IdempotencyLab>`.** View and run it live at https://docs.nombaone.xyz/concepts/the-ledger
+> **Interactive: `<IdempotencyLab>`.** View and run it live at https://docs.nombaone.xyz/concepts/the-ledger

@@ -1,6 +1,6 @@
 ---
 title: Delivery guarantee
-description: Delivery is at-least-once, never exactly-once. The same event can arrive twice — dedupe on the event id and make every handler idempotent.
+description: Delivery is at-least-once, never exactly-once. The same event can arrive twice. Dedupe on the event id and make every handler idempotent.
 section: webhooks
 order: 4
 ---
@@ -8,12 +8,12 @@ order: 4
 nombaone guarantees **at-least-once** delivery, and says so on every delivery in
 the `X-Nombaone-Delivery-Guarantee` header. That is a deliberate, honest choice:
 exactly-once delivery over an unreliable network is not achievable, and any API
-that claims it is lying. What we give you instead is a guarantee you can build on
-— plus the one tool that makes it safe: a stable event id to dedupe on.
+that claims it is lying. What we give you instead is a guarantee you can build on,
+plus the one tool that makes it safe: a stable event id to dedupe on.
 
 ## What at-least-once means for you
 
-The same event **can** arrive more than once — a retry after a slow response, a
+The same event **can** arrive more than once: a retry after a slow response, a
 network hiccup, a redelivery. Your handler must treat a repeat as a no-op.
 
 <Callout type="warning" title="Dedupe on the event id, after verifying">
@@ -23,14 +23,14 @@ network hiccup, a redelivery. Your handler must treat a repeat as a no-op.
 </Callout>
 
 ```ts
-if (await seen(event.id)) return respond(200); // already handled — no-op
+if (await seen(event.id)) return respond(200); // already handled, no-op
 await markSeen(event.id);
 await handle(event);
 ```
 
 ## Why idempotency has to go all the way down
 
-Deduping at the edge is not enough on its own — the work the handler triggers
+Deduping at the edge is not enough on its own: the work the handler triggers
 must itself be idempotent, because
 [retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge).
 If a duplicate `invoice.paid` slips through, crediting a balance twice is a real
@@ -44,11 +44,11 @@ posting.
   schedule. Return `2xx` quickly and do the work async so a slow handler doesn't
   trigger avoidable retries.
 - **Ordering is not guaranteed.** Events can arrive out of order. Don't assume
-  `invoice.paid` lands before `subscription.activated` — reconcile against the
+  `invoice.paid` lands before `subscription.activated`. Reconcile against the
   resource (`GET`) when order matters, rather than inferring state from event
   sequence.
 - **Replay.** You can re-request a past delivery with
-  `POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay` — the same event id,
+  `POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`: the same event id,
   so your dedupe correctly treats it as already-seen.
 
 <CardGroup cols={2}>

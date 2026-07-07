@@ -14,6 +14,7 @@ import {
 
 import { BrandMark } from "./brand-mark";
 import { SidebarNav } from "./sidebar-nav";
+import { TopNav } from "./top-nav";
 
 /**
  * Mobile sidebar drawer: the hamburger trigger (shown < lg) opens an
@@ -38,6 +39,9 @@ export function MobileNav() {
             Browse the Nombaone documentation.
           </SheetDescription>
           <BrandMark />
+        </div>
+        <div className="border-b border-border px-3 py-3">
+          <TopNav variant="dropdown" onNavigate={() => setOpen(false)} />
         </div>
         <SidebarNav onNavigate={() => setOpen(false)} />
       </SheetContent>

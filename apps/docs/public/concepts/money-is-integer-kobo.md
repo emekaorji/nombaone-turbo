@@ -12,14 +12,14 @@ decimal strings, and no ambiguity: `₦1 = 100 kobo`, so `250000` is ₦2,500.00
 
 ## Why kobo, and why integers
 
-Floating-point money is a correctness bug waiting to happen — `0.1 + 0.2` is not `0.3`,
+Floating-point money is a correctness bug waiting to happen: `0.1 + 0.2` is not `0.3`,
 and rounding errors accumulate across a subscription's lifetime. Integer minor units make
 arithmetic exact and auditable. The [ledger](/concepts/the-ledger) stores integer kobo,
 the API speaks integer kobo, and the two can never disagree.
 
 ## Every money field says its unit
 
-To make the unit impossible to mistake, **every money field name ends in `InKobo`** —
+To make the unit impossible to mistake, **every money field name ends in `InKobo`**:
 `amountInKobo`, `unitAmountInKobo`, `totalInKobo`, `amountDueInKobo`, and so on. If a field
 carries money, its name tells you the unit. You never have to guess.
 
@@ -38,8 +38,8 @@ Here is the one place the unit changes, and we handle it so you never have to. N
 checkout surface reports amounts in **naira**, while our engine and ledger are integer
 **kobo**. If those two were ever confused, a charge would be off by 100×.
 
-Nomba One converts **only at the Nomba boundary** — kobo → naira on the way out to Nomba,
-naira → kobo on the way back — and never anywhere else. Inside your integration, and
+Nomba One converts **only at the Nomba boundary** (kobo → naira on the way out to Nomba,
+naira → kobo on the way back) and never anywhere else. Inside your integration, and
 everywhere in this API, it is always integer kobo.
 
 > **The 100× trap**
@@ -48,12 +48,12 @@ everywhere in this API, it is always integer kobo.
 > by 100×. Send integer kobo. `₦2,500` is `250000`, not `2500`. When in doubt, multiply the
 > naira figure by 100 and send that.
 
-Try it — type a naira amount and see the exact integer kobo to send:
+Try it. Type a naira amount and see the exact integer kobo to send:
 
-> **Interactive — `<MoneyUnit>`.** View and run it live at https://docs.nombaone.xyz/concepts/money-is-integer-kobo
+> **Interactive: `<MoneyUnit>`.** View and run it live at https://docs.nombaone.xyz/concepts/money-is-integer-kobo
 
 ## Rounding
 
 Proration and percentage discounts can produce fractional kobo. Nomba One resolves these in
-the ledger with a fixed, documented order so the legs always balance to the exact kobo —
-see [proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem).
+the ledger with a fixed, documented order so the legs always balance to the exact kobo.
+See [proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem).

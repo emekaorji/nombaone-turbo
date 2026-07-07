@@ -1,25 +1,25 @@
 ---
 title: Nomba One
-description: Turn moving money once into running a subscription business — plans, cycles, proration, dunning, reconciliation, and settlement over every rail, built for how money actually moves in Nigeria.
+description: "Turn moving money once into running a subscription business: plans, cycles, proration, dunning, reconciliation, and settlement over every rail, built for how money actually moves in Nigeria."
 toc: false
 order: 0
 ---
 
 Nomba ships the primitives that move money. **Nomba One** is the layer that turns
-moving money _once_ into running a subscription business — plans, cycles, proration,
-dunning, reconciliation, and settlement — so no team rebuilds it again. It runs over
+moving money _once_ into running a subscription business (plans, cycles, proration,
+dunning, reconciliation, and settlement), so no team rebuilds it again. It runs over
 every rail (card, direct debit, transfer, crypto) and is built for how money actually
 moves here: thin balances, transfer-first, where a failed charge usually means
 _"not yet,"_ not _"no."_
 
 These docs are **runnable and honest**. You can watch a subscription bill, fail on a
-thin balance, and recover through dunning — against a real sandbox, in your own
-devtools — before you write a line. Every error tells you exactly what to do, and the
+thin balance, and recover through dunning (against a real sandbox, in your own
+devtools) before you write a line. Every error tells you exactly what to do, and the
 hard parts (dunning, reconciliation, the double-charge trap) are documented in the open.
 
 <Callout type="note" title="Money is integer kobo">
   Every amount in the API is an integer in **kobo** (₦1 = 100 kobo). `250000` is
-  ₦2,500.00 — no floats, no decimal strings. Every money field is named `…InKobo`
+  ₦2,500.00. No floats, no decimal strings. Every money field is named `…InKobo`
   so the unit is impossible to mistake.
 </Callout>
 
@@ -39,7 +39,7 @@ hard parts (dunning, reconciliation, the double-charge trap) are documented in t
 
 ## Built to be verified, not trusted
 
-The rest of these docs are on the way — the full guides, the interactive subscription
-simulator, the error reference, and the honest **hard parts** — each one runnable
+The rest of these docs are on the way (the full guides, the interactive subscription
+simulator, the error reference, and the honest **hard parts**), each one runnable
 against the sandbox so you can prove it works rather than take our word for it. Start
 with the quickstart above; you will hit a real `201` before you commit to anything.

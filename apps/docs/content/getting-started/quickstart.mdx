@@ -12,7 +12,7 @@ in sandbox mode.
   <Step title="Create an organization and get a sandbox key">
     Sign up and your organization is provisioned with a **sandbox** secret key that
     looks like `nbo_sandbox_…`. This key is scoped to your organization and pinned
-    to sandbox mode — it can only ever touch sandbox data. Keep it
+    to sandbox mode: it can only ever touch sandbox data. Keep it
     server-side; never ship it to a browser or a mobile app.
   </Step>
   <Step title="Send your first request">
@@ -31,7 +31,7 @@ in sandbox mode.
   <Step title="Read the response">
     A success returns the standard envelope: `success`, a `statusCode`, the
     resource in `data`, and a `meta.requestId` you can quote in support
-    requests. The resource's `id` is its **reference** — the stable public id
+    requests. The resource's `id` is its **reference**: the stable public id
     that also joins its ledger postings and webhooks.
 
     ```json
@@ -59,14 +59,14 @@ in sandbox mode.
 
 ## Pick your stack
 
-Each is a self-contained path to a real `201` in your own language — no monolithic
+Each is a self-contained path to a real `201` in your own language. No monolithic
 tutorial in a stack you don't use.
 
 <QuickstartGrid />
 
 ## In your language
 
-The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.
+The same first call (creating a plan) in cURL, Node, Python, Go, PHP, or Ruby.
 Pick your tab; it's remembered across the docs.
 
 <Snippet method="POST" path="/v1/plans" body={{ name: "Pro" }} idempotent />

@@ -1,11 +1,11 @@
 ---
 title: Sandbox payment methods
-description: Attach a deterministic payment method on the sandbox — its behavior decides the outcome, so you can rehearse success, decline, and card-OTP paths on demand.
+description: "Attach a deterministic payment method on the sandbox: its behavior decides the outcome, so you can rehearse success, decline, and card-OTP paths on demand."
 section: sandbox-toolkit
 order: 2
 ---
 
-In live, whether a charge succeeds depends on the customer's real card and bank —
+In live, whether a charge succeeds depends on the customer's real card and bank,
 which you can't control while testing. On the sandbox, you attach a **deterministic**
 payment method whose `behavior` decides the outcome every time. This is how you
 rehearse the unhappy paths a happy demo skips.
@@ -30,16 +30,16 @@ every cycle.
 | `success` | The charge is accepted. | The happy path. |
 | `requires_otp` | The charge needs customer authentication (OTP/3DS). | The card-OTP → checkout-link branch. |
 | `decline_insufficient_funds` | Declined for a thin balance. | [Dunning](/guides/dunning-and-recovery) on a "not yet." |
-| `decline_expired_card` | Declined — the card expired. | A card-update prompt. |
+| `decline_expired_card` | Declined: the card expired. | A card-update prompt. |
 | `decline_do_not_honor` | Declined by the issuer generically. | A hard decline. |
 
-`kind` is `card` or `mandate` — use `mandate` to rehearse the silent direct-debit
+`kind` is `card` or `mandate`. Use `mandate` to rehearse the silent direct-debit
 rail, `card` for the OTP-prone one.
 
 <Callout type="note" title="requires_otp is the one to rehearse most">
   A recurring card charge in Nigeria frequently hits OTP, and it can't complete
   headlessly. `requires_otp` lets you drive `invoice.action_required` and confirm
-  your handler sends the customer the fresh checkout link — see
+  your handler sends the customer the fresh checkout link. See
   [card tokens expire](/concepts/hard-parts/card-tokens-expire).
 </Callout>
 

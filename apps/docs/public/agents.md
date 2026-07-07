@@ -1,7 +1,7 @@
 ---
 title: "Agent-native docs"
 type: reference
-summary: "These docs are built to be read by machines as well as people — a clean Markdown mirror of every page, an llms.txt index, the full corpus in one file, and one-click copy-to-AI."
+summary: "These docs are built to be read by machines as well as people: a clean Markdown mirror of every page, an llms.txt index, the full corpus in one file, and one-click copy-to-AI."
 canonical: https://docs.nombaone.xyz/agents
 ---
 
@@ -9,10 +9,10 @@ canonical: https://docs.nombaone.xyz/agents
 
 Nomba One's docs are **docs-as-data**. Everything a human reads here is also
 available as clean Markdown at a predictable URL, indexed for language models,
-and generated from the same in-repo sources as the site — so the agent view can
+and generated from the same in-repo sources as the site, so the agent view can
 never drift from the human view.
 
-## Markdown mirror — append `.md` to any URL
+## Markdown mirror: append `.md` to any URL
 
 Every page has a Markdown twin. Take any docs URL and add `.md`:
 
@@ -32,30 +32,30 @@ is the exact text an agent should ingest.
 > clipboard, or opens the page directly in Claude or ChatGPT pre-loaded with the
 > mirror URL. One click from reading to asking.
 
-## llms.txt — the curated index
+## llms.txt: the curated index
 
 [`/llms.txt`](https://docs.nombaone.xyz/llms.txt) follows the
 [llms.txt convention](https://llmstxt.org): a short description of Nomba One, then
 every page grouped by section, each linking its `.md` mirror with a one-line
 summary. Point an agent at it to get an accurate map of the whole surface.
 
-## llms-full.txt — the whole corpus in one file
+## llms-full.txt: the whole corpus in one file
 
 [`/llms-full.txt`](https://docs.nombaone.xyz/llms-full.txt) is the entire
 documentation inlined into a single file: every page's Markdown, a compact
 rendering of **every API operation** (method, path, parameters), and **every
 public error code** with its fix. An agent given only this file can name the
 correct endpoint, the correct field, the correct unit (**integer kobo**), and the
-correct error code for a task — with nothing external to fetch.
+correct error code for a task, with nothing external to fetch.
 
 > **Generated, never hand-maintained**
 >
 > All three artifacts are built from the content tree, the API's OpenAPI
 > snapshot, and the error registry at build time. Add a page or change the API,
-> and they regenerate — the machine-readable docs stay in lockstep with the human
+> and they regenerate: the machine-readable docs stay in lockstep with the human
 > ones.
 
-## MCP — connect an agent directly
+## MCP: connect an agent directly
 
 Nomba One runs a read-only [Model Context Protocol](https://modelcontextprotocol.io)
 server so a coding agent can query the docs as tools, grounded in the same in-repo
@@ -65,7 +65,7 @@ sources. Point your client at:
 https://docs.nombaone.xyz/api/mcp
 ```
 
-It exposes five read-only tools — and, deliberately, no write or action tools, so
+It exposes five read-only tools and, deliberately, no write or action tools, so
 an agent can read but never move money:
 
 | Tool | What it does |
@@ -78,14 +78,14 @@ an agent can read but never move money:
 
 > **Read-only by design**
 >
-> The MCP server never executes API calls or moves money — running an endpoint
+> The MCP server never executes API calls or moves money. Running an endpoint
 > stays behind the test-keyed playground. The server is discoverable at
 > [`/.well-known/mcp.json`](https://docs.nombaone.xyz/.well-known/mcp.json).
 
-## Ask AI — grounded in these docs
+## Ask AI: grounded in these docs
 
 Every page has an **Ask AI** button. It answers only from this documentation and
-the API schema — the same corpus behind `llms-full.txt` and the MCP server — so it
+the API schema (the same corpus behind `llms-full.txt` and the MCP server), so it
 cites its sources, expresses money in integer kobo, and says "I don't have that in
 the docs" rather than inventing an endpoint. It's the fastest way to get a grounded
 answer without leaving the page.
@@ -93,14 +93,14 @@ answer without leaving the page.
 ## What's honest about this
 
 - **The same bytes.** The `.md` mirror is the same content the HTML renders, not a
-summary — no drift, no second source of truth.
+summary: no drift, no second source of truth.
 - **Grounded, not generated.** The operation list and error codes come from the
 real schema and registry, so an agent reading them won't invent an endpoint or
 a field.
 - **Integer kobo everywhere.** Money is always integer kobo in these docs and in
-the corpus — see [money is integer kobo](/concepts/money-is-integer-kobo).
+the corpus. See [money is integer kobo](/concepts/money-is-integer-kobo).
 
-- **[API reference](/reference/customers)** — 
+- **[API reference](/reference/customers)**: 
 Per-endpoint reference, generated from the same schema as llms-full.txt.
-- **[Error reference](/errors)** — 
-Every error code and its fix — the grounding for agent answers.
+- **[Error reference](/errors)**: 
+Every error code and its fix, the grounding for agent answers.

@@ -7,43 +7,43 @@
 ---
 title: "Nomba One"
 type: reference
-summary: "Turn moving money once into running a subscription business — plans, cycles, proration, dunning, reconciliation, and settlement over every rail, built for how money actually moves in Nigeria."
+summary: "Turn moving money once into running a subscription business: plans, cycles, proration, dunning, reconciliation, and settlement over every rail, built for how money actually moves in Nigeria."
 canonical: https://docs.nombaone.xyz/
 ---
 
 # Nomba One
 
 Nomba ships the primitives that move money. **Nomba One** is the layer that turns
-moving money _once_ into running a subscription business — plans, cycles, proration,
-dunning, reconciliation, and settlement — so no team rebuilds it again. It runs over
+moving money _once_ into running a subscription business (plans, cycles, proration,
+dunning, reconciliation, and settlement), so no team rebuilds it again. It runs over
 every rail (card, direct debit, transfer, crypto) and is built for how money actually
 moves here: thin balances, transfer-first, where a failed charge usually means
 _"not yet,"_ not _"no."_
 
 These docs are **runnable and honest**. You can watch a subscription bill, fail on a
-thin balance, and recover through dunning — against a real sandbox, in your own
-devtools — before you write a line. Every error tells you exactly what to do, and the
+thin balance, and recover through dunning (against a real sandbox, in your own
+devtools) before you write a line. Every error tells you exactly what to do, and the
 hard parts (dunning, reconciliation, the double-charge trap) are documented in the open.
 
 > **Money is integer kobo**
 >
 > Every amount in the API is an integer in **kobo** (₦1 = 100 kobo). `250000` is
-> ₦2,500.00 — no floats, no decimal strings. Every money field is named `…InKobo`
+> ₦2,500.00. No floats, no decimal strings. Every money field is named `…InKobo`
 > so the unit is impossible to mistake.
 
 ## Start here
 
-- **[Quickstart](/getting-started/quickstart)** — 
+- **[Quickstart](/getting-started/quickstart)**: 
 Get a sandbox key and reach your first real subscription in minutes.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The per-organization `nbo_sandbox_` / `nbo_live_` secret key, and how it works.
-- **[Environments](/getting-started/environments)** — 
+- **[Environments](/getting-started/environments)**: 
 Sandbox vs live, and how a key pins every request to one mode.
 
 ## Built to be verified, not trusted
 
-The rest of these docs are on the way — the full guides, the interactive subscription
-simulator, the error reference, and the honest **hard parts** — each one runnable
+The rest of these docs are on the way (the full guides, the interactive subscription
+simulator, the error reference, and the honest **hard parts**), each one runnable
 against the sandbox so you can prove it works rather than take our word for it. Start
 with the quickstart above; you will hit a real `201` before you commit to anything.
 
@@ -52,7 +52,7 @@ with the quickstart above; you will hit a real `201` before you commit to anythi
 ---
 title: "Agent-native docs"
 type: reference
-summary: "These docs are built to be read by machines as well as people — a clean Markdown mirror of every page, an llms.txt index, the full corpus in one file, and one-click copy-to-AI."
+summary: "These docs are built to be read by machines as well as people: a clean Markdown mirror of every page, an llms.txt index, the full corpus in one file, and one-click copy-to-AI."
 canonical: https://docs.nombaone.xyz/agents
 ---
 
@@ -60,10 +60,10 @@ canonical: https://docs.nombaone.xyz/agents
 
 Nomba One's docs are **docs-as-data**. Everything a human reads here is also
 available as clean Markdown at a predictable URL, indexed for language models,
-and generated from the same in-repo sources as the site — so the agent view can
+and generated from the same in-repo sources as the site, so the agent view can
 never drift from the human view.
 
-## Markdown mirror — append `.md` to any URL
+## Markdown mirror: append `.md` to any URL
 
 Every page has a Markdown twin. Take any docs URL and add `.md`:
 
@@ -83,30 +83,30 @@ is the exact text an agent should ingest.
 > clipboard, or opens the page directly in Claude or ChatGPT pre-loaded with the
 > mirror URL. One click from reading to asking.
 
-## llms.txt — the curated index
+## llms.txt: the curated index
 
 [`/llms.txt`](https://docs.nombaone.xyz/llms.txt) follows the
 [llms.txt convention](https://llmstxt.org): a short description of Nomba One, then
 every page grouped by section, each linking its `.md` mirror with a one-line
 summary. Point an agent at it to get an accurate map of the whole surface.
 
-## llms-full.txt — the whole corpus in one file
+## llms-full.txt: the whole corpus in one file
 
 [`/llms-full.txt`](https://docs.nombaone.xyz/llms-full.txt) is the entire
 documentation inlined into a single file: every page's Markdown, a compact
 rendering of **every API operation** (method, path, parameters), and **every
 public error code** with its fix. An agent given only this file can name the
 correct endpoint, the correct field, the correct unit (**integer kobo**), and the
-correct error code for a task — with nothing external to fetch.
+correct error code for a task, with nothing external to fetch.
 
 > **Generated, never hand-maintained**
 >
 > All three artifacts are built from the content tree, the API's OpenAPI
 > snapshot, and the error registry at build time. Add a page or change the API,
-> and they regenerate — the machine-readable docs stay in lockstep with the human
+> and they regenerate: the machine-readable docs stay in lockstep with the human
 > ones.
 
-## MCP — connect an agent directly
+## MCP: connect an agent directly
 
 Nomba One runs a read-only [Model Context Protocol](https://modelcontextprotocol.io)
 server so a coding agent can query the docs as tools, grounded in the same in-repo
@@ -116,7 +116,7 @@ sources. Point your client at:
 https://docs.nombaone.xyz/api/mcp
 ```
 
-It exposes five read-only tools — and, deliberately, no write or action tools, so
+It exposes five read-only tools and, deliberately, no write or action tools, so
 an agent can read but never move money:
 
 | Tool | What it does |
@@ -129,14 +129,14 @@ an agent can read but never move money:
 
 > **Read-only by design**
 >
-> The MCP server never executes API calls or moves money — running an endpoint
+> The MCP server never executes API calls or moves money. Running an endpoint
 > stays behind the test-keyed playground. The server is discoverable at
 > [`/.well-known/mcp.json`](https://docs.nombaone.xyz/.well-known/mcp.json).
 
-## Ask AI — grounded in these docs
+## Ask AI: grounded in these docs
 
 Every page has an **Ask AI** button. It answers only from this documentation and
-the API schema — the same corpus behind `llms-full.txt` and the MCP server — so it
+the API schema (the same corpus behind `llms-full.txt` and the MCP server), so it
 cites its sources, expresses money in integer kobo, and says "I don't have that in
 the docs" rather than inventing an endpoint. It's the fastest way to get a grounded
 answer without leaving the page.
@@ -144,24 +144,24 @@ answer without leaving the page.
 ## What's honest about this
 
 - **The same bytes.** The `.md` mirror is the same content the HTML renders, not a
-summary — no drift, no second source of truth.
+summary: no drift, no second source of truth.
 - **Grounded, not generated.** The operation list and error codes come from the
 real schema and registry, so an agent reading them won't invent an endpoint or
 a field.
 - **Integer kobo everywhere.** Money is always integer kobo in these docs and in
-the corpus — see [money is integer kobo](/concepts/money-is-integer-kobo).
+the corpus. See [money is integer kobo](/concepts/money-is-integer-kobo).
 
-- **[API reference](/reference/customers)** — 
+- **[API reference](/reference/customers)**: 
 Per-endpoint reference, generated from the same schema as llms-full.txt.
-- **[Error reference](/errors)** — 
-Every error code and its fix — the grounding for agent answers.
+- **[Error reference](/errors)**: 
+Every error code and its fix, the grounding for agent answers.
 
 ---
 
 ---
 title: "Changelog"
 type: reference
-summary: "Every API change, dated, with migration notes. Follows Keep a Changelog — additions, changes, deprecations, and removals, newest first."
+summary: "Every API change, dated, with migration notes. Follows Keep a Changelog: additions, changes, deprecations, and removals, newest first."
 canonical: https://docs.nombaone.xyz/changelog
 ---
 
@@ -173,54 +173,54 @@ OpenAPI snapshot between releases, so it can't silently omit a change.
 
 > **How versioning works**
 >
-> The API is versioned by URL prefix (`/v1`). Additive changes — new endpoints,
-> new optional fields, new events — ship within `v1` and appear here under
+> The API is versioned by URL prefix (`/v1`). Additive changes (new endpoints,
+> new optional fields, new events) ship within `v1` and appear here under
 > **Added**. Anything that could break an integration waits for a new major version
 > and is called out explicitly.
 
-## 2026-07-01 — v1
+## 2026-07-01: v1
 
 The initial public release. The full subscription-billing surface over Nigerian
 rails.
 
 ### Added
 
-- **Plans & prices** — [`/v1/plans`](/reference/plans) and nested
+- **Plans & prices**: [`/v1/plans`](/reference/plans) and nested
 [`/v1/plans/{id}/prices`](/reference/prices): products, recurring amounts
 (integer kobo), intervals, and trials.
-- **Customers** — [`/v1/customers`](/reference/customers) with
+- **Customers**: [`/v1/customers`](/reference/customers) with
 [credit grants](/reference/credits) and [discounts](/reference/coupons).
-- **Subscriptions** — [`/v1/subscriptions`](/reference/subscriptions): the full
-lifecycle — create, change (with proration), pause, resume, cancel, resubscribe,
+- **Subscriptions**: [`/v1/subscriptions`](/reference/subscriptions): the full
+lifecycle: create, change (with proration), pause, resume, cancel, resubscribe,
 scheduled changes, upcoming-invoice preview, and dunning inspection.
-- **Payment methods** — [`/v1/payment-methods`](/reference/payment-methods):
+- **Payment methods**: [`/v1/payment-methods`](/reference/payment-methods):
 card setup, [mandates](/reference/mandates) (direct debit), and virtual accounts
-(bank transfer) — one subscription over any rail.
-- **Invoices** — [`/v1/invoices`](/reference/invoices): per-cycle invoices with
+(bank transfer). One subscription over any rail.
+- **Invoices**: [`/v1/invoices`](/reference/invoices): per-cycle invoices with
 line items, discounts, and credits, backed by a
 [double-entry ledger](/concepts/the-ledger).
-- **Coupons** — [`/v1/coupons`](/reference/coupons): percent or fixed discounts
+- **Coupons**: [`/v1/coupons`](/reference/coupons): percent or fixed discounts
 with a duration.
-- **Settlements** — [`/v1/settlements`](/reference/settlements): refunds (tenant
+- **Settlements**: [`/v1/settlements`](/reference/settlements): refunds (tenant
 leg only), escrow reads, and payouts to a bank account.
-- **Webhooks** — [`/v1/webhooks`](/reference/webhooks) with signed delivery, a full
+- **Webhooks**: [`/v1/webhooks`](/reference/webhooks) with signed delivery, a full
 [event catalog](/webhooks/event-catalog), deliveries, and replay.
-- **Events** — [`/v1/events`](/reference/events): the domain-event stream and its
+- **Events**: [`/v1/events`](/reference/events): the domain-event stream and its
 machine-readable catalog.
-- **Organization & metrics** — [`/v1/organization`](/reference/organization) and
+- **Organization & metrics**: [`/v1/organization`](/reference/organization) and
 [`/v1/metrics`](/reference/metrics): config, billing settings, MRR, churn, and the
 dunning funnel.
-- **Sandbox toolkit** — [`/v1/sandbox/*`](/sandbox-toolkit/overview): deterministic payment
+- **Sandbox toolkit**: [`/v1/sandbox/*`](/sandbox-toolkit/overview): deterministic payment
 methods, a sandbox clock, and on-demand signed webhook simulation (sandbox only).
-- **Agent-native docs** — a [Markdown mirror](/agents) of every page, `llms.txt`,
+- **Agent-native docs**: a [Markdown mirror](/agents) of every page, `llms.txt`,
 and `llms-full.txt`.
 
 ### Notes
 
-- **Money is integer kobo** throughout — every money field ends in `InKobo`. See
+- **Money is integer kobo** throughout: every money field ends in `InKobo`. See
 [money is integer kobo](/concepts/money-is-integer-kobo).
-- **Idempotency** — every money-moving `POST` accepts an `Idempotency-Key`.
-- **Delivery is at-least-once** — dedupe webhooks on the event id. See the
+- **Idempotency**: every money-moving `POST` accepts an `Idempotency-Key`.
+- **Delivery is at-least-once**: dedupe webhooks on the event id. See the
 [delivery guarantee](/webhooks/delivery-guarantee).
 
 > **Subscribe to changes**
@@ -233,8 +233,8 @@ and `llms-full.txt`.
 
 ---
 title: "The hard parts"
-type: explanation
-summary: "The parts of subscription billing that are genuinely hard — and how Nomba One handles each. Honest essays on the traps most billing systems hide until you hit them in production."
+type: reference
+summary: "The parts of subscription billing that are genuinely hard, and how Nomba One handles each. Honest essays on the traps most billing systems hide until you hit them in production."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts
 ---
 
@@ -242,20 +242,20 @@ canonical: https://docs.nombaone.xyz/concepts/hard-parts
 
 Most billing docs show you the happy path and go quiet on the rest. These essays
 do the opposite: each one takes a part of subscription billing that is genuinely
-hard — especially in Nigeria, where money arrives by transfer and balances are
-thin — and explains the trap, why it's easy to get wrong, and how Nomba One
+hard (especially in Nigeria, where money arrives by transfer and balances are
+thin) and explains the trap, why it's easy to get wrong, and how Nomba One
 handles it. This is the reading that separates a toy from a billing system.
 
 ## Getting the money right
 
-The failures here are the expensive ones — a customer charged twice, a proration
+The failures here are the expensive ones: a customer charged twice, a proration
 off by a kobo, a webhook replay that credits a balance again.
 
-- **[The double-charge trap](/concepts/hard-parts/the-double-charge-bug)** — 
+- **[The double-charge trap](/concepts/hard-parts/the-double-charge-bug)**: 
 Why a billing loop that occasionally double-charges is worthless, and how idempotency prevents it.
-- **[Proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem)** — 
+- **[Proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem)**: 
 How fractional kobo from a mid-cycle change resolve so the legs always balance.
-- **[Retrying the webhook ≠ retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)** — 
+- **[Retrying the webhook ≠ retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)**: 
 Why at-least-once delivery means your handler must be idempotent to the ledger.
 
 ## The Nigerian rails
@@ -263,27 +263,27 @@ Why at-least-once delivery means your handler must be idempotent to the ledger.
 Card-on-file-with-a-full-balance is a foreign assumption. Here money is pushed by
 transfer, cards need OTP, and a failed charge usually means "not yet."
 
-- **[Bank transfer isn't a 'method'](/concepts/hard-parts/bank-transfer-is-not-just-another-method)** — 
+- **[Bank transfer isn't a 'method'](/concepts/hard-parts/bank-transfer-is-not-just-another-method)**: 
 Why a pushed rail can't be pulled, and what "collect" means when the customer initiates.
-- **[Card tokens expire](/concepts/hard-parts/card-tokens-expire)** — 
+- **[Card tokens expire](/concepts/hard-parts/card-tokens-expire)**: 
 Why a recurring card charge hits OTP, and the checkout-link recovery model.
-- **[Mandates and consent](/concepts/hard-parts/mandates-and-consent)** — 
-The direct-debit lifecycle — create, consent, activate, debit — and its async gap.
-- **[When a transfer doesn't match the invoice](/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice)** — 
-Underpayment, overpayment, and the wrong reference — a real case, not an edge.
-- **[Dunning for thin balances](/concepts/hard-parts/dunning-for-thin-balances)** — 
+- **[Mandates and consent](/concepts/hard-parts/mandates-and-consent)**: 
+The direct-debit lifecycle (create, consent, activate, debit) and its async gap.
+- **[When a transfer doesn't match the invoice](/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice)**: 
+Underpayment, overpayment, and the wrong reference: a real case, not an edge.
+- **[Dunning for thin balances](/concepts/hard-parts/dunning-for-thin-balances)**: 
 Why payday-timed retries beat fixed schedules when balances are thin.
 
 ## Time, cycles, and churn
 
-Billing is a scheduling problem, and calendars are hostile — months have different
+Billing is a scheduling problem, and calendars are hostile: months have different
 lengths, and subscriptions end in two very different ways.
 
-- **[The end-of-month billing trap](/concepts/hard-parts/the-end-of-month-billing-trap)** — 
+- **[The end-of-month billing trap](/concepts/hard-parts/the-end-of-month-billing-trap)**: 
 What "bill on the 31st" means in February, and how the anchor is preserved.
-- **[Voluntary vs involuntary churn](/concepts/hard-parts/voluntary-vs-involuntary-churn)** — 
-Why the two are different events with different handling — cancel vs recover.
-- **[A scheduler that survives a crash](/concepts/hard-parts/scheduler-that-survives-a-crash)** — 
+- **[Voluntary vs involuntary churn](/concepts/hard-parts/voluntary-vs-involuntary-churn)**: 
+Why the two are different events with different handling: cancel vs recover.
+- **[A scheduler that survives a crash](/concepts/hard-parts/scheduler-that-survives-a-crash)**: 
 How the billing loop resumes exactly-once after a mid-run failure.
 
 ## Multi-tenancy and trust
@@ -291,23 +291,23 @@ How the billing loop resumes exactly-once after a mid-run failure.
 If you run billing for many merchants, isolation and settlement stop being
 features and become the whole product.
 
-- **[Settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets)** — 
+- **[Settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets)**: 
 Matching money to merchants at scale, without a reconciliation nightmare.
-- **[Isolation is a data-model property](/concepts/hard-parts/isolation-is-a-data-model-property)** — 
+- **[Isolation is a data-model property](/concepts/hard-parts/isolation-is-a-data-model-property)**: 
 Why multi-tenancy has to be built into the schema, not bolted on with filters.
-- **[What to check before you trust a billing layer](/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer)** — 
+- **[What to check before you trust a billing layer](/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer)**: 
 The questions to ask any billing system before you route real money through it.
 
 > **Start with the concepts**
 >
 > New here? Read [how billing works](/concepts/how-billing-works) and
-> [the ledger](/concepts/the-ledger) first — the hard parts build on them.
+> [the ledger](/concepts/the-ledger) first. The hard parts build on them.
 
 ---
 
 ---
 title: "Why bank transfer isn't just another payment method"
-type: explanation
+type: reference
 summary: "You can charge a card. You cannot charge a bank transfer. The whole billing model changes."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/bank-transfer-is-not-just-another-method
 ---
@@ -360,7 +360,7 @@ See [when a transfer does not match the invoice](/concepts/hard-parts/when-a-tra
 
 ---
 title: "Card tokens expire, and why blind retries waste your dunning window"
-type: explanation
+type: reference
 summary: "An expired card will never succeed on retry. Retrying it anyway burns the window you needed."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/card-tokens-expire
 ---
@@ -375,7 +375,7 @@ An expired card will never succeed on retry. Retrying it anyway burns the window
 
 ---
 title: "Dunning for thin balances: why payday-timed retries beat fixed schedules"
-type: explanation
+type: reference
 summary: "Most subscription churn in Nigeria is involuntary. A retry on the wrong day just burns an attempt."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/dunning-for-thin-balances
 ---
@@ -427,7 +427,7 @@ See the [dunning and recovery guide](/guides/dunning-and-recovery) and [start a 
 
 ---
 title: "Isolation as a property of the data model, not a middleware check"
-type: explanation
+type: reference
 summary: "If one forgotten route can leak another tenant's data, your isolation is a hope, not a guarantee."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/isolation-is-a-data-model-property
 ---
@@ -443,7 +443,7 @@ organization and environment columns on every row, scoped on every query from a 
 
 ---
 title: "Mandates and consent: the compliance shape of direct debit"
-type: explanation
+type: reference
 summary: "Direct debit is a pull rail, but only after a one-time consent that has its own lifecycle."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/mandates-and-consent
 ---
@@ -459,7 +459,7 @@ path is built and live-gated; write this once it is proven in production.
 
 ---
 title: "Proration is a ledger problem, not a math problem"
-type: explanation
+type: reference
 summary: "Mid-cycle plan changes are not a formula, they are entries that must balance to the kobo."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/proration-is-a-ledger-problem
 ---
@@ -475,7 +475,7 @@ arithmetic with a largest-remainder split; a downgrade banks a credit, it does n
 
 ---
 title: "\"Retry the webhook\" is not \"retry the charge\""
-type: explanation
+type: reference
 summary: "Redelivering a webhook and re-attempting a payment are different actions. Conflating them corrupts your money."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge
 ---
@@ -490,7 +490,7 @@ Redelivering a webhook and re-attempting a payment are different actions. Confla
 
 ---
 title: "Building a scheduler that survives a crash mid-run"
-type: explanation
+type: reference
 summary: "A scheduler that can be killed at any moment and still charges each subscription exactly once."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/scheduler-that-survives-a-crash
 ---
@@ -505,7 +505,7 @@ A scheduler that can be killed at any moment and still charges each subscription
 
 ---
 title: "Settlement without spreadsheets: splitting one charge across many payees"
-type: explanation
+type: reference
 summary: "One charge often belongs to several parties. Splitting it by hand is where money goes missing."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/settlement-without-spreadsheets
 ---
@@ -522,7 +522,7 @@ production.
 
 ---
 title: "The double-charge bug, and why idempotency keys aren't optional"
-type: explanation
+type: reference
 summary: "A retry or a crash turns one payment into two, and your customer notices before you do."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/the-double-charge-bug
 ---
@@ -584,7 +584,7 @@ See [the ledger](/concepts/the-ledger#idempotency-lives-here-too) for how idempo
 
 ---
 title: "The end-of-month billing trap (the Jan 31 problem)"
-type: explanation
+type: reference
 summary: "A subscription that starts on the 31st must not silently become a 28th-of-the-month subscription."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/the-end-of-month-billing-trap
 ---
@@ -600,7 +600,7 @@ anchors on the original day: a Jan 31 anchor bills Feb 28 or 29, then Mar 31 aga
 
 ---
 title: "Voluntary vs involuntary churn, and why conflating them corrupts your metrics"
-type: explanation
+type: reference
 summary: "A customer who quit and a customer lost to a failed retry are not the same number."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/voluntary-vs-involuntary-churn
 ---
@@ -615,7 +615,7 @@ A customer who quit and a customer lost to a failed retry are not the same numbe
 
 ---
 title: "What to check before you trust a billing layer with your revenue"
-type: explanation
+type: reference
 summary: "The demo always works. The questions that decide whether you keep your money are the ones a demo hides."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer
 ---
@@ -675,13 +675,13 @@ trust with your revenue.
 
 Read the exit criteria we hold ourselves to, or run the simulator and try to break it.
 
-See [the ledger](/concepts/the-ledger) — the source of truth — and [what to check before you trust a billing layer](/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer).
+See [the ledger](/concepts/the-ledger), the source of truth, and [what to check before you trust a billing layer](/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer).
 
 ---
 
 ---
 title: "When a transfer doesn't match the invoice amount"
-type: explanation
+type: reference
 summary: "The customer pays, but pays short, over, or late. What should the invoice do?"
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice
 ---
@@ -697,7 +697,7 @@ The customer pays, but pays short, over, or late. What should the invoice do?
 ---
 title: "How billing works"
 type: explanation
-summary: "Cycles, invoices, collection, and the state machine underneath a subscription — the shape of the whole engine in one page."
+summary: "Cycles, invoices, collection, and the state machine underneath a subscription: the shape of the whole engine in one page."
 canonical: https://docs.nombaone.xyz/concepts/how-billing-works
 ---
 
@@ -705,7 +705,7 @@ canonical: https://docs.nombaone.xyz/concepts/how-billing-works
 
 A subscription is a customer on a price, billed on a repeating cycle. Everything Nomba
 One does is in service of one loop: **open a cycle, produce an invoice, collect it, and
-record the truth in the ledger** — then do it again next period.
+record the truth in the ledger**, then do it again next period.
 
 ## The loop
 
@@ -716,10 +716,10 @@ due for the subscription's current price (applying any scheduled change, prorati
 trial that lands on this boundary).
 2. **An invoice is finalized.** Line items, discounts, credits, and the total are locked.
 A zero-amount invoice settles with no rail call at all.
-3. **Collection is attempted** over the subscription's payment method's rail — a card or
+3. **Collection is attempted** over the subscription's payment method's rail: a card or
 mandate is pulled; a transfer exposes where to pay and waits. The result is one of:
 **paid**, **past due** (a real failure reason to branch on), or **pending** (the money
-is in flight — a transfer, or a card that needs the customer to complete OTP).
+is in flight: a transfer, or a card that needs the customer to complete OTP).
 4. **The ledger records it.** Every movement is posted as balanced double-entry legs. The
 invoice, its postings, and its webhooks all share one public reference.
 5. **The period advances** and the next cycle is scheduled.
@@ -727,23 +727,23 @@ invoice, its postings, and its webhooks all share one public reference.
 > **Idempotent by construction**
 >
 > The whole loop is idempotent on `(subscription, period)`. Re-run it, crash halfway,
-> retry it — it resolves to exactly one invoice and at most one charge. This is the floor:
+> retry it. It resolves to exactly one invoice and at most one charge. This is the floor:
 > a billing engine that occasionally double-charges is worthless.
 
 ## The subscription state machine
 
-A subscription moves through a small, explicit set of states — and the unhappy ones are
+A subscription moves through a small, explicit set of states, and the unhappy ones are
 first-class, not afterthoughts:
 
-- **`trialing`** — a trial is running; no charge yet.
-- **`active`** — billing normally each cycle.
-- **`past_due`** — a charge failed; [dunning](/concepts/hard-parts/dunning-for-thin-balances)
+- **`trialing`**: a trial is running; no charge yet.
+- **`active`**: billing normally each cycle.
+- **`past_due`**: a charge failed; [dunning](/concepts/hard-parts/dunning-for-thin-balances)
 owns recovery.
-- **`paused`** — billing suspended on purpose.
-- **`canceled`** — ended; no further cycles.
+- **`paused`**: billing suspended on purpose.
+- **`canceled`**: ended; no further cycles.
 
-The transitions you must handle — a charge failing, a customer needing OTP, a recovery, a
-churn — each fire a webhook event you can branch on. Document your handlers for
+The transitions you must handle (a charge failing, a customer needing OTP, a recovery, a
+churn) each fire a webhook event you can branch on. Document your handlers for
 `invoice.payment_failed`, `invoice.action_required`, and `invoice.payment_recovered`, not
 just `invoice.paid`.
 
@@ -763,7 +763,7 @@ transitions={[
 { from: "trialing", to: "canceled", trigger: "Canceled during the trial", webhook: "subscription.canceled" },
 { from: "active", to: "past_due", trigger: "A cycle's charge fails", webhook: "invoice.payment_failed" },
 { from: "past_due", to: "active", trigger: "A dunning retry (or completed OTP) recovers the charge", webhook: "invoice.payment_recovered" },
-{ from: "past_due", to: "canceled", trigger: "Dunning is exhausted — involuntary churn", webhook: "subscription.churned" },
+{ from: "past_due", to: "canceled", trigger: "Dunning is exhausted: involuntary churn", webhook: "subscription.churned" },
 { from: "active", to: "paused", trigger: "Billing is suspended on purpose", webhook: "subscription.paused" },
 { from: "paused", to: "active", trigger: "Billing resumes", webhook: "subscription.resumed" },
 { from: "active", to: "canceled", trigger: "Canceled voluntarily", webhook: "subscription.canceled" },
@@ -775,7 +775,7 @@ transitions={[
 Billing engines from elsewhere assume a card on file and a full balance. Neither holds in
 Nigeria: money arrives by transfer, balances are thin, and a failed charge usually means
 *"not yet,"* not *"no."* The rest of these concept pages are about the parts that follow
-from that reality — the [ledger](/concepts/the-ledger), [integer kobo](/concepts/money-is-integer-kobo),
+from that reality: the [ledger](/concepts/the-ledger), [integer kobo](/concepts/money-is-integer-kobo),
 [multi-rail push/pull](/concepts/multi-rail-push-and-pull), and
 [settlement](/concepts/settlement-and-sub-accounts).
 
@@ -795,14 +795,14 @@ decimal strings, and no ambiguity: `₦1 = 100 kobo`, so `250000` is ₦2,500.00
 
 ## Why kobo, and why integers
 
-Floating-point money is a correctness bug waiting to happen — `0.1 + 0.2` is not `0.3`,
+Floating-point money is a correctness bug waiting to happen: `0.1 + 0.2` is not `0.3`,
 and rounding errors accumulate across a subscription's lifetime. Integer minor units make
 arithmetic exact and auditable. The [ledger](/concepts/the-ledger) stores integer kobo,
 the API speaks integer kobo, and the two can never disagree.
 
 ## Every money field says its unit
 
-To make the unit impossible to mistake, **every money field name ends in `InKobo`** —
+To make the unit impossible to mistake, **every money field name ends in `InKobo`**:
 `amountInKobo`, `unitAmountInKobo`, `totalInKobo`, `amountDueInKobo`, and so on. If a field
 carries money, its name tells you the unit. You never have to guess.
 
@@ -821,8 +821,8 @@ Here is the one place the unit changes, and we handle it so you never have to. N
 checkout surface reports amounts in **naira**, while our engine and ledger are integer
 **kobo**. If those two were ever confused, a charge would be off by 100×.
 
-Nomba One converts **only at the Nomba boundary** — kobo → naira on the way out to Nomba,
-naira → kobo on the way back — and never anywhere else. Inside your integration, and
+Nomba One converts **only at the Nomba boundary** (kobo → naira on the way out to Nomba,
+naira → kobo on the way back) and never anywhere else. Inside your integration, and
 everywhere in this API, it is always integer kobo.
 
 > **The 100× trap**
@@ -831,15 +831,15 @@ everywhere in this API, it is always integer kobo.
 > by 100×. Send integer kobo. `₦2,500` is `250000`, not `2500`. When in doubt, multiply the
 > naira figure by 100 and send that.
 
-Try it — type a naira amount and see the exact integer kobo to send:
+Try it. Type a naira amount and see the exact integer kobo to send:
 
-> **Interactive — `<MoneyUnit>`.** View and run it live at https://docs.nombaone.xyz/concepts/money-is-integer-kobo
+> **Interactive: `<MoneyUnit>`.** View and run it live at https://docs.nombaone.xyz/concepts/money-is-integer-kobo
 
 ## Rounding
 
 Proration and percentage discounts can produce fractional kobo. Nomba One resolves these in
-the ledger with a fixed, documented order so the legs always balance to the exact kobo —
-see [proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem).
+the ledger with a fixed, documented order so the legs always balance to the exact kobo.
+See [proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem).
 
 ---
 
@@ -852,7 +852,7 @@ canonical: https://docs.nombaone.xyz/concepts/multi-rail-push-and-pull
 
 # Multi-rail: push and pull
 
-Nomba One runs one subscription over every rail — card, direct debit, bank transfer, and
+Nomba One runs one subscription over every rail: card, direct debit, bank transfer, and
 crypto. But the rails are not interchangeable, and pretending they are is the most common
 way to get billing wrong here. The dividing line is **push vs pull**.
 
@@ -860,10 +860,10 @@ way to get billing wrong here. The dividing line is **push vs pull**.
 
 A **pull** rail lets the engine initiate the money movement on the billing date:
 
-- **Card** — charge a saved card token. In Nigeria a recurring card charge often hits a
-bank OTP/3-D Secure step-up, so it is not always silent — see
+- **Card**: charge a saved card token. In Nigeria a recurring card charge often hits a
+bank OTP/3-D Secure step-up, so it is not always silent. See
 [card tokens expire](/concepts/hard-parts/card-tokens-expire) and the OTP recovery model.
-- **Direct debit (mandate)** — pull from a bank account the customer has authorized with a
+- **Direct debit (mandate)**: pull from a bank account the customer has authorized with a
 [mandate](/concepts/hard-parts/mandates-and-consent). Reliable and silent once active.
 
 For a pull rail, "collect" means: attempt the debit, get an answer, record it.
@@ -871,20 +871,20 @@ For a pull rail, "collect" means: attempt the debit, get an answer, record it.
 ## Push rails: the customer initiates
 
 A **push** rail cannot be pulled. There is no API call that reaches into a customer's
-account and takes the money — **the customer has to send it**:
+account and takes the money. **The customer has to send it**:
 
-- **Bank transfer** — the most common way money moves in Nigeria. On the billing date the
+- **Bank transfer**: the most common way money moves in Nigeria. On the billing date the
 engine exposes *where to pay* (a virtual account) and then waits for the money to arrive.
 
 For a push rail, "collect" means: expose the pay instructions, and settle when a verified
-inbound event confirms the transfer — never on the raw notification alone. This is why
+inbound event confirms the transfer, never on the raw notification alone. This is why
 [a transfer that doesn't match the invoice](/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice)
 is a real case you must handle, not an edge.
 
 > **The rail abstraction**
 >
-> The core never learns a rail's name. It speaks one interface — "collect for this
-> reference" — and each rail adapts it. That is what lets the same subscription run over a
+> The core never learns a rail's name. It speaks one interface, "collect for this
+> reference", and each rail adapts it. That is what lets the same subscription run over a
 > card, a mandate, or a transfer, with the push/pull difference handled beneath you.
 
 Switch between the rails to see how the same "collect" verb plays out on each:
@@ -909,15 +909,15 @@ canonical: https://docs.nombaone.xyz/concepts/settlement-and-sub-accounts
 # Settlement & sub-accounts
 
 When a subscription charge is collected and verified, the money doesn't just sit in one
-pool — it **splits at collection** and settles to the right place. Nomba One is multi-tenant
+pool. It **splits at collection** and settles to the right place. Nomba One is multi-tenant
 by design: each organization's money is its own.
 
 ## Split at collection
 
 A verified collection is split into two legs, recorded in the [ledger](/concepts/the-ledger):
 
-- **The platform fee** — the fee your platform charges, computed by the fee engine.
-- **The organization's net** — what's left, which belongs to the merchant.
+- **The platform fee**: the fee your platform charges, computed by the fee engine.
+- **The organization's net**: what's left, which belongs to the merchant.
 
 The net settles to that organization's **Nomba sub-account**. The split is posted as
 balanced ledger legs, so gross always equals fee plus net, to the exact kobo.
@@ -926,24 +926,24 @@ balanced ledger legs, so gross always equals fee plus net, to the exact kobo.
 
 A **sub-account** is the organization's account on Nomba where its settled net lands.
 Multi-tenancy means one integration can run many merchants, each with their own sub-account,
-their own customers, and their own isolated money — see
+their own customers, and their own isolated money. See
 [isolation is a data-model property](/concepts/hard-parts/isolation-is-a-data-model-property).
 
 ## Escrow, refunds, and payouts
 
-Settled funds are not instantly withdrawable — a recent-settlement **escrow lock** holds
+Settled funds are not instantly withdrawable. A recent-settlement **escrow lock** holds
 them for a window so a refund can be clawed back before the money leaves:
 
-- **Refund** — reverses **only the organization's leg** back toward the payer; the platform
+- **Refund**: reverses **only the organization's leg** back toward the payer; the platform
 fee is non-refundable and is never touched. A refund posts a new reversing transaction, so
 the ledger stays complete.
-- **Payout** — withdraws the organization's available balance (settled net, minus the
+- **Payout**: withdraws the organization's available balance (settled net, minus the
 escrow lock and any minimum buffer) to a bank account.
 
 > **Never faked, never stranded**
 >
 > The provider legs of refunds and payouts are guarded: the ledger truth is always posted,
-> and the real Nomba transfer flips on only after live confirmation — with a compensating
+> and the real Nomba transfer flips on only after live confirmation, with a compensating
 > reversal if a transfer fails, so funds are never faked as sent and never stranded.
 
 For the operational reality of matching money to merchants without a spreadsheet, see
@@ -954,31 +954,31 @@ For the operational reality of matching money to merchants without a spreadsheet
 ---
 title: "The double-entry ledger"
 type: explanation
-summary: "The source of truth beneath every invoice, charge, refund, and settlement — how double-entry recording keeps the money provably correct."
+summary: "The source of truth beneath every invoice, charge, refund, and settlement: how double-entry recording keeps the money provably correct."
 canonical: https://docs.nombaone.xyz/concepts/the-ledger
 ---
 
 # The double-entry ledger
 
 Underneath every subscription, invoice, and payout is a **double-entry ledger**. It is the
-source of truth: not the invoice status, not a cached balance, not a webhook — the ledger.
+source of truth: not the invoice status, not a cached balance, not a webhook. The ledger.
 Every other number the API returns is derived from it.
 
 ## Debits and credits, not signs
 
 Each money movement is recorded as a **transaction** made of balanced **legs**. Every leg
-is a positive integer-kobo amount with a **direction** — a debit or a credit — against an
+is a positive integer-kobo amount with a **direction** (a debit or a credit) against an
 **account**. The direction, not a plus-or-minus sign, carries the meaning. A transaction is
 only valid if its debits equal its credits: the books always balance, by construction.
 
 For example, a paid ₦5,000 invoice posts a `charge` transaction that debits cash and
-credits the revenue it recognizes — every kobo accounted for, on both sides.
+credits the revenue it recognizes: every kobo accounted for, on both sides.
 
 ## Why this matters
 
 - **Nothing silently drifts.** A cached "balance" can be wrong; a ledger that must balance
 cannot hide a missing kobo. Balances are read from the ledger, not stored beside it.
-- **Every movement is auditable.** A refund, a credit grant, a settlement, a payout — each
+- **Every movement is auditable.** A refund, a credit grant, a settlement, a payout: each
 is a transaction you can trace, with legs that name exactly what moved and where.
 - **Reversals are first-class.** A refund does not "undo" a charge by mutation; it posts a
 new, balanced reversing transaction, so the history stays complete and honest.
@@ -986,7 +986,7 @@ new, balanced reversing transaction, so the history stays complete and honest.
 > **One reference ties it together**
 >
 > A resource, its ledger postings, and its webhooks all share one public reference (`nbo…`).
-> Given an invoice reference you can find its charge, its settlement, and its events — one
+> Given an invoice reference you can find its charge, its settlement, and its events: one
 > concept, one name, [everywhere](/reference/glossary).
 
 ## Idempotency lives here too
@@ -994,19 +994,43 @@ new, balanced reversing transaction, so the history stays complete and honest.
 Because the ledger is the source of truth, idempotency is enforced against it: a money
 movement claims its effect atomically, so a retried or replayed request resolves to exactly
 one posting. This is how "[retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)"
-stays true — the ledger only ever records the movement once.
+stays true: the ledger only ever records the movement once.
 
 Send the same `Idempotency-Key` twice and you get one subscription back; change the key and
 you get a new one. Try it:
 
-> **Interactive — `<IdempotencyLab>`.** View and run it live at https://docs.nombaone.xyz/concepts/the-ledger
+> **Interactive: `<IdempotencyLab>`.** View and run it live at https://docs.nombaone.xyz/concepts/the-ledger
+
+---
+
+---
+title: "Cookbook"
+type: reference
+summary: "Short, task-focused recipes for common Nomba One billing jobs, each a complete runnable path from a real problem to working code."
+canonical: https://docs.nombaone.xyz/cookbook
+---
+
+# Cookbook
+
+# Cookbook
+
+Task-focused recipes for common billing jobs on Nomba One. Each recipe is a short, self-contained path from a real problem to working code, with nothing left implicit.
+
+## Recipes are on the way
+
+We are still writing the first batch. Until they land, two places already cover the ground a recipe would:
+
+- The [guides](/guides/create-plans-and-prices) walk through the core flows, from creating a plan to going live, end to end.
+- The [API reference](/reference/customers) documents every endpoint a recipe would call, with a runnable request builder on each resource.
+
+Have a recipe you want first? Tell us on the [changelog](/changelog) thread, and we will prioritise it.
 
 ---
 
 ---
 title: "Error reference"
 type: reference
-summary: "Every error code, what it means, and exactly how to fix it — complete and always current, generated from the same registry the API answers with."
+summary: "Every error code, what it means, and exactly how to fix it, complete and always current, generated from the same registry the API answers with."
 canonical: https://docs.nombaone.xyz/errors
 ---
 
@@ -1014,7 +1038,7 @@ canonical: https://docs.nombaone.xyz/errors
 
 When a request fails, Nomba One returns a machine-readable `code`, a plain-English
 `hint`, and a `docUrl` that deep-links to the exact entry on this page. Branch on
-`error.code` — never on the message, which is for humans and may change.
+`error.code`, never on the message, which is for humans and may change.
 
 Every entry below is generated straight from the API's error registry, so this page can
 never omit or invent a code. The `docUrl` the API sends you (`…/errors#CODE`) lands right
@@ -1023,18 +1047,18 @@ on the matching entry.
 > **Errors are a feature**
 >
 > A good error tells you exactly what went wrong and what to do next. Every code here has
-> a `hint` written to be actioned — read it, branch on the code, and move on.
+> a `hint` written to be actioned: read it, branch on the code, and move on.
 
 Got an error response in hand? Paste it here to jump straight to the fix:
 
-> **Interactive — `<ErrorReference>`.** View and run it live at https://docs.nombaone.xyz/errors
+> **Interactive: `<ErrorReference>`.** View and run it live at https://docs.nombaone.xyz/errors
 
 ---
 
 ---
 title: "Authentication"
 type: tutorial
-summary: "Every request authenticates with your organization's secret key, sent as a Bearer token. The key's prefix pins it to one mode — sandbox or live."
+summary: "Every request authenticates with your organization's secret key, sent as a Bearer token. The key's prefix pins it to one mode: sandbox or live."
 canonical: https://docs.nombaone.xyz/getting-started/authentication
 ---
 
@@ -1047,7 +1071,7 @@ You send it as a Bearer token on every request:
 Authorization: Bearer nbo_sandbox_…
 ```
 
-There is no separate client id or signing step — the secret key both identifies
+There is no separate client id or signing step: the secret key both identifies
 your organization and proves the request is yours, so it must stay server-side.
 
 ## Key format
@@ -1060,7 +1084,7 @@ A secret key is a mode prefix followed by 256 bits of random body:
 | `nbo_live_` | Live | `nbo_live_x9y8z7w6…` |
 
 The full secret is shown to you **once**, at creation, and is never recoverable
-afterward — the API stores only a hash. If you lose it, rotate the key and
+afterward: the API stores only a hash. If you lose it, rotate the key and
 update your servers.
 
 > **Treat the secret key like a password**
@@ -1071,7 +1095,7 @@ update your servers.
 
 ## The key pins the mode
 
-The mode is not a separate parameter — it is **derived from the key's
+The mode is not a separate parameter: it is **derived from the key's
 prefix** and verified on every request. An `nbo_sandbox_` key can only ever touch
 sandbox data; an `nbo_live_` key can only touch live data. There is no way for one
 request to cross the boundary, which is why you can keep both keys side by side
@@ -1082,9 +1106,9 @@ practice.
 
 ## Authenticating a request
 
-The same authenticated request, in your language — switch the tab:
+The same authenticated request, in your language. Switch the tab:
 
-A missing, malformed, or revoked key returns `401 Unauthorized` — see
+A missing, malformed, or revoked key returns `401 Unauthorized`. See
 [`API_KEY_INVALID`](/errors#API_KEY_INVALID) for the fix. The error envelope:
 
 ```json
@@ -1103,7 +1127,7 @@ A missing, malformed, or revoked key returns `401 Unauthorized` — see
 
 Rotation issues a new secret and invalidates the old one. Because the key both
 authenticates and pins the mode, a rotated key keeps the same
-mode — a rotated sandbox key is still a sandbox key.
+mode: a rotated sandbox key is still a sandbox key.
 
 >
 > Roll keys on a schedule and on any suspected exposure. Update every server
@@ -1114,7 +1138,7 @@ mode — a rotated sandbox key is still a sandbox key.
 ---
 title: "Environments"
 type: tutorial
-summary: "Two independent axes — the deployment environment (development or production) is our infrastructure, and the account mode (sandbox or live) is set by your key's prefix and partitions your data."
+summary: "Two independent axes: the deployment environment (development or production) is our infrastructure, and the account mode (sandbox or live) is set by your key's prefix and partitions your data."
 canonical: https://docs.nombaone.xyz/getting-started/environments
 ---
 
@@ -1123,13 +1147,13 @@ canonical: https://docs.nombaone.xyz/getting-started/environments
 Most APIs jam two unrelated ideas into one "test/live" switch. nombaone keeps
 them separate, because they answer different questions:
 
-- **Deployment environment** — *where* the code runs. Our infrastructure concern.
-- **Account mode** — *which* data a request touches. Yours, chosen by your key.
+- **Deployment environment**: *where* the code runs. Our infrastructure concern.
+- **Account mode**: *which* data a request touches. Yours, chosen by your key.
 
 | Axis | Values | Set by | Do you see it? |
 |---|---|---|---|
-| Deployment environment | `development` · `production` | Our infrastructure (`INFRA_ENVIRONMENT`) | No — it's ours |
-| Account mode | `sandbox` · `live` | Your API key's prefix | Yes — you pick the key |
+| Deployment environment | `development` · `production` | Our infrastructure (`INFRA_ENVIRONMENT`) | No, it's ours |
+| Account mode | `sandbox` · `live` | Your API key's prefix | Yes, you pick the key |
 
 ## Account mode is the one you choose
 
@@ -1140,16 +1164,16 @@ You never pass a mode parameter:
 experiment.
 - `nbo_live_…` → **live** mode. Real organizations, real money movement.
 
-The two are fully isolated — separate data, separate balances, separate webhook
-endpoints — so you can hold both keys at once and a request can never cross from
+The two are fully isolated (separate data, separate balances, separate webhook
+endpoints), so you can hold both keys at once and a request can never cross from
 one mode into the other.
 
 ```bash
-# Sandbox — isolated data, no real money
+# Sandbox: isolated data, no real money
 curl https://sandbox.api.nombaone.xyz/v1/examples \
   -H "Authorization: Bearer nbo_sandbox_…"
 
-# Live — real money movement
+# Live: real money movement
 curl https://api.nombaone.xyz/v1/examples \
   -H "Authorization: Bearer nbo_live_…"
 ```
@@ -1164,11 +1188,11 @@ curl https://api.nombaone.xyz/v1/examples \
 The deployment environment is *where* nombaone itself runs, and it isn't
 something you configure:
 
-- **`development`** is local-only — the machine an engineer runs the service on.
+- **`development`** is local-only: the machine an engineer runs the service on.
 - **`production`** is the single hosted deployment that serves every merchant.
 
 One production deployment serves **both modes at once**. The mode comes from the
-key on each request, not from a separate deployment — there is no "sandbox server"
+key on each request, not from a separate deployment. There is no "sandbox server"
 and "live server" to point at. A `sandbox` key works everywhere; a `live` key
 only works against the production deployment.
 
@@ -1181,12 +1205,12 @@ only works against the production deployment.
 
 A clean integration keeps the two modes strictly separate:
 
-- **Configuration** — load the key from an environment variable
+- **Configuration**: load the key from an environment variable
 (`NOMBAONE_SECRET_KEY`) so the same code runs against sandbox in staging and
 live in production with no code change.
-- **Data** — sandbox references and live references are distinct; an id minted in
+- **Data**: sandbox references and live references are distinct; an id minted in
 sandbox will never resolve in live.
-- **Webhooks** — register endpoints per mode. A sandbox event is delivered only to
+- **Webhooks**: register endpoints per mode. A sandbox event is delivered only to
 your sandbox endpoint.
 
 > **Promote deliberately**
@@ -1195,16 +1219,16 @@ your sandbox endpoint.
 > your end-to-end checks after the swap: live has its own data, its own balances,
 > and moves real money.
 
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 How the key's prefix pins the mode, and how to keep it safe.
-- **[Going live](/guides/going-live)** — 
+- **[Going live](/guides/going-live)**: 
 The checklist to move from a sandbox key to real money.
 
 ---
 
 ---
 title: "Quickstart"
-type: tutorial
+type: reference
 summary: "Get a sandbox secret key and make your first authenticated call to the nombaone API."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart
 ---
@@ -1219,7 +1243,7 @@ in sandbox mode.
 
 Sign up and your organization is provisioned with a **sandbox** secret key that
 looks like `nbo_sandbox_…`. This key is scoped to your organization and pinned
-to sandbox mode — it can only ever touch sandbox data. Keep it
+to sandbox mode: it can only ever touch sandbox data. Keep it
 server-side; never ship it to a browser or a mobile app.
 
 ### Send your first request
@@ -1240,7 +1264,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
 
 A success returns the standard envelope: `success`, a `statusCode`, the
 resource in `data`, and a `meta.requestId` you can quote in support
-requests. The resource's `id` is its **reference** — the stable public id
+requests. The resource's `id` is its **reference**: the stable public id
 that also joins its ledger postings and webhooks.
 
 ```json
@@ -1266,27 +1290,27 @@ that also joins its ledger postings and webhooks.
 
 ## Pick your stack
 
-Each is a self-contained path to a real `201` in your own language — no monolithic
+Each is a self-contained path to a real `201` in your own language. No monolithic
 tutorial in a stack you don't use.
 
 ## In your language
 
-The same first call — creating a plan — in cURL, Node, Python, Go, PHP, or Ruby.
+The same first call (creating a plan) in cURL, Node, Python, Go, PHP, or Ruby.
 Pick your tab; it's remembered across the docs.
 
 ## Next steps
 
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The full rules for the per-organization secret key.
-- **[The example endpoint](/reference/examples)** — 
+- **[The example endpoint](/reference/examples)**: 
 The worked reference: every request and response field.
 
 ---
 
 ---
 title: "cURL quickstart"
-type: tutorial
-summary: "Reach a real 201 with cURL — create your first plan on the Nomba One sandbox in a few lines."
+type: reference
+summary: "Reach a real 201 with cURL: create your first plan on the Nomba One sandbox in a few lines."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart/curl
 ---
 
@@ -1298,27 +1322,27 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
 Just a shell. Export your key: `export NOMBAONE_SECRET_KEY=nbo_sandbox_…`.
 
 ## 2 · Create a plan
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`: its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next
 
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 The full plan → price → customer → subscription flow to a live 201.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The secret-key rules and how the prefix pins the environment.
 
 ---
 
 ---
 title: "Go quickstart"
-type: tutorial
-summary: "Reach a real 201 with Go — create your first plan on the Nomba One sandbox in a few lines."
+type: reference
+summary: "Reach a real 201 with Go: create your first plan on the Nomba One sandbox in a few lines."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart/go
 ---
 
@@ -1330,27 +1354,27 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
-Standard library only — `net/http`, no dependency. Read the key from `os.Getenv("NOMBAONE_SECRET_KEY")`.
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
+Standard library only: `net/http`, no dependency. Read the key from `os.Getenv("NOMBAONE_SECRET_KEY")`.
 
 ## 2 · Create a plan
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`, its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next
 
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 The full plan → price → customer → subscription flow to a live 201.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The secret-key rules and how the prefix pins the environment.
 
 ---
 
 ---
 title: "Next.js quickstart"
-type: tutorial
-summary: "Reach a real 201 with Next.js — create your first plan on the Nomba One sandbox in a few lines."
+type: reference
+summary: "Reach a real 201 with Next.js: create your first plan on the Nomba One sandbox in a few lines."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart/nextjs
 ---
 
@@ -1362,27 +1386,27 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
-Call from a **route handler** or server action — never the browser. `fetch` is built in; read the key from `process.env.NOMBAONE_SECRET_KEY`.
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
+Call from a **route handler** or server action, never the browser. `fetch` is built in; read the key from `process.env.NOMBAONE_SECRET_KEY`.
 
 ## 2 · Create a plan
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`, its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next
 
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 The full plan → price → customer → subscription flow to a live 201.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The secret-key rules and how the prefix pins the environment.
 
 ---
 
 ---
 title: "Node.js quickstart"
-type: tutorial
-summary: "Reach a real 201 with Node.js — create your first plan on the Nomba One sandbox in a few lines."
+type: reference
+summary: "Reach a real 201 with Node.js: create your first plan on the Nomba One sandbox in a few lines."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart/node
 ---
 
@@ -1394,27 +1418,27 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
-No SDK needed — Node 18+ has `fetch` built in. Load the key from `process.env.NOMBAONE_SECRET_KEY`.
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
+No SDK needed. Node 18+ has `fetch` built in. Load the key from `process.env.NOMBAONE_SECRET_KEY`.
 
 ## 2 · Create a plan
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`, its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next
 
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 The full plan → price → customer → subscription flow to a live 201.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The secret-key rules and how the prefix pins the environment.
 
 ---
 
 ---
 title: "PHP quickstart"
-type: tutorial
-summary: "Reach a real 201 with PHP — create your first plan on the Nomba One sandbox in a few lines."
+type: reference
+summary: "Reach a real 201 with PHP: create your first plan on the Nomba One sandbox in a few lines."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart/php
 ---
 
@@ -1426,27 +1450,27 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
 The `curl` extension ships with PHP. Read the key from `getenv("NOMBAONE_SECRET_KEY")`.
 
 ## 2 · Create a plan
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`, its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next
 
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 The full plan → price → customer → subscription flow to a live 201.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The secret-key rules and how the prefix pins the environment.
 
 ---
 
 ---
 title: "Python quickstart"
-type: tutorial
-summary: "Reach a real 201 with Python — create your first plan on the Nomba One sandbox in a few lines."
+type: reference
+summary: "Reach a real 201 with Python: create your first plan on the Nomba One sandbox in a few lines."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart/python
 ---
 
@@ -1458,27 +1482,27 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
 Install the HTTP client: `pip install requests`. Read the key from `NOMBAONE_SECRET_KEY`.
 
 ## 2 · Create a plan
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`, its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next
 
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 The full plan → price → customer → subscription flow to a live 201.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The secret-key rules and how the prefix pins the environment.
 
 ---
 
 ---
 title: "Ruby quickstart"
-type: tutorial
-summary: "Reach a real 201 with Ruby — create your first plan on the Nomba One sandbox in a few lines."
+type: reference
+summary: "Reach a real 201 with Ruby: create your first plan on the Nomba One sandbox in a few lines."
 canonical: https://docs.nombaone.xyz/getting-started/quickstart/ruby
 ---
 
@@ -1490,19 +1514,19 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
-Standard library only — `net/http`. Read the key from `ENV['NOMBAONE_SECRET_KEY']`.
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
+Standard library only: `net/http`. Read the key from `ENV['NOMBAONE_SECRET_KEY']`.
 
 ## 2 · Create a plan
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`: its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next
 
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 The full plan → price → customer → subscription flow to a live 201.
-- **[Authentication](/getting-started/authentication)** — 
+- **[Authentication](/getting-started/authentication)**: 
 The secret-key rules and how the prefix pins the environment.
 
 ---
@@ -1510,7 +1534,7 @@ The secret-key rules and how the prefix pins the environment.
 ---
 title: "Verify us in your devtools"
 type: tutorial
-summary: "The sandbox sends no organic webhooks, so we hand you a real signed event — register an endpoint, fire it, and watch the signature verify in your own logs."
+summary: "The sandbox sends no organic webhooks, so we hand you a real signed event: register an endpoint, fire it, and watch the signature verify in your own logs."
 canonical: https://docs.nombaone.xyz/getting-started/verify-in-your-devtools
 ---
 
@@ -1518,7 +1542,7 @@ canonical: https://docs.nombaone.xyz/getting-started/verify-in-your-devtools
 
 Here is the honest truth most payment docs won't tell you: the Nomba sandbox
 does **not** push webhooks on its own. So instead of pretending, we hand you a
-**real, signed event** — byte-for-byte identical to production — that you fire on
+**real, signed event**, byte-for-byte identical to production, that you fire on
 demand and watch land in your own tunnel. This page proves the pipe end to end:
 register → fire → verify.
 
@@ -1527,7 +1551,7 @@ register → fire → verify.
 > The event you fire below is a genuine signed payload from the sandbox instrument,
 > the same shape and the same signature scheme as a live event. Nothing here is
 > faked or `setTimeout`-ed. `simulate` is the honest substitute for organic
-> sandbox delivery — it is sandbox-mode-only and at-least-once (dedupe on the
+> sandbox delivery. It is sandbox-mode-only and at-least-once (dedupe on the
 > event id).
 
 ## 1 · Register an endpoint
@@ -1546,7 +1570,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 The response includes the endpoint's **signing secret** (`whsec_…`), shown once.
-Store it server-side — you need it to verify every delivery.
+Store it server-side. You need it to verify every delivery.
 
 ## 2 · Fire a real signed event
 
@@ -1579,19 +1603,19 @@ production sends.
 
 Never trust a webhook you haven't verified. Every delivery is signed
 `HMAC_SHA256(` `${timestamp}.${rawBody}` `, secret)` over the **raw** request
-body — verify before you parse. Compare in constant time.
+body. Verify before you parse. Compare in constant time.
 
 > **Verify the raw bytes, before parsing**
 >
 > Compute the HMAC over the exact bytes you received, not over a re-serialized
-> object — `JSON.parse` then `JSON.stringify` can reorder keys and change the
+> object: `JSON.parse` then `JSON.stringify` can reorder keys and change the
 > bytes, and the signature will no longer match. Read the raw body first.
 
-Here is the verifier, running the real recipe in your browser with Web Crypto —
-paste a body, timestamp, and secret and watch it compute the signature the
+Here is the verifier, running the real recipe in your browser with Web Crypto.
+Paste a body, timestamp, and secret and watch it compute the signature the
 server expects:
 
-> **Interactive — `<WebhookVerifier>`.** View and run it live at https://docs.nombaone.xyz/getting-started/verify-in-your-devtools
+> **Interactive: `<WebhookVerifier>`.** View and run it live at https://docs.nombaone.xyz/getting-started/verify-in-your-devtools
 
 The reference implementation for your server:
 
@@ -1628,14 +1652,14 @@ def verify(raw_body: bytes, header: str, secret: str) -> None:
 
 ## Then respond fast, and dedupe
 
-Return `2xx` quickly and do the work asynchronously — a slow handler looks like a
+Return `2xx` quickly and do the work asynchronously. A slow handler looks like a
 failure and gets retried. Because delivery is at-least-once, **dedupe on the
 event id**: the same event may arrive twice, and
 [retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge).
 
-- **[Handle webhooks (guide)](/guides/handle-webhooks)** — 
+- **[Handle webhooks (guide)](/guides/handle-webhooks)**: 
 The full receive → verify → dedupe → act pattern for one correct balance.
-- **[Event catalog](/webhooks/event-catalog)** — 
+- **[Event catalog](/webhooks/event-catalog)**: 
 Every event type, when it fires, and its payload shape.
 
 ---
@@ -1643,30 +1667,30 @@ Every event type, when it fires, and its payload shape.
 ---
 title: "Your first subscription"
 type: tutorial
-summary: "Create a plan, a price, a customer, and a subscription that bills — five real calls to a live 201, end to end."
+summary: "Create a plan, a price, a customer, and a subscription that bills: five real calls to a live 201, end to end."
 canonical: https://docs.nombaone.xyz/getting-started/your-first-subscription
 ---
 
 # Your first subscription
 
 By the end of this page you will have a **real subscription** billing in sandbox
-mode — created with five calls, in about ten minutes, with no mocks. Each
+mode, created with five calls, in about ten minutes, with no mocks. Each
 call below is the genuine request your server will make in production; only the
 key (`nbo_sandbox_…`) and the host (`sandbox.api.nombaone.xyz`) change when you go
 live.
 
 The minimal path is four resources and one deterministic test card:
 
-1. a **plan** — the thing customers subscribe to,
-2. a **price** on that plan — how much, how often,
+1. a **plan**, the thing customers subscribe to,
+2. a **price** on that plan, how much, how often,
 3. a **customer**,
 4. a **test payment method** that succeeds on cue,
-5. the **subscription** — which produces the first invoice and collects it.
+5. the **subscription**, which produces the first invoice and collects it.
 
 > **Get a sandbox key first**
 >
 > Every call authenticates with `Authorization: Bearer nbo_sandbox_…`. If you don't
-> have a key yet, see [authentication](/getting-started/authentication) — it
+> have a key yet, see [authentication](/getting-started/authentication). It
 > takes one step. Keep the key server-side.
 
 ### Create a plan
@@ -1696,7 +1720,7 @@ const plan = await nbo("/v1/plans", {
 // plan.data.id → "nbo…pln"
 ```
 
-The response `data.id` is the plan's **reference** — save it; the next call
+The response `data.id` is the plan's **reference**. Save it; the next call
 needs it.
 
 ### Add a price
@@ -1725,7 +1749,7 @@ const price = await nbo(`/v1/plans/${plan.data.id}/prices`, {
 // price.data.id → "nbo…prc"
 ```
 
-> **Money is integer kobo — the 100× trap**
+> **Money is integer kobo: the 100× trap**
 >
 > Send `250000`, not `2500`. Every money field ends in `InKobo` so the unit
 > is never in doubt. Sending naira where kobo is expected overcharges by
@@ -1785,13 +1809,13 @@ const method = await nbo("/v1/sandbox/payment-methods", {
 > **Sandbox mode only**
 >
 > `POST /v1/sandbox/payment-methods` exists only in sandbox mode. In live, a
-> customer attaches a real card, mandate, or transfer instruction — see
+> customer attaches a real card, mandate, or transfer instruction. See
 > [multi-rail: push and pull](/concepts/multi-rail-push-and-pull).
 
 ### Start the subscription
 
 Put it together: subscribe the customer to the price, paying with the test
-method. This produces the **first invoice** and collects it — and because
+method. This produces the **first invoice** and collects it, and because
 the method is `success`, it comes back **active** with a paid invoice.
 
 **cURL**
@@ -1841,14 +1865,14 @@ A `201` with the standard envelope confirms it:
 }
 ```
 
-That's a real subscription. `data.id` is its public reference — the same id
+That's a real subscription. `data.id` is its public reference: the same id
 joins its invoices, its [ledger](/concepts/the-ledger) postings, and its
 webhooks.
 
 ## What just happened
 
 The subscription opened a cycle, finalized an invoice for ₦2,500, collected it
-over the test method, and posted the movement to the ledger — the whole
+over the test method, and posted the movement to the ledger: the whole
 [billing loop](/concepts/how-billing-works), once. Next period it runs again on
 its own.
 
@@ -1857,16 +1881,16 @@ its own.
 The four calls above are the happy path. The parts that make billing real in
 Nigeria are one link away:
 
-- **[When the charge fails](/concepts/hard-parts/dunning-for-thin-balances)** — 
+- **[When the charge fails](/concepts/hard-parts/dunning-for-thin-balances)**: 
 Thin balances mean a failed charge is usually "not yet," not "no." Dunning
 owns recovery.
-- **[Cards need OTP](/concepts/hard-parts/card-tokens-expire)** — 
+- **[Cards need OTP](/concepts/hard-parts/card-tokens-expire)**: 
 A recurring card charge in Nigeria often hits a bank OTP step. See how the
 engine recovers with a fresh checkout link.
-- **[Pick a rail](/concepts/multi-rail-push-and-pull)** — 
-Card, direct debit, and bank transfer bill differently — one is pushed, not
+- **[Pick a rail](/concepts/multi-rail-push-and-pull)**: 
+Card, direct debit, and bank transfer bill differently. One is pushed, not
 pulled.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Everything above fires an event. Receive, verify, and dedupe them to keep one
 correct balance.
 
@@ -1883,7 +1907,7 @@ correct balance.
 ---
 title: "Coupons and credits"
 type: how-to
-summary: "Two ways to reduce what a customer pays — a coupon discounts an invoice by a percentage or a fixed amount, a credit grant is a balance that draws down first."
+summary: "Two ways to reduce what a customer pays: a coupon discounts an invoice by a percentage or a fixed amount, a credit grant is a balance that draws down first."
 canonical: https://docs.nombaone.xyz/guides/coupons-and-credits
 ---
 
@@ -1943,7 +1967,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/discount \
 
 ## Grant a credit
 
-A credit is money on the customer's account that draws down before any charge —
+A credit is money on the customer's account that draws down before any charge,
 useful for refunds-as-credit, goodwill, or prepaid balances:
 
 ```bash
@@ -1957,24 +1981,24 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
 >
 > When an invoice is collected, available credit is applied before the rail is
 > charged, oldest grant first. The invoice shows the credit line and the reduced
-> amount actually charged — every kobo accounted for in the ledger.
+> amount actually charged, every kobo accounted for in the ledger.
 
-## Coupon vs credit — which to use
+## Coupon vs credit: which to use
 
-- **Coupon** — a *rule* that reduces the price (a promo, a discounted tier). It
+- **Coupon**: a *rule* that reduces the price (a promo, a discounted tier). It
 recomputes each cycle for its duration.
-- **Credit** — a *balance* that is spent once, then gone. Use it for refunds you
+- **Credit**: a *balance* that is spent once, then gone. Use it for refunds you
 want kept on-platform, or prepaid top-ups.
 
 > **They stack in a defined order**
 >
-> On one invoice, credits and coupons both apply — the discount reduces the
+> On one invoice, credits and coupons both apply: the discount reduces the
 > amount due, then credit draws down the remainder. The order is fixed and shown
 > on the invoice, so the result is never ambiguous.
 
-- **[The ledger](/concepts/the-ledger)** — 
+- **[The ledger](/concepts/the-ledger)**: 
 How discounts and credits post as auditable lines.
-- **[Start a subscription](/guides/start-a-subscription)** — 
+- **[Start a subscription](/guides/start-a-subscription)**: 
 Where a discounted subscription begins.
 
 ---
@@ -1982,7 +2006,7 @@ Where a discounted subscription begins.
 ---
 title: "Create plans and prices"
 type: how-to
-summary: "Model your pricing — plans hold the product, prices hold the money. Set intervals, trials, and multiple prices on one plan."
+summary: "Model your pricing: plans hold the product, prices hold the money. Set intervals, trials, and multiple prices on one plan."
 canonical: https://docs.nombaone.xyz/guides/create-plans-and-prices
 ---
 
@@ -2005,7 +2029,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
   -d '{ "name": "Pro", "description": "Everything in the Pro tier" }'
 ```
 
-The `data.id` is the plan's reference — you post prices to it.
+The `data.id` is the plan's reference: you post prices to it.
 
 ## Add a price
 
@@ -2024,18 +2048,18 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
   }'
 ```
 
-`250000` is ₦2,500.00. `intervalCount` multiplies the interval — `interval:
+`250000` is ₦2,500.00. `intervalCount` multiplies the interval. `interval:
 "month"` with `intervalCount: 3` bills quarterly.
 
 > **Money is integer kobo**
 >
-> Every money field ends in `InKobo`. Send `250000` for ₦2,500 — never `2500`.
+> Every money field ends in `InKobo`. Send `250000` for ₦2,500, never `2500`.
 > This is the [100× trap](/concepts/money-is-integer-kobo).
 
 ## Add a trial
 
 Set `trialPeriodDays` on the price. A subscription started on it enters
-`trialing` — no charge until the trial ends, then the first invoice is collected.
+`trialing`: no charge until the trial ends, then the first invoice is collected.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
@@ -2046,11 +2070,11 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
 
 ## Multiple prices on one plan
 
-Create as many prices on a plan as you sell it — monthly and yearly, NGN tiers,
+Create as many prices on a plan as you sell it: monthly and yearly, NGN tiers,
 a promotional rate. A subscription references a **price**, not a plan, so
 switching a customer from monthly to yearly is a
 [plan change](/guides/proration-and-plan-changes) to a different price on the
-same plan — proration handled for you.
+same plan, proration handled for you.
 
 ## Archiving
 
@@ -2059,9 +2083,9 @@ Plans archive (`POST /v1/plans/{id}/archive`) and prices deactivate
 touching the ones already billing. Existing subscriptions keep their price;
 archiving only prevents new use.
 
-- **[Start a subscription](/guides/start-a-subscription)** — 
+- **[Start a subscription](/guides/start-a-subscription)**: 
 Put a customer on a price, over any rail.
-- **[Proration and plan changes](/guides/proration-and-plan-changes)** — 
+- **[Proration and plan changes](/guides/proration-and-plan-changes)**: 
 Move a customer between prices mid-cycle, correctly.
 
 ---
@@ -2069,14 +2093,14 @@ Move a customer between prices mid-cycle, correctly.
 ---
 title: "Dunning and recovery"
 type: how-to
-summary: "Recover a failed charge on a thin balance the Nigerian way — retries tuned for \"not yet,\" a card-OTP checkout link, and the events that tell you when to restore access."
+summary: "Recover a failed charge on a thin balance the Nigerian way: retries tuned for \"not yet,\" a card-OTP checkout link, and the events that tell you when to restore access."
 canonical: https://docs.nombaone.xyz/guides/dunning-and-recovery
 ---
 
 # Dunning and recovery
 
 When a charge fails, most billing systems assume "no." In Nigeria the honest read
-is usually **"not yet"** — the balance is thin and will top up, or the card needs
+is usually **"not yet"**: the balance is thin and will top up, or the card needs
 a one-time OTP. Dunning is the engine's recovery loop for exactly this, and it is
 tuned for recovery, not just blind retries. See
 [dunning for thin balances](/concepts/hard-parts/dunning-for-thin-balances) for
@@ -2088,8 +2112,8 @@ When a cycle's collection fails, the subscription moves to `past_due` and dunnin
 takes over automatically:
 
 1. `invoice.payment_failed` fires with a **real failure reason** to branch on
-(insufficient funds, card expired, OTP required — not a generic "declined").
-2. Dunning schedules retries on its own cadence — no action needed from you.
+(insufficient funds, card expired, OTP required, not a generic "declined").
+2. Dunning schedules retries on its own cadence, no action needed from you.
 3. Each retry either recovers (→ `invoice.payment_recovered`, subscription
 `active`) or exhausts the schedule (→ the subscription stays `past_due` or
 cancels, per your policy).
@@ -2105,10 +2129,10 @@ cancels, per your policy).
 
 A recurring **card** charge in Nigeria often triggers a bank OTP/3-D Secure step
 that can't complete headlessly. When that happens, dunning does not silently
-retry forever — it emits `invoice.action_required` with a **fresh checkout link**.
+retry forever. It emits `invoice.action_required` with a **fresh checkout link**.
 Send the customer to it; when they complete OTP there, the invoice settles and
 the subscription recovers. This is the product answer to a rail that can't be
-pulled silently — see [card tokens expire](/concepts/hard-parts/card-tokens-expire).
+pulled silently. See [card tokens expire](/concepts/hard-parts/card-tokens-expire).
 
 ## Inspect the dunning state
 
@@ -2141,14 +2165,14 @@ Use `requires_otp` to rehearse the checkout-link branch, and
 
 ## The events to handle
 
-- **`invoice.payment_failed`** — entered dunning. Log it; don't churn yet.
-- **`invoice.action_required`** — send the customer the checkout link in the payload.
-- **`invoice.payment_recovered`** — restore normal access.
-- **`subscription.canceled`** — dunning exhausted (if your policy cancels). Now cut access.
+- **`invoice.payment_failed`**: entered dunning. Log it; don't churn yet.
+- **`invoice.action_required`**: send the customer the checkout link in the payload.
+- **`invoice.payment_recovered`**: restore normal access.
+- **`subscription.canceled`**: dunning exhausted (if your policy cancels). Now cut access.
 
-- **[Why thin balances change dunning](/concepts/hard-parts/dunning-for-thin-balances)** — 
+- **[Why thin balances change dunning](/concepts/hard-parts/dunning-for-thin-balances)**: 
 The reasoning behind the retry cadence.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Receive and verify these events correctly.
 
 ---
@@ -2156,7 +2180,7 @@ Receive and verify these events correctly.
 ---
 title: "Going live"
 type: how-to
-summary: "The checklist to move from a sandbox key to real money — swap the key and host, re-register webhooks, verify signatures live, and confirm idempotency and the money unit before the first charge."
+summary: "The checklist to move from a sandbox key to real money: swap the key and host, re-register webhooks, verify signatures live, and confirm idempotency and the money unit before the first charge."
 canonical: https://docs.nombaone.xyz/guides/going-live
 ---
 
@@ -2164,12 +2188,12 @@ canonical: https://docs.nombaone.xyz/guides/going-live
 
 Going live is deliberately small: swap your `nbo_sandbox_` key for `nbo_live_` and
 your host from `sandbox.api.nombaone.xyz` to `api.nombaone.xyz`. But the two
-modes share nothing — separate data, balances, and webhook endpoints — so
+modes share nothing (separate data, balances, and webhook endpoints), so
 run this checklist before the first real charge.
 
 ## The switch
 
-The key prefix pins everything. There is no mode parameter — a `nbo_live_`
+The key prefix pins everything. There is no mode parameter: a `nbo_live_`
 key reaches only live, a `nbo_sandbox_` key only sandbox. See
 [environments](/getting-started/environments).
 
@@ -2192,19 +2216,19 @@ const key  = process.env.NOMBAONE_SECRET_KEY; // nbo_sandbox_ vs nbo_live_
 
 ### Re-create your plans and prices in live
 
-Sandbox and live data are fully isolated — a plan id minted in sandbox does not
+Sandbox and live data are fully isolated: a plan id minted in sandbox does not
 exist in live. Re-create your plans, prices, and coupons with the live key
 (or run your seed script pointed at the live base).
 
 ### Register live webhook endpoints
 
 Webhooks are per-mode. Register your production endpoint with the live
-key and store the new `whsec_…` secret — it is different from your sandbox
+key and store the new `whsec_…` secret. It is different from your sandbox
 secret. Verify signatures against the live secret.
 
 ### Confirm signature verification against the live secret
 
-Fire a real event and confirm your handler verifies it — HMAC over the raw
+Fire a real event and confirm your handler verifies it: HMAC over the raw
 body, constant-time compare. A handler that passed in sandbox with the sandbox
 secret will reject live events until you point it at the live secret. See
 [handle webhooks](/guides/handle-webhooks).
@@ -2213,7 +2237,7 @@ secret will reject live events until you point it at the live secret. See
 
 Every amount is **integer kobo**. Before the first charge, confirm a known
 price shows the right naira figure in your UI (`250000` → ₦2,500.00). This is
-the one check that prevents a 100× overcharge — see
+the one check that prevents a 100× overcharge. See
 [money is integer kobo](/concepts/money-is-integer-kobo).
 
 ### Set an Idempotency-Key on every money-moving call
@@ -2224,7 +2248,7 @@ money sends a unique `Idempotency-Key`, so a retry never double-charges.
 ### Handle the unhappy paths
 
 Confirm your webhook handler branches on `invoice.payment_failed`,
-`invoice.action_required`, and `invoice.payment_recovered` — not just
+`invoice.action_required`, and `invoice.payment_recovered`, not just
 `invoice.paid`. In Nigeria the unhappy paths are the common paths.
 
 > **Live moves real money on the first charge**
@@ -2237,14 +2261,14 @@ Confirm your webhook handler branches on `invoice.payment_failed`,
 
 - **Reconcile.** The [ledger](/concepts/the-ledger) is the source of truth; if a
 webhook is missed, re-fetch the resource rather than reconstructing state.
-- **Watch dunning.** Real balances are thin — expect `past_due` and let
+- **Watch dunning.** Real balances are thin: expect `past_due` and let
 [dunning](/guides/dunning-and-recovery) recover before cutting access.
 - **Payouts.** Settled net lands in the organization's sub-account behind an
 escrow lock; withdraw with [payouts](/guides/refunds-payouts-settlement).
 
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 The receive → verify → dedupe → act pattern, live.
-- **[Dunning and recovery](/guides/dunning-and-recovery)** — 
+- **[Dunning and recovery](/guides/dunning-and-recovery)**: 
 What "past_due" really means on a thin balance.
 
 ---
@@ -2252,7 +2276,7 @@ What "past_due" really means on a thin balance.
 ---
 title: "Handle webhooks"
 type: how-to
-summary: "Receive events, verify the signature, dedupe on the event id, and act — the four-step pattern that keeps one correct balance no matter how many times an event arrives."
+summary: "Receive events, verify the signature, dedupe on the event id, and act: the four-step pattern that keeps one correct balance no matter how many times an event arrives."
 canonical: https://docs.nombaone.xyz/guides/handle-webhooks
 ---
 
@@ -2260,7 +2284,7 @@ canonical: https://docs.nombaone.xyz/guides/handle-webhooks
 
 Webhooks are how nombaone tells your server what happened: an invoice was paid, a
 charge failed, a card needs OTP, a transfer arrived. Handling them correctly is
-four steps — **receive, verify, dedupe, act** — and getting any one wrong is how
+four steps (**receive, verify, dedupe, act**), and getting any one wrong is how
 balances drift. This guide is the pattern; to see events land in your own logs
 first, do [verify us in your devtools](/getting-started/verify-in-your-devtools).
 
@@ -2277,10 +2301,10 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 The response returns a **signing secret** (`whsec_…`), shown once. Store it
-server-side. Register endpoints per mode — a sandbox event only reaches your
+server-side. Register endpoints per mode: a sandbox event only reaches your
 sandbox endpoint.
 
-## 2 · Verify the signature — on the raw body
+## 2 · Verify the signature: on the raw body
 
 Every delivery carries a signature over `` `${timestamp}.${rawBody}` ``. Verify
 **before you parse**: compute the HMAC over the exact bytes received, and compare
@@ -2303,15 +2327,15 @@ export function verifyWebhook(rawBody: string, header: string, secret: string) {
 >
 > Read the raw request body and HMAC those exact bytes. `JSON.parse` then
 > `JSON.stringify` can reorder keys, changing the bytes so the signature no
-> longer matches. Frameworks that auto-parse the body will break verification —
-> capture the raw body first.
+> longer matches. Frameworks that auto-parse the body will break verification.
+> Capture the raw body first.
 
 ## 3 · Dedupe on the event id
 
 Delivery is **at-least-once**: the same event can arrive more than once (a retry,
 a network hiccup). Record each `event.id` you've processed and skip repeats. The
 handler must be idempotent, because
-[retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge) —
+[retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge):
 reacting twice to one `invoice.paid` must not credit a balance twice.
 
 ```ts
@@ -2322,7 +2346,7 @@ await markSeen(event.id);
 ## 4 · Respond fast, act async
 
 Return `2xx` immediately, then do the work. A slow handler reads as a failure and
-gets retried — which is fine (you dedupe), but keeping the response fast avoids
+gets retried, which is fine (you dedupe), but keeping the response fast avoids
 pile-ups.
 
 ```ts
@@ -2341,25 +2365,25 @@ export async function POST(req: Request) {
 
 Handle the unhappy paths, not just `invoice.paid`:
 
-- **`invoice.paid`** — a cycle collected. Grant access, extend the period.
-- **`invoice.payment_failed`** — a charge failed; the subscription is `past_due`
+- **`invoice.paid`**: a cycle collected. Grant access, extend the period.
+- **`invoice.payment_failed`**: a charge failed; the subscription is `past_due`
 and [dunning](/guides/dunning-and-recovery) is retrying. Don't cancel access
-yet — on a thin balance this is "not yet."
-- **`invoice.action_required`** — a card needs OTP; the payload carries a fresh
+yet: on a thin balance this is "not yet."
+- **`invoice.action_required`**: a card needs OTP; the payload carries a fresh
 checkout link to send the customer.
-- **`invoice.payment_recovered`** — dunning (or the customer completing OTP)
+- **`invoice.payment_recovered`**: dunning (or the customer completing OTP)
 succeeded; restore normal state.
 
 > **Missed one? Re-fetch, don't guess**
 >
-> If your endpoint was down, don't reconstruct state from missed webhooks — read
+> If your endpoint was down, don't reconstruct state from missed webhooks. Read
 > the resource (`GET /v1/subscriptions/{id}`) or replay a delivery
 > (`POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`). The API is the
 > source of truth; webhooks are a notification, not the ledger.
 
-- **[Event catalog](/webhooks/event-catalog)** — 
+- **[Event catalog](/webhooks/event-catalog)**: 
 Every event type, when it fires, and its payload.
-- **[Dunning and recovery](/guides/dunning-and-recovery)** — 
+- **[Dunning and recovery](/guides/dunning-and-recovery)**: 
 What happens between payment_failed and payment_recovered.
 
 ---
@@ -2367,14 +2391,14 @@ What happens between payment_failed and payment_recovered.
 ---
 title: "Proration and plan changes"
 type: how-to
-summary: "Upgrade, downgrade, or switch intervals mid-cycle — one call, with proration computed as balanced ledger legs so the customer is charged exactly the difference."
+summary: "Upgrade, downgrade, or switch intervals mid-cycle: one call, with proration computed as balanced ledger legs so the customer is charged exactly the difference."
 canonical: https://docs.nombaone.xyz/guides/proration-and-plan-changes
 ---
 
 # Proration and plan changes
 
 A customer rarely stays on one price forever. They upgrade, downgrade, add seats,
-or switch from monthly to yearly — usually **mid-cycle**, when they've already
+or switch from monthly to yearly, usually **mid-cycle**, when they've already
 paid for part of the period. A plan change moves the subscription to a new price
 and settles the difference, and because
 [proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem)
@@ -2423,25 +2447,25 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
 
 ## Control the proration behavior
 
-- **`create_prorations`** — compute and apply the difference (the default for
+- **`create_prorations`**: compute and apply the difference (the default for
 upgrades).
-- **`none`** — switch the price with no proration; the new amount applies from the
+- **`none`**: switch the price with no proration; the new amount applies from the
 next cycle.
 
 > **Quantity changes prorate too**
 >
-> Adding or removing seats mid-cycle is the same mechanism — pass `quantity` to
+> Adding or removing seats mid-cycle is the same mechanism: pass `quantity` to
 > `change`, and the per-seat difference prorates exactly like a price switch.
 
 > **Schedule a change for the next renewal**
 >
 > To avoid mid-cycle proration entirely, schedule the change to take effect at the
-> next period boundary with `POST /v1/subscriptions/{id}/schedule` — the customer
+> next period boundary with `POST /v1/subscriptions/{id}/schedule`. The customer
 > finishes the paid period, then renews on the new price.
 
-- **[Why proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem)** — 
+- **[Why proration is a ledger problem](/concepts/hard-parts/proration-is-a-ledger-problem)**: 
 How fractional kobo resolve so the legs always balance.
-- **[Create plans and prices](/guides/create-plans-and-prices)** — 
+- **[Create plans and prices](/guides/create-plans-and-prices)**: 
 Model the prices a customer moves between.
 
 ---
@@ -2449,7 +2473,7 @@ Model the prices a customer moves between.
 ---
 title: "Refunds, payouts & settlement"
 type: how-to
-summary: "Move money back out — refund a settled charge (the tenant leg only), read the escrow lock, and pay an organization's net to a bank account."
+summary: "Move money back out: refund a settled charge (the tenant leg only), read the escrow lock, and pay an organization's net to a bank account."
 canonical: https://docs.nombaone.xyz/guides/refunds-payouts-settlement
 ---
 
@@ -2457,7 +2481,7 @@ canonical: https://docs.nombaone.xyz/guides/refunds-payouts-settlement
 
 When a charge is collected and verified, the money **splits at collection**: your
 platform fee and the organization's net, each posted as balanced
-[ledger](/concepts/the-ledger) legs. This guide is how money moves back out —
+[ledger](/concepts/the-ledger) legs. This guide is how money moves back out:
 refunds, the escrow lock that guards them, and payouts. The model is explained in
 [settlement & sub-accounts](/concepts/settlement-and-sub-accounts); here is how to
 operate it.
@@ -2477,14 +2501,14 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/{id}/refund \
 
 > **The platform fee is not refunded**
 >
-> A refund reverses **only the organization's leg** — it debits the
+> A refund reverses **only the organization's leg**: it debits the
 > organization's settlement balance and credits back the payer. The platform fee
 > is non-refundable and is never touched. This keeps the ledger honest: a refund
 > posts a new reversing transaction, it does not mutate the original charge.
 
 Partial refunds accumulate: refund ₦1,000 of a ₦2,500 charge, then ₦1,500 later,
 and the settlement flips to fully `refunded`. You can never refund more than the
-net — the API rejects it, and the `Idempotency-Key` makes a retried refund safe.
+net. The API rejects it, and the `Idempotency-Key` makes a retried refund safe.
 
 ## Read the escrow lock
 
@@ -2514,19 +2538,19 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/payout \
 
 Two guards protect the money:
 
-- **`ESCROW_LOCKED`** — you tried to withdraw funds still inside the escrow
+- **`ESCROW_LOCKED`**: you tried to withdraw funds still inside the escrow
 window. Wait for release, or withdraw only the available portion.
-- **`PAYOUT_EXCEEDS_AVAILABLE`** — the amount is more than the available balance.
+- **`PAYOUT_EXCEEDS_AVAILABLE`**: the amount is more than the available balance.
 
 > **Ledger truth first, transfer second**
 >
 > A payout posts the ledger debit before the bank transfer is attempted, and if
 > the transfer fails it posts a compensating reversal. Funds are never faked as
-> sent and never stranded — the ledger and the bank stay reconciled.
+> sent and never stranded: the ledger and the bank stay reconciled.
 
-- **[Settlement & sub-accounts](/concepts/settlement-and-sub-accounts)** — 
+- **[Settlement & sub-accounts](/concepts/settlement-and-sub-accounts)**: 
 How the split and escrow model works.
-- **[Settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets)** — 
+- **[Settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets)**: 
 Matching money to organizations at scale.
 
 ---
@@ -2534,14 +2558,14 @@ Matching money to organizations at scale.
 ---
 title: "Start a subscription"
 type: how-to
-summary: "Subscribe a customer to a price over any rail — card, direct debit, or bank transfer. The subscription is the same; only how the money arrives differs."
+summary: "Subscribe a customer to a price over any rail: card, direct debit, or bank transfer. The subscription is the same; only how the money arrives differs."
 canonical: https://docs.nombaone.xyz/guides/start-a-subscription
 ---
 
 # Start a subscription
 
 A subscription puts a **customer** on a **price** and bills it every cycle. The
-subscription resource is rail-agnostic — the same `POST /v1/subscriptions` starts
+subscription resource is rail-agnostic: the same `POST /v1/subscriptions` starts
 a card subscription, a direct-debit subscription, or a transfer subscription. What
 differs is the **payment method** you attach, because rails collect differently:
 card and mandate are *pulled*, a bank transfer is *pushed*. See
@@ -2550,7 +2574,7 @@ asymmetry matters.
 
 ## Set up a payment method
 
-Pull rails need an authorized instrument on file. Start a setup — the customer
+Pull rails need an authorized instrument on file. Start a setup: the customer
 authorizes (and, for a card, may complete a bank OTP step) at the returned link:
 
 ```bash
@@ -2567,7 +2591,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/setup \
 The customer is sent to complete authorization, then returned to your
 `callbackUrl`. The resulting payment method is what you charge each cycle.
 
-For a **bank transfer** subscription, mint a virtual account instead — the
+For a **bank transfer** subscription, mint a virtual account instead: the
 customer pushes money to it on each billing date:
 
 ```bash
@@ -2603,32 +2627,32 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
 
 The response `status` tells you where the first cycle landed:
 
-- **`active`** — the first invoice was collected. You're billing.
-- **`trialing`** — the price has a trial; no charge yet.
-- **`past_due`** — the first charge failed; [dunning](/guides/dunning-and-recovery)
+- **`active`**: the first invoice was collected. You're billing.
+- **`trialing`**: the price has a trial; no charge yet.
+- **`past_due`**: the first charge failed; [dunning](/guides/dunning-and-recovery)
 now owns recovery. On a thin balance this usually means "not yet," not "no."
-- **`incomplete`** — the charge needs the customer to act (a card OTP step); an
+- **`incomplete`**: the charge needs the customer to act (a card OTP step); an
 `invoice.action_required` event carries a fresh checkout link.
 
 > **Don't assume the first charge succeeds**
 >
 > In Nigeria the first pull can need OTP, or land on a thin balance. Handle
-> `past_due` and `incomplete` from day one — branch on the webhook, not just the
+> `past_due` and `incomplete` from day one: branch on the webhook, not just the
 > `201`. This is the difference between a toy and a billing system.
 
 ## Optional: trials and quantity
 
 - **`trialDays`** on the create call starts a trial even if the price has none.
 - **`quantity`** multiplies a per-seat price.
-- **`Idempotency-Key`** makes the create safe to retry — a repeat with the same
+- **`Idempotency-Key`** makes the create safe to retry: a repeat with the same
 key returns the same subscription, never a second one.
 
 ## After it's live
 
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Every state change fires an event. Receive and verify them for one correct
 balance.
-- **[Change the payment method](/guides/refunds-payouts-settlement)** — 
+- **[Change the payment method](/guides/refunds-payouts-settlement)**: 
 Swap a card, retry a failed rail, or move a customer to direct debit.
 
 ---
@@ -2636,7 +2660,7 @@ Swap a card, retry a failed rail, or move a customer to direct debit.
 ---
 title: "Create a plan"
 type: reference
-summary: "Set up what you charge and how often, from the console — a plan and its price, with an optional free trial. No code."
+summary: "Set up what you charge and how often, from the console: a plan and its price, with an optional free trial. No code."
 canonical: https://docs.nombaone.xyz/merchants/create-a-plan
 ---
 
@@ -2654,13 +2678,13 @@ Sign in and go to **Plans**. Choose **New plan**.
 
 ### Name the plan
 
-Give it a name your customers will recognise on their receipt — "Pro",
+Give it a name your customers will recognise on their receipt: "Pro",
 "Monthly membership", "Premium". The name is the product; the money comes
 next.
 
 ### Add a price
 
-Set the **amount** (for example ₦2,500) and the **interval** — monthly or
+Set the **amount** (for example ₦2,500) and the **interval**: monthly or
 yearly. You can add more than one price to the same plan, so the same product
 can be billed monthly *and* yearly.
 
@@ -2671,24 +2695,24 @@ of days. They won't be charged until the trial ends.
 
 ### Save
 
-Save the plan. It's now ready to subscribe customers to — by a
+Save the plan. It's now ready to subscribe customers to, by a
 [payment link](/merchants/share-a-payment-link) or from your customer list.
 
 > **You can change prices later, safely**
 >
-> Adding or retiring a price never disturbs customers already subscribed — they
+> Adding or retiring a price never disturbs customers already subscribed: they
 > keep the price they signed up on until you move them. So it's safe to experiment
 > with new prices.
 
 > **Amounts are always in naira, shown correctly**
 >
 > Enter the naira amount you want to charge (₦2,500). Behind the scenes the engine
-> works in kobo for exactness, but the console shows and takes naira — you never
+> works in kobo for exactness, but the console shows and takes naira. You never
 > have to think about it.
 
-- **[Share a payment link](/merchants/share-a-payment-link)** — 
+- **[Share a payment link](/merchants/share-a-payment-link)**: 
 Now collect the plan from a customer.
-- **[Read a settlement](/merchants/read-a-settlement)** — 
+- **[Read a settlement](/merchants/read-a-settlement)**: 
 See the money arrive after they pay.
 
 ---
@@ -2696,42 +2720,42 @@ See the money arrive after they pay.
 ---
 title: "Run subscriptions without an engineer"
 type: reference
-summary: "Nomba One isn't only an API. From the console you can create plans, collect recurring payments with a link, and see exactly where your money is — no code."
+summary: "Nomba One isn't only an API. From the console you can create plans, collect recurring payments with a link, and see exactly where your money is. No code."
 canonical: https://docs.nombaone.xyz/merchants/overview
 ---
 
 # Run subscriptions without an engineer
 
 If you're not a developer, you can still run recurring billing on Nomba One
-entirely from the **console** — the dashboard you sign in to. Create a plan,
+entirely from the **console**, the dashboard you sign in to. Create a plan,
 share a link to collect it, and watch payments settle to your account. This track
 is written for the person who runs the business, not the person who writes the
 code.
 
 ## What you can do without code
 
-- **[Create a plan](/merchants/create-a-plan)** — 
-Set up what you charge and how often — monthly, yearly, with a trial.
-- **[Share a payment link](/merchants/share-a-payment-link)** — 
-Collect a subscription with a link — send it, and the customer subscribes.
-- **[Set up dunning messages](/merchants/set-up-dunning-messages)** — 
+- **[Create a plan](/merchants/create-a-plan)**: 
+Set up what you charge and how often: monthly, yearly, with a trial.
+- **[Share a payment link](/merchants/share-a-payment-link)**: 
+Collect a subscription with a link. Send it, and the customer subscribes.
+- **[Set up dunning messages](/merchants/set-up-dunning-messages)**: 
 Decide what your customer sees when a payment fails.
-- **[Read a settlement](/merchants/read-a-settlement)** — 
+- **[Read a settlement](/merchants/read-a-settlement)**: 
 Understand a payout and find where your money is.
 
 ## How it works, in one minute
 
 - You create a **plan** (say, ₦2,500 per month).
-- A customer subscribes — by a link you share, or one your team adds for them.
+- A customer subscribes: by a link you share, or one your team adds for them.
 - On each billing date, Nomba One collects the payment automatically.
 - The money **settles** to your Nomba account, and you can pay it out to your bank.
-- If a payment fails, Nomba One retries and messages the customer — you don't have
+- If a payment fails, Nomba One retries and messages the customer. You don't have
 to chase it.
 
 > **The same engine, a simpler door**
 >
-> Everything the console does, the [API](/getting-started/quickstart) can do too —
-> the console is just the no-code way in. You can start on the console and add code
+> Everything the console does, the [API](/getting-started/quickstart) can do too.
+> The console is just the no-code way in. You can start on the console and add code
 > later without changing anything about how billing works.
 
 ---
@@ -2739,7 +2763,7 @@ to chase it.
 ---
 title: "Read a settlement"
 type: reference
-summary: "Understand a payout and find exactly where your money is — what settled, the fee taken, what's available now, and what's held briefly before you can withdraw."
+summary: "Understand a payout and find exactly where your money is: what settled, the fee taken, what's available now, and what's held briefly before you can withdraw."
 canonical: https://docs.nombaone.xyz/merchants/read-a-settlement
 ---
 
@@ -2751,10 +2775,10 @@ your net. From the console you can always see where every naira is.
 
 ## What a settlement shows
 
-- **Collected** — what the customer paid.
-- **Fee** — the platform fee taken from that payment.
-- **Your net** — what's left, which is yours.
-- **Status** — settled (it's yours), or refunded.
+- **Collected**: what the customer paid.
+- **Fee**: the platform fee taken from that payment.
+- **Your net**: what's left, which is yours.
+- **Status**: settled (it's yours), or refunded.
 
 Your net settles to your Nomba account, ready to be paid out to your bank.
 
@@ -2762,33 +2786,33 @@ Your net settles to your Nomba account, ready to be paid out to your bank.
 
 At any moment your balance is in one of three places:
 
-- **Available** — settled and ready to withdraw to your bank now.
-- **Held (escrow)** — money from very recent payments, held for a short window so a
+- **Available**: settled and ready to withdraw to your bank now.
+- **Held (escrow)**: money from very recent payments, held for a short window so a
 refund can be handled cleanly before it leaves. It becomes available shortly.
-- **Paid out** — already withdrawn to your bank.
+- **Paid out**: already withdrawn to your bank.
 
 > **Why some money is briefly held**
 >
 > A recent payment is held for a short escrow window so that if a refund is needed,
 > it can be taken from that payment before you've withdrawn it. It's a safety
-> feature — the money is still yours and releases to available soon.
+> feature: the money is still yours and releases to available soon.
 
 ## Refunds and payouts
 
-- **Refund** — you can refund a customer's payment. The platform fee on it is not
+- **Refund**: you can refund a customer's payment. The platform fee on it is not
 refunded; the rest goes back to the customer.
-- **Payout** — withdraw your available balance to your bank account. What you can
+- **Payout**: withdraw your available balance to your bank account. What you can
 withdraw is your settled net, minus anything still held in escrow.
 
 > **Every number ties back to a payment**
 >
 > Each settlement links to the exact subscription and invoice it came from, so a
-> payout is never a mystery figure — you can trace it to the customer and cycle
+> payout is never a mystery figure: you can trace it to the customer and cycle
 > that produced it.
 
-- **[Create a plan](/merchants/create-a-plan)** — 
+- **[Create a plan](/merchants/create-a-plan)**: 
 Where the money starts.
-- **[Overview](/merchants/overview)** — 
+- **[Overview](/merchants/overview)**: 
 The whole no-code flow, start to finish.
 
 ---
@@ -2796,13 +2820,13 @@ The whole no-code flow, start to finish.
 ---
 title: "Set up dunning messages"
 type: reference
-summary: "Decide what your customer sees when a payment fails — the retry schedule and the message that recovers the payment without you chasing it."
+summary: "Decide what your customer sees when a payment fails: the retry schedule and the message that recovers the payment without you chasing it."
 canonical: https://docs.nombaone.xyz/merchants/set-up-dunning-messages
 ---
 
 # Set up dunning messages
 
-Payments fail — a card has no funds that day, a bank needs the customer to
+Payments fail: a card has no funds that day, a bank needs the customer to
 re-confirm. **Dunning** is how Nomba One recovers those payments for you: it
 retries on a schedule and messages the customer to fix it, so you don't have to
 notice or chase. From the console you decide what that looks like.
@@ -2811,37 +2835,37 @@ notice or chase. From the console you decide what that looks like.
 
 Automatically, without you doing anything:
 
-1. Nomba One marks the subscription **past due** — not cancelled.
+1. Nomba One marks the subscription **past due**, not cancelled.
 2. It **retries** the payment over the next few days, because a failure in Nigeria
 is usually "not yet," not "no."
-3. It **messages the customer** to top up or re-confirm — with a link to fix it.
+3. It **messages the customer** to top up or re-confirm, with a link to fix it.
 4. When a retry succeeds, the subscription goes back to normal on its own.
 
 > **Don't cut off the customer at the first failure**
 >
 > A failed payment is usually temporary. Nomba One keeps the subscription active
-> while it retries — cancelling immediately loses customers who would have paid a
+> while it retries. Cancelling immediately loses customers who would have paid a
 > day later.
 
 ## What you control
 
 - **The message.** What the customer receives when a payment fails and when a card
-needs re-confirming — your tone, your brand.
+needs re-confirming, your tone, your brand.
 - **How long to keep trying.** The retry window before a subscription is finally
 treated as cancelled.
-- **When to give up.** What happens if every retry fails — cancel, or leave it
+- **When to give up.** What happens if every retry fails: cancel, or leave it
 paused for you to follow up.
 
 > **The card re-confirm case**
 >
 > Sometimes a bank asks the customer to approve a renewal with a one-time code.
-> When that happens, Nomba One sends them a fresh link to confirm — the payment
+> When that happens, Nomba One sends them a fresh link to confirm. The payment
 > completes when they do. This is normal for cards in Nigeria and is handled for
 > you.
 
-- **[Read a settlement](/merchants/read-a-settlement)** — 
+- **[Read a settlement](/merchants/read-a-settlement)**: 
 See recovered payments arrive.
-- **[Share a payment link](/merchants/share-a-payment-link)** — 
+- **[Share a payment link](/merchants/share-a-payment-link)**: 
 Where a subscription begins.
 
 ---
@@ -2849,15 +2873,15 @@ Where a subscription begins.
 ---
 title: "Share a payment link"
 type: reference
-summary: "Collect a subscription with a link — send it to a customer, they subscribe and pay, and billing starts automatically. No code, no chasing."
+summary: "Collect a subscription with a link: send it to a customer, they subscribe and pay, and billing starts automatically. No code, no chasing."
 canonical: https://docs.nombaone.xyz/merchants/share-a-payment-link
 ---
 
 # Share a payment link
 
 The fastest way to put a customer on a plan is a **payment link**. You create it
-once for a plan, share it however you talk to customers — WhatsApp, email, a
-button on your site — and each person who opens it subscribes and pays. Billing
+once for a plan, share it however you talk to customers (WhatsApp, email, a
+button on your site), and each person who opens it subscribes and pays. Billing
 then continues automatically every cycle.
 
 ## Steps
@@ -2869,7 +2893,7 @@ and choose **Share link** (or **Payment link**).
 
 ### Copy the link
 
-The console gives you a link tied to that plan and price. It's reusable — the
+The console gives you a link tied to that plan and price. It's reusable: the
 same link works for every customer.
 
 ### Share it
@@ -2886,18 +2910,18 @@ automatically. You don't send the link again.
 >
 > The link supports the rails Nigerians actually use: **bank transfer** (they send
 > money to a shown account), **card**, and **direct debit**. You don't choose for
-> them — they pick what suits them.
+> them. They pick what suits them.
 
 > **A card may ask for a one-time code**
 >
 > Some banks ask the customer for an OTP the first time, or when a renewal needs
-> re-confirming. Nomba One handles this for you — if a renewal needs the customer
+> re-confirming. Nomba One handles this for you. If a renewal needs the customer
 > to confirm, it messages them a fresh link. See
 > [dunning messages](/merchants/set-up-dunning-messages).
 
-- **[Set up dunning messages](/merchants/set-up-dunning-messages)** — 
+- **[Set up dunning messages](/merchants/set-up-dunning-messages)**: 
 Decide what customers see if a payment fails.
-- **[Read a settlement](/merchants/read-a-settlement)** — 
+- **[Read a settlement](/merchants/read-a-settlement)**: 
 Find the money after they've paid.
 
 ---
@@ -2913,7 +2937,7 @@ canonical: https://docs.nombaone.xyz/migrate/from-flutterwave
 
 If you've integrated Flutterwave, the biggest change is a relief: **one reference
 instead of two**. Where Flutterwave gives you a `tx_ref` you generate and a
-`flw_ref` it generates — and you reconcile between them — Nomba One gives every
+`flw_ref` it generates (and you reconcile between them), Nomba One gives every
 resource a single `nbo…` id that its ledger postings and webhooks all share.
 
 ## Concept map
@@ -2923,7 +2947,7 @@ resource a single `nbo…` id that its ledger postings and webhooks all share.
 | Payment Plan | [Plan](/reference/plans) + [Price](/reference/prices) | Amount and interval live on the price. |
 | `tx_ref` (yours) + `flw_ref` (theirs) | one `nbo…` reference | One id per resource, everywhere. See [the ledger](/concepts/the-ledger). |
 | Subscriptions on a plan | [Subscriptions](/reference/subscriptions) | Same idea, richer lifecycle. |
-| `amount` (naira, float) | `unitAmountInKobo` (integer kobo) | No floats — `250000` = ₦2,500.00. |
+| `amount` (naira, float) | `unitAmountInKobo` (integer kobo) | No floats: `250000` = ₦2,500.00. |
 | Webhook `event` | [Catalog events](/webhooks/event-catalog) | Typed, documented, signed. |
 
 ## The three things that change
@@ -2932,23 +2956,23 @@ resource a single `nbo…` id that its ledger postings and webhooks all share.
 `nbo…` id you can find the resource, its ledger postings, and its events. This
 removes a whole class of "which id do I store?" bugs.
 - **Integer kobo, no floats.** Flutterwave amounts are naira and often float.
-Nomba One is always integer kobo — see
+Nomba One is always integer kobo. See
 [money is integer kobo](/concepts/money-is-integer-kobo) and mind the
 [100× trap](/concepts/money-is-integer-kobo) when you port amounts.
 - **Verify webhooks by HMAC over the raw body.** Replace `verif-hash` header
-checks with the [signature recipe](/webhooks/signing-and-verification) —
+checks with the [signature recipe](/webhooks/signing-and-verification):
 HMAC-SHA256 over `timestamp.rawBody`, constant-time compare.
 
 > **Bank transfer is first-class, not a workaround**
 >
 > Flutterwave treats transfers as one-off charges you stitch into a plan. In
-> Nomba One a transfer is a real subscription rail — the engine exposes where to
+> Nomba One a transfer is a real subscription rail. The engine exposes where to
 > pay and settles when the money arrives. See
 > [multi-rail: push and pull](/concepts/multi-rail-push-and-pull).
 
-- **[From any processor](/migrate/generic)** — 
+- **[From any processor](/migrate/generic)**: 
 The zero-downtime parallel-run playbook.
-- **[Your first subscription](/getting-started/your-first-subscription)** — 
+- **[Your first subscription](/getting-started/your-first-subscription)**: 
 Build the equivalent flow end to end.
 
 ---
@@ -2986,7 +3010,7 @@ Stripe Billing assumes the card is the rail. In Nigeria, the rail is the questio
 ---
 title: "From any processor"
 type: reference
-summary: "A zero-downtime playbook to move subscriptions to Nomba One — run both in parallel, migrate new business first, and drain the old processor without a cutover."
+summary: "A zero-downtime playbook to move subscriptions to Nomba One: run both in parallel, migrate new business first, and drain the old processor without a cutover."
 canonical: https://docs.nombaone.xyz/migrate/generic
 ---
 
@@ -3015,7 +3039,7 @@ the pipe before real events flow.
 ### Route new subscriptions to Nomba One
 
 Point new sign-ups at Nomba One while existing subscriptions keep billing on
-the old processor. This is the moment you start — with zero risk to current
+the old processor. This is the moment you start, with zero risk to current
 customers.
 
 ### Migrate existing customers as they renew
@@ -3027,14 +3051,14 @@ proration headaches.
 ### Drain and retire the old processor
 
 When the old system has no active subscriptions left, turn it off. There was
-never a cutover — just a handover.
+never a cutover, just a handover.
 
 ## Rules that keep it safe
 
 > **Never bill a customer on both at once**
 >
 > A customer must be active on exactly one processor at a time. Migrate at the
-> renewal boundary, and cancel the old subscription the moment the new one starts —
+> renewal boundary, and cancel the old subscription the moment the new one starts,
 > not before, not after.
 
 - **Idempotency-Key on every money-moving call**, so a retry during migration never
@@ -3042,17 +3066,17 @@ double-charges. See [going live](/guides/going-live).
 - **Reconcile from the ledger, not from memory.** After migrating a customer, the
 [ledger](/concepts/the-ledger) is the source of truth for what they've paid.
 - **Keep the old webhook handler running** until the old processor is fully
-drained — late events still need handling.
+drained: late events still need handling.
 
 > **Card tokens rarely port**
 >
 > Saved card tokens usually can't move between processors. Plan to re-collect
-> payment details at the renewal boundary — a [payment link](/guides/start-a-subscription)
-> or a card-setup step — rather than assuming tokens transfer.
+> payment details at the renewal boundary (a [payment link](/guides/start-a-subscription)
+> or a card-setup step) rather than assuming tokens transfer.
 
-- **[Going live](/guides/going-live)** — 
+- **[Going live](/guides/going-live)**: 
 The pre-launch checklist for the switch.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Keep one correct balance through the migration.
 
 ---
@@ -3067,37 +3091,37 @@ canonical: https://docs.nombaone.xyz/migrate/overview
 # Move to Nomba One
 
 If you're already billing subscriptions on Paystack, Stripe, or Flutterwave, you
-don't start from zero — most concepts map directly, and the ones that don't are
+don't start from zero: most concepts map directly, and the ones that don't are
 usually Nomba One removing a gotcha you'd learned to live with. This section maps
 your current mental model to ours, and gives you a safe, zero-downtime way to
 switch.
 
 ## Pick your starting point
 
-- **[Coming from Paystack](/migrate/from-paystack)** — 
+- **[Coming from Paystack](/migrate/from-paystack)**: 
 Map Paystack's subscription gotchas to our clean equivalents.
-- **[Coming from Stripe Billing](/migrate/from-stripe)** — 
+- **[Coming from Stripe Billing](/migrate/from-stripe)**: 
 Move a Stripe Billing integration, concept by concept.
-- **[Coming from Flutterwave](/migrate/from-flutterwave)** — 
+- **[Coming from Flutterwave](/migrate/from-flutterwave)**: 
 Untangle tx_ref / flw_ref into one reference.
-- **[From any processor](/migrate/generic)** — 
+- **[From any processor](/migrate/generic)**: 
 A zero-downtime parallel-run playbook.
 
 ## What's the same everywhere
 
 Whatever you're coming from, these map cleanly:
 
-- **Plans and prices** — the product and its recurring amount.
-- **Customers** — who you bill.
-- **Subscriptions** — a customer on a price, billed each cycle.
-- **Webhooks** — events telling your server what happened.
+- **Plans and prices**: the product and its recurring amount.
+- **Customers**: who you bill.
+- **Subscriptions**: a customer on a price, billed each cycle.
+- **Webhooks**: events telling your server what happened.
 
 ## What Nomba One does differently (on purpose)
 
 - **One reference, everywhere.** A resource, its ledger postings, and its webhooks
-share one `nbo…` id — no `tx_ref` vs `flw_ref` vs `id` tangle. See
+share one `nbo…` id, no `tx_ref` vs `flw_ref` vs `id` tangle. See
 [the ledger](/concepts/the-ledger).
-- **Integer kobo, always.** No floats, no ambiguous decimal strings — every money
+- **Integer kobo, always.** No floats, no ambiguous decimal strings: every money
 field ends in `InKobo`. See [money is integer kobo](/concepts/money-is-integer-kobo).
 - **Honest about the hard parts.** Thin balances, card OTP, push-vs-pull rails are
 first-class, not edge cases you discover in production. See the
@@ -3114,7 +3138,7 @@ first-class, not edge cases you discover in production. See the
 ---
 title: "Coupons"
 type: reference
-summary: "Discount definitions — percent or fixed amount off, with a duration. Create, read, update, and list. Generated from the live schema."
+summary: "Discount definitions: percent or fixed amount off, with a duration. Create, read, update, and list. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/coupons
 ---
 
@@ -3122,10 +3146,10 @@ canonical: https://docs.nombaone.xyz/reference/coupons
 
 A **coupon** is a reusable discount rule: a percentage or a fixed kobo amount off,
 applied for a `once`, `repeating`, or `forever` duration. Apply one to a
-[customer](/reference/customers) or a [subscription](/reference/subscriptions) —
-see [coupons and credits](/guides/coupons-and-credits).
+[customer](/reference/customers) or a [subscription](/reference/subscriptions).
+See [coupons and credits](/guides/coupons-and-credits).
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/coupons
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/coupons
 
 > **A coupon is a rule; a credit is a balance**
 >
@@ -3137,7 +3161,7 @@ see [coupons and credits](/guides/coupons-and-credits).
 ---
 title: "Credits"
 type: reference
-summary: "Customer credit grants and balance — a stored amount that draws down before any charge. A sub-resource of the customer."
+summary: "Customer credit grants and balance: a stored amount that draws down before any charge. A sub-resource of the customer."
 canonical: https://docs.nombaone.xyz/reference/credits
 ---
 
@@ -3167,7 +3191,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
 >
 > When an invoice is collected, available credit is applied before the rail is
 > charged. The invoice shows the credit line and the reduced amount actually
-> charged — see [coupons and credits](/guides/coupons-and-credits) and
+> charged. See [coupons and credits](/guides/coupons-and-credits) and
 > [the ledger](/concepts/the-ledger).
 
 ---
@@ -3175,7 +3199,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
 ---
 title: "Customers"
 type: reference
-summary: "Create and manage the people you bill — plus their credit grants and discounts. Every operation the API serves for customers, generated from the live schema."
+summary: "Create and manage the people you bill, plus their credit grants and discounts. Every operation the API serves for customers, generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/customers
 ---
 
@@ -3189,12 +3213,12 @@ are the `nbo…` references that join a person to their subscriptions, invoices,
 Every operation below is generated from the API's own OpenAPI schema, so it always
 matches what the API actually serves.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/customers
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/customers
 
 > **Credit and discount live here**
 >
 > A customer's credit grants (`/customers/{id}/credit`) and applied discount
-> (`/customers/{id}/discount`) are sub-resources of the customer — see
+> (`/customers/{id}/discount`) are sub-resources of the customer. See
 > [coupons and credits](/guides/coupons-and-credits) for how they resolve on an
 > invoice.
 
@@ -3203,7 +3227,7 @@ matches what the API actually serves.
 ---
 title: "Dunning"
 type: reference
-summary: "Recovery attempts and state for a past-due subscription — read where recovery stands and the full attempt history. A sub-resource of the subscription."
+summary: "Recovery attempts and state for a past-due subscription: read where recovery stands and the full attempt history. A sub-resource of the subscription."
 canonical: https://docs.nombaone.xyz/reference/dunning
 ---
 
@@ -3218,7 +3242,7 @@ branch are explained in [dunning and recovery](/guides/dunning-and-recovery).
 
 | Method | Path | What it does |
 |---|---|---|
-| `GET` | `/v1/subscriptions/{id}/dunning` | Current dunning state — where recovery stands. |
+| `GET` | `/v1/subscriptions/{id}/dunning` | Current dunning state: where recovery stands. |
 | `GET` | `/v1/subscriptions/{id}/dunning/attempts` | The full history of collection attempts. |
 
 ```bash
@@ -3229,7 +3253,7 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
 > **past_due is not canceled**
 >
 > On a thin balance a failed charge is usually "not yet." Read the dunning state
-> before cutting access — let recovery run. See
+> before cutting access. Let recovery run. See
 > [dunning for thin balances](/concepts/hard-parts/dunning-for-thin-balances).
 
 ---
@@ -3237,18 +3261,18 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
 ---
 title: "Events"
 type: reference
-summary: "The domain-event stream and its catalog — list events, read one, and fetch the machine-readable catalog. Generated from the live schema."
+summary: "The domain-event stream and its catalog: list events, read one, and fetch the machine-readable catalog. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/events
 ---
 
 # Events
 
-An **event** is a record of something that happened — the same events delivered by
+An **event** is a record of something that happened: the same events delivered by
 [webhooks](/webhooks/overview), also readable as a stream. Use this to reconcile
 after downtime, or to pull the machine-readable catalog for code generation. For
 the human catalog, see the [event catalog](/webhooks/event-catalog).
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/events
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/events
 
 > **Events are the reconciliation backstop**
 >
@@ -3268,7 +3292,7 @@ canonical: https://docs.nombaone.xyz/reference/examples
 
 # Create an example
 
-Creates an **example** — the one deletable endpoint that demonstrates the whole
+Creates an **example**: the one deletable endpoint that demonstrates the whole
 money path end to end. Creating an example mints a public reference, posts a
 balanced double-entry transaction to the ledger, and emits a `example.created`
 event. The resource's `status` is **derived from the ledger**, never stored as a
@@ -3278,7 +3302,7 @@ Use this as the template for your own resources, then delete the slice.
 
 > **A teaching endpoint**
 >
-> The example slice exists to show how the primitives compose — a reference as
+> The example slice exists to show how the primitives compose: a reference as
 > the join key, a balanced ledger posting, idempotency, and an emitted event.
 > It carries no product meaning; the two kinds (`standard`, `priority`) differ
 > only as an enum illustration.
@@ -3318,7 +3342,7 @@ const { data } = await res.json();
 
 ## Request fields
 
-The amount to record, in integer kobo (NGN). Must be a positive integer —
+The amount to record, in integer kobo (NGN). Must be a positive integer.
 `15000` is ₦150.00. There are no floats or decimal strings.
 
 The example kind. An enum discriminator for illustration only; both kinds
@@ -3373,7 +3397,7 @@ behave identically.
 The response is the standard success envelope: `success`, `statusCode`, the
 resource in `data`, and `meta.requestId`.
 
-The example's **reference** — its stable public id (`nbo…exa`). The same
+The example's **reference**: its stable public id (`nbo…exa`). The same
 string joins the resource, its ledger postings, and its webhooks.
 
 The kind you created it with.
@@ -3400,7 +3424,7 @@ When the example was created.
 ---
 title: "Glossary"
 type: reference
-summary: "One word, one meaning — across the API, the docs, the console, and every error. The canonical vocabulary of Nomba One."
+summary: "One word, one meaning, across the API, the docs, the console, and every error. The canonical vocabulary of Nomba One."
 canonical: https://docs.nombaone.xyz/reference/glossary
 ---
 
@@ -3408,17 +3432,17 @@ canonical: https://docs.nombaone.xyz/reference/glossary
 
 Nomba One uses one word per concept, everywhere. Learn a term here and it means the
 same thing in the API, the console, and every error message. Where a term shows an
-"also seen as," that is a word we deliberately avoid — you will never see it on the
+"also seen as," that is a word we deliberately avoid: you will never see it on the
 wire.
 
-> **Interactive — `<Glossary>`.** View and run it live at https://docs.nombaone.xyz/reference/glossary
+> **Interactive: `<Glossary>`.** View and run it live at https://docs.nombaone.xyz/reference/glossary
 
 ---
 
 ---
 title: "Invoices"
 type: reference
-summary: "Each cycle's invoice and its state — line items, amounts locked at finalization, and the collection result. Generated from the live schema."
+summary: "Each cycle's invoice and its state: line items, amounts locked at finalization, and the collection result. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/invoices
 ---
 
@@ -3429,11 +3453,11 @@ credits, and a total, locked at finalization. Its state (`draft`, `open`, `paid`
 `past_due`, `void`) tracks collection. The invoice, its
 [ledger](/concepts/the-ledger) postings, and its webhooks all share one reference.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/invoices
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/invoices
 
 > **Invoices are produced, not created by you**
 >
-> You don't create invoices directly — a [subscription](/reference/subscriptions)
+> You don't create invoices directly. A [subscription](/reference/subscriptions)
 > cycle produces them. These operations read and act on the invoices the engine
 > generates. See [how billing works](/concepts/how-billing-works).
 
@@ -3442,32 +3466,32 @@ credits, and a total, locked at finalization. Its state (`draft`, `open`, `paid`
 ---
 title: "Mandates"
 type: reference
-summary: "Direct-debit consent and status — the authorization that lets the engine pull from a customer's bank account silently. Generated from the live schema."
+summary: "Direct-debit consent and status: the authorization that lets the engine pull from a customer's bank account silently. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/mandates
 ---
 
 # Mandates
 
-A **mandate** is a customer's standing authorization to debit their bank account
-— the direct-debit rail. Once active, it is the most reliable silent rail in
+A **mandate** is a customer's standing authorization to debit their bank account,
+the direct-debit rail. Once active, it is the most reliable silent rail in
 Nigeria: no OTP per charge, no thin-balance card decline. See
 [mandates and consent](/concepts/hard-parts/mandates-and-consent) for the
 lifecycle (create → consent → active → debit).
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/mandates
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/mandates
 
 > **Activation is asynchronous**
 >
 > A mandate created today is `consent_pending` until the bank confirms it. The
 > engine sweeps pending mandates to `active` and fires `payment_method.updated`
-> when one activates — you don't poll.
+> when one activates, you don't poll.
 
 ---
 
 ---
 title: "Metrics"
 type: reference
-summary: "Billing metrics — MRR, churn, and the dunning funnel, computed from the ledger. Generated from the live schema."
+summary: "Billing metrics: MRR, churn, and the dunning funnel, computed from the ledger. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/metrics
 ---
 
@@ -3478,7 +3502,7 @@ canonical: https://docs.nombaone.xyz/reference/metrics
 churn, and the dunning recovery funnel. Because they read the same source of
 truth as every charge and settlement, they can't drift from the money.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/metrics
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/metrics
 
 > **Derived, never stored beside the money**
 >
@@ -3490,7 +3514,7 @@ truth as every charge and settlement, they can't drift from the money.
 ---
 title: "Organization"
 type: reference
-summary: "Your organization's configuration and billing settings — read and update the account that owns your data and keys. Generated from the live schema."
+summary: "Your organization's configuration and billing settings: read and update the account that owns your data and keys. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/organization
 ---
 
@@ -3498,11 +3522,11 @@ canonical: https://docs.nombaone.xyz/reference/organization
 
 An **organization** is the account that owns your customers, subscriptions, keys,
 and money. Everything in the API is scoped to one organization, and your secret
-key pins every request to it — see [authentication](/getting-started/authentication).
+key pins every request to it. See [authentication](/getting-started/authentication).
 This resource reads and updates the organization's own configuration and billing
 settings.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/organization
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/organization
 
 > **Isolation is a data-model property**
 >
@@ -3515,7 +3539,7 @@ settings.
 ---
 title: "Payment methods"
 type: reference
-summary: "Cards, mandates, and virtual accounts — set up an instrument, mint a virtual account, list, delete, and set the default. Generated from the live schema."
+summary: "Cards, mandates, and virtual accounts: set up an instrument, mint a virtual account, list, delete, and set the default. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/payment-methods
 ---
 
@@ -3523,10 +3547,10 @@ canonical: https://docs.nombaone.xyz/reference/payment-methods
 
 A **payment method** is how a customer pays: a tokenized card, a direct-debit
 [mandate](/reference/mandates), or a virtual account for bank transfers. The rail
-determines whether a charge is *pulled* or *pushed* — see
+determines whether a charge is *pulled* or *pushed*. See
 [multi-rail: push and pull](/concepts/multi-rail-push-and-pull).
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/payment-methods
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/payment-methods
 
 > **Setting up vs charging**
 >
@@ -3540,22 +3564,22 @@ determines whether a charge is *pulled* or *pushed* — see
 ---
 title: "Plans"
 type: reference
-summary: "Product plans and their lifecycle — create, update, archive, and the prices that hang off them. Generated from the live schema."
+summary: "Product plans and their lifecycle: create, update, archive, and the prices that hang off them. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/plans
 ---
 
 # Plans
 
 A **plan** is the product a customer subscribes to. It carries a name and holds
-one or more [prices](/reference/prices) — the money lives on the price, so one
+one or more [prices](/reference/prices): the money lives on the price, so one
 plan can offer monthly and yearly at once. See
 [create plans and prices](/guides/create-plans-and-prices) for the workflow.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/plans
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/plans
 
 > **Prices are created under a plan**
 >
-> A plan's prices are managed at `/v1/plans/{id}/prices` (create and list) — the
+> A plan's prices are managed at `/v1/plans/{id}/prices` (create and list). The
 > operations above include them. Reading or deactivating an individual price is on
 > the [prices](/reference/prices) resource.
 
@@ -3564,7 +3588,7 @@ plan can offer monthly and yearly at once. See
 ---
 title: "Prices"
 type: reference
-summary: "Recurring prices — amount in integer kobo, interval, trials. Read and deactivate individual prices. Generated from the live schema."
+summary: "Recurring prices: amount in integer kobo, interval, trials. Read and deactivate individual prices. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/prices
 ---
 
@@ -3580,14 +3604,14 @@ A [subscription](/reference/subscriptions) references a price, not a plan.
 > [plans](/reference/plans#post-plans-id-prices) resource. The operations here read
 > and deactivate an individual price by id.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/prices
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/prices
 
 ---
 
 ---
 title: "Settlements"
 type: reference
-summary: "Refunds, payouts, and escrow — read settlements, refund the tenant leg, check the escrow lock, and pay out to a bank. Generated from the live schema."
+summary: "Refunds, payouts, and escrow: read settlements, refund the tenant leg, check the escrow lock, and pay out to a bank. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/settlements
 ---
 
@@ -3598,28 +3622,28 @@ organization's net, landing in its sub-account. This resource is how money moves
 back out: refund a settlement's tenant leg, read the escrow lock, and pay out an
 available balance. See [refunds, payouts & settlement](/guides/refunds-payouts-settlement).
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/settlements
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/settlements
 
 > **The platform fee is non-refundable**
 >
 > A refund reverses only the organization's leg; the platform fee is never
 > touched. Payouts respect the escrow lock and reject
-> `PAYOUT_EXCEEDS_AVAILABLE` — see the [settlement concept](/concepts/settlement-and-sub-accounts).
+> `PAYOUT_EXCEEDS_AVAILABLE`. See the [settlement concept](/concepts/settlement-and-sub-accounts).
 
 ---
 
 ---
 title: "Subscriptions"
 type: reference
-summary: "The engine's lifecycle surface — create, change, pause, resume, cancel, inspect dunning, and preview the upcoming invoice. Generated from the live schema."
+summary: "The engine's lifecycle surface: create, change, pause, resume, cancel, inspect dunning, and preview the upcoming invoice. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/subscriptions
 ---
 
 # Subscriptions
 
 A **subscription** puts a customer on a price and bills it every cycle. It is the
-engine's richest resource: beyond create and read, it exposes the whole lifecycle
-— plan changes with proration, pause/resume, cancel/resubscribe, scheduled
+engine's richest resource: beyond create and read, it exposes the whole lifecycle,
+plan changes with proration, pause/resume, cancel/resubscribe, scheduled
 changes, dunning inspection, and the upcoming-invoice preview.
 
 For the concepts underneath, see [how billing works](/concepts/how-billing-works)
@@ -3627,7 +3651,7 @@ and the [subscription state machine](/concepts/how-billing-works#the-subscriptio
 for the workflows, see [start a subscription](/guides/start-a-subscription) and
 [proration and plan changes](/guides/proration-and-plan-changes).
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/subscriptions
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/subscriptions
 
 > **Money-moving operations take an Idempotency-Key**
 >
@@ -3650,12 +3674,12 @@ manages endpoints and their delivery history: create, list, update, delete, rota
 the signing secret, inspect deliveries, and replay one. For how deliveries work
 and how to handle them, see the [Webhooks](/webhooks/overview) section.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/webhooks
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/webhooks
 
 > **One secret per endpoint**
 >
 > Each endpoint has its own `whsec_…` signing secret, shown once at creation and
-> rotatable without downtime. Verify every delivery against it —
+> rotatable without downtime. Verify every delivery against it:
 > [signing & verification](/webhooks/signing-and-verification).
 
 ---
@@ -3663,13 +3687,13 @@ and how to handle them, see the [Webhooks](/webhooks/overview) section.
 ---
 title: "The sandbox clock"
 type: reference
-summary: "Advance a subscription's next cycle on demand — rehearse a renewal, a proration, or a dunning retry in seconds instead of waiting a real billing period."
+summary: "Advance a subscription's next cycle on demand: rehearse a renewal, a proration, or a dunning retry in seconds instead of waiting a real billing period."
 canonical: https://docs.nombaone.xyz/sandbox-toolkit/clock
 ---
 
 # The sandbox clock
 
-A subscription bills on a repeating cycle — monthly, yearly. You can't wait a
+A subscription bills on a repeating cycle: monthly, yearly. You can't wait a
 month to test the second charge. The **sandbox clock** advances a subscription's next
 cycle immediately, running the same billing loop the scheduler would run on the
 real billing date: open the cycle, finalize the invoice, collect it, post to the
@@ -3683,34 +3707,34 @@ curl -X POST \
   -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
-No body — it advances the target subscription by exactly one cycle and returns the
+No body. It advances the target subscription by exactly one cycle and returns the
 updated subscription with its new period and the invoice the cycle produced.
 
 ## What it lets you rehearse
 
-- **A clean renewal** — with a `success` method, watch the next invoice collect and
+- **A clean renewal**: with a `success` method, watch the next invoice collect and
 the period advance.
-- **A failed renewal → dunning** — with a `decline_insufficient_funds` method, watch
+- **A failed renewal → dunning**: with a `decline_insufficient_funds` method, watch
 the cycle fail, the subscription move to `past_due`, and dunning begin.
-- **A proration** — schedule a plan change, then advance to see the prorated invoice
+- **A proration**: schedule a plan change, then advance to see the prorated invoice
 the [change](/guides/proration-and-plan-changes) produces.
-- **A trial ending** — advance a `trialing` subscription to its first real charge.
+- **A trial ending**: advance a `trialing` subscription to its first real charge.
 
 > **It runs the real loop, not a shortcut**
 >
-> Advancing the clock executes the exact cycle logic the production scheduler runs
-> — it just triggers it now instead of on the calendar. What you see is what live
+> Advancing the clock executes the exact cycle logic the production scheduler runs.
+> It just triggers it now instead of on the calendar. What you see is what live
 > will do. See [how billing works](/concepts/how-billing-works).
 
 > **Sandbox mode only**
 >
 > `advance-cycle` exists only in sandbox mode. In live, cycles advance on their real
-> billing dates, driven by the scheduler — there is no way to force a live charge
+> billing dates, driven by the scheduler. There is no way to force a live charge
 > early.
 
-- **[Sandbox payment methods](/sandbox-toolkit/payment-methods)** — 
+- **[Sandbox payment methods](/sandbox-toolkit/payment-methods)**: 
 Choose the outcome the advanced cycle produces.
-- **[Simulate webhooks](/sandbox-toolkit/simulate-webhooks)** — 
+- **[Simulate webhooks](/sandbox-toolkit/simulate-webhooks)**: 
 Fire the events a cycle would emit, directly.
 
 ---
@@ -3718,7 +3742,7 @@ Fire the events a cycle would emit, directly.
 ---
 title: "Sandbox toolkit overview"
 type: reference
-summary: "Drive the engine deterministically on the sandbox — deterministic payment outcomes, a sandbox clock to skip the wait, and on-demand signed webhooks. No real card, no cron."
+summary: "Drive the engine deterministically on the sandbox: deterministic payment outcomes, a sandbox clock to skip the wait, and on-demand signed webhooks. No real card, no cron."
 canonical: https://docs.nombaone.xyz/sandbox-toolkit/overview
 ---
 
@@ -3726,26 +3750,26 @@ canonical: https://docs.nombaone.xyz/sandbox-toolkit/overview
 
 Testing a billing engine is hard for three reasons: you can't wait a month for the
 next cycle, you can't reliably make a real card decline, and the sandbox sends no
-organic webhooks. The **sandbox toolkit** solves all three — a set of `/v1/sandbox/*`
+organic webhooks. The **sandbox toolkit** solves all three: a set of `/v1/sandbox/*`
 instruments, available only in sandbox mode, that make the engine behave
 exactly how you need to rehearse a flow.
 
 > **Sandbox mode only, live behavior identical**
 >
-> Every `/v1/sandbox/*` route exists only in sandbox mode — that is, when you
+> Every `/v1/sandbox/*` route exists only in sandbox mode, that is, when you
 > authenticate with an `nbo_sandbox_` key. Live behaves byte-identically minus these
-> shortcuts — the sandbox toolkit changes *how you trigger* a path, never *what the
+> shortcuts: the sandbox toolkit changes *how you trigger* a path, never *what the
 > path does*.
 
 ## The three instruments
 
-- **[Sandbox payment methods](/sandbox-toolkit/payment-methods)** — 
-Attach a method that succeeds, declines, or demands OTP — on purpose.
-- **[The sandbox clock](/sandbox-toolkit/clock)** — 
-Advance a subscription's next cycle on demand — no month-long wait.
-- **[Simulate webhooks](/sandbox-toolkit/simulate-webhooks)** — 
+- **[Sandbox payment methods](/sandbox-toolkit/payment-methods)**: 
+Attach a method that succeeds, declines, or demands OTP, on purpose.
+- **[The sandbox clock](/sandbox-toolkit/clock)**: 
+Advance a subscription's next cycle on demand, no month-long wait.
+- **[Simulate webhooks](/sandbox-toolkit/simulate-webhooks)**: 
 Fire a real, signed event to your endpoint whenever you want.
-- **[Verify in your devtools](/getting-started/verify-in-your-devtools)** — 
+- **[Verify in your devtools](/getting-started/verify-in-your-devtools)**: 
 The one-click flow that ties a simulate to in-browser verification.
 
 ## Rehearse the whole lifecycle
@@ -3757,7 +3781,7 @@ Together the three let you drive a complete billing story in seconds:
 3. Simulate `invoice.payment_failed` → confirm your dunning handling fires.
 
 Every step is a real sandbox call with a genuine `X-Request-Id`. Nothing is
-mocked — see [agent-native docs](/agents) for the same honesty guarantee applied
+mocked. See [agent-native docs](/agents) for the same honesty guarantee applied
 to the docs themselves.
 
 ---
@@ -3765,13 +3789,13 @@ to the docs themselves.
 ---
 title: "Sandbox payment methods"
 type: reference
-summary: "Attach a deterministic payment method on the sandbox — its behavior decides the outcome, so you can rehearse success, decline, and card-OTP paths on demand."
+summary: "Attach a deterministic payment method on the sandbox: its behavior decides the outcome, so you can rehearse success, decline, and card-OTP paths on demand."
 canonical: https://docs.nombaone.xyz/sandbox-toolkit/payment-methods
 ---
 
 # Sandbox payment methods
 
-In live, whether a charge succeeds depends on the customer's real card and bank —
+In live, whether a charge succeeds depends on the customer's real card and bank,
 which you can't control while testing. On the sandbox, you attach a **deterministic**
 payment method whose `behavior` decides the outcome every time. This is how you
 rehearse the unhappy paths a happy demo skips.
@@ -3796,22 +3820,22 @@ every cycle.
 | `success` | The charge is accepted. | The happy path. |
 | `requires_otp` | The charge needs customer authentication (OTP/3DS). | The card-OTP → checkout-link branch. |
 | `decline_insufficient_funds` | Declined for a thin balance. | [Dunning](/guides/dunning-and-recovery) on a "not yet." |
-| `decline_expired_card` | Declined — the card expired. | A card-update prompt. |
+| `decline_expired_card` | Declined: the card expired. | A card-update prompt. |
 | `decline_do_not_honor` | Declined by the issuer generically. | A hard decline. |
 
-`kind` is `card` or `mandate` — use `mandate` to rehearse the silent direct-debit
+`kind` is `card` or `mandate`. Use `mandate` to rehearse the silent direct-debit
 rail, `card` for the OTP-prone one.
 
 > **requires_otp is the one to rehearse most**
 >
 > A recurring card charge in Nigeria frequently hits OTP, and it can't complete
 > headlessly. `requires_otp` lets you drive `invoice.action_required` and confirm
-> your handler sends the customer the fresh checkout link — see
+> your handler sends the customer the fresh checkout link. See
 > [card tokens expire](/concepts/hard-parts/card-tokens-expire).
 
-- **[The sandbox clock](/sandbox-toolkit/clock)** — 
+- **[The sandbox clock](/sandbox-toolkit/clock)**: 
 Advance the cycle to see the method charged again.
-- **[Dunning and recovery](/guides/dunning-and-recovery)** — 
+- **[Dunning and recovery](/guides/dunning-and-recovery)**: 
 What the decline behaviors let you rehearse.
 
 ---
@@ -3819,14 +3843,14 @@ What the decline behaviors let you rehearse.
 ---
 title: "Simulate webhooks"
 type: reference
-summary: "Emit and deliver any catalog event on demand — a real, signed payload to your endpoint, the honest substitute for a sandbox that sends no organic webhooks."
+summary: "Emit and deliver any catalog event on demand: a real, signed payload to your endpoint, the honest substitute for a sandbox that sends no organic webhooks."
 canonical: https://docs.nombaone.xyz/sandbox-toolkit/simulate-webhooks
 ---
 
 # Simulate webhooks
 
 The sandbox does not push webhooks on its own, so the toolkit lets you **fire any
-event yourself** — a real, signed payload delivered through the real pipeline to
+event yourself**: a real, signed payload delivered through the real pipeline to
 your registered endpoint. It is the same instrument the
 [verify-in-your-devtools](/getting-started/verify-in-your-devtools) flow wraps in
 one click.
@@ -3853,7 +3877,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
   }'
 ```
 
-The event arrives signed with your endpoint's secret — verify it exactly as you
+The event arrives signed with your endpoint's secret. Verify it exactly as you
 would a production delivery.
 
 > **Real and signed, not mocked**
@@ -3865,12 +3889,12 @@ would a production delivery.
 > **At-least-once, even here**
 >
 > Simulated deliveries follow the same
-> [delivery guarantee](/webhooks/delivery-guarantee) — dedupe on the event id.
+> [delivery guarantee](/webhooks/delivery-guarantee). Dedupe on the event id.
 > Firing the same event twice must be a no-op in your handler.
 
-- **[Verify in your devtools](/getting-started/verify-in-your-devtools)** — 
+- **[Verify in your devtools](/getting-started/verify-in-your-devtools)**: 
 The one-click fire-and-verify flow.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Build the idempotent handler these events drive.
 
 ---
@@ -3878,7 +3902,7 @@ Build the idempotent handler these events drive.
 ---
 title: "Delivery guarantee"
 type: reference
-summary: "Delivery is at-least-once, never exactly-once. The same event can arrive twice — dedupe on the event id and make every handler idempotent."
+summary: "Delivery is at-least-once, never exactly-once. The same event can arrive twice. Dedupe on the event id and make every handler idempotent."
 canonical: https://docs.nombaone.xyz/webhooks/delivery-guarantee
 ---
 
@@ -3887,12 +3911,12 @@ canonical: https://docs.nombaone.xyz/webhooks/delivery-guarantee
 nombaone guarantees **at-least-once** delivery, and says so on every delivery in
 the `X-Nombaone-Delivery-Guarantee` header. That is a deliberate, honest choice:
 exactly-once delivery over an unreliable network is not achievable, and any API
-that claims it is lying. What we give you instead is a guarantee you can build on
-— plus the one tool that makes it safe: a stable event id to dedupe on.
+that claims it is lying. What we give you instead is a guarantee you can build on,
+plus the one tool that makes it safe: a stable event id to dedupe on.
 
 ## What at-least-once means for you
 
-The same event **can** arrive more than once — a retry after a slow response, a
+The same event **can** arrive more than once: a retry after a slow response, a
 network hiccup, a redelivery. Your handler must treat a repeat as a no-op.
 
 > **Dedupe on the event id, after verifying**
@@ -3902,14 +3926,14 @@ network hiccup, a redelivery. Your handler must treat a repeat as a no-op.
 > store.
 
 ```ts
-if (await seen(event.id)) return respond(200); // already handled — no-op
+if (await seen(event.id)) return respond(200); // already handled, no-op
 await markSeen(event.id);
 await handle(event);
 ```
 
 ## Why idempotency has to go all the way down
 
-Deduping at the edge is not enough on its own — the work the handler triggers
+Deduping at the edge is not enough on its own: the work the handler triggers
 must itself be idempotent, because
 [retrying the webhook is not retrying the charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge).
 If a duplicate `invoice.paid` slips through, crediting a balance twice is a real
@@ -3923,16 +3947,16 @@ posting.
 schedule. Return `2xx` quickly and do the work async so a slow handler doesn't
 trigger avoidable retries.
 - **Ordering is not guaranteed.** Events can arrive out of order. Don't assume
-`invoice.paid` lands before `subscription.activated` — reconcile against the
+`invoice.paid` lands before `subscription.activated`. Reconcile against the
 resource (`GET`) when order matters, rather than inferring state from event
 sequence.
 - **Replay.** You can re-request a past delivery with
-`POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay` — the same event id,
+`POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`: the same event id,
 so your dedupe correctly treats it as already-seen.
 
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 The full receive → verify → dedupe → act pattern.
-- **[Retrying ≠ re-charging](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)** — 
+- **[Retrying ≠ re-charging](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)**: 
 Why idempotency lives in the ledger, not just the edge.
 
 ---
@@ -3940,14 +3964,14 @@ Why idempotency lives in the ledger, not just the edge.
 ---
 title: "Event catalog"
 type: reference
-summary: "Every event nombaone can emit, when it fires, and its payload — rendered directly from the API's canonical catalog, so it can never drift."
+summary: "Every event nombaone can emit, when it fires, and its payload, rendered directly from the API's canonical catalog, so it can never drift."
 canonical: https://docs.nombaone.xyz/webhooks/event-catalog
 ---
 
 # Event catalog
 
 This is the complete list of events nombaone emits. It is generated from the
-API's own event catalog, so it is provably complete — every event the API can
+API's own event catalog, so it is provably complete: every event the API can
 send has an entry here, and none can ship undocumented. Deep-link any event by
 its type, e.g. [`/webhooks#invoice.paid`](/webhooks/event-catalog#invoice.paid).
 
@@ -3956,13 +3980,13 @@ the resource it's about), and a small typed payload. Subscribe to only the
 events you need with `enabledEvents` when you
 [register an endpoint](/guides/handle-webhooks).
 
-> **Interactive — `<EventCatalog>`.** View and run it live at https://docs.nombaone.xyz/webhooks/event-catalog
+> **Interactive: `<EventCatalog>`.** View and run it live at https://docs.nombaone.xyz/webhooks/event-catalog
 
 > **One reference, everywhere**
 >
 > The `reference` on an event is the same public id the resource carries in the
 > API and in the [ledger](/concepts/the-ledger). Given an `invoice.paid` event
-> you can `GET` that invoice, find its settlement, and trace its postings — one
+> you can `GET` that invoice, find its settlement, and trace its postings, one
 > name across the whole system.
 
 ---
@@ -3970,7 +3994,7 @@ events you need with `enabledEvents` when you
 ---
 title: "Webhooks overview"
 type: reference
-summary: "How outbound events reach your endpoints — what a delivery looks like, how to register, and the four rules that keep your handler correct."
+summary: "How outbound events reach your endpoints: what a delivery looks like, how to register, and the four rules that keep your handler correct."
 canonical: https://docs.nombaone.xyz/webhooks/overview
 ---
 
@@ -4019,7 +4043,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 You get back a **signing secret** (`whsec_…`), shown once. Endpoints are
-per-mode — a sandbox event only reaches your sandbox endpoint.
+per-mode: a sandbox event only reaches your sandbox endpoint.
 
 ## The four rules
 
@@ -4027,7 +4051,7 @@ A correct handler always does these four things, in order:
 
 1. **[Verify the signature](/webhooks/signing-and-verification)** over the raw
 body, before parsing.
-2. **[Dedupe on the event id](/webhooks/delivery-guarantee)** — delivery is
+2. **[Dedupe on the event id](/webhooks/delivery-guarantee)**: delivery is
 at-least-once.
 3. **Respond `2xx` fast**, then do the work asynchronously.
 4. **Branch on the unhappy events**, not just `invoice.paid`.
@@ -4038,9 +4062,9 @@ at-least-once.
 > [verify us in your devtools](/getting-started/verify-in-your-devtools) hands you
 > a real signed event to fire at your own endpoint and watch verification pass.
 
-- **[Event catalog](/webhooks/event-catalog)** — 
+- **[Event catalog](/webhooks/event-catalog)**: 
 Every event, when it fires, and its payload.
-- **[Signing & verification](/webhooks/signing-and-verification)** — 
+- **[Signing & verification](/webhooks/signing-and-verification)**: 
 The exact signature recipe and a reference implementation.
 
 ---
@@ -4055,15 +4079,15 @@ canonical: https://docs.nombaone.xyz/webhooks/retries-and-replay
 # Retries & replay
 
 Networks fail, servers restart, deploys happen mid-request. nombaone assumes your
-endpoint will occasionally miss a delivery and is built to recover — automatically
+endpoint will occasionally miss a delivery and is built to recover: automatically
 with retries, and manually with replay. Both reuse the **same event id**, so a
 correctly [deduped](/webhooks/delivery-guarantee) handler treats a recovered
 delivery as already-seen.
 
 ## Automatic retries
 
-A delivery succeeds when your endpoint returns a `2xx` promptly. Anything else — a
-timeout, a `5xx`, a connection error — is retried on an increasing backoff, giving
+A delivery succeeds when your endpoint returns a `2xx` promptly. Anything else (a
+timeout, a `5xx`, a connection error) is retried on an increasing backoff, giving
 a briefly-down endpoint time to come back without you doing anything.
 
 > **Return 2xx first, work later**
@@ -4073,7 +4097,7 @@ a briefly-down endpoint time to come back without you doing anything.
 > earns retries it didn't need. Verify, dedupe, enqueue, return `200`.
 
 A delivery that keeps failing past the retry schedule is marked failed and stops
-retrying — it does not retry forever. You can always see where a delivery stands
+retrying. It does not retry forever. You can always see where a delivery stands
 and re-drive it yourself.
 
 ## Inspect deliveries
@@ -4092,7 +4116,7 @@ curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId} \
 
 ## Replay a delivery
 
-Redeliver a past event on demand — after fixing a handler bug, or to backfill an
+Redeliver a past event on demand, after fixing a handler bug, or to backfill an
 endpoint that was down:
 
 ```bash
@@ -4103,7 +4127,7 @@ curl -X POST \
 
 > **Replay keeps the original event id**
 >
-> A replay is the same event, delivered again — not a new one. Your dedupe store
+> A replay is the same event, delivered again, not a new one. Your dedupe store
 > should recognize it as already-processed. That is exactly what you want: replay
 > is safe precisely because your handler is idempotent.
 
@@ -4111,12 +4135,12 @@ curl -X POST \
 
 If your endpoint was down and you're unsure what you missed, don't try to rebuild
 state from a guessed event sequence. Read the resource directly (`GET
-/v1/subscriptions/{id}`) or replay the specific deliveries — the API is the source
+/v1/subscriptions/{id}`) or replay the specific deliveries. The API is the source
 of truth, and events are notifications about it.
 
-- **[Delivery guarantee](/webhooks/delivery-guarantee)** — 
+- **[Delivery guarantee](/webhooks/delivery-guarantee)**: 
 Why the event id makes retries and replay safe.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Build the idempotent handler that makes this work.
 
 ---
@@ -4130,7 +4154,7 @@ canonical: https://docs.nombaone.xyz/webhooks/signing-and-verification
 
 # Signing & verification
 
-Never trust a webhook you haven't verified — the URL is public, so anyone could
+Never trust a webhook you haven't verified: the URL is public, so anyone could
 `POST` to it. Every genuine delivery carries an `X-Nombaone-Signature` header you
 check against your endpoint's signing secret.
 
@@ -4145,7 +4169,7 @@ HMAC_SHA256( `${t}.${rawBody}`, whsec )   // hex
 `t` is the delivery timestamp and `rawBody` is the **exact bytes** of the request
 body. Verify by recomputing `v1` and comparing.
 
-> **Sign the raw bytes — never re-serialize**
+> **Sign the raw bytes: never re-serialize**
 >
 > Compute the HMAC over the body exactly as received. `JSON.parse` then
 > `JSON.stringify` can reorder keys and change the bytes, so the signature won't
@@ -4203,19 +4227,19 @@ can't be replayed against you later.
 
 ## Try it in-browser
 
-Paste a body, timestamp, and secret and watch the exact signature compute — the
+Paste a body, timestamp, and secret and watch the exact signature compute, the
 real recipe, in your browser with Web Crypto:
 
-> **Interactive — `<WebhookVerifier>`.** View and run it live at https://docs.nombaone.xyz/webhooks/signing-and-verification
+> **Interactive: `<WebhookVerifier>`.** View and run it live at https://docs.nombaone.xyz/webhooks/signing-and-verification
 
 > **Rotate without downtime**
 >
 > `POST /v1/webhooks/{id}/rotate-secret` issues a new secret while briefly
 > honoring the old one, so you can roll it without dropping in-flight deliveries.
 
-- **[Delivery guarantee](/webhooks/delivery-guarantee)** — 
-At-least-once — why you dedupe after you verify.
-- **[Verify us in your devtools](/getting-started/verify-in-your-devtools)** — 
+- **[Delivery guarantee](/webhooks/delivery-guarantee)**: 
+At-least-once: why you dedupe after you verify.
+- **[Verify us in your devtools](/getting-started/verify-in-your-devtools)**: 
 Fire a real signed event and watch it verify.
 
 ---
@@ -4223,7 +4247,7 @@ Fire a real signed event and watch it verify.
 ---
 title: "Simulate an event"
 type: reference
-summary: "Fire a real, signed event to your endpoint on demand — the honest substitute for a sandbox that sends no organic webhooks. Sandbox mode only."
+summary: "Fire a real, signed event to your endpoint on demand: the honest substitute for a sandbox that sends no organic webhooks. Sandbox mode only."
 canonical: https://docs.nombaone.xyz/webhooks/simulate
 ---
 
@@ -4231,14 +4255,14 @@ canonical: https://docs.nombaone.xyz/webhooks/simulate
 
 The Nomba sandbox does not push webhooks on its own. Rather than pretend it does,
 nombaone gives you a way to **fire a real, signed event whenever you want**, so you
-can build and test your handler against genuine traffic — the same shape, the same
+can build and test your handler against genuine traffic: the same shape, the same
 signature scheme, the same delivery pipeline as production. This is the honest
 substitute, and it is clearly sandbox-only.
 
-> **Real, not mocked — and sandbox-only**
+> **Real, not mocked, and sandbox-only**
 >
 > A simulated event is signed with your endpoint's real secret and delivered
-> through the real pipeline. It is **not** a fake payload or a `setTimeout` — your
+> through the real pipeline. It is **not** a fake payload or a `setTimeout`. Your
 > verification code will pass against it exactly as it will in production.
 > `simulate` exists only in sandbox mode; it is not available in live.
 
@@ -4273,27 +4297,27 @@ would a production delivery.
 
 Simulate is how you rehearse the paths a happy demo skips:
 
-- **`invoice.paid`** — the success path; grant access.
-- **`invoice.payment_failed`** — dunning begins; don't churn yet.
-- **`invoice.action_required`** — send the customer the checkout link.
-- **`invoice.payment_recovered`** — restore state after recovery.
+- **`invoice.paid`**: the success path; grant access.
+- **`invoice.payment_failed`**: dunning begins; don't churn yet.
+- **`invoice.action_required`**: send the customer the checkout link.
+- **`invoice.payment_recovered`**: restore state after recovery.
 
 > **At-least-once, even here**
 >
 > Simulated deliveries follow the same [delivery
-> guarantee](/webhooks/delivery-guarantee) — dedupe on the event id. Firing the
+> guarantee](/webhooks/delivery-guarantee). Dedupe on the event id. Firing the
 > same event twice must be a no-op in your handler.
 
 ## Do it interactively
 
 The [verify us in your devtools](/getting-started/verify-in-your-devtools) page
 wraps this call in a one-click flow and shows the signature verifying in your
-browser — the fastest way to prove your endpoint works before you write a line of
+browser, the fastest way to prove your endpoint works before you write a line of
 handler code.
 
-- **[Event catalog](/webhooks/event-catalog)** — 
+- **[Event catalog](/webhooks/event-catalog)**: 
 Every type you can simulate.
-- **[Verify us in your devtools](/getting-started/verify-in-your-devtools)** — 
+- **[Verify us in your devtools](/getting-started/verify-in-your-devtools)**: 
 The interactive fire-and-verify flow.
 
 ---

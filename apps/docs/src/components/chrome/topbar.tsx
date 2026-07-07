@@ -1,15 +1,15 @@
 import { ArrowUpRight } from "lucide-react";
 
 import { BrandMark } from "./brand-mark";
-import { EnvPill } from "./env-pill";
 import { MobileNav } from "./mobile-nav";
-import { SearchTrigger } from "./search-trigger";
 import { ThemeToggle } from "./theme-toggle";
+import { TopNav } from "./top-nav";
 
 /**
  * Docs topbar: slim, sticky, blurred. Left: mobile nav trigger + Nombaone mark +
- * DOCS chip. Center/right: ⌘K search, env pill, theme toggle, and quick links
- * (Console, API status). Mirrors admin's chrome density without copying its nav.
+ * DOCS chip. Center: the primary nav links + Resources dropdown (desktop).
+ * Right: quick links (Console, API status) and the theme toggle. Search lives at
+ * the top of the sidebar. Mirrors admin's chrome density without copying its nav.
  */
 
 const QUICK_LINKS = [
@@ -23,9 +23,16 @@ export function Topbar() {
       role="banner"
       className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     >
-      <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
+      <div className="relative flex h-14 items-center gap-3 px-4 lg:px-6">
         <MobileNav />
         <BrandMark />
+
+        {/* True-centered primary nav, independent of the side groups' widths (desktop only). */}
+        <div className="pointer-events-none absolute inset-0 hidden items-center justify-center lg:flex">
+          <div className="pointer-events-auto">
+            <TopNav />
+          </div>
+        </div>
 
         <div className="ml-auto flex items-center gap-2 lg:gap-3">
           <nav aria-label="External" className="hidden items-center gap-1 md:flex">
@@ -42,8 +49,6 @@ export function Topbar() {
               </a>
             ))}
           </nav>
-          <SearchTrigger />
-          <EnvPill />
           <ThemeToggle />
         </div>
       </div>

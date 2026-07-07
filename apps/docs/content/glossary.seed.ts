@@ -30,7 +30,7 @@ export const GLOSSARY: GlossaryEntry[] = [
   { term: "invoice", definition: "The amount due for a cycle, its line items, and its payment state.", schemaRef: "InvoiceResponseData" },
   { term: "payment method", definition: "A customer's rail instance: a card, a mandate, or a virtual account.", schemaRef: "PaymentMethodResponseData" },
   { term: "mandate", definition: "Consent to pull from a bank account via direct debit; has its own lifecycle.", schemaRef: "MandateSetupResponseData" },
-  { term: "dunning", definition: "The recovery process after a failed charge — retries, holds, and fallbacks tuned for thin balances.", conceptSlug: "/concepts/hard-parts/dunning-for-thin-balances", aliases: ["retry loop"] },
+  { term: "dunning", definition: "The recovery process after a failed charge: retries, holds, and fallbacks tuned for thin balances.", conceptSlug: "/concepts/hard-parts/dunning-for-thin-balances", aliases: ["retry loop"] },
   { term: "coupon", definition: "A reusable discount definition (amount- or percent-off).", schemaRef: "CouponResponseData" },
   { term: "discount", definition: "A coupon applied to a specific customer or subscription.", schemaRef: "DiscountResponseData" },
   { term: "credit grant", definition: "Account credit granted to a customer, consumed oldest-first on invoices.", schemaRef: "CreditGrantResponseData" },

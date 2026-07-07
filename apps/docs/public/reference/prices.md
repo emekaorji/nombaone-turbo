@@ -1,7 +1,7 @@
 ---
 title: "Prices"
 type: reference
-summary: "Recurring prices — amount in integer kobo, interval, trials. Read and deactivate individual prices. Generated from the live schema."
+summary: "Recurring prices: amount in integer kobo, interval, trials. Read and deactivate individual prices. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/prices
 ---
 
@@ -17,4 +17,4 @@ A [subscription](/reference/subscriptions) references a price, not a plan.
 > [plans](/reference/plans#post-plans-id-prices) resource. The operations here read
 > and deactivate an individual price by id.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/prices
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/prices

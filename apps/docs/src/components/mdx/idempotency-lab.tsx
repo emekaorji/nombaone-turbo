@@ -124,7 +124,7 @@ export function IdempotencyLab() {
 
       <p className="border-t border-border px-4 py-2.5 text-[11px] text-muted-foreground">
         Runs in your browser to show the rule. In the API, idempotency is enforced against the
-        ledger, so a replay resolves to exactly one posting — never a second charge.
+        ledger, so a replay resolves to exactly one posting, never a second charge.
       </p>
     </div>
   );

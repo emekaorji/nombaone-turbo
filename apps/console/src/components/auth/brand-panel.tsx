@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react';
 
-import { LogoMark } from '@/components/shell/logo-mark';
+import { LogoSquare } from '@/components/shell/logo-square';
 
 const BULLETS = [
   'The money is never wrong',
@@ -18,9 +18,7 @@ export function AuthBrandPanel() {
     >
       {/* Brand */}
       <div className="flex items-center gap-2.5">
-        <div className="flex size-8 items-center justify-center rounded-[9px] bg-accent">
-          <LogoMark className="w-[18px] text-white" />
-        </div>
+        <LogoSquare className="size-8" />
         <span className="text-[17px] font-semibold text-foreground">Nomba One</span>
         <span className="rounded-full bg-surface-3 px-2 py-0.5 font-mono text-[11px] text-subtle-foreground">
           Console

@@ -110,6 +110,9 @@ const envSchema = z.object({
   RECONCILE_NOMBA_WINDOW_HOURS: z.coerce.number().int().positive().default(26),
   // Mandate activation sweep (direct debit): poll `consent_pending` mandates → active.
   MANDATE_ACTIVATION_SWEEP_CRON: z.string().min(1).default('*/10 * * * *'),
+  // Request-log retention: daily prune of API request logs older than the window.
+  REQUEST_LOG_RETENTION_CRON: z.string().min(1).default('30 3 * * *'),
+  REQUEST_LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
   INCOMPLETE_EXPIRY_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
   TRIAL_NOTICE_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
   PM_EXPIRY_NOTICE_WINDOW_DAYS: z.coerce.number().int().positive().default(14),

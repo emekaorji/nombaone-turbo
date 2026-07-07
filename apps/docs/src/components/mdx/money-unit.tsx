@@ -57,7 +57,7 @@ export function MoneyUnit() {
           </span>
           <div className="flex items-center justify-between rounded-lg border border-[--accent]/40 bg-[--accent]/5 px-3 py-2">
             <code className="font-mono text-lg font-semibold text-[--accent]">
-              {valid ? kobo : "—"}
+              {valid ? kobo : ""}
             </code>
             <span className="text-xs text-muted-foreground">
               {valid ? nairaFmt.format(nairaNum) : ""}
@@ -76,7 +76,7 @@ export function MoneyUnit() {
             If you sent{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono">{valid ? nairaNum : 0}</code>{" "}
             where kobo is expected, you&apos;d charge{" "}
-            <strong className="text-foreground">{nairaFmt.format(nairaNum / 100)}</strong> — 100× too
+            <strong className="text-foreground">{nairaFmt.format(nairaNum / 100)}</strong>, 100× too
             little. The name ends in <code className="font-mono">InKobo</code> so the unit is never in
             doubt.
           </p>

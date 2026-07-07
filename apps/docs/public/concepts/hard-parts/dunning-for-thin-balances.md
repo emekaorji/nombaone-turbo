@@ -1,6 +1,6 @@
 ---
 title: "Dunning for thin balances: why payday-timed retries beat fixed schedules"
-type: explanation
+type: reference
 summary: "Most subscription churn in Nigeria is involuntary. A retry on the wrong day just burns an attempt."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/dunning-for-thin-balances
 ---

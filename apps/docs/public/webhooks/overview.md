@@ -1,7 +1,7 @@
 ---
 title: "Webhooks overview"
 type: reference
-summary: "How outbound events reach your endpoints — what a delivery looks like, how to register, and the four rules that keep your handler correct."
+summary: "How outbound events reach your endpoints: what a delivery looks like, how to register, and the four rules that keep your handler correct."
 canonical: https://docs.nombaone.xyz/webhooks/overview
 ---
 
@@ -50,7 +50,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
 ```
 
 You get back a **signing secret** (`whsec_…`), shown once. Endpoints are
-per-mode — a sandbox event only reaches your sandbox endpoint.
+per-mode: a sandbox event only reaches your sandbox endpoint.
 
 ## The four rules
 
@@ -58,7 +58,7 @@ A correct handler always does these four things, in order:
 
 1. **[Verify the signature](/webhooks/signing-and-verification)** over the raw
 body, before parsing.
-2. **[Dedupe on the event id](/webhooks/delivery-guarantee)** — delivery is
+2. **[Dedupe on the event id](/webhooks/delivery-guarantee)**: delivery is
 at-least-once.
 3. **Respond `2xx` fast**, then do the work asynchronously.
 4. **Branch on the unhappy events**, not just `invoice.paid`.
@@ -69,7 +69,7 @@ at-least-once.
 > [verify us in your devtools](/getting-started/verify-in-your-devtools) hands you
 > a real signed event to fire at your own endpoint and watch verification pass.
 
-- **[Event catalog](/webhooks/event-catalog)** — 
+- **[Event catalog](/webhooks/event-catalog)**: 
 Every event, when it fires, and its payload.
-- **[Signing & verification](/webhooks/signing-and-verification)** — 
+- **[Signing & verification](/webhooks/signing-and-verification)**: 
 The exact signature recipe and a reference implementation.

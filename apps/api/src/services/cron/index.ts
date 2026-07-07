@@ -9,6 +9,7 @@ import {
   LIFECYCLE_SWEEP_JOB,
   MANDATE_ACTIVATION_SWEEP_JOB,
   RECONCILE_NOMBA_JOB,
+  REQUEST_LOG_RETENTION_JOB,
   WEBHOOK_MAINTENANCE_JOB,
 } from './constants';
 
@@ -43,6 +44,8 @@ export async function initializeScheduler(): Promise<void> {
   await upsertCron(RECONCILE_NOMBA_JOB, env.RECONCILE_NOMBA_CRON);
   // Mandate activation — poll consent_pending direct-debit mandates → active.
   await upsertCron(MANDATE_ACTIVATION_SWEEP_JOB, env.MANDATE_ACTIVATION_SWEEP_CRON);
+  // Request-log retention — nightly prune of request logs past the retention window.
+  await upsertCron(REQUEST_LOG_RETENTION_JOB, env.REQUEST_LOG_RETENTION_CRON);
   logger.info('[scheduler] repeatables registered', {
     [BILLING_SWEEP_JOB]: env.BILLING_SWEEP_CRON,
     [LIFECYCLE_SWEEP_JOB]: env.LIFECYCLE_SWEEP_CRON,
@@ -50,5 +53,6 @@ export async function initializeScheduler(): Promise<void> {
     [WEBHOOK_MAINTENANCE_JOB]: env.WEBHOOK_MAINTENANCE_CRON,
     [RECONCILE_NOMBA_JOB]: env.RECONCILE_NOMBA_CRON,
     [MANDATE_ACTIVATION_SWEEP_JOB]: env.MANDATE_ACTIVATION_SWEEP_CRON,
+    [REQUEST_LOG_RETENTION_JOB]: env.REQUEST_LOG_RETENTION_CRON,
   });
 }

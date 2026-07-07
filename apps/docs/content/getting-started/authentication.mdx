@@ -1,6 +1,6 @@
 ---
 title: Authentication
-description: Every request authenticates with your organization's secret key, sent as a Bearer token. The key's prefix pins it to one mode — sandbox or live.
+description: "Every request authenticates with your organization's secret key, sent as a Bearer token. The key's prefix pins it to one mode: sandbox or live."
 section: get-started
 ---
 
@@ -11,7 +11,7 @@ You send it as a Bearer token on every request:
 Authorization: Bearer nbo_sandbox_…
 ```
 
-There is no separate client id or signing step — the secret key both identifies
+There is no separate client id or signing step: the secret key both identifies
 your organization and proves the request is yours, so it must stay server-side.
 
 ## Key format
@@ -24,7 +24,7 @@ A secret key is a mode prefix followed by 256 bits of random body:
 | `nbo_live_` | Live | `nbo_live_x9y8z7w6…` |
 
 The full secret is shown to you **once**, at creation, and is never recoverable
-afterward — the API stores only a hash. If you lose it, rotate the key and
+afterward: the API stores only a hash. If you lose it, rotate the key and
 update your servers.
 
 <Callout type="danger" title="Treat the secret key like a password">
@@ -35,7 +35,7 @@ update your servers.
 
 ## The key pins the mode
 
-The mode is not a separate parameter — it is **derived from the key's
+The mode is not a separate parameter: it is **derived from the key's
 prefix** and verified on every request. An `nbo_sandbox_` key can only ever touch
 sandbox data; an `nbo_live_` key can only touch live data. There is no way for one
 request to cross the boundary, which is why you can keep both keys side by side
@@ -46,11 +46,11 @@ practice.
 
 ## Authenticating a request
 
-The same authenticated request, in your language — switch the tab:
+The same authenticated request, in your language. Switch the tab:
 
 <Snippet method="GET" path="/v1/customers" />
 
-A missing, malformed, or revoked key returns `401 Unauthorized` — see
+A missing, malformed, or revoked key returns `401 Unauthorized`. See
 [`API_KEY_INVALID`](/errors#API_KEY_INVALID) for the fix. The error envelope:
 
 ```json
@@ -69,7 +69,7 @@ A missing, malformed, or revoked key returns `401 Unauthorized` — see
 
 Rotation issues a new secret and invalidates the old one. Because the key both
 authenticates and pins the mode, a rotated key keeps the same
-mode — a rotated sandbox key is still a sandbox key.
+mode: a rotated sandbox key is still a sandbox key.
 
 <Callout type="tip">
   Roll keys on a schedule and on any suspected exposure. Update every server

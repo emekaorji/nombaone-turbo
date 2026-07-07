@@ -1,6 +1,6 @@
 ---
 title: "Proration is a ledger problem, not a math problem"
-type: explanation
+type: reference
 summary: "Mid-cycle plan changes are not a formula, they are entries that must balance to the kobo."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/proration-is-a-ledger-problem
 ---

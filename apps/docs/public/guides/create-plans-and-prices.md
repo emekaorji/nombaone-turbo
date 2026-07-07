@@ -1,7 +1,7 @@
 ---
 title: "Create plans and prices"
 type: how-to
-summary: "Model your pricing — plans hold the product, prices hold the money. Set intervals, trials, and multiple prices on one plan."
+summary: "Model your pricing: plans hold the product, prices hold the money. Set intervals, trials, and multiple prices on one plan."
 canonical: https://docs.nombaone.xyz/guides/create-plans-and-prices
 ---
 
@@ -24,7 +24,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
   -d '{ "name": "Pro", "description": "Everything in the Pro tier" }'
 ```
 
-The `data.id` is the plan's reference — you post prices to it.
+The `data.id` is the plan's reference: you post prices to it.
 
 ## Add a price
 
@@ -43,18 +43,18 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
   }'
 ```
 
-`250000` is ₦2,500.00. `intervalCount` multiplies the interval — `interval:
+`250000` is ₦2,500.00. `intervalCount` multiplies the interval. `interval:
 "month"` with `intervalCount: 3` bills quarterly.
 
 > **Money is integer kobo**
 >
-> Every money field ends in `InKobo`. Send `250000` for ₦2,500 — never `2500`.
+> Every money field ends in `InKobo`. Send `250000` for ₦2,500, never `2500`.
 > This is the [100× trap](/concepts/money-is-integer-kobo).
 
 ## Add a trial
 
 Set `trialPeriodDays` on the price. A subscription started on it enters
-`trialing` — no charge until the trial ends, then the first invoice is collected.
+`trialing`: no charge until the trial ends, then the first invoice is collected.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
@@ -65,11 +65,11 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
 
 ## Multiple prices on one plan
 
-Create as many prices on a plan as you sell it — monthly and yearly, NGN tiers,
+Create as many prices on a plan as you sell it: monthly and yearly, NGN tiers,
 a promotional rate. A subscription references a **price**, not a plan, so
 switching a customer from monthly to yearly is a
 [plan change](/guides/proration-and-plan-changes) to a different price on the
-same plan — proration handled for you.
+same plan, proration handled for you.
 
 ## Archiving
 
@@ -78,7 +78,7 @@ Plans archive (`POST /v1/plans/{id}/archive`) and prices deactivate
 touching the ones already billing. Existing subscriptions keep their price;
 archiving only prevents new use.
 
-- **[Start a subscription](/guides/start-a-subscription)** — 
+- **[Start a subscription](/guides/start-a-subscription)**: 
 Put a customer on a price, over any rail.
-- **[Proration and plan changes](/guides/proration-and-plan-changes)** — 
+- **[Proration and plan changes](/guides/proration-and-plan-changes)**: 
 Move a customer between prices mid-cycle, correctly.

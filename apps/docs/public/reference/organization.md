@@ -1,7 +1,7 @@
 ---
 title: "Organization"
 type: reference
-summary: "Your organization's configuration and billing settings — read and update the account that owns your data and keys. Generated from the live schema."
+summary: "Your organization's configuration and billing settings: read and update the account that owns your data and keys. Generated from the live schema."
 canonical: https://docs.nombaone.xyz/reference/organization
 ---
 
@@ -9,11 +9,11 @@ canonical: https://docs.nombaone.xyz/reference/organization
 
 An **organization** is the account that owns your customers, subscriptions, keys,
 and money. Everything in the API is scoped to one organization, and your secret
-key pins every request to it — see [authentication](/getting-started/authentication).
+key pins every request to it. See [authentication](/getting-started/authentication).
 This resource reads and updates the organization's own configuration and billing
 settings.
 
-> **Interactive — `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/organization
+> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/organization
 
 > **Isolation is a data-model property**
 >
