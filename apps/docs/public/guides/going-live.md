@@ -30,7 +30,7 @@ Load the key from an environment variable so the same code runs against both:
 
 ```ts
 const base = process.env.NOMBAONE_BASE_URL;   // sandbox vs prod
-const key  = process.env.NOMBAONE_SECRET_KEY; // nbo_sandbox_ vs nbo_live_
+const key  = process.env.NOMBAONE_API_KEY; // nbo_sandbox_ vs nbo_live_
 ```
 
 ## Pre-launch checklist

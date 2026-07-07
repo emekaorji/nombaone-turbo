@@ -1202,7 +1202,7 @@ only works against the production deployment.
 A clean integration keeps the two modes strictly separate:
 
 - **Configuration**: load the key from an environment variable
-(`NOMBAONE_SECRET_KEY`) so the same code runs against sandbox in staging and
+(`NOMBAONE_API_KEY`) so the same code runs against sandbox in staging and
 live in production with no code change.
 - **Data**: sandbox references and live references are distinct; an id minted in
 sandbox will never resolve in live.
@@ -1319,7 +1319,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-Just a shell. Export your key: `export NOMBAONE_SECRET_KEY=nbo_sandbox_…`.
+Just a shell. Export your key: `export NOMBAONE_API_KEY=nbo_sandbox_…`.
 
 ## 2 · Create a plan
 
@@ -1351,7 +1351,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-Standard library only: `net/http`, no dependency. Read the key from `os.Getenv("NOMBAONE_SECRET_KEY")`.
+Standard library only: `net/http`, no dependency. Read the key from `os.Getenv("NOMBAONE_API_KEY")`.
 
 ## 2 · Create a plan
 
@@ -1383,7 +1383,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-Call from a **route handler** or server action, never the browser. `fetch` is built in; read the key from `process.env.NOMBAONE_SECRET_KEY`.
+Call from a **route handler** or server action, never the browser. `fetch` is built in; read the key from `process.env.NOMBAONE_API_KEY`.
 
 ## 2 · Create a plan
 
@@ -1415,7 +1415,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-No SDK needed. Node 18+ has `fetch` built in. Load the key from `process.env.NOMBAONE_SECRET_KEY`.
+No SDK needed. Node 18+ has `fetch` built in. Load the key from `process.env.NOMBAONE_API_KEY`.
 
 ## 2 · Create a plan
 
@@ -1447,7 +1447,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-The `curl` extension ships with PHP. Read the key from `getenv("NOMBAONE_SECRET_KEY")`.
+The `curl` extension ships with PHP. Read the key from `getenv("NOMBAONE_API_KEY")`.
 
 ## 2 · Create a plan
 
@@ -1479,7 +1479,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-Install the HTTP client: `pip install requests`. Read the key from `NOMBAONE_SECRET_KEY`.
+Install the HTTP client: `pip install requests`. Read the key from `NOMBAONE_API_KEY`.
 
 ## 2 · Create a plan
 
@@ -1511,7 +1511,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-Standard library only: `net/http`. Read the key from `ENV['NOMBAONE_SECRET_KEY']`.
+Standard library only: `net/http`. Read the key from `ENV['NOMBAONE_API_KEY']`.
 
 ## 2 · Create a plan
 
@@ -2205,7 +2205,7 @@ Load the key from an environment variable so the same code runs against both:
 
 ```ts
 const base = process.env.NOMBAONE_BASE_URL;   // sandbox vs prod
-const key  = process.env.NOMBAONE_SECRET_KEY; // nbo_sandbox_ vs nbo_live_
+const key  = process.env.NOMBAONE_API_KEY; // nbo_sandbox_ vs nbo_live_
 ```
 
 ## Pre-launch checklist
@@ -3176,7 +3176,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
 const res = await fetch("https://sandbox.api.nombaone.xyz/v1/examples", {
   method: "POST",
   headers: {
-    Authorization: `Bearer ${process.env.NOMBAONE_SECRET_KEY}`,
+    Authorization: `Bearer ${process.env.NOMBAONE_API_KEY}`,
     "Content-Type": "application/json",
     "Idempotency-Key": crypto.randomUUID(),
   },
@@ -3499,6 +3499,3207 @@ would a production delivery.
 The one-click fire-and-verify flow.
 - **[Handle webhooks](/guides/handle-webhooks)**: 
 Build the idempotent handler these events drive.
+
+---
+
+---
+title: "SDKs and libraries"
+type: reference
+summary: "Nine official, idiomatic SDKs — Node, Python, Go, PHP, Ruby, Java, .NET, Rust, and Elixir — plus a CLI. Each one wraps the same API with typed errors, automatic retries that never double-charge, cursor pagination, and a webhook verifier."
+canonical: https://docs.nombaone.xyz/sdks
+---
+
+# SDKs and libraries
+
+Every Nomba One SDK is official, hand-written for its language, and generated from
+the same API — so a subscription you create in Go behaves exactly like one you
+create in Ruby. Pick your language, install one package, and you get typed errors
+with a `hint` and a `docUrl`, automatic retries that reuse the idempotency key so a
+blip never double-charges, cursor pagination you can loop over, and a keyless
+webhook verifier. Money is always integer kobo.
+
+If you would rather hold the raw HTTP surface — no dependency at all — the
+[quickstart](/getting-started/quickstart) gets you to a real `201` with nothing but
+your language's standard library.
+
+## The libraries
+
+Versions above are the current releases; the API contract is the same across all of
+them. Each SDK reads your secret key from `NOMBAONE_API_KEY` and derives the host
+from the key prefix — `nbo_sandbox_…` talks to the sandbox, `nbo_live_…` to live —
+so the same code moves to production by swapping one key.
+
+## Pick your language
+
+- **[Node.js & TypeScript](/sdks/node)**: 
+One library for Node, Next.js, and every JS runtime, fully typed.
+- **[Python](/sdks/python)**: 
+Sync and async clients, on httpx and pydantic.
+- **[Go](/sdks/go)**: 
+Context-first, zero dependencies, range-over-func pagination.
+- **[PHP](/sdks/php)**: 
+Typed models for PHP, Laravel, and Symfony.
+- **[Ruby](/sdks/ruby)**: 
+A zero-dependency gem for Ruby and Rails.
+- **[Java](/sdks/java)**: 
+Thread-safe, synchronous, for Java, Kotlin, and Spring.
+- **[.NET](/sdks/dotnet)**: 
+Async from top to bottom, for C# on .NET 8 and beyond.
+- **[Rust](/sdks/rust)**: 
+Async-first on tokio, with an optional blocking API.
+- **[Elixir](/sdks/elixir)**: 
+A functional client for Elixir and Phoenix.
+
+## The CLI
+
+- **[Command-line tool](/sdks/cli)**: 
+Tail webhooks, scaffold a project, and drive the sandbox from your terminal.
+
+## What every SDK guarantees
+
+- **The money is never wrong.** Amounts are integer kobo end to end, and every
+money-moving `POST` is idempotent by construction — a retry resolves to exactly
+one movement.
+- **Errors resolve themselves.** A failure carries a machine-readable `code`, a
+human `hint`, and a `docUrl` that points at the fix. Branch on the code, never on
+the message.
+- **Webhooks verify without a key.** The webhook helper needs only your signing
+secret, so a receiver never has to hold your API key.
+- **One vocabulary.** Plans, prices, subscriptions, mandates, settlements — a word
+means the same thing in every SDK, the API, and the console.
+
+---
+
+---
+title: "Command-line interface"
+type: reference
+summary: "The nombaone CLI — tail webhooks, scaffold a project, and drive the sandbox from your terminal. In development; use an SDK or the raw API in the meantime."
+canonical: https://docs.nombaone.xyz/sdks/cli
+---
+
+# Command-line interface
+
+The `nombaone` CLI will let you work with Nomba One straight from your terminal —
+tail live webhook deliveries while you build a handler, scaffold a project, and
+drive the sandbox without writing a line of application code.
+
+> **In development**
+>
+> The CLI is not released yet. This page describes what it will do; it will fill
+> in with real commands when the tool ships. To build today, reach for one of the
+> [SDKs](/sdks) or the raw API.
+
+## What it will do
+
+- **Tail webhooks.** Stream deliveries to your endpoint as they happen, so you can
+watch an event land while you write the handler.
+- **Scaffold locally.** Start a project preconfigured for the sandbox, so your
+first real subscription is a command away.
+- **Drive the sandbox.** Advance a billing cycle, mint a deterministic test
+method, and simulate an event — the same [sandbox toolkit](/sandbox-toolkit/overview)
+the SDKs expose, from the shell.
+
+## In the meantime
+
+- **[Pick an SDK](/sdks)**: 
+Nine official libraries, one for your language.
+- **[Quickstart](/getting-started/quickstart)**: 
+Reach a real subscription with nothing but your standard library.
+
+---
+
+---
+title: ".NET SDK"
+type: reference
+summary: "The NombaOne SDK for C# on .NET 8 and netstandard2.0: async from top to bottom, with typed errors, automatic retries that never double-charge, cursor pagination, and a webhook verifier that needs no API key."
+canonical: https://docs.nombaone.xyz/sdks/dotnet
+---
+
+# .NET SDK
+
+`NombaOne` is the official SDK for C# and .NET. One library serves every runtime —
+.NET 8 and later, and any `netstandard2.0` target including Mono and Unity — with
+complete types and one dependency. It is async from top to bottom: every call
+returns a `Task` and takes a trailing `CancellationToken`. It talks to the same
+API as every other SDK, so the money behaves identically wherever you run it.
+
+```bash
+dotnet add package NombaOne
+```
+
+The NuGet id is `NombaOne`, the client class is `Nombaone`, and the namespace is
+`NombaOne` — all three read "nombaone". Your secret key is read from
+`NOMBAONE_API_KEY` (or passed to the constructor); it is server-side only — never
+ship it to a browser, mobile, or desktop client.
+
+```csharp
+using NombaOne; // the client, options, params, models, and error types
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo typed as `long`: ₦2,500.00
+is `250_000`. Every call is asynchronous, so `await` it; each one also accepts a
+trailing `CancellationToken` you can thread through.
+
+```csharp
+using NombaOne;
+
+using var nombaone = new Nombaone(); // reads NOMBAONE_API_KEY
+
+// 1. Something to sell.
+var plan = await nombaone.Plans.CreateAsync(new PlanCreateParams { Name = "Pro" });
+var price = await nombaone.Plans.Prices.CreateAsync(plan.Id, new PriceCreateParams
+{
+    UnitAmountInKobo = 250_000, // ₦2,500.00
+    Interval = "month",
+});
+
+// 2. Someone to bill.
+var customer = await nombaone.Customers.CreateAsync(new CustomerCreateParams
+{
+    Email = "ada@example.com",
+    Name = "Ada Lovelace",
+});
+
+// 3. A way to pay — in the sandbox, mint a deterministic test card.
+var method = await nombaone.Sandbox.CreatePaymentMethodAsync(
+    new SandboxPaymentMethodParams { CustomerId = customer.Id });
+
+// 4. The subscription. The engine runs it from now on.
+var subscription = await nombaone.Subscriptions.CreateAsync(new SubscriptionCreateParams
+{
+    CustomerId = customer.Id,
+    PriceId = price.Id,
+    PaymentMethodId = method.Id,
+});
+
+Console.WriteLine(subscription.Status); // "active"
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+the live host automatically.
+
+## Constructing the client
+
+```csharp
+new Nombaone();                          // key from NOMBAONE_API_KEY
+new Nombaone("nbo_sandbox_…");           // explicit key
+new Nombaone(new NombaoneOptions { … }); // full options
+```
+
+The environment and host are derived from the key prefix. The constructor throws a
+`NombaoneException` with an actionable message when no key resolves, or when the key
+prefix is unrecognized and no `BaseUrl` is given.
+
+| Option | Type | Default | Meaning |
+|---|---|---|---|
+| `ApiKey` | `string?` | `NOMBAONE_API_KEY` | The secret key. Server-side only. |
+| `BaseUrl` | `string?` | derived from key prefix | Override the API origin. Required for an unrecognized prefix. |
+| `Timeout` | `TimeSpan?` | 30s | Per-attempt timeout. |
+| `MaxRetries` | `int?` | `2` (3 attempts) | Retries network failures, timeouts, 408/429/5xx, and in-flight idempotency conflicts. A `POST` retry always reuses its idempotency key. |
+| `HttpClient` | `HttpClient?` | new one | Bring your own for proxies, handlers, pooling, or tests; a supplied client is left undisposed. |
+| `DefaultHeaders` | `IReadOnlyDictionary<string,string>?` | — | Headers sent on every request. |
+
+`Nombaone` implements `IDisposable` — the `using` above disposes the internally
+created `HttpClient` at end of scope. Read `nombaone.Mode` (`"sandbox"` or `"live"`)
+and `nombaone.BaseUrl` to see where a client points; `Nombaone.SandboxBaseUrl` and
+`Nombaone.LiveBaseUrl` hold both hosts.
+
+## Conventions
+
+- **Money is integer kobo.** Every money field and param is a `long` ending in
+`InKobo`, PascalCase on the model (`UnitAmountInKobo`), and `Currency` is always
+`"NGN"`. ₦1.00 is `100`. There are no floats or decimals for money, anywhere.
+- **Timestamps are `DateTimeOffset`.** They arrive parsed (UTC), typed
+`DateTimeOffset?` where the API can omit them — never a raw string.
+- **`Optional` clears a field.** Most optional inputs are simply omitted when
+unset. A few update fields can be *cleared* by sending JSON `null`; those are typed
+`Optional?` — `Phone = "+2348012345678"` sets, `Phone = Optional<string>.Null`
+clears, and leaving `Phone` unset changes nothing.
+- **Idempotency is automatic.** A UUID idempotency key is generated for every `POST`
+and reused across automatic retries, so a dropped connection can never
+double-charge. On payouts, pass your own stable key — it doubles as the payout's
+durable reference, so use something like your payout row id.
+- **IDs are opaque strings** of the form `nbo…` with a type suffix (`…cus`, `…sub`,
+`…inv`). Never validate them yourself.
+
+Per call, every method's last two arguments are an optional `RequestOptions` and a
+`CancellationToken`:
+
+| Field | Meaning |
+|---|---|
+| `IdempotencyKey` | Override the auto-generated key. Required practice on payouts. |
+| `Headers` | Extra headers; a `null` value removes an SDK default. |
+| `Timeout` | Per-attempt timeout for this call. |
+| `MaxRetries` | Retry budget for this call; `0` fails fast. |
+
+A `CancellationToken` you cancel is never retried and surfaces as
+`OperationCanceledException`.
+
+## Return values and pagination
+
+Every call is asynchronous. A non-list method returns a `Task` — `await` it for
+the resource. Every returned model carries its `RawResponse` (`.StatusCode`,
+`.Headers`) and a `RequestId` shortcut, so the raw response and the id to quote to
+support arrive with the result.
+
+Every `ListAsync(...)` returns a `Task<NombaonePage>` for one page; the paired
+`ListAutoPagingAsync(...)` returns an `IAsyncEnumerable` you `await foreach` to
+stream every item across every page — the cursors and your original filters are
+threaded for you.
+
+```csharp
+// One page.
+NombaonePage<Invoice> page = await nombaone.Invoices.ListAsync(
+    new InvoiceListParams { Status = "open", Limit = 50 });
+foreach (var invoice in page.Data) { }
+
+// Manual paging.
+if (page.HasNextPage) { var next = await page.NextPageAsync(); }
+
+// Every item across every page — breaking the loop stops fetching.
+await foreach (var invoice in nombaone.Invoices.ListAutoPagingAsync(
+    new InvoiceListParams { Status = "open" }))
+{
+    Console.WriteLine(invoice.Id);
+}
+```
+
+Filters use `Limit` (1–100, default 20) and an opaque `Cursor`.
+
+## Errors
+
+Every error is typed. The base is `NombaoneException` (also thrown for config
+mistakes); any non-2xx response is a `NombaoneApiException` with a status-specific
+subclass, and transport failures are `NombaoneConnectionException` /
+`NombaoneTimeoutException`.
+
+A `NombaoneApiException` carries `StatusCode`, a machine-readable `Code`, a `Hint`,
+a `DocUrl`, an optional `Fields` map (on 422s), and the `RequestId`. The `Hint` is
+folded into `Exception.Message`, so the fix arrives with the failure.
+
+| Status | Class | Notes |
+|---|---|---|
+| 400 | `BadRequestException` | Malformed request. |
+| 401 | `AuthenticationException` | Missing, invalid, or wrong-environment key. |
+| 403 | `PermissionDeniedException` | Missing scope, or a foreign resource. |
+| 404 | `NotFoundException` | Wrong id, or wrong environment. |
+| 409 | `ConflictException` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `ValidationException` | `ex.Fields` has per-field messages. |
+| 429 | `RateLimitException` | Adds `RetryAfter` (seconds), `Limit`, `Remaining`. |
+| 5xx | `ServerException` | Safe to retry — the SDK already did. |
+
+```csharp
+try
+{
+    await nombaone.Subscriptions.CreateAsync(subscriptionParams);
+}
+catch (ValidationException ex)  { Console.WriteLine(ex.Fields);     } // per-field messages
+catch (RateLimitException ex)   { Console.WriteLine(ex.RetryAfter); } // seconds
+catch (NotFoundException ex)    { Console.WriteLine(ex.Code);       } // e.g. "CUSTOMER_NOT_FOUND"
+catch (NombaoneApiException ex) { Console.WriteLine($"{ex.Code}: {ex.Hint} ({ex.RequestId})"); }
+```
+
+Branch on `ex.Code` — against the `NombaoneErrorCodes` constants
+(`NombaoneErrorCodes.CustomerNotFound`) — or on the exception type; never on
+`ex.Message`, which may be reworded. Every code and its fix is in the
+[error reference](/errors).
+
+## Webhooks
+
+The webhook verifier is the static `NombaOne.Webhooks.WebhookVerifier`, and it needs
+**no API key** — a receiver usually holds only the signing secret.
+`ConstructEvent` has `byte[]` and `string` overloads; prefer the `byte[]` overload
+with the exact raw request bytes.
+
+```csharp
+using NombaOne.Webhooks;
+
+app.MapPost("/nombaone/webhooks", async (HttpRequest req) =>
+{
+    req.EnableBuffering();
+    using var reader = new StreamReader(req.Body);
+    var rawBody = await reader.ReadToEndAsync();               // 1. the RAW body, never re-serialized
+    var signature = req.Headers["X-Nombaone-Signature"].ToString();
+
+    WebhookEvent evt;
+    try
+    {
+        evt = WebhookVerifier.ConstructEvent(                 // 2. verify before you parse
+            rawBody, signature,
+            Environment.GetEnvironmentVariable("NOMBAONE_WEBHOOK_SECRET")!);
+    }
+    catch (WebhookVerificationException) { return Results.BadRequest(); }
+
+    if (AlreadyProcessed(evt.Event.Id)) return Results.Ok();  // 3. dedupe on the event id
+
+    switch (evt.Type)
+    {
+        case WebhookEventTypes.InvoicePaid:           Unlock(evt.Data.Reference!);   break;
+        case WebhookEventTypes.InvoiceActionRequired: Email(evt.Data.CheckoutLink!); break;
+        case WebhookEventTypes.InvoicePaymentFailed:  Note(evt.Data.Reason!);        break;
+    }
+    return Results.Ok(); // respond 2xx fast; do the work async
+});
+```
+
+Three rules the SDK enforces: feed the **raw** body (never a re-serialized object);
+verify before you parse; and **dedupe on `evt.Event.Id`**, because delivery is
+at-least-once. Compare `evt.Type` against the `WebhookEventTypes` constants — the
+catalog is open, so an unknown future type still arrives as a plain `Type` string.
+See [signing and verification](/webhooks/signing-and-verification) for the signature
+scheme.
+
+## The sandbox toolkit
+
+Every `nombaone.Sandbox` method is sandbox-only and throws a `NombaoneException`
+locally, before any network call, if the client holds a live key.
+
+```csharp
+// A deterministic test method — no real card.
+var method = await nombaone.Sandbox.CreatePaymentMethodAsync(new SandboxPaymentMethodParams
+{
+    CustomerId = customer.Id,
+    Behavior = "decline_insufficient_funds", // a thin balance: "not yet", not "no"
+});
+
+// The test clock — run the next billing cycle through the real engine, now.
+var cycle = await nombaone.Sandbox.AdvanceCycleAsync(subscription.Id);
+Console.WriteLine(cycle.Outcome); // "past_due"
+
+// Fire a real, signed webhook at your registered endpoints.
+await nombaone.Sandbox.SimulateWebhookAsync(new SandboxSimulateWebhookParams { Type = "invoice.paid" });
+```
+
+The behaviors are `success` (default), `decline_insufficient_funds`,
+`decline_expired_card`, `decline_do_not_honor`, and `requires_otp`. The sandbox
+sends no organic webhooks — `SimulateWebhookAsync` is how you rehearse a handler.
+See the [sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather surface these than let you discover them at 2am.
+
+> **Dunning state is scheduled asynchronously**
+>
+> Right after a failed cycle the subscription is `past_due`, but
+> `Subscriptions.Dunning.RetrieveAsync` may report `status: none` until the first
+> retry is scheduled. Do not read dunning state synchronously off the failure — wait
+> for the dunning webhook, then read it.
+
+- **Two calls return a `PaymentMethod`.** `Subscriptions.UpdatePaymentMethodAsync`
+returns the attached `PaymentMethod`, and `Mandates.RetrieveAsync` returns a
+`PaymentMethod` too (a mandate's standing lives on the payment-method row). That is
+what the wire carries — the return types say so.
+- **Mandate creation may 504 on the sandbox.** `Mandates.CreateAsync` starts
+`consent_pending`; on the deployed sandbox the NIBSS upstream can return a `504`,
+surfacing as a `ServerException` / `SYSTEM_UPSTREAM_ERROR`. Pass `MaxRetries = 0`
+to fail fast while that upstream is down, and never charge before the
+`payment_method.updated` webhook.
+- **`Mode` is `"sandbox"` on the wire.** Every resource's `Mode` is `"sandbox"` or
+`"live"` — the value that pairs with your keys and hosts. Read that, never
+`"test"`.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not yet."
+Read `Subscriptions.Dunning.RetrieveAsync` and honor `GraceAccessUntil` — keep
+access on until it passes. Involuntary churn ends as `canceled` with
+`CancellationReason = "involuntary"`.
+- **Prices are immutable, plans archive.** To change pricing, deactivate the price
+and create a new one; plans archive rather than delete.
+
+## Next
+
+- **[Method reference](/sdks/dotnet/reference)**: 
+Every method in the SDK, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: ".NET method reference"
+type: reference
+summary: "Every method in the NombaOne SDK, grouped by namespace, each linking to the full request, response, and a ready-to-run C# sample."
+canonical: https://docs.nombaone.xyz/sdks/dotnet/reference
+---
+
+# .NET method reference
+
+Every method in the `NombaOne` SDK, grouped by the namespace you reach it through on
+the client (`nombaone.Customers.CreateAsync`, `nombaone.Plans.Prices.CreateAsync`,
+and so on). Open any method for its full request and response shape, with a
+copy-runnable C# sample alongside every other SDK.
+
+---
+
+---
+title: "Elixir SDK"
+type: reference
+summary: "The nombaone SDK for Elixir and Phoenix: a functional client threaded as the first argument, snake_case maps in and typed structs out, typed errors, retries that never double-charge, an Enumerable page that auto-paginates, and a keyless webhook verifier — one runtime dependency, jason."
+canonical: https://docs.nombaone.xyz/sdks/elixir
+---
+
+# Elixir SDK
+
+`nombaone` is the official SDK for Elixir. One library serves plain Elixir,
+Phoenix, and any OTP application — with snake_case maps in, typed structs out,
+typed errors, automatic retries that never double-charge, and a keyless webhook
+verifier. It has exactly one runtime dependency, `jason`, and speaks HTTP over
+Erlang's built-in `:httpc` (TLS verified against the OS trust store), so there is
+nothing to add to a supervision tree. It talks to the same API as every other
+SDK, so the money behaves identically wherever you run it.
+
+```elixir
+# mix.exs
+def deps do
+  [
+    {:nombaone, "~> 0.1.0"}
+  ]
+end
+```
+
+```bash
+mix deps.get
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. There is no client instance with methods
+hanging off it: you build one plain `%Nombaone.Client{}` and pass it as the
+**first argument** to every function. Params are plain maps with snake_case keys;
+responses come back as typed structs with snake_case fields. Money is integer
+kobo: ₦2,500.00 is `250_000`.
+
+```elixir
+client = Nombaone.new() # reads NOMBAONE_API_KEY (an nbo_sandbox_… key)
+
+# 1. Something to sell.
+{:ok, plan} = Nombaone.Plans.create(client, %{name: "Pro"})
+
+{:ok, price} =
+  Nombaone.Plans.Prices.create(client, plan.id, %{
+    unit_amount_in_kobo: 250_000, # ₦2,500.00
+    interval: "month"
+  })
+
+# 2. Someone to bill.
+{:ok, customer} =
+  Nombaone.Customers.create(client, %{email: "ada@example.com", name: "Ada Lovelace"})
+
+# 3. A way to pay — in the sandbox, mint a deterministic test card.
+{:ok, method} = Nombaone.Sandbox.create_payment_method(client, %{customer_id: customer.id})
+
+# 4. The subscription. The engine handles the rest.
+{:ok, subscription} =
+  Nombaone.Subscriptions.create(client, %{
+    customer_id: customer.id,
+    price_id: price.id,
+    payment_method_id: method.id
+  })
+
+subscription.status # => "active"
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+the live host automatically.
+
+## Constructing the client
+
+```elixir
+Nombaone.new(api_key_or_options \\ [], options \\ [])
+```
+
+`Nombaone.new/2` builds a plain `%Nombaone.Client{}` struct. It raises an
+`ArgumentError` on a missing or unrecognized key — a config mistake fails loudly
+at construction, not on the first request. Pass a `:base_url` when you supply a
+key whose prefix the SDK does not recognize. The struct is immutable data; read
+`client.mode` (`:sandbox` or `:live`) and `client.base_url` to see where it points.
+
+```elixir
+Nombaone.new()                                       # key from NOMBAONE_API_KEY
+Nombaone.new("nbo_sandbox_…")                        # explicit key
+Nombaone.new("nbo_sandbox_…", timeout: 10_000)       # key + options
+Nombaone.new(api_key: "nbo_live_…", max_retries: 5)  # keyword-only form
+```
+
+| Option | Default | Meaning |
+|---|---|---|
+| `:api_key` | `System.get_env("NOMBAONE_API_KEY")` | The secret key. Server-side only. |
+| `:base_url` | derived from key prefix | Override the API origin. Required for an unrecognized prefix. |
+| `:timeout` | `30_000` ms | Per-attempt timeout. |
+| `:max_retries` | `2` (3 attempts) | Retries transport failures, timeouts, 408/429/5xx, and in-flight idempotency conflicts. A POST retry always reuses its `Idempotency-Key`. |
+| `:transport` | `Nombaone.Transport.HTTPC` | A `Nombaone.Transport` implementation — swap in a Finch/Req adapter or a recording double for tests. |
+| `:transport_options` | `nil` | Opaque value handed to the transport. |
+| `:default_headers` | `%{}` | Headers added to every request. |
+
+## Conventions
+
+- **Money is integer kobo.** Money fields end in `_in_kobo`, ₦1.00 = `100`, and
+`currency` is always `"NGN"`. There are no floats or decimal strings for money,
+anywhere.
+- **Maps in, structs out.** You pass plain maps with snake_case keys; the SDK
+converts them to the exact JSON the wire expects. Responses are typed structs
+with snake_case fields, plus a `:__raw__` field holding the original decoded
+JSON as a forward-compat escape hatch. Enum values received on the wire stay
+strings — pattern-match on `status: "active"`, `interval: "month"`.
+- **The client is immutable and shareable.** A `%Nombaone.Client{}` is plain
+data — build it once and share it freely across processes.
+- **Idempotency is automatic.** A UUID `Idempotency-Key` is generated for every
+POST and reused across automatic retries, so a dropped connection can never
+double-charge. On `Nombaone.Settlements.create_payout/3` the key doubles as the
+durable payout reference, so always pass your own stable `:idempotency_key`.
+- **IDs are opaque strings** of the form `nbo…` with a type suffix (`…cus`,
+`…sub`, `…inv`) — never validate them client-side. Timestamps are ISO-8601
+UTC strings, kept as strings on the structs.
+
+Every function takes an optional keyword list as its last argument:
+
+| Key | Meaning |
+|---|---|
+| `:idempotency_key` | Override the auto-generated key (POSTs). Required practice on payouts. |
+| `:headers` | Extra headers for this call; a `nil` value removes an SDK default. |
+| `:timeout` | Per-attempt milliseconds for this call. |
+| `:max_retries` | Retry budget for this call; `0` fails fast. |
+| `:with_response` | When `true`, the `{:ok, _}` payload is a `%Nombaone.Response{}` (`:data`, `:status`, `:request_id`, `:headers`) instead of the bare struct or page. |
+
+## Return values and pagination
+
+Every function has two shapes. The everyday one returns a tagged tuple —
+`{:ok, result}` or `{:error, %Nombaone.…Error{}}`. Each also has a raising `!`
+variant (`create!/3`, `retrieve!/3`, …) that returns the value directly or raises.
+Both are always available.
+
+Every `list` returns a `%Nombaone.Page{}`, which is `Enumerable`: iterate it with
+`Enum`, `Stream`, or a `for` comprehension to walk **every item across every
+page**, fetching subsequent pages lazily.
+
+```elixir
+# Tagged tuple — the everyday style.
+{:ok, customer} = Nombaone.Customers.retrieve(client, customer_id)
+
+# The raising ! variant returns the value directly, or raises.
+customer = Nombaone.Customers.retrieve!(client, customer_id)
+
+# One page.
+{:ok, page} = Nombaone.Invoices.list(client, %{status: "open", limit: 50})
+page.data                   # list of structs
+page.pagination.has_more
+page.pagination.next_cursor # string or nil
+
+# Manual next page.
+if Nombaone.Page.has_next_page?(page) do
+  {:ok, next} = Nombaone.Page.next_page(page)
+end
+
+# Every item across every page — the cursors are threaded for you.
+for invoice <- page, do: invoice.id
+Enum.take(Nombaone.Page.stream(page), 100)
+```
+
+`Nombaone.Page.next_page/1` returns `{:ok, page}` or `{:error, error}`, and raises
+an `ArgumentError` when there is no next page — check `has_next_page?/1` first. A
+page fetch that fails mid-iteration **raises** the error (a stream cannot carry
+`{:error, _}`), so reach for `next_page/1` when you need tuples.
+
+## Errors
+
+Every failure resolves to `{:error, error}` — or raises, from a `!` variant. All
+error values are Elixir exception structs, so `Exception.message/1` renders the
+message **with the `hint` appended**, and raising or logging one surfaces the fix.
+
+Each API error carries `:status`, a machine-readable `:code`, a `:hint`, a
+`:doc_url`, an optional `:fields` map (on 422s), and the `:request_id`.
+`RateLimitError` adds `:retry_after` (seconds), `:limit`, and `:remaining`.
+
+| Status | Struct | Notes |
+|---|---|---|
+| 400 | `Nombaone.BadRequestError` | Malformed request. |
+| 401 | `Nombaone.AuthenticationError` | Missing, invalid, or wrong-environment key. |
+| 403 | `Nombaone.PermissionDeniedError` | Missing scope, or a foreign resource. |
+| 404 | `Nombaone.NotFoundError` | Wrong id, or wrong environment. |
+| 409 | `Nombaone.ConflictError` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `Nombaone.ValidationError` | `error.fields` has per-field messages. |
+| 429 | `Nombaone.RateLimitError` | Adds `retry_after`, `limit`, `remaining`. |
+| ≥500 | `Nombaone.ServerError` | Safe to retry — the SDK already did. |
+
+Transport failures never become an HTTP struct: a request that never completed is
+a `Nombaone.ConnectionError`, and an attempt that ran past its timeout is a
+`Nombaone.TimeoutError` (both carry `:reason`).
+
+```elixir
+case Nombaone.Subscriptions.create(client, params) do
+  {:ok, subscription} -> subscription
+  {:error, %Nombaone.ValidationError{fields: fields}} -> handle(fields)
+  {:error, %Nombaone.RateLimitError{retry_after: secs}} -> backoff(secs)
+  {:error, %{code: "SUBSCRIPTION_PAYMENT_METHOD_REQUIRED"}} -> attach_card()
+  {:error, error} -> Logger.error(Exception.message(error))
+end
+```
+
+Branch on `error.code` or match the struct module — never on `error.message`,
+which may be reworded. Every code and its fix is in the [error reference](/errors).
+
+## Webhooks
+
+The verifier lives in `Nombaone.Webhooks` as plain module functions that need
+**no client and no API key** — a receiver usually holds only the endpoint's
+signing secret (shown once at create or rotate). `construct_event/4` returns a
+tagged tuple; `construct_event!/4` raises on failure.
+
+```elixir
+case Nombaone.Webhooks.construct_event(raw_body, signature_header, secret) do
+  {:ok, event} ->
+    unless already_processed?(event.event.id) do # dedupe — delivery is at-least-once
+      case event.type do
+        "invoice.paid" -> unlock(event.data["reference"])
+        "invoice.action_required" -> email(event.data["checkoutLink"])
+        "invoice.payment_failed" -> note(event.data["reason"])
+        _ -> :ok
+      end
+    end
+
+  {:error, %Nombaone.WebhookVerificationError{} = error} ->
+    Logger.warning(Exception.message(error))
+end
+```
+
+Three rules the SDK enforces: feed the **raw** request body (in Phoenix, cache it
+with a `Plug.Parsers` `:body_reader` before the JSON parser runs — re-encoding a
+parsed map reorders keys and breaks the signature); verify before you parse; and
+**dedupe on `event.event.id`**, because delivery is at-least-once. See
+[signing and verification](/webhooks/signing-and-verification) for the signature
+scheme, and [handle webhooks](/guides/handle-webhooks) for the end-to-end guide.
+
+## The sandbox toolkit
+
+Every `Nombaone.Sandbox` function is sandbox-only and raises an `ArgumentError`
+**locally, before any network call**, when the client holds a live key.
+
+```elixir
+# A deterministic test method — no real card.
+{:ok, method} =
+  Nombaone.Sandbox.create_payment_method(client, %{
+    customer_id: customer.id,
+    behavior: "decline_insufficient_funds" # a thin balance: "not yet", not "no"
+  })
+
+# The test clock — run the next billing cycle through the real engine, now.
+{:ok, cycle} = Nombaone.Sandbox.advance_cycle(client, subscription.id)
+cycle.outcome # => "past_due"
+
+# Fire a real, signed webhook at your registered endpoints.
+{:ok, _} = Nombaone.Sandbox.simulate_webhook(client, %{type: "invoice.paid"})
+```
+
+The behaviors are `"success"` (default), `"decline_insufficient_funds"`,
+`"decline_expired_card"`, `"decline_do_not_honor"`, and `"requires_otp"`.
+`advance_cycle/3` runs a subscription's next billing cycle right now through the
+real engine — invoice, charge, ledger, and webhooks. See the
+[sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather flag these than have you find them at 2am.
+
+> **Dunning is scheduled asynchronously**
+>
+> Right after a failed charge, `Nombaone.Subscriptions.Dunning.retrieve/3` can
+> read `status: "none"` for a moment — the recovery run is queued, not yet
+> recorded. Do not read it synchronously and conclude nothing is happening. Wait
+> for the dunning webhook (`invoice.payment_failed`, then the recovery events),
+> and honor `grace_access_until` on the dunning state before cutting access.
+
+- **`mode` is `"sandbox"` or `"live"`, never `"test"`.** It carries that string on
+every resource and on the client (`client.mode` as the atom `:sandbox` /
+`:live`).
+- **Two functions return a `PaymentMethod`.**
+`Nombaone.Subscriptions.update_payment_method/4` returns the attached
+`Nombaone.PaymentMethod`, and `Nombaone.Mandates.retrieve/3` returns a
+`PaymentMethod` too (a mandate's standing lives on the payment-method row). That
+is what the wire carries — the structs say so.
+- **A would-decline first charge currently 422s.** Creating a subscription whose
+first charge would decline returns `SUBSCRIPTION_ILLEGAL_TRANSITION` today.
+Rehearse declines with `trial_days` plus `Nombaone.Sandbox.advance_cycle/3`
+rather than a first charge you expect to fail.
+- **Mandates are asynchronous, and creation can 504 on the sandbox.**
+`Nombaone.Mandates.create/3` may return a `504` (a typed `ServerError`) while the
+NIBSS upstream is down — pass `max_retries: 0` to fail fast when it is. Once it
+succeeds, a mandate starts `consent_pending`; listen for `payment_method.updated`,
+do not poll, and do not charge before it is active.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not
+yet." Honor `grace_access_until` and keep access on until it passes. Involuntary
+churn ends as `canceled` with `cancellation_reason: "involuntary"` — there is no
+`"churned"` status, though there is a `subscription.churned` event.
+- **Prices are immutable, plans archive.** To change pricing, deactivate the price
+and create a new one; plans archive rather than delete.
+
+## Next
+
+- **[Method reference](/sdks/elixir/reference)**: 
+Every function in the SDK, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: "Elixir method reference"
+type: reference
+summary: "Every function in the nombaone Hex package, grouped by namespace, each linking to the full request, response, and a ready-to-run Elixir sample."
+canonical: https://docs.nombaone.xyz/sdks/elixir/reference
+---
+
+# Elixir method reference
+
+Every function in the `nombaone` Hex package, grouped by the namespace you reach
+it through (`Nombaone.Customers.create`, `Nombaone.Plans.Prices.create`, and so
+on). The client is always the first argument, and every function has a raising `!`
+variant alongside the `{:ok, _}` / `{:error, _}` form. Open any function for its
+full request and response shape, with a copy-runnable sample in Elixir and every
+other SDK.
+
+---
+
+---
+title: "Go SDK"
+type: reference
+summary: "The nombaone-go SDK: one context-first, zero-dependency Go library for the NombaOne billing API — typed errors you match with errors.As, retries that never double-charge, range-over-func pagination, and a standalone webhook package."
+canonical: https://docs.nombaone.xyz/sdks/go
+---
+
+# Go SDK
+
+`github.com/nombaone/nombaone-go` is the official SDK for Go. One package, no
+dependencies beyond the standard library, covers the entire API — every
+namespace, typed errors, automatic retries that never double-charge, cursor
+pagination, and a standalone webhook verifier. It talks to the same API as every
+other SDK, so the money behaves identically wherever you run it. It needs only
+Go 1.23+.
+
+```bash
+go get github.com/nombaone/nombaone-go
+```
+
+The SDK is server-side only — secret keys, no publishable key. Your key is read
+from `NOMBAONE_API_KEY` (or set with `WithAPIKey`); never ship it to a browser.
+
+```go
+import (
+	"context"
+
+	nombaone "github.com/nombaone/nombaone-go" // the client
+)
+// Webhook verification is a separate, key-free package:
+//   github.com/nombaone/nombaone-go/webhook
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Every method takes a `context.Context`
+first, and money is integer kobo: ₦2,500.00 is `250_000`.
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	nombaone "github.com/nombaone/nombaone-go"
+)
+
+func main() {
+	// Reads NOMBAONE_API_KEY; the host is derived from the key prefix
+	// (nbo_sandbox_… → sandbox, nbo_live_… → live).
+	client, err := nombaone.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+
+	// 1. Something to sell.
+	plan, _ := client.Plans.Create(ctx, nombaone.PlanCreateParams{Name: "Pro"})
+	price, _ := client.Plans.Prices.Create(ctx, plan.ID, nombaone.PriceCreateParams{
+		UnitAmountInKobo: 250_000, // ₦2,500.00
+		Interval:         nombaone.PriceIntervalMonth,
+	})
+
+	// 2. Someone to bill.
+	customer, _ := client.Customers.Create(ctx, nombaone.CustomerCreateParams{
+		Email: "ada@example.com",
+		Name:  "Ada Lovelace",
+	})
+
+	// 3. A way to pay — in the sandbox, mint a deterministic test card.
+	method, _ := client.Sandbox.CreatePaymentMethod(ctx, nombaone.SandboxPaymentMethodParams{
+		CustomerID: customer.ID,
+	})
+
+	// 4. The subscription. The engine takes over.
+	sub, _ := client.Subscriptions.Create(ctx, nombaone.SubscriptionCreateParams{
+		CustomerID:      customer.ID,
+		PriceID:         price.ID,
+		PaymentMethodID: nombaone.String(method.ID),
+	})
+	fmt.Println(sub.Status) // "active"
+}
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+the live host automatically.
+
+## Constructing the client
+
+```go
+func nombaone.New(opts ...nombaone.Option) (*nombaone.Client, error)
+```
+
+Pass functional options. `New` derives the host from the key prefix, and an
+explicit `WithBaseURL` always wins. It returns an error — never panics — for a
+missing key, or an unrecognized key prefix with no base URL.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `WithAPIKey(key)` | `NOMBAONE_API_KEY` env var | The secret key. Server-side only. |
+| `WithBaseURL(url)` | derived from key prefix | Override the API origin. Always wins; required for an unrecognized prefix. |
+| `WithTimeout(d)` | `30s` | Per-attempt timeout. |
+| `WithMaxRetries(n)` | `2` (3 attempts) | Retries network failures, timeouts, 408/429/5xx, and in-flight idempotency conflicts. A `POST` retry always reuses its `Idempotency-Key`. |
+| `WithHTTPClient(h)` | new `*http.Client` | Bring your own transport, for tests, proxies, or instrumentation. |
+| `WithDefaultHeader(k, v)` | — | A header added to every request. |
+
+Read `client.Mode()` (`sandbox` / `live`) and `client.BaseURL()` to see where a
+client points.
+
+## Conventions
+
+- **Money is integer kobo.** `Kobo` is `int64`, ₦1.00 = `100`, money fields end
+in `InKobo`, and `currency` is always `"NGN"`. There are no floats or decimal
+strings for money, anywhere.
+- **Fields are PascalCase; the wire is camelCase.** Go struct fields like
+`UnitAmountInKobo` map to the camelCase wire through JSON tags you never touch.
+Optional scalars are pointers — set them with `nombaone.String`,
+`nombaone.Int`, `nombaone.Int64`, `nombaone.Bool` so "unset" stays distinct
+from a zero value.
+- **Idempotency is automatic.** A UUID `Idempotency-Key` is generated once for
+every `POST` and reused across automatic retries, so a dropped connection can
+never double-charge. On `Settlements.CreatePayout`, pass your own stable
+`WithIdempotencyKey` — it doubles as the durable `merchantTxRef`.
+- **IDs are opaque strings** shaped `nbo…` with a type suffix (`…cus`, `…sub`,
+`…inv`); never construct or validate them. Timestamps are ISO-8601 UTC
+strings; nullable fields are pointers (`*string`).
+
+## Return values and pagination
+
+Every method is synchronous — it blocks until the API responds — but
+context-first, so a deadline or cancellation on the `ctx` you pass is always
+honored. Non-list methods return `(*T, error)`; every `List` returns
+`(*nombaone.Page[T], error)`.
+
+```go
+// One page.
+page, err := client.Invoices.List(ctx, nombaone.InvoiceListParams{
+	Status: nombaone.InvoiceStatusOpen, Limit: nombaone.Int(50),
+})
+
+// Manual paging.
+for page.HasNextPage() {
+	page, err = page.NextPage(ctx)
+}
+
+// Every item across every page — a Go 1.23 range-over-func iterator
+// (iter.Seq2[T, error]); breaking the loop stops fetching.
+for inv, err := range client.Invoices.List(ctx, nombaone.InvoiceListParams{}).All(ctx) {
+	if err != nil {
+		break // a mid-iteration fetch failed
+	}
+	fmt.Println(inv.ID, inv.AmountDueInKobo)
+}
+```
+
+`*Page[T]` carries `Data []T`, a `Pagination` cursor, and the `RequestID`.
+Pagination is cursor-only and forward-only; `Limit` is 1–100 (server default
+20). Capture the raw `*http.Response` — for `X-Request-Id`, rate-limit headers,
+status — with `nombaone.WithRawResponse(&resp)` on any call.
+
+## Errors
+
+Every failed call returns a typed error. The base is `*nombaone.APIError` for
+any non-2xx response; each status has a specific type that embeds it, so
+`errors.As` reaches both. Transport failures are `*ConnectionError` and
+`*TimeoutError`.
+
+An `*APIError` carries `StatusCode`, a machine-readable `Code`, a `Hint` (the
+fix), a `DocURL`, an optional `Fields` map (on 422s), and the `RequestID`.
+`Error()` renders `message — hint`, so the fix arrives with the failure.
+
+| Status | Type | Notes |
+|---|---|---|
+| 400 | `*BadRequestError` | Malformed request. |
+| 401 | `*AuthenticationError` | Missing, invalid, or wrong-mode key. |
+| 403 | `*PermissionDeniedError` | Missing scope, or a foreign resource. |
+| 404 | `*NotFoundError` | Wrong id, or wrong mode. |
+| 409 | `*ConflictError` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `*ValidationError` | `Fields` has per-field messages. |
+| 429 | `*RateLimitError` | Adds `RetryAfter` (seconds), `Limit`, `Remaining`. |
+| 5xx | `*ServerError` | Safe to retry — the SDK already did. |
+
+```go
+import "errors"
+
+_, err := client.Subscriptions.Create(ctx, params)
+
+var ve *nombaone.ValidationError
+if errors.As(err, &ve) {
+	fmt.Println(ve.Fields) // { "paymentMethodId": ["required"] }
+}
+var rl *nombaone.RateLimitError
+if errors.As(err, &rl) {
+	fmt.Println(rl.RetryAfter) // seconds
+}
+var apiErr *nombaone.APIError
+if errors.As(err, &apiErr) {
+	fmt.Println(apiErr.Code, apiErr.RequestID)
+}
+```
+
+Branch on `apiErr.Code` or the concrete type — never on the message, which may
+be reworded. `ErrorCode` is an open string type, so unknown future codes still
+parse into an `*APIError`. Every code and its fix is in the
+[error reference](/errors).
+
+## Webhooks
+
+The verifier is a separate package — `github.com/nombaone/nombaone-go/webhook` —
+that needs **no API key**, so a receiver pulls in only the signing secret, not
+the client.
+
+```go
+package main
+
+import (
+	"io"
+	"net/http"
+	"os"
+
+	"github.com/nombaone/nombaone-go/webhook"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(r.Body) // 1. the RAW body — never decode it first
+
+	event, err := webhook.ConstructEvent(
+		body,
+		r.Header.Get("X-Nombaone-Signature"),
+		os.Getenv("NOMBAONE_WEBHOOK_SECRET"), // shown once at endpoint creation
+	)
+	if err != nil { // 2. verify before you parse
+		http.Error(w, "invalid signature", http.StatusBadRequest)
+		return
+	}
+
+	if alreadyProcessed(event.Event.ID) { // 3. dedupe on the event id
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	switch event.Type {
+	case "invoice.paid":
+		var d webhook.RefData
+		_ = event.DataInto(&d) // d.Reference
+	case "invoice.action_required":
+		var d webhook.InvoiceActionRequiredData
+		_ = event.DataInto(&d) // d.CheckoutLink
+	case "invoice.payment_failed":
+		var d webhook.InvoicePaymentFailedData
+		_ = event.DataInto(&d) // d.Reason
+	}
+
+	w.WriteHeader(http.StatusOK) // respond 2xx fast; do the work async
+}
+```
+
+Three rules the package enforces: feed the **raw** body (`io.ReadAll(r.Body)` on
+net/http, `c.GetRawData()` on Gin, `c.Body()` on Fiber — and register no JSON
+middleware on the route); verify before you parse; and **dedupe on
+`event.Event.ID`**, because delivery is at-least-once. Decode a payload into a
+typed struct with `event.DataInto(&d)` or `webhook.DecodeData[T]`. See
+[signing and verification](/webhooks/signing-and-verification) for the signature
+scheme.
+
+## The sandbox toolkit
+
+Every `client.Sandbox` method is sandbox-only and fails **locally, before any
+network call**, when the client holds a live key — returning the sentinel
+`nombaone.ErrSandboxRequiresSandboxKey`, which you check with `errors.Is`.
+
+```go
+// A deterministic test method — no real card.
+method, _ := client.Sandbox.CreatePaymentMethod(ctx, nombaone.SandboxPaymentMethodParams{
+	CustomerID: customer.ID,
+	Behavior:   nombaone.SandboxBehaviorDeclineInsufficientFunds, // a thin balance: "not yet", not "no"
+})
+
+// The test clock — run the next billing cycle through the real engine, now.
+cycle, _ := client.Sandbox.AdvanceCycle(ctx, sub.ID)
+fmt.Println(cycle.Outcome) // "past_due"
+
+// Fire a real, signed webhook at your registered endpoints.
+_, _ = client.Sandbox.SimulateWebhook(ctx, nombaone.SandboxSimulateWebhookParams{Type: "invoice.paid"})
+```
+
+The behaviors are `success` (default), `decline_insufficient_funds`,
+`decline_expired_card`, `decline_do_not_honor`, and `requires_otp`. The sandbox
+sends no organic webhooks — `SimulateWebhook` is how you rehearse a handler. The
+live-key guard is a plain sentinel:
+
+```go
+_, err := client.Sandbox.AdvanceCycle(ctx, sub.ID)
+if errors.Is(err, nombaone.ErrSandboxRequiresSandboxKey) {
+	// this client holds a live key — the sandbox instruments are off
+}
+```
+
+See the [sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather you read these than discover them at 2am.
+
+> **Rehearse declines with a trial, not a live first charge**
+>
+> Creating a subscription whose **first charge declines** currently returns a
+> 422 `SUBSCRIPTION_ILLEGAL_TRANSITION`, not a dunning state. To rehearse a
+> failed charge, start the subscription with `TrialDays` set to defer the first
+> charge, then force the cycle with `Sandbox.AdvanceCycle` using a declining
+> sandbox card — the decline then lands as `past_due` with a real dunning state
+> to inspect.
+
+- **Two methods return a `PaymentMethod`.** `Subscriptions.UpdatePaymentMethod`
+returns the attached `*PaymentMethod` (not a `*Subscription`), and
+`Mandates.Retrieve` returns a `*PaymentMethod` too — a mandate's standing lives
+on the payment-method row. That is what the wire carries.
+- **Mandates activate asynchronously.** After `Mandates.Create`, wait for the
+`payment_method.updated` webhook — do not poll, and do not charge early. On the
+deployed sandbox, `POST /mandates` can currently return a `504` from the NIBSS
+upstream; it surfaces as a `*ServerError`, so pass
+`nombaone.WithRequestMaxRetries(0)` to fail fast while that upstream is down.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not
+yet." Read `Subscriptions.Dunning.Retrieve` and honor `GraceAccessUntil` before
+you cut access. Involuntary churn ends as `Status canceled` with
+`CancellationReason involuntary` — there is no `churned` status (there is a
+`subscription.churned` event).
+- **Sandbox settlements.** The sandbox organization has no settlement subaccount,
+so escrow and payout return a typed `SETTLEMENT_SUBACCOUNT_NOT_FOUND` — a real
+business state whose `Hint` explains itself, not an SDK fault.
+- **Prices are immutable, plans archive.** To change pricing, deactivate the
+price and create a new one; plans archive rather than delete.
+
+## Next
+
+- **[Method reference](/sdks/go/reference)**: 
+Every method in the SDK, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: "Go method reference"
+type: reference
+summary: "Every method in the nombaone-go SDK, grouped by namespace, each linking to the full request, response, and a ready-to-run Go sample."
+canonical: https://docs.nombaone.xyz/sdks/go/reference
+---
+
+# Go method reference
+
+Every method in `github.com/nombaone/nombaone-go`, grouped by the namespace you
+reach it through on the client (`client.Customers.Create`,
+`client.Plans.Prices.Create`, and so on). Every method takes a
+`context.Context` first and returns `(*T, error)`. Open any method for its full
+request and response shape, with a copy-runnable sample in Go and every other
+SDK.
+
+---
+
+---
+title: "Java SDK"
+type: reference
+summary: "One thread-safe, synchronous SDK for Java, Kotlin, and Spring — integer-kobo money, unchecked typed errors, automatic retries that never double-charge, auto-paginating lists, and a sealed webhook event union, with Jackson as its only dependency."
+canonical: https://docs.nombaone.xyz/sdks/java
+---
+
+# Java SDK
+
+`xyz.nombaone:nombaone` is the official SDK for the JVM — one library for Java,
+Kotlin, and Spring. It is thread-safe and synchronous: build one `Nombaone` client
+at startup and reuse it across every request and thread. It carries a single
+runtime dependency (Jackson), talks to the same API as every other SDK, and
+derives its host from the key prefix — so the money behaves identically wherever
+you run it.
+
+Add the dependency with Gradle:
+
+```groovy
+implementation("xyz.nombaone:nombaone:0.1.0")
+```
+
+Or with Maven:
+
+```xml
+<dependency>
+  <groupId>xyz.nombaone</groupId>
+  <artifactId>nombaone</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
+
+The SDK requires Java 17+ (JPMS automatic module `xyz.nombaone`). Your secret key
+is read from `NOMBAONE_API_KEY` (or passed to the constructor); it is server-side
+only — never ship it to a browser.
+
+```java
+import xyz.nombaone.Nombaone;
+
+// Build once, reuse everywhere — the client is thread-safe.
+Nombaone nombaone = new Nombaone(System.getenv("NOMBAONE_API_KEY"));
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo, typed `long`: ₦2,500.00
+is `250_000L`.
+
+```java
+import xyz.nombaone.Nombaone;
+
+Nombaone nombaone = new Nombaone(System.getenv("NOMBAONE_API_KEY"));
+
+// 1. Something to sell.
+Plan plan = nombaone.plans().create(
+    PlanCreateParams.builder().name("Pro").build());
+
+Price price = nombaone.plans().prices().create(plan.id(),
+    PriceCreateParams.builder()
+        .unitAmountInKobo(250_000L) // ₦2,500.00
+        .interval(PriceInterval.MONTH)
+        .build());
+
+// 2. Someone to bill.
+Customer customer = nombaone.customers().create(
+    CustomerCreateParams.builder()
+        .email("ada@example.com")
+        .name("Ada Lovelace")
+        .build());
+
+// 3. A way to pay — in the sandbox, mint a deterministic test card.
+PaymentMethod method = nombaone.sandbox().createPaymentMethod(
+    SandboxPaymentMethodParams.builder().customerId(customer.id()).build());
+
+// 4. The subscription. The engine takes it from here.
+Subscription subscription = nombaone.subscriptions().create(
+    SubscriptionCreateParams.builder()
+        .customerId(customer.id())
+        .priceId(price.id())
+        .paymentMethodId(method.id())
+        .build());
+
+System.out.println(subscription.status()); // ACTIVE
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+`https://api.nombaone.xyz` automatically.
+
+## Constructing the client
+
+The constructor has four overloads. Pass the key explicitly, hand it a
+`ClientOptions`, or let both resolve from the environment.
+
+```java
+new Nombaone();                              // key from NOMBAONE_API_KEY
+new Nombaone(String apiKey);                 // explicit key
+new Nombaone(ClientOptions options);         // key from options.apiKey() or env
+new Nombaone(String apiKey, ClientOptions options);
+```
+
+The key resolves in the order argument → `options.apiKey()` → `NOMBAONE_API_KEY`.
+The constructor throws a `NombaoneException` with an actionable message when no key
+resolves, or when the key prefix is unrecognized and no `baseUrl` is given.
+
+```java
+import java.time.Duration;
+
+Nombaone nombaone = new Nombaone(apiKey, ClientOptions.builder()
+    .baseUrl("https://sandbox.api.nombaone.xyz") // override the derived host
+    .timeout(Duration.ofSeconds(30))             // per-attempt timeout
+    .maxRetries(2)                               // 3 attempts total
+    .httpTransport(transport)                    // advanced: swap the HTTP layer
+    .defaultHeader("X-My-App", "acme/1.0")       // sent on every request
+    .build());
+```
+
+| Builder method | Default | Meaning |
+|---|---|---|
+| `apiKey(String)` | `NOMBAONE_API_KEY` | The secret key. Server-side only. |
+| `baseUrl(String)` | derived from key prefix | Override the API origin. Required for an unrecognized prefix. |
+| `timeout(Duration)` | 30s | Per-attempt timeout, not whole-call. |
+| `maxRetries(int)` | 2 | Total attempts = `maxRetries + 1`. Retries transport failures, timeouts, 408/429/5xx, and in-flight idempotency conflicts. |
+| `httpTransport(HttpTransport)` | JDK `HttpClient` | Bring your own transport, for tests, proxies, or instrumentation. |
+| `defaultHeader(String, String)` | — | Headers sent on every request. |
+
+Read `nombaone.mode()` (`Mode.SANDBOX` or `Mode.LIVE`) and `nombaone.baseUrl()`
+(no `/v1`) to see where a client points. The `Nombaone.SANDBOX_BASE_URL` and
+`Nombaone.LIVE_BASE_URL` constants hold both hosts.
+
+## Conventions
+
+- **Money is integer kobo.** ₦1.00 = `100`, money fields are typed `long` (or
+`Long` when optional) and end in `InKobo`, and `currency` is always `"NGN"`.
+There are no floats or `BigDecimal` for money, anywhere — `250_000L` is ₦2,500.
+- **Idempotency is automatic.** A UUID `Idempotency-Key` is generated for every
+`POST` and reused across automatic retries, so a dropped connection can never
+double-charge. On `settlements().createPayout(...)`, pass your own stable key —
+it doubles as the durable `merchantTxRef`, so a retry from a fresh process can't
+create a second payout.
+- **IDs are opaque `String`s** of the form `nbo…` with a three-letter type suffix
+(`…cus`, `…sub`, `…inv`). Timestamps are ISO-8601 UTC strings, left unparsed;
+`metadata` is a `Map<String, Object>`.
+
+Every method takes an optional trailing `RequestOptions`
+(`RequestOptions.none()` is the shared empty instance):
+
+| Field | Meaning |
+|---|---|
+| `idempotencyKey(String)` | Override the auto-generated key (POST only). Required practice on payouts. |
+| `header(String, String)` | Extra headers; a `null` value strips an SDK default. |
+| `timeout(Duration)` | Per-attempt timeout for this call. |
+| `maxRetries(int)` | Retry budget for this call; `0` fails fast. |
+| `onResponse(Consumer)` | Receive the raw `ResponseInfo` — status, request id, headers — on success. |
+
+To cancel a blocking call, interrupt the calling thread; a cancellation is never
+retried.
+
+## Return values and pagination
+
+The client is synchronous: every non-list method blocks and returns the unwrapped
+resource directly (the `{success, data, meta}` envelope is unwrapped for you).
+Every `list(...)` returns a `Page`.
+
+```java
+// One page.
+Page<Invoice> page = nombaone.invoices().list(
+    InvoiceListParams.builder().status(InvoiceStatus.OPEN).limit(50).build());
+page.data();        // List<Invoice>
+page.pagination();  // PageInfo{ limit, hasMore, nextCursor }
+
+// Manual paging.
+if (page.hasNextPage()) {
+  Page<Invoice> next = page.nextPage();
+}
+
+// Every item across every page — cursors threaded, filters preserved.
+for (Invoice invoice : nombaone.invoices().list().autoPager()) {
+  System.out.println(invoice.id());
+}
+
+// Or as a Stream.
+nombaone.invoices().list().stream().forEach(this::index);
+```
+
+`autoPager()` is an `Iterable` and `stream()` is a `Stream`; both fetch pages
+lazily as you consume them. Paging is cursor-only and forward-only, with no total
+counts — `limit` is 1–100. For the request id and raw headers of any call, pass
+`RequestOptions.onResponse(...)`.
+
+Every enum is **open**: an unknown wire value the API adds tomorrow deserializes to
+`UNKNOWN` rather than throwing, so a new status never breaks a running client.
+Branch on the constants you know and handle `UNKNOWN` as a default.
+
+## Errors
+
+Every failure throws an **unchecked** exception extending
+`xyz.nombaone.error.NombaoneException` (also thrown for config mistakes). Any
+non-2xx response is an `ApiException` carrying `statusCode()`, a machine-readable
+`code()`, a `hint()`, a `docUrl()`, a `fields()` map (on 422s), and a
+`requestId()`. The `hint` is folded into `getMessage()`, so the fix arrives with
+the failure. Transport failures are `ConnectionException` / `TimeoutException`;
+webhook verification failures are `WebhookVerificationException`.
+
+| Status | Exception | Notes |
+|---|---|---|
+| 400 | `BadRequestException` | Malformed request. |
+| 401 | `AuthenticationException` | Missing, invalid, or wrong-mode key (sandbox vs live). |
+| 403 | `PermissionDeniedException` | Missing scope, or a foreign resource. |
+| 404 | `NotFoundException` | Wrong id, or wrong mode. |
+| 409 | `ConflictException` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `ValidationException` | `fields()` has per-field messages. |
+| 429 | `RateLimitException` | Adds `retryAfter()`, `limit()`, `remaining()`. |
+| ≥500 | `ServerException` | Safe to retry — the SDK already did. |
+
+```java
+try {
+  nombaone.subscriptions().create(params);
+} catch (ValidationException e) {
+  e.fields().forEach((field, msgs) -> log.warn("{}: {}", field, msgs));
+} catch (RateLimitException e) {
+  e.retryAfter().ifPresent(this::backoff);      // seconds
+} catch (NotFoundException e) {
+  log.error("{} {}", e.code(), e.requestId().orElse("-"));
+}
+```
+
+Branch on the exception subclass or `e.code()` — never on `e.getMessage()`, which
+may be reworded. Every code and its fix is in the [error reference](/errors).
+
+## Webhooks
+
+The verifier is available as `nombaone.webhooks()` and, importantly, as a
+standalone `new xyz.nombaone.webhook.Webhooks()` that needs **no API key** — a
+receiver usually holds only the signing secret, so it can depend on the webhook
+package alone.
+
+```java
+import xyz.nombaone.webhook.Webhooks;
+
+private final Webhooks webhooks = new Webhooks(); // no key needed
+
+@PostMapping("/nombaone/webhooks")
+ResponseEntity<String> handle(
+    @RequestBody byte[] rawBody,                        // 1. the RAW bytes, never re-serialized
+    @RequestHeader("X-Nombaone-Signature") String signature) {
+
+  WebhookEvent event;
+  try {
+    event = webhooks.constructEvent(                    // 2. verify before you parse
+        rawBody, signature, System.getenv("NOMBAONE_WEBHOOK_SECRET"));
+  } catch (WebhookVerificationException e) {
+    return ResponseEntity.badRequest().body("bad signature");
+  }
+
+  if (alreadyProcessed(event.event().id())) {          // 3. dedupe on the event id
+    return ResponseEntity.ok().build();
+  }
+
+  if (event instanceof InvoiceActionRequiredEvent e) {
+    send(e.data().checkoutLink());
+  } else if (event instanceof InvoicePaymentFailedEvent e) {
+    note(e.data().reason());
+  }
+
+  return ResponseEntity.ok().build(); // respond 2xx fast; do the work async
+}
+```
+
+`WebhookEvent` is a **sealed interface**: the events with a non-trivial payload
+have their own typed record with a typed `data()`, and every other type — including
+one the platform adds tomorrow — arrives as a `GenericEvent`, so the union stays
+open. Three rules the SDK enforces: feed it the **raw** request bytes (a Spring
+`@RequestBody byte[]` or `request.getInputStream()` — re-serializing the JSON
+breaks the signature); verify before you parse; and **dedupe on
+`event.event().id()`**, because delivery is at-least-once. See
+[signing and verification](/webhooks/signing-and-verification) for the signature
+scheme.
+
+## The sandbox toolkit
+
+Every `nombaone.sandbox()` method is sandbox-only and throws a `NombaoneException`
+locally, before any network call, if the client holds a live key.
+
+```java
+// A deterministic test method — no real card.
+PaymentMethod method = nombaone.sandbox().createPaymentMethod(
+    SandboxPaymentMethodParams.builder()
+        .customerId(customer.id())
+        .behavior(SandboxPaymentMethodBehavior.DECLINE_INSUFFICIENT_FUNDS)
+        .build());
+
+// The test clock — run the next billing cycle through the real engine, now.
+AdvanceCycleResult cycle = nombaone.sandbox().advanceCycle(subscription.id());
+System.out.println(cycle.outcome()); // past_due
+
+// Fire a real, signed webhook at your registered endpoints.
+nombaone.sandbox().simulateWebhook(
+    SandboxSimulateWebhookParams.builder().type("invoice.paid").build());
+```
+
+The behaviors are `SUCCESS` (default), `DECLINE_INSUFFICIENT_FUNDS`,
+`DECLINE_EXPIRED_CARD`, `DECLINE_DO_NOT_HONOR`, and `REQUIRES_OTP`. `advanceCycle`
+runs the next cycle through the real engine — invoice, charge, ledger, webhooks.
+The sandbox sends no organic webhooks, so `simulateWebhook` is how you rehearse a
+handler. See the [sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather you read these here than discover them at 2am.
+
+> **The method is voidInvoice, because void is a Java keyword**
+>
+> To void an invoice, call `nombaone.invoices().voidInvoice(id)` — `void` is a
+> reserved word in Java, so the method carries the `Invoice` suffix. It returns the
+> voided `Invoice`.
+
+- **Two methods return a `PaymentMethod`, not what you'd guess.**
+`subscriptions().updatePaymentMethod(...)` returns the updated `PaymentMethod`,
+and `mandates().retrieve(...)` returns a `PaymentMethod` too — a mandate's
+standing lives on the payment-method row. That is what the wire carries; the
+types say so.
+- **Mandates activate asynchronously.** After `mandates().create(...)` a mandate is
+`consent_pending` until the customer authorizes it with their bank. Relay
+`MandateSetup.consentInstruction()`, then wait for the `payment_method.updated`
+webhook — do not poll, and do not charge early.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not
+yet." Read `subscriptions().dunning(...)` and honor `graceAccessUntil` — keep
+access on until it passes. Involuntary churn ends as `CANCELED` with
+`cancellationReason = INVOLUNTARY`; there is no `churned` status (there is a
+`subscription.churned` event).
+- **Prices are immutable; plans archive.** To change pricing, deactivate the price
+and create a new one; plans archive rather than delete.
+- **The invoice list `status` filter excludes `partially_paid`.**
+`invoices().list(...)` filters on `draft | open | paid | void | uncollectible`,
+even though an `Invoice` object can carry the `PARTIALLY_PAID` status.
+- **Filter names are not uniform (wire law).** Subscriptions and invoices filter by
+`customerId`, payment methods by `customerRef`, and prices by `planRef`. The
+builders name each one exactly, so the compiler keeps you honest.
+
+## Next
+
+- **[Method reference](/sdks/java/reference)**: 
+Every method in the SDK, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: "Java method reference"
+type: reference
+summary: "Every method in the xyz.nombaone:nombaone SDK, grouped by namespace, each linking to the full request, response, and a ready-to-run Java sample."
+canonical: https://docs.nombaone.xyz/sdks/java/reference
+---
+
+# Java method reference
+
+Every method in `xyz.nombaone:nombaone`, grouped by the namespace you reach it
+through on the client (`nombaone.customers().create`,
+`nombaone.plans().prices().create`, and so on). Open any method for its full
+request and response shape, with a copy-runnable sample in Java and every other
+SDK.
+
+---
+
+---
+title: "Node.js & TypeScript SDK"
+type: reference
+summary: "The @nombaone/node SDK: one TypeScript-first library for Node, Next.js, and every JS runtime. Typed errors, automatic retries that never double-charge, cursor pagination, and a fully-typed webhook event union."
+canonical: https://docs.nombaone.xyz/sdks/node
+---
+
+# Node.js & TypeScript SDK
+
+`@nombaone/node` is the official SDK for Node.js and TypeScript. One library serves
+every JS runtime and framework — Node, Next.js, Remix, Nuxt, Express, Hono, Bun,
+Astro, and serverless — with complete types, zero dependencies, and a webhook
+verifier. It talks to the same API as every other SDK, so the money behaves
+identically wherever you run it.
+
+```bash
+npm install @nombaone/node
+# pnpm add @nombaone/node · yarn add @nombaone/node · bun add @nombaone/node
+```
+
+The SDK is ESM and CommonJS, ships complete `.d.ts` types, and depends only on the
+global `fetch` and `node:crypto`. Your secret key is read from `NOMBAONE_API_KEY`
+(or passed to the constructor); it is server-side only — never ship it to a browser.
+
+```ts
+import Nombaone from '@nombaone/node';          // default export: the client
+import { webhooks, ValidationError } from '@nombaone/node'; // named exports
+// CommonJS: const Nombaone = require('@nombaone/node').default;
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo: ₦2,500.00 is `250_000`.
+
+```ts
+import Nombaone from '@nombaone/node';
+
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
+
+// 1. Something to sell.
+const plan = await nombaone.plans.create({ name: 'Pro' });
+const price = await nombaone.plans.prices.create(plan.id, {
+  unitAmountInKobo: 250_000, // ₦2,500.00
+  interval: 'month',
+});
+
+// 2. Someone to bill.
+const customer = await nombaone.customers.create({
+  email: 'ada@example.com',
+  name: 'Ada Lovelace',
+});
+
+// 3. A way to pay — in the sandbox, mint a deterministic test card.
+const method = await nombaone.sandbox.createPaymentMethod({ customerId: customer.id });
+
+// 4. The subscription. The engine takes it from here.
+const subscription = await nombaone.subscriptions.create({
+  customerId: customer.id,
+  priceId: price.id,
+  paymentMethodId: method.id,
+});
+
+console.log(subscription.status); // "active"
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+`https://api.nombaone.xyz` automatically.
+
+## Constructing the client
+
+```ts
+new Nombaone(apiKey?: string | NombaoneOptions, options?: NombaoneOptions)
+```
+
+Pass the key as the first argument, or a single options object. The constructor
+throws a `NombaoneError` with an actionable message when no key resolves, or when
+the key prefix is unrecognized and no `baseUrl` is given.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `apiKey` | `process.env.NOMBAONE_API_KEY` | The secret key. Server-side only. |
+| `baseUrl` | derived from key prefix | Override the API origin. Always wins; required for an unrecognized prefix. |
+| `timeout` | `30_000` ms | Per-attempt timeout. |
+| `maxRetries` | `2` (3 attempts) | Retries network failures, timeouts, 408/429/5xx, and in-flight idempotency conflicts. A `POST` retry always reuses its `Idempotency-Key`. |
+| `fetch` | `globalThis.fetch` | Bring your own fetch, for tests, proxies, or instrumentation. |
+| `defaultHeaders` | — | Headers sent on every request. |
+
+Read `nombaone.mode` (`'sandbox' | 'live'`) and `nombaone.baseUrl` to see where a
+client points. The exported `BASE_URLS` constant holds both hosts.
+
+## Conventions
+
+- **Money is integer kobo.** `Kobo = number`, ₦1.00 = `100`, money fields end in
+`InKobo`, and `currency` is always `"NGN"`. There are no floats or decimal
+strings for money, anywhere.
+- **Idempotency is automatic.** A UUID `Idempotency-Key` is generated for every
+`POST` and reused across automatic retries, so a dropped connection can never
+double-charge. On payouts, pass your own stable key (below).
+- **IDs are opaque strings** of the form `nbo…` with a type suffix (`…cus`,
+`…sub`, `…inv`). Timestamps are ISO-8601 strings; nullable fields are typed
+`T | null`.
+
+Per call, every method takes an optional last argument:
+
+| Field | Meaning |
+|---|---|
+| `idempotencyKey` | Override the auto-generated key. Required practice on payouts. |
+| `headers` | Extra headers; a `null` value removes an SDK default. |
+| `signal` | An `AbortSignal`; an aborted call is never retried. |
+| `timeout` | Per-attempt milliseconds for this call. |
+| `maxRetries` | Retry budget for this call; `0` fails fast. |
+
+## Return values and pagination
+
+Every non-list method returns an `APIPromise` — `await` it for the resource, or
+call `.withResponse()` for `{ data, requestId, response }` when you need the raw
+`Response` (headers, status, rate-limit info).
+
+Every `list()` returns a `PagePromise`. Await it for one `Page`, or `for
+await` it directly to stream every item across every page — the cursors are
+threaded for you.
+
+```ts
+// One page.
+const page = await nombaone.invoices.list({ status: 'open', limit: 50 });
+
+// Manual paging.
+if (page.hasNextPage()) {
+  const next = await page.nextPage();
+}
+
+// Every item across every page — breaking the loop stops fetching.
+for await (const invoice of nombaone.invoices.list({ status: 'open' })) {
+  console.log(invoice.id);
+}
+
+// The request id + raw response, when you need them.
+const { data, requestId } = await nombaone.customers.retrieve(id).withResponse();
+```
+
+## Errors
+
+Every error is typed. The base is `NombaoneError` (also thrown for config
+mistakes); any non-2xx response is an `APIError` with a status-specific subclass,
+and transport failures are `ConnectionError` / `TimeoutError`.
+
+An `APIError` carries `statusCode`, a machine-readable `code`, a `hint`, a
+`docUrl`, an optional `fields` map (on 422s), and the `requestId`. The `hint` is
+baked into `error.message`, so the fix arrives with the failure.
+
+| Status | Class | Notes |
+|---|---|---|
+| 400 | `BadRequestError` | Malformed request. |
+| 401 | `AuthenticationError` | Missing, invalid, or wrong-environment key. |
+| 403 | `PermissionDeniedError` | Missing scope, or a foreign resource. |
+| 404 | `NotFoundError` | Wrong id, or wrong environment. |
+| 409 | `ConflictError` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `ValidationError` | `err.fields` has per-field messages. |
+| 429 | `RateLimitError` | Adds `retryAfter` (seconds), `limit`, `remaining`. |
+| 5xx | `ServerError` | Safe to retry — the SDK already did. |
+
+```ts
+import { NotFoundError, RateLimitError, ValidationError } from '@nombaone/node';
+
+try {
+  await nombaone.subscriptions.create({ customerId, priceId });
+} catch (err) {
+  if (err instanceof ValidationError) console.log(err.fields);    // { paymentMethodId: [...] }
+  if (err instanceof RateLimitError) console.log(err.retryAfter); // seconds
+  if (err instanceof NotFoundError) console.log(err.code, err.requestId);
+}
+```
+
+Branch on `err.code` or `instanceof` — never on `err.message`, which may be
+reworded. Every code and its fix is in the [error reference](/errors).
+
+## Webhooks
+
+The webhook verifier is available as `nombaone.webhooks` and, importantly, as a
+standalone import that needs **no API key** — a receiver usually holds only the
+signing secret.
+
+```ts
+import express from 'express';
+import { webhooks, WebhookVerificationError } from '@nombaone/node';
+
+const app = express();
+
+app.post('/nombaone/webhooks', express.raw({ type: 'application/json' }), (req, res) => {
+  let event;
+  try {
+    event = webhooks.constructEvent(
+      req.body,                                  // 1. the RAW body, never re-serialized
+      req.header('x-nombaone-signature') ?? '',
+      process.env.NOMBAONE_WEBHOOK_SECRET!,      // shown once at endpoint creation
+    );
+  } catch (err) {
+    if (err instanceof WebhookVerificationError) return res.status(400).send('bad signature');
+    throw err;
+  }
+
+  if (alreadyProcessed(event.event.id)) return res.sendStatus(200); // 2. dedupe on the event id
+
+  switch (event.type) {                          // 3. fully typed — data narrows on type
+    case 'invoice.paid':            unlock(event.data.reference); break;
+    case 'invoice.action_required': send(event.data.checkoutLink); break;
+    case 'invoice.payment_failed':  note(event.data.reason); break;
+  }
+
+  res.sendStatus(200); // respond 2xx fast; do the work async
+});
+```
+
+Three rules the SDK enforces: feed the **raw** body (Express `express.raw`,
+Next.js route handlers `await req.text()`, Hono `await c.req.text()`); verify
+before you parse; and **dedupe on `event.event.id`**, because delivery is
+at-least-once. The event is a closed discriminated union, so `switch (event.type)`
+fully types `event.data`. See [signing and verification](/webhooks/signing-and-verification)
+for the signature scheme.
+
+## The sandbox toolkit
+
+Every `nombaone.sandbox` method is sandbox-only and throws locally, before any
+network call, if the client holds a live key.
+
+```ts
+// A deterministic test method — no real card.
+const method = await nombaone.sandbox.createPaymentMethod({
+  customerId: customer.id,
+  behavior: 'decline_insufficient_funds', // a thin balance: "not yet", not "no"
+});
+
+// The test clock — run the next billing cycle through the real engine, now.
+const cycle = await nombaone.sandbox.advanceCycle(subscription.id);
+console.log(cycle.outcome); // "past_due"
+
+// Fire a real, signed webhook at your registered endpoints.
+await nombaone.sandbox.simulateWebhook({ type: 'invoice.paid' });
+```
+
+The behaviors are `success` (default), `decline_insufficient_funds`,
+`decline_expired_card`, `decline_do_not_honor`, and `requires_otp`. The sandbox
+sends no organic webhooks — `simulateWebhook` is how you rehearse a handler. See
+the [sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## Every framework, one SDK
+
+There are no framework-specific SDKs, because there is no need for one. The same
+client runs in Node, Next.js, Remix, Nuxt, Express, Hono, Redwood, Bun, Astro, and
+serverless (Vercel, Cloudflare Workers, Deno, AWS Lambda). The only framework
+difference is how you capture the **raw** webhook body — `express.raw` on Express,
+`await req.text()` in a Next.js route handler, `await c.req.text()` on Hono.
+
+## The honest hard parts
+
+We would rather you read these here than discover them at 2am.
+
+> **Two methods return a PaymentMethod, not what you'd guess**
+>
+> `subscriptions.updatePaymentMethod` returns the updated `PaymentMethod`, and
+> `mandates.retrieve` returns a `PaymentMethod` too (a mandate's standing lives on
+> the payment-method row). That is what the wire carries — the types say so.
+
+- **Mandates activate asynchronously.** After `mandates.create`, wait for the
+`payment_method.updated` webhook — do not poll, and do not charge early. On the
+deployed sandbox, `POST /mandates` can currently return a `504` from the NIBSS
+upstream; it surfaces as a `ServerError`, so pass `{ maxRetries: 0 }` to fail
+fast while that upstream is down.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not
+yet." Honor `graceAccessUntil` on the dunning state and keep access on until it
+passes. Involuntary churn ends as `canceled` with `cancellationReason:
+'involuntary'` — there is no `churned` status (there is a `subscription.churned`
+event).
+- **Prices are immutable, plans archive.** To change pricing, deactivate the price
+and create a new one; plans archive rather than delete.
+- **Sandbox settlements.** The sandbox organization has no settlement subaccount,
+so escrow and payout return a typed `SETTLEMENT_SUBACCOUNT_NOT_FOUND` — a real
+business state whose `hint` explains itself.
+
+## Next
+
+- **[Method reference](/sdks/node/reference)**: 
+Every method in the SDK, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: "Node.js method reference"
+type: reference
+summary: "Every method in @nombaone/node, grouped by namespace, each linking to the full request, response, and a ready-to-run Node.js sample."
+canonical: https://docs.nombaone.xyz/sdks/node/reference
+---
+
+# Node.js method reference
+
+Every method in `@nombaone/node`, grouped by the namespace you reach it through on
+the client (`nombaone.customers.create`, `nombaone.plans.prices.create`, and so
+on). Open any method for its full request and response shape, with a copy-runnable
+sample in Node.js and every other SDK.
+
+---
+
+---
+title: "PHP SDK"
+type: reference
+summary: "The nombaone/nombaone-php SDK: one library for PHP, Laravel, and Symfony. Associative arrays in, typed readonly objects out, with typed exceptions, automatic retries that never double-charge, cursor pagination, and a keyless webhook verifier."
+canonical: https://docs.nombaone.xyz/sdks/php
+---
+
+# PHP SDK
+
+`nombaone/nombaone-php` is the official SDK for PHP. One library serves plain PHP,
+Laravel, and Symfony — you pass associative arrays keyed by the wire names in and
+receive typed, readonly objects back, over whatever PSR-18 HTTP client the SDK
+discovers. It talks to the same API as every other SDK, so the money behaves
+identically wherever you run it.
+
+```bash
+composer require nombaone/nombaone-php
+```
+
+The SDK requires PHP 8.2+ and any PSR-18 HTTP client with PSR-17 factories, which it
+auto-discovers via `php-http/discovery` — Guzzle, Symfony HttpClient, Nyholm, any
+implementation works — and it prefers a built-in curl transport when `ext-curl` is
+present. Your secret key is read from `NOMBAONE_API_KEY` (or passed to the
+constructor); it is server-side only — never ship it to a browser.
+
+```php
+use NombaOne\Nombaone; // the client
+
+// Models live in NombaOne\Models\*, exceptions in NombaOne\Exceptions\*,
+// and the webhook verifier is NombaOne\Webhooks\Webhooks.
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo: ₦2,500.00 is `250_000`.
+
+```php
+use NombaOne\Nombaone;
+
+$nomba = new Nombaone(getenv('NOMBAONE_API_KEY'));
+
+// 1. Something to sell.
+$plan  = $nomba->plans->create(['name' => 'Pro']);
+$price = $nomba->plans->prices->create($plan->id, [
+    'unitAmountInKobo' => 250_000, // ₦2,500.00
+    'interval'         => 'month',
+]);
+
+// 2. Someone to bill.
+$customer = $nomba->customers->create([
+    'email' => 'ada@example.com',
+    'name'  => 'Ada Lovelace',
+]);
+
+// 3. A way to pay — in the sandbox, mint a deterministic test card.
+$method = $nomba->sandbox->createPaymentMethod(['customerId' => $customer->id]);
+
+// 4. The subscription. The engine takes it from here.
+$subscription = $nomba->subscriptions->create([
+    'customerId'      => $customer->id,
+    'priceId'         => $price->id,
+    'paymentMethodId' => $method->id,
+]);
+
+echo $subscription->status; // "active"
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+`https://api.nombaone.xyz` automatically.
+
+## Constructing the client
+
+```php
+new Nombaone(string|array|null $apiKey = null, array $options = [])
+```
+
+Pass the key as the first argument, a full options array in its place, or `null` to
+fall back to `NOMBAONE_API_KEY`. The constructor throws a `NombaOneException` with an
+actionable message when no key resolves, or when the key prefix is unrecognized and
+no `baseUrl` is given.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `apiKey` | `NOMBAONE_API_KEY` env | The secret key. Server-side only. |
+| `baseUrl` | derived from key prefix | Override the API origin. Always wins; required for an unrecognized prefix. |
+| `timeout` | `30` seconds | Per-attempt timeout. |
+| `maxRetries` | `2` (3 attempts) | Retries network failures, timeouts, 408/429/5xx, and in-flight idempotency conflicts. A `POST` retry always reuses its `Idempotency-Key`. |
+| `httpClient` | auto-discovered | Bring your own PSR-18 client, for tests, proxies, or instrumentation. |
+| `requestFactory` / `streamFactory` | auto-discovered | PSR-17 factories, injected the same way. |
+
+The SDK ships no hard HTTP dependency — it auto-discovers the PSR-18 client and
+PSR-17 factories, so you choose the implementation. Read `$nomba->mode`
+(`Mode::Sandbox` or `Mode::Live`) and `$nomba->baseUrl` to see where a client points.
+
+## Conventions
+
+- **Money is integer kobo.** ₦1.00 = `100`, money fields end in `InKobo`, and
+`currency` is always `"NGN"`. There are no floats or decimal strings for money,
+anywhere.
+- **camelCase in and out.** Params are associative arrays keyed by the exact
+camelCase wire names (`unitAmountInKobo`, `customerId`); the objects you get back
+expose the same fields as typed readonly properties (`$customer->email`). Send
+only the keys you set, and pass a nullable field as `null` to clear it.
+- **Idempotency is automatic.** A UUID `Idempotency-Key` is generated for every
+`POST` and reused across automatic retries, so a dropped connection can never
+double-charge. On payouts, pass your own stable key (below).
+- **IDs are opaque strings** of the form `nbo…` with a type suffix (`…cus`,
+`…sub`, `…inv`). Timestamps are ISO-8601 strings; nullable fields are typed `?T`.
+
+Per call, every method takes an optional last argument:
+
+| Field | Meaning |
+|---|---|
+| `idempotencyKey` | Override the auto-generated key. Required practice on payouts. |
+| `headers` | Extra headers; a `null` value removes an SDK default. |
+| `timeout` | Per-attempt seconds for this call. |
+| `maxRetries` | Retry budget for this call; `0` fails fast. |
+
+## Return values and pagination
+
+Every method is synchronous — it returns the resource, or throws. Each object also
+carries its response metadata: `$customer->requestId()` and
+`$customer->getLastResponse()` reach the request id and the raw PSR-7 response when
+you need headers, status, or rate-limit info.
+
+Every `list()` returns a `NombaOne\Page`. Read one page, thread the cursor yourself
+with `nextPage()`, or `foreach` it to stream every item across every page — the
+cursors are threaded for you and pages are fetched lazily.
+
+```php
+// One page.
+$page = $nomba->invoices->list(['status' => 'open', 'limit' => 50]);
+$page->data;                   // list<Invoice>
+$page->pagination->hasMore;    // bool
+$page->pagination->nextCursor; // ?string
+
+// Manual paging — same filters, next cursor threaded.
+if ($page->hasNextPage()) {
+    $next = $page->nextPage();
+}
+
+// Every item across every page — breaking the loop stops fetching.
+foreach ($nomba->invoices->list(['status' => 'open']) as $invoice) {
+    echo $invoice->id, "\n";
+}
+// equivalently: $nomba->invoices->list()->autoPagingIterator() — a Generator<Invoice>
+```
+
+## Errors
+
+Every error is a typed exception. The base is `NombaOneException` (also thrown for
+config mistakes); any non-2xx response is an `ApiException` with a status-specific
+subclass, and transport failures are `ConnectionException` / `TimeoutException`. All
+live in `NombaOne\Exceptions\`.
+
+An `ApiException` carries `$statusCode`, a machine-readable `$errorCode`, a `$hint`,
+a `$docUrl`, an optional `$fields` map (on 422s), and the `$requestId`. The `$hint`
+is folded into the message, so the fix arrives with the failure.
+
+| Status | Class | Notes |
+|---|---|---|
+| 400 | `BadRequestException` | Malformed request. |
+| 401 | `AuthenticationException` | Missing, invalid, or wrong-mode key. |
+| 403 | `PermissionDeniedException` | Missing scope, or a foreign resource. |
+| 404 | `NotFoundException` | Wrong id, or wrong mode. |
+| 409 | `ConflictException` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `ValidationException` | `$e->fields` has per-field messages. |
+| 429 | `RateLimitException` | Adds `$retryAfter`, `$limit`, `$remaining`. |
+| 5xx | `ServerException` | Safe to retry — the SDK already did. |
+
+```php
+use NombaOne\ErrorCode;
+use NombaOne\Exceptions\{ValidationException, RateLimitException, NotFoundException};
+
+try {
+    $nomba->subscriptions->create(['customerId' => $customerId, 'priceId' => $priceId]);
+} catch (ValidationException $e) {
+    $e->fields;                       // ['paymentMethodId' => ['Required']]
+} catch (RateLimitException $e) {
+    sleep($e->retryAfter ?? 1);       // seconds
+} catch (NotFoundException $e) {
+    error_log("{$e->errorCode} {$e->requestId}");
+}
+```
+
+The machine code lives on `$errorCode`, **not** `$code` — PHP's `\Exception`
+reserves `$code`. Branch on `$errorCode` or the exception class, never on
+`$e->getMessage()`, which may be reworded. Every code and its fix is in the
+[error reference](/errors).
+
+## Webhooks
+
+The webhook verifier is `NombaOne\Webhooks\Webhooks`. It needs **no API key** —
+construct it standalone with `new Webhooks()`, or reach it as `$nomba->webhooks` —
+because a receiver usually holds only the signing secret.
+
+```php
+use NombaOne\Webhooks\Webhooks;
+use NombaOne\Exceptions\WebhookVerificationException;
+
+$wh = new Webhooks();
+
+try {
+    $event = $wh->constructEvent(
+        file_get_contents('php://input'),           // 1. the RAW body, never re-serialized
+        $_SERVER['HTTP_X_NOMBAONE_SIGNATURE'] ?? '',
+        getenv('NOMBAONE_WEBHOOK_SECRET'),          // shown once at endpoint creation
+    );
+} catch (WebhookVerificationException $e) {
+    http_response_code(400);
+    exit;
+}
+
+if (alreadyProcessed($event->event->id)) {          // 2. dedupe on the event id
+    http_response_code(200);
+    exit;
+}
+
+match ($event->type) {                              // 3. branch on the type
+    'invoice.paid'            => unlock($event->data['reference']),
+    'invoice.action_required' => send($event->data['checkoutLink'] ?? null),
+    'invoice.payment_failed'  => note($event->data['reason'] ?? null),
+    default                   => null,
+};
+
+http_response_code(200); // respond 2xx fast; do the work async
+```
+
+Three rules the SDK enforces: feed the **raw** body (`file_get_contents('php://input')`
+in plain PHP, `$request->getContent()` in Laravel or Symfony — never a parsed body);
+verify before you parse; and **dedupe on `$event->event->id`**, because delivery is
+at-least-once. See [signing and verification](/webhooks/signing-and-verification)
+for the signature scheme.
+
+## The sandbox toolkit
+
+Every `$nomba->sandbox` method is sandbox-only and throws locally, before any
+network call, if the client holds a live key.
+
+```php
+// A deterministic test method — no real card.
+$method = $nomba->sandbox->createPaymentMethod([
+    'customerId' => $customer->id,
+    'behavior'   => 'decline_insufficient_funds', // a thin balance: "not yet", not "no"
+]);
+
+// The test clock — run the next billing cycle through the real engine, now.
+$cycle = $nomba->sandbox->advanceCycle($subscription->id);
+echo $cycle->outcome; // "past_due"
+
+// Fire a real, signed webhook at your registered endpoints.
+$nomba->sandbox->simulateWebhook(['type' => 'invoice.paid']);
+```
+
+The behaviors are `success` (default), `decline_insufficient_funds`,
+`decline_expired_card`, `decline_do_not_honor`, and `requires_otp`. The sandbox
+sends no organic webhooks — `simulateWebhook` is how you rehearse a handler. See
+the [sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather you learn these now than discover them at 2am.
+
+> **The machine error code is $errorCode, not $code**
+>
+> PHP's `\Exception` already reserves `$code`, so the stable, branchable error code
+> lives on `$errorCode`. Read `$e->errorCode` (a string like `CUSTOMER_NOT_FOUND`) —
+> `$e->getCode()` is not it.
+
+- **Two methods return a `PaymentMethod`.** `subscriptions->updatePaymentMethod`
+returns the updated `PaymentMethod`, and `mandates->retrieve` returns a
+`PaymentMethod` too — a mandate's standing lives on the payment-method row. That
+is what the wire carries; the types say so.
+- **A no-body `POST` sends `{}`.** The transport guards against PHP serializing an
+empty map as `[]` (a JSON array), which the API rejects — so bodyless calls like
+`subscriptions->resume` or `plans->archive` always send a valid `{}`.
+- **Mandates activate asynchronously.** After `mandates->create`, relay
+`MandateSetup->consentInstruction`, wait for the `payment_method.updated` webhook,
+and do not charge early. On the deployed sandbox, creating a mandate can currently
+return a `504` from the NIBSS upstream; it surfaces as a `ServerException`, so
+pass `['maxRetries' => 0]` to fail fast while that upstream is down.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not
+yet." Read `subscriptions->dunning->retrieve()` and honor `graceAccessUntil`
+before cutting access. Involuntary churn ends as `canceled` with
+`cancellationReason: 'involuntary'` — there is no `churned` status (there is a
+`subscription.churned` event).
+- **Prices are immutable, plans archive.** To change pricing, deactivate the price
+and create a new one; plans archive rather than delete.
+
+## Next
+
+- **[Method reference](/sdks/php/reference)**: 
+Every method in the SDK, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: "PHP method reference"
+type: reference
+summary: "Every method in nombaone/nombaone-php, grouped by namespace, each linking to the full request, response, and a ready-to-run PHP sample."
+canonical: https://docs.nombaone.xyz/sdks/php/reference
+---
+
+# PHP method reference
+
+Every method in `nombaone/nombaone-php`, grouped by the namespace you reach it
+through on the client (`$nomba->customers->create`, `$nomba->plans->prices->create`,
+and so on). Open any method for its full request and response shape, with a
+copy-runnable sample in PHP and every other SDK.
+
+---
+
+---
+title: "Python SDK"
+type: reference
+summary: "The nombaone Python SDK: sync and async clients over one surface, typed pydantic models, automatic retries that never double-charge, cursor pagination, and a keyless webhook verifier."
+canonical: https://docs.nombaone.xyz/sdks/python
+---
+
+# Python SDK
+
+`nombaone` is the official SDK for Python. One library gives you a synchronous
+`Nombaone` client and an asyncio `AsyncNombaone` client over the identical
+surface — typed `pydantic` models, automatic retries that never double-charge,
+and a webhook verifier. It talks to the same API as every other SDK, so the money
+behaves identically wherever you run it.
+
+```bash
+pip install nombaone
+# uv add nombaone · poetry add nombaone · pipenv install nombaone
+```
+
+The SDK ships `py.typed` for complete type hints, runs on Python 3.9 and up, and
+depends only on `httpx` and `pydantic`. Your secret key is read from
+`NOMBAONE_API_KEY` (or passed to the constructor); it is server-side only — never
+ship it to a browser or mobile app.
+
+```python
+from nombaone import Nombaone, AsyncNombaone       # sync + async clients
+from nombaone import webhooks, ValidationError      # webhook verifier, typed errors
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo: ₦2,500.00 is `250_000`.
+
+```python
+import os
+from nombaone import Nombaone
+
+nombaone = Nombaone(os.environ["NOMBAONE_API_KEY"])
+
+# 1. Something to sell.
+plan = nombaone.plans.create(name="Pro")
+price = nombaone.plans.prices.create(
+    plan.id,
+    unit_amount_in_kobo=250_000,  # ₦2,500.00
+    interval="month",
+)
+
+# 2. Someone to bill.
+customer = nombaone.customers.create(email="ada@example.com", name="Ada Lovelace")
+
+# 3. A way to pay — in the sandbox, mint a deterministic test card.
+method = nombaone.sandbox.create_payment_method(customer_id=customer.id)
+
+# 4. The subscription. The engine takes it from here.
+subscription = nombaone.subscriptions.create(
+    customer_id=customer.id,
+    price_id=price.id,
+    payment_method_id=method.id,
+)
+
+print(subscription.status)  # "active"
+```
+
+Only the key changes when you go live: an `nbo_live_…` key routes to
+`https://api.nombaone.xyz` automatically. From there the same object moves through
+its whole life.
+
+```python
+nombaone.subscriptions.pause(subscription.id)
+nombaone.subscriptions.resume(subscription.id)
+nombaone.subscriptions.cancel(subscription.id, mode="at_period_end")  # keep access until the cycle closes
+```
+
+## Constructing the client
+
+```python
+Nombaone(
+    api_key=None,          # or NOMBAONE_API_KEY
+    base_url=None,         # override the derived host
+    timeout=30.0,          # per-attempt seconds
+    max_retries=2,         # automatic retry budget
+    default_headers=None,  # sent on every request
+    http_client=None,      # bring your own httpx.Client
+)
+```
+
+Pass the key as the first argument, or let it resolve from the environment. The
+constructor raises a `NombaoneError` with an actionable message when no key
+resolves, or when the key prefix is unrecognized and no `base_url` is given.
+`AsyncNombaone` takes the same arguments.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `api_key` | `NOMBAONE_API_KEY` env | The secret key. Missing → raises; unknown prefix with no `base_url` → raises. |
+| `base_url` | derived from key prefix | Override the API origin. Always wins; required for an unrecognized prefix. |
+| `timeout` | `30.0` | Per-attempt timeout in **seconds** (not milliseconds). |
+| `max_retries` | `2` (3 attempts) | Retries transport failures, timeouts, 408/429/5xx, and in-progress idempotency conflicts. A `POST` retry always reuses its `Idempotency-Key`. |
+| `default_headers` | `None` | Headers sent on every request. |
+| `http_client` | created for you | Inject an `httpx.Client` / `httpx.AsyncClient`, for tests, proxies, or instrumentation. |
+
+Read `nombaone.mode` (`"sandbox"` or `"live"`) and `nombaone.base_url` to see where
+a client points. `Nombaone` is a context manager (`with …:`) with a `.close()`;
+`AsyncNombaone` is an async context manager (`async with …:`) with an `.aclose()`.
+
+## Conventions
+
+- **Money is integer kobo.** `₦1.00 == 100`, every money field and param ends in
+`_in_kobo` and is an `int`, and `currency` is always `"NGN"`. `250_000` is
+₦2,500 — not ₦250,000; multiply naira by 100 exactly once, at the edge of your
+system. There are no floats or decimal strings for money, anywhere.
+- **snake_case attributes, camelCase on the wire.** You write
+`price.unit_amount_in_kobo`; the API sends `unitAmountInKobo`. The SDK maps both
+directions, so you never touch the wire names.
+- **Idempotency is automatic.** A UUID `Idempotency-Key` is generated for every
+`POST` and reused across automatic retries, so a dropped connection can never
+double-charge. On `settlements.create_payout` the key doubles as the payout's
+durable `merchantTxRef` — pass your own stable key there (below) so a retry from
+a *new process* can't create a second payout.
+- **IDs are opaque strings** of the form `nbo…` with a three-letter type suffix
+(`…cus`, `…sub`, `…inv`); never parse them, pass them back as received.
+Timestamps are ISO-8601 UTC strings; nullable fields are typed `Optional`.
+
+Per call, every method takes an optional last argument `options: RequestOptions`:
+
+| Field | Meaning |
+|---|---|
+| `idempotency_key` | Override the auto-generated key. Required practice on payouts. |
+| `headers` | Extra headers; a `None` value removes an SDK default. |
+| `timeout` | Per-attempt seconds for this call. |
+| `max_retries` | Retry budget for this call; `0` fails fast. |
+| `query` | Extra query params merged into the request. |
+
+```python
+from nombaone import RequestOptions
+
+nombaone.settlements.create_payout(
+    amount_in_kobo=5_000_000,  # ₦50,000.00
+    bank_code="058",
+    account_number="0123456789",
+    options=RequestOptions(idempotency_key=f"payout-{my_payout.id}", max_retries=0),
+)
+```
+
+## Return values and pagination
+
+Every non-list method returns the `pydantic` model directly, and every returned
+object carries `obj.last_response` with `.request_id`, `.status_code`, `.headers`,
+and the raw `.http_response` — quote `request_id` to support. Every `list()`
+returns a page you can read one at a time or iterate to stream every item across
+every page, with the cursors threaded for you.
+
+```python
+# One page + the cursor block.
+page = nombaone.invoices.list(status="open", limit=50)
+page.data                    # list[Invoice] on this page
+page.pagination.has_more     # bool
+page.pagination.next_cursor  # str | None
+
+# Manual paging — same filters, next cursor.
+if page.has_next_page():
+    page = page.next_page()
+
+# Every item across every page — breaking the loop stops fetching.
+for invoice in nombaone.invoices.list(status="open"):
+    print(invoice.id)
+
+# The request id, when you need it.
+customer = nombaone.customers.retrieve(customer_id)
+print(customer.last_response.request_id)
+```
+
+The async client has the identical surface on `AsyncNombaone`; only `await` and
+`async for` differ.
+
+```python
+import asyncio, os
+from nombaone import AsyncNombaone
+
+async def main():
+    async with AsyncNombaone(os.environ["NOMBAONE_API_KEY"]) as nombaone:
+        page = await nombaone.invoices.list(status="open", limit=50)
+        if page.has_next_page():
+            page = await page.next_page()
+
+        async for invoice in await nombaone.invoices.list(status="open"):
+            print(invoice.id)
+
+asyncio.run(main())
+```
+
+Pages are forward-only with no total counts: `limit` is 1–100 (default 20),
+`cursor` is opaque, and filters are preserved across every page.
+
+## Errors
+
+Every failed call raises a typed exception. The base is `NombaoneError` (also
+raised for config mistakes); any non-2xx response is an `APIError` with a
+status-specific subclass, and transport failures are `APIConnectionError` /
+`APITimeoutError`.
+
+An `APIError` carries `status_code`, a machine-readable `code`, a `hint`, a
+`doc_url`, an optional `fields` map (on 422s), and the `request_id`. The `hint` is
+baked into `str(err)`, so the fix prints with the failure.
+
+| Status | Class | Notes |
+|---|---|---|
+| — | `NombaoneError` | Base of everything the SDK raises. |
+| 400 | `BadRequestError` | Malformed request. |
+| 401 | `AuthenticationError` | Missing, invalid, or wrong-environment key. |
+| 403 | `PermissionDeniedError` | Missing scope, or a foreign resource. |
+| 404 | `NotFoundError` | Wrong id, or wrong environment. |
+| 409 | `ConflictError` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `ValidationError` | `err.fields` has per-field messages. |
+| 429 | `RateLimitError` | Adds `retry_after` (seconds), `limit`, `remaining`. |
+| 5xx | `ServerError` | Safe to retry — the SDK already did. |
+| — | `APIConnectionError` | Transport failed to complete. |
+| — | `APITimeoutError` | One attempt exceeded its timeout (subclass of the above). |
+
+```python
+from nombaone import NotFoundError, RateLimitError, ValidationError, NombaoneError
+
+try:
+    nombaone.subscriptions.create(customer_id=cid, price_id=pid)
+except ValidationError as err:
+    print(err.fields)                 # {"paymentMethodId": ["..."]}
+except RateLimitError as err:
+    print(err.retry_after)            # seconds
+except NotFoundError as err:
+    print(err.code, err.request_id)   # e.g. "CUSTOMER_NOT_FOUND"
+except NombaoneError as err:
+    print(err)                        # the catch-all base
+```
+
+Branch on `err.code` or `isinstance` — never on `str(err)`, which may be reworded.
+Every code and its fix is in the [error reference](/errors).
+
+## Webhooks
+
+The webhook verifier is available as `nombaone.webhooks` and, importantly, as a
+standalone import that needs **no API key** — a receiver usually holds only the
+signing secret.
+
+```python
+import os
+from flask import Flask, request
+from nombaone import webhooks, WebhookVerificationError
+
+app = Flask(__name__)
+
+@app.post("/nombaone/webhooks")
+def hook():
+    try:
+        event = webhooks.construct_event(
+            request.get_data(),                              # 1. the RAW body, never re-serialized
+            request.headers.get("x-nombaone-signature", ""),
+            os.environ["NOMBAONE_WEBHOOK_SECRET"],           # shown once at endpoint creation
+        )
+    except WebhookVerificationError:
+        return "bad signature", 400                          # 2. verify before you parse
+
+    if already_processed(event.event.id):                    # 3. dedupe on the event id
+        return "", 200
+
+    if event.type == "invoice.paid":
+        unlock(event.data["reference"])
+    elif event.type == "invoice.action_required":
+        send(event.data["checkoutLink"])
+    elif event.type == "invoice.payment_failed":
+        note(event.data["reason"])
+
+    return "", 200  # respond 2xx fast; do the work async
+```
+
+Three rules the SDK enforces: feed the **raw** body (Flask `request.get_data()`,
+FastAPI `await request.body()`, Django `request.body`) — re-serializing the JSON
+changes the bytes and breaks the signature; verify before you parse; and **dedupe
+on `event.event.id`**, because delivery is at-least-once. Branch on `event.type`
+and read the delivery's `event.data` dict. `webhooks.generate_test_header(...)`
+mints a valid signature so you can unit-test the handler. See
+[signing and verification](/webhooks/signing-and-verification) for the signature
+scheme.
+
+## The sandbox toolkit
+
+Every `nombaone.sandbox` method is sandbox-only and raises `NombaoneError` locally,
+before any network call, if the client holds a live key.
+
+```python
+# A deterministic test method — no real card.
+method = nombaone.sandbox.create_payment_method(
+    customer_id=customer.id,
+    behavior="decline_insufficient_funds",  # a thin balance: "not yet", not "no"
+)
+
+# The test clock — run the next billing cycle through the real engine, now.
+result = nombaone.sandbox.advance_cycle(subscription.id)
+print(result.outcome)  # "past_due"
+
+# Fire a real, signed webhook at your registered endpoints.
+nombaone.sandbox.simulate_webhook(type="invoice.paid")
+```
+
+The behaviors are `success` (default), `decline_insufficient_funds`,
+`decline_expired_card`, `decline_do_not_honor`, and `requires_otp`; `kind` is
+`card` (default) or `mandate`. The sandbox sends no organic webhooks —
+`simulate_webhook` is how you rehearse a handler. See the
+[sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather you read these here than discover them at 2am.
+
+> **update_payment_method returns a PaymentMethod, not a Subscription**
+>
+> `subscriptions.update_payment_method` returns the newly-attached `PaymentMethod`
+> — the OpenAPI spec labels it a `Subscription`, but the deployed API returns the
+> payment method and the SDK follows the runtime. `mandates.retrieve` returns a
+> `PaymentMethod` too, since a mandate's standing lives on the payment-method row.
+
+- **Mandates activate asynchronously.** `mandates.create` returns
+`consent_pending`; the mandate activates only after the customer authorizes it
+with their bank. Relay `mandate.consent_instruction`, then wait for the
+`payment_method.updated` webhook — do not poll, and do not charge early.
+- **Bank transfer is a push rail.** `payment_methods.create_virtual_account`
+issues a NUBAN; collection completes when the transfer arrives and reconciles —
+it is never instantly final.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not
+yet." Read `subscriptions.dunning.retrieve()` and honor `grace_access_until`
+before cutting access. Involuntary churn ends as `status="canceled"` with
+`cancellation_reason="involuntary"` — there is no `churned` status (there is a
+`subscription.churned` event).
+- **Prices are immutable, plans archive.** To change pricing, deactivate the price
+and create a new one; plans archive rather than delete.
+- **The filter names are inconsistent, on purpose — mirror them.** Subscriptions
+and invoices filter by `customer_id`; payment methods by `customer_ref`; prices
+by `plan_ref`.
+- **The invoice list `status` filter excludes `partially_paid`.** It accepts
+`draft`, `open`, `paid`, `void`, and `uncollectible` only — though an `Invoice`
+object can still carry a `partially_paid` status.
+
+## Next
+
+- **[Method reference](/sdks/python/reference)**: 
+Every method in the SDK, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: "Python method reference"
+type: reference
+summary: "Every method in nombaone, grouped by namespace, each linking to the full request, response, and a ready-to-run Python sample."
+canonical: https://docs.nombaone.xyz/sdks/python/reference
+---
+
+# Python method reference
+
+Every method in `nombaone`, grouped by the namespace you reach it through on the
+client (`nombaone.customers.create`, `nombaone.plans.prices.create`, and so on).
+Open any method for its full request and response shape, with a copy-runnable
+sample in Python — sync or async — and every other SDK.
+
+---
+
+---
+title: "Ruby SDK"
+type: reference
+summary: "The nombaone gem: one library for Ruby and Rails with zero runtime dependencies. Typed errors you rescue, automatic retries that never double-charge, Enumerable pagination, and a keyless webhook verifier."
+canonical: https://docs.nombaone.xyz/sdks/ruby
+---
+
+# Ruby SDK
+
+`nombaone` is the official SDK for Ruby. One gem serves plain Ruby and Rails
+alike — built entirely on the standard library, with zero runtime dependencies, a
+keyless webhook verifier, and shipped RBS type signatures. It talks to the same
+API as every other SDK, so the money behaves identically wherever you run it.
+
+```bash
+gem install nombaone   # or, in a Gemfile: gem "nombaone"
+```
+
+The gem is built on the standard library — `net/http`, `json`, `openssl`,
+`securerandom` — with zero runtime dependencies, and ships RBS signatures under
+`sig/`. Your secret key is read from `NOMBAONE_API_KEY` (or passed to the
+constructor); it is server-side only — never ship it to a browser.
+
+```ruby
+require "nombaone"
+
+# Nombaone.new(api_key = nil, **options) builds a Nombaone::Client.
+# Nombaone.webhooks is a module-level, keyless webhook verifier.
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo: ₦2,500.00 is `250_000`.
+
+```ruby
+require "nombaone"
+
+nombaone = Nombaone.new(ENV["NOMBAONE_API_KEY"])
+
+# 1. Something to sell.
+plan  = nombaone.plans.create(name: "Pro")
+price = nombaone.plans.prices.create(
+  plan.id,
+  unit_amount_in_kobo: 250_000, # ₦2,500.00
+  interval: "month",
+)
+
+# 2. Someone to bill.
+customer = nombaone.customers.create(
+  email: "ada@example.com",
+  name: "Ada Lovelace",
+)
+
+# 3. A way to pay — in the sandbox, mint a deterministic test card.
+method = nombaone.sandbox.create_payment_method(customer_id: customer.id)
+
+# 4. The subscription. The engine takes over now.
+subscription = nombaone.subscriptions.create(
+  customer_id: customer.id,
+  price_id: price.id,
+  payment_method_id: method.id,
+)
+
+subscription.status # => "active"
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+`https://api.nombaone.xyz` automatically.
+
+## Constructing the client
+
+```ruby
+Nombaone.new(api_key = nil, **options)
+```
+
+Pass the key as the first argument, or omit it to read `NOMBAONE_API_KEY`. The
+constructor raises a `Nombaone::Error` — locally, before any network call — when
+no key resolves, or when the key prefix is unrecognized and no `base_url:` is
+given.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `api_key` | `ENV["NOMBAONE_API_KEY"]` | The secret key. Server-side only. |
+| `base_url:` | derived from key prefix | Override the API origin. Always wins; required for an unrecognized prefix. |
+| `timeout:` | `30` seconds | Per-attempt request timeout. |
+| `max_retries:` | `2` (3 attempts) | Retries network failures, timeouts, 408/429/5xx, and in-flight idempotency conflicts. A `POST` retry always reuses its `Idempotency-Key`. |
+| `default_headers:` | — | Headers sent on every request. |
+| `http:` | `Net::HTTP` transport | Inject a connection that responds to `#execute` — for tests, proxies, or instrumentation. |
+
+Read `nombaone.mode` (`"sandbox"` or `"live"`) and `nombaone.base_url` to see
+where a client points; both are derived from the key prefix.
+
+## Conventions
+
+- **Money is integer kobo, params are snake_case.** Money params and readers end
+in `_in_kobo`, ₦1.00 is `100`, and `currency` is always `"NGN"`. Ruby's
+`Integer` is arbitrary-precision, so there are no floats or decimal strings for
+money, anywhere. You pass snake_case keyword arguments and read snake_case
+methods (`amount_in_kobo`), even though the wire is camelCase — the SDK
+translates both directions.
+- **Idempotency is automatic.** A UUID `Idempotency-Key` is generated once per
+`POST`, before the retry loop, and reused across automatic retries — so a
+dropped connection can never double-charge. On payouts, pass your own stable key
+(below).
+- **IDs are opaque strings** shaped `nbo…` with a type suffix (`…cus`, `…sub`,
+`…inv`). Never validate them client-side. Timestamps are ISO-8601 strings; the
+SDK leaves them as strings — parse with `Time.iso8601` if you need a `Time`.
+
+Per call, every method takes a final `request_options:` keyword:
+
+| Key | Meaning |
+|---|---|
+| `:idempotency_key` | Override the auto-generated key. Required practice on payouts. |
+| `:headers` | Extra headers; a `nil` value removes an SDK default. |
+| `:timeout` | Per-attempt seconds for this call. |
+| `:max_retries` | Retry budget for this call; `0` fails fast. |
+| `:cancel_when` | A callable checked before each attempt; if truthy the call raises `Nombaone::ConnectionError` and is never retried. |
+
+## Return values and pagination
+
+Every method is synchronous — you call it, it blocks, you get an object back. A
+single resource is a `Nombaone::NombaObject` with snake_case readers; every
+`list` returns a `Nombaone::Page`, which `include`s `Enumerable`.
+
+```ruby
+# One page.
+page = nombaone.invoices.list(status: "open", limit: 50)
+page.data      # => Array<Nombaone::NombaObject>
+page.has_more? # => true / false
+
+# Manual paging — same filters, next cursor.
+page = page.next_page if page.next_page?
+
+# Every item across every page — lazy, fetches pages as needed.
+nombaone.invoices.list(status: "open").each { |invoice| puts invoice.id }
+nombaone.customers.list.auto_paging_each { |c| handle(c) } # alias of each
+first_three = nombaone.customers.list.first(3)             # stops after one page
+
+# The request id, when you need it.
+nombaone.customers.retrieve(id).request_id
+```
+
+Every `list` accepts `limit:` (1–100, default 20) and `cursor:` (from a prior
+page's `next_cursor`), plus the resource's own filters. Every object also carries
+`request_id` and `to_h` (the untouched wire hash).
+
+## Errors
+
+Every error is raised and typed. The base is `Nombaone::Error` (also raised for
+config mistakes); any non-2xx response is a `Nombaone::APIError` with a
+status-specific subclass, and transport failures are `Nombaone::ConnectionError`
+/ `Nombaone::TimeoutError`.
+
+An `APIError` carries `status_code`, a machine-readable `code`, a `hint`, a
+`doc_url`, an optional `fields` map (on 422s), and the `request_id`. The `hint` is
+baked into the message, so the fix arrives with the failure.
+
+| Status | Class | Notes |
+|---|---|---|
+| 400 | `BadRequestError` | Malformed request. |
+| 401 | `AuthenticationError` | Missing, invalid, or wrong-mode key. |
+| 403 | `PermissionDeniedError` | Missing scope, or a foreign resource. |
+| 404 | `NotFoundError` | Wrong id, or wrong mode. |
+| 409 | `ConflictError` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `ValidationError` | `error.fields` has per-field messages. |
+| 429 | `RateLimitError` | Adds `retry_after` (seconds), `limit`, `remaining`. |
+| 5xx | `ServerError` | Safe to retry — the SDK already did. |
+
+```ruby
+begin
+  nombaone.subscriptions.create(customer_id: customer_id, price_id: price_id)
+rescue Nombaone::ValidationError => e
+  e.fields      # { "paymentMethodId" => ["…"] }
+rescue Nombaone::RateLimitError => e
+  e.retry_after # seconds
+rescue Nombaone::NotFoundError => e
+  puts [e.code, e.request_id].inspect
+end
+```
+
+Branch on `e.code` (stable) or the class — never on `e.message`, which may be
+reworded. Codes are also constants (`Nombaone::ErrorCode::CUSTOMER_NOT_FOUND`),
+and the list is open, so an unknown future code still surfaces as a plain string.
+Every code and its fix is in the [error reference](/errors).
+
+## Webhooks
+
+The webhook verifier is available as `nombaone.webhooks` and, importantly, as
+`Nombaone.webhooks` — a module-level helper that needs **no API key**, because a
+receiver usually holds only the signing secret.
+
+```ruby
+class WebhooksController < ApplicationController
+  skip_before_action :verify_authenticity_token
+
+  def create
+    event = Nombaone.webhooks.construct_event(
+      request.raw_post,                        # 1. the RAW body, never re-serialized
+      request.headers["X-Nombaone-Signature"],
+      ENV.fetch("NOMBAONE_WEBHOOK_SECRET"),    # shown once at endpoint creation
+    )
+
+    return head(:ok) if AlreadyProcessed.exists?(event.event.id) # 2. dedupe on the event id
+
+    case event.type                            # 3. branch on the event type
+    when "invoice.paid"            then unlock(event.data.reference)
+    when "invoice.action_required" then email(event.data.checkout_link)
+    when "invoice.payment_failed"  then note(event.data.reason)
+    end
+
+    head :ok
+  rescue Nombaone::WebhookVerificationError
+    head :bad_request
+  end
+end
+```
+
+Three rules the SDK enforces: feed the **raw** body (`request.raw_post` in Rails,
+`request.body.read` in Sinatra or Rack); verify before you parse; and **dedupe on
+`event.event.id`**, because delivery is at-least-once. See
+[signing and verification](/webhooks/signing-and-verification) for the signature
+scheme.
+
+## The sandbox toolkit
+
+Every `nombaone.sandbox` method is sandbox-only and raises locally, before any
+network call, if the client holds a live key.
+
+```ruby
+# A deterministic test method — no real card.
+method = nombaone.sandbox.create_payment_method(
+  customer_id: customer.id,
+  behavior: "decline_insufficient_funds", # a thin balance: "not yet", not "no"
+)
+
+# The test clock — run the next billing cycle through the real engine, now.
+cycle = nombaone.sandbox.advance_cycle(subscription.id)
+cycle.outcome # => "past_due"
+
+# Fire a real, signed webhook at your registered endpoints.
+nombaone.sandbox.simulate_webhook(type: "invoice.paid")
+```
+
+The behaviors are `success` (default), `decline_insufficient_funds`,
+`decline_expired_card`, `decline_do_not_honor`, and `requires_otp`. The sandbox
+sends no organic webhooks — `simulate_webhook` is how you rehearse a handler. See
+the [sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather you read these now than discover them at 2am.
+
+> **Webhook signature verification is not live yet**
+>
+> `Nombaone.webhooks.construct_event` implements the documented `t=…,v1=…`
+> signature scheme, and a golden-vector test proves that implementation is
+> correct. But the backend still signs outbound deliveries with the legacy
+> bare-hex scheme, so `construct_event` will not match a real delivery until the
+> backend ships the documented scheme. Wire up your handler now — the SDK side is
+> proven — but do not assume live signature parity yet.
+
+- **`mode` is `"sandbox"`, not `"test"`.** Every resource carries a `mode`, and a
+sandbox key yields `"sandbox"` on the wire — mind that if you branch on it.
+- **Two methods return a `PaymentMethod`.** `subscriptions.update_payment_method`
+returns the updated `PaymentMethod`, and `mandates.retrieve` returns a
+`PaymentMethod` too (a mandate's standing lives on the payment-method row). That
+is what the wire carries — the readers reflect it.
+- **Mandates activate asynchronously.** `mandates.create` returns
+`consent_pending`; wait for the `payment_method.updated` webhook before charging
+— do not poll tightly. On the deployed sandbox, `mandates.create` can currently
+return a backend `504` from the NIBSS upstream; it surfaces as a
+`Nombaone::ServerError`, so pass `request_options: { max_retries: 0 }` to fail
+fast while that upstream is down.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not
+yet." Read `subscriptions.dunning.retrieve` and honor `grace_access_until`
+before cutting access. Involuntary churn ends as `canceled` with
+`cancellation_reason: "involuntary"` — there is no `churned` status (there is a
+`subscription.churned` event).
+- **Prices are immutable; plans archive.** To change pricing, `prices.deactivate`
+the old price and create a new one; plans archive rather than delete.
+
+## Next
+
+- **[Method reference](/sdks/ruby/reference)**: 
+Every method in the gem, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: "Ruby method reference"
+type: reference
+summary: "Every method in the nombaone gem, grouped by namespace, each linking to the full request, response, and a ready-to-run Ruby sample."
+canonical: https://docs.nombaone.xyz/sdks/ruby/reference
+---
+
+# Ruby method reference
+
+Every method in the `nombaone` gem, grouped by the namespace you reach it through
+on the client (`nombaone.customers.create`, `nombaone.plans.prices.create`, and so
+on). Open any method for its full request and response shape, with a copy-runnable
+sample in Ruby and every other SDK.
+
+---
+
+---
+title: "Rust SDK"
+type: reference
+summary: "The nombaone crate: one async-first Rust library on tokio, reqwest, and rustls, with an optional blocking API, a three-state Field for clearable inputs, typed errors, automatic retries that never double-charge, and a keyless webhook verifier."
+canonical: https://docs.nombaone.xyz/sdks/rust
+---
+
+# Rust SDK
+
+`nombaone` is the official Rust SDK for the NombaOne subscription-billing API. It
+is async-first — built on `tokio`, `reqwest`, and `rustls` — with an optional
+synchronous surface behind the `blocking` feature, and it contains zero `unsafe`.
+One client, cheap to clone and `Send + Sync`, talks to the same API as every other
+SDK, so the money behaves identically wherever you run it.
+
+```bash
+cargo add nombaone
+cargo add tokio --features macros,rt-multi-thread   # the async runtime nombaone awaits on
+```
+
+The default `reqwest-transport` feature ships the built-in HTTP transport (`reqwest`
+over `rustls`); build with `default-features = false` to plug in your own. Annotate
+your entry point with `#[tokio::main]` and `.await` each call. Your secret key is
+read from `NOMBAONE_API_KEY` (or passed to the builder); it is server-side only —
+never ship it to a browser.
+
+```rust
+use nombaone::*;         // the client, resource/param/domain types, and enums
+// Webhooks live in `nombaone::webhooks`; the mock transport in `nombaone::testing`.
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo: every `..._in_kobo`
+field is a `Kobo` (an alias for `i64`), and `250_000` means ₦2,500.00 — not
+₦250,000.
+
+```rust
+use nombaone::*;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let nombaone = Nombaone::from_env()?; // reads NOMBAONE_API_KEY (a nbo_sandbox_… key)
+
+    // 1. Something to sell.
+    let plan = nombaone
+        .plans()
+        .create(PlanCreateParams { name: "Pro".into(), ..Default::default() })
+        .await?;
+    let price = nombaone
+        .plans()
+        .prices()
+        .create(&plan.id, PriceCreateParams::new(250_000, PriceInterval::Month)) // unit_amount_in_kobo: 250_000, // ₦2,500.00
+        .await?;
+
+    // 2. Someone to bill.
+    let customer = nombaone
+        .customers()
+        .create(CustomerCreateParams {
+            email: "ada@example.com".into(),
+            name: "Ada Lovelace".into(),
+            ..Default::default()
+        })
+        .await?;
+
+    // 3. A way to pay — in the sandbox, mint a deterministic test card.
+    let method = nombaone
+        .sandbox()
+        .create_payment_method(SandboxPaymentMethodParams {
+            customer_id: customer.id.clone(),
+            ..Default::default()
+        })
+        .await?;
+
+    // 4. The subscription. The engine takes it from here: cycles, invoices, retries.
+    let subscription = nombaone
+        .subscriptions()
+        .create(SubscriptionCreateParams {
+            customer_id: customer.id,
+            price_id: price.id,
+            payment_method_id: Some(method.id),
+            ..Default::default()
+        })
+        .await?;
+
+    println!("{}", subscription.status); // "active"
+    Ok(())
+}
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+`https://api.nombaone.xyz` automatically.
+
+## Constructing the client
+
+```rust
+use std::time::Duration;
+
+let nombaone = Nombaone::builder()
+    .api_key("nbo_sandbox_…")             // or omit to read $NOMBAONE_API_KEY
+    .timeout(Duration::from_secs(30))
+    .max_retries(2)
+    .default_header("x-app", "billing-worker")
+    .build()?;
+```
+
+`Nombaone::new(key)` and `Nombaone::from_env()` are shorthands for the builder.
+Read `nombaone.mode()` (`Mode::Sandbox | Mode::Live`) and `nombaone.base_url()` to
+see where a client points; the client is cheap to clone (reference-counted) and
+`Send + Sync`, so build one and share it across your app.
+
+| Method | Default | Meaning |
+|---|---|---|
+| `.api_key(k)` | `$NOMBAONE_API_KEY` | Secret key. Missing or empty raises `Error::Config`; an unknown prefix with no `base_url` does too. |
+| `.base_url(u)` | derived from key | Override the host (a local stack, say). Always wins over the prefix. |
+| `.timeout(d)` | `30s` | Per-attempt timeout, a `std::time::Duration`. |
+| `.max_retries(n)` | `2` | Automatic retries (3 attempts total). `0` disables. |
+| `.default_header(name, value)` | none | An extra header on every request. Call it repeatedly. |
+| `.transport(t)` | reqwest + rustls | Inject a custom `HttpTransport` for tests or proxies. |
+
+## Conventions
+
+- **Money is integer kobo.** `₦1.00 == 100`, every money field and param ends in
+`_in_kobo` and is typed `Kobo` (an alias for `i64`), and `currency` is always
+`"NGN"`. Multiply naira by 100 exactly once, at the edge of your system — never
+use floats for money.
+- **snake_case in Rust, camelCase on the wire.** You write `price.unit_amount_in_kobo`
+and `customer.created_at`; the API sends `unitAmountInKobo` and `createdAt`. The
+SDK maps both directions.
+- **IDs are opaque strings** shaped `nbo…` with a type suffix (`…cus`, `…sub`,
+`…inv`). Pass them as `&str`; never parse them. Timestamps are ISO-8601 UTC
+strings.
+- **Omit, clear, or set — the three-state `Field`.** Most optional inputs are
+`Option` and are simply omitted when `None`. For the few fields you can
+*clear* with JSON `null` (a customer's `phone`, a plan or customer
+`description`), the type is `Field` with three states.
+
+```rust
+nombaone.customers().update(&customer.id, CustomerUpdateParams {
+    phone: Field::Null,                       // send JSON null → clear the number
+    // phone: "+2348012345678".to_string().into(), // Field::Value → set it
+    // phone: Field::Missing (the default)          → leave it untouched
+    ..Default::default()
+}).await?;
+```
+
+Idempotency is automatic: the SDK computes an `Idempotency-Key` (a UUID) once for
+**every POST** and reuses it across automatic retries, so a dropped connection can
+never double-charge. On `settlements().create_payout(...)`, pass your own stable
+key — it doubles as the durable `merchant_tx_ref`, so a retry from a fresh process
+can't create a second payout.
+
+Every single-resource method returns a lazy `ApiCall`; every `list` returns a
+`Paginator`. **Nothing is sent until you `.await`.** Chain options first, and
+finish with `.with_response()` when you also need the request id and headers:
+
+```rust
+use std::time::Duration;
+
+let resp = nombaone
+    .settlements()
+    .create_payout(PayoutCreateParams {
+        amount_in_kobo: 5_000_000, // ₦50,000.00
+        bank_code: "058".into(),
+        account_number: "0123456789".into(),
+    })
+    .idempotency_key("payout-2026-07-01") // POST only; overrides the auto UUID
+    .header("x-trace", "abc")             // an extra header for this call
+    .timeout(Duration::from_secs(60))     // per-attempt timeout for this call
+    .max_retries(0)                       // retry budget for this call
+    .with_response()                      // -> Response<Payout>, not Payout
+    .await?;
+
+resp.data;        // the Payout
+resp.request_id;  // meta.requestId — quote it to support
+resp.status;      // u16 HTTP status
+```
+
+Cancellation is idiomatic Rust: drop the future (`tokio::select!` or
+`tokio::time::timeout`). A dropped call is never retried.
+
+## Return values and pagination
+
+A single-resource call `.await`s to `T`; a `list` `.await`s to the first `Page`.
+`Page` carries `.data()`, its `.pagination()` cursor block, `.has_next_page()`,
+and `.request_id()`. Pagination is cursor-only and forward-only: `limit` is 1–100
+(the API default is 20), and there are no total counts. Item and page streams need
+a `Stream` extension trait — add `futures-util` and its `TryStreamExt`.
+
+```rust
+use futures_util::TryStreamExt;
+
+// One page + the cursor block.
+let page = nombaone
+    .customers()
+    .list(CustomerListParams { limit: Some(50), ..Default::default() })
+    .await?;
+page.data();                   // &[Customer]
+page.pagination().has_more;    // bool
+page.has_next_page();          // bool
+
+// Every item across every page — the cursors are threaded for you.
+let mut items = nombaone.customers().list(CustomerListParams::default()).stream();
+while let Some(customer) = items.try_next().await? {
+    println!("{}", customer.email);
+}
+
+// Page by page instead: `.pages()` yields a `PageStream<T>`.
+let mut pages = nombaone.customers().list(CustomerListParams::default()).pages();
+while let Some(page) = pages.try_next().await? { /* … */ }
+```
+
+Need a synchronous surface? Enable `features = ["blocking"]` and use the **same**
+resource methods — only the terminal changes: `.send_blocking()` instead of
+`.await`, and `.iter()` instead of `.stream()`. (The blocking terminals panic if
+called from inside a Tokio runtime; use the async form there.)
+
+```rust
+let customer = nombaone.customers().retrieve(id).send_blocking()?;
+for invoice in nombaone.invoices().list(InvoiceListParams::default()).iter() {
+    let invoice = invoice?; // Iterator<Item = Result<Invoice, Error>>
+}
+```
+
+## Errors
+
+Every fallible call returns `Result<T, nombaone::Error>`. `Error` is a
+`#[non_exhaustive]` enum, so match it with a catch-all arm and let future variants
+compile clean.
+
+```rust
+#[non_exhaustive]
+pub enum Error {
+    Api(Box<ApiError>),      // a non-2xx API response
+    Connection { .. },       // DNS, reset, TLS, transport (retried within budget)
+    Timeout { .. },          // a per-attempt timeout elapsed (retried)
+    Decode { .. },           // the response was not a valid NombaOne envelope
+    WebhookVerification(WebhookVerificationError),
+    Config { .. },           // bad or missing key / base URL (raised at construction)
+}
+```
+
+An `ApiError` carries everything the error envelope said: `status`, a
+machine-readable `code`, a `message`, a `hint` (folded into `Display`), a
+`doc_url`, an optional `fields` map on 422s, the `request_id`, and — on 429 —
+`retry_after`, `rate_limit`, and `rate_remaining`. Classify by HTTP class with
+`ApiError::kind() -> ApiErrorKind` (`BadRequest`, `Authentication`,
+`PermissionDenied`, `NotFound`, `Conflict`, `Validation`, `RateLimit`, `Server`,
+`Other`).
+
+```rust
+use nombaone::{Error, ErrorCode, ApiErrorKind};
+
+match nombaone.subscriptions().create(params).await {
+    Ok(sub) => println!("{}", sub.status),
+    Err(Error::Api(e)) if e.code == ErrorCode::CUSTOMER_NOT_FOUND => { /* re-create the customer */ }
+    Err(Error::Api(e)) if e.kind() == ApiErrorKind::RateLimit => { let _ = e.retry_after; }
+    Err(Error::Api(e)) if e.kind() == ApiErrorKind::Validation => { let _ = e.fields; } // per-field messages
+    Err(other) => eprintln!("{other}"),
+}
+```
+
+`ErrorCode` is an **open** newtype — it has an associated constant for every known
+code, and an unknown future code still parses, so compare `e.code == ErrorCode::X`
+or `e.code.as_str()`. Branch on the `kind()` or the `code`, never on the message,
+which may be reworded. Every code and its fix is in the [error reference](/errors).
+
+## Webhooks
+
+The webhook verifier is a set of free functions in `nombaone::webhooks` that need
+**no API key** — a receiver usually holds only the signing secret, shown once when
+you create or rotate an endpoint. Feed the **raw request bytes**, never a
+re-serialized copy.
+
+```rust
+use nombaone::{webhooks, WebhookEventType, WebhookVerificationError};
+use nombaone::webhook_events::WebhookEventData;
+
+fn handle(raw_body: &[u8], signature: &str, secret: &str) -> Result<(), WebhookVerificationError> {
+    // 1. verify + parse from the RAW bytes, before you trust anything.
+    let event = webhooks::construct_event(raw_body, signature, secret)?;
+
+    // 2. dedupe on the event id — delivery is at-least-once.
+    // if already_processed(&event.event.id) { return Ok(()); }
+
+    // 3. act — `data` narrows on the event type.
+    match event.event_type {
+        WebhookEventType::InvoicePaid => { /* unlock access */ }
+        WebhookEventType::InvoiceActionRequired => {
+            if let WebhookEventData::InvoiceActionRequired(d) = &event.data {
+                send_checkout_link(&d.checkout_link);
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+```
+
+Three rules the SDK enforces: feed the **raw** body (don't let the framework parse
+and re-serialize it — axum `Bytes`, actix-web `web::Bytes`, warp
+`warp::body::bytes()`); verify before you parse; and **dedupe on `event.event.id`**,
+because delivery is at-least-once. `WebhookEventType` is open, and
+`WebhookEventData` narrows the payload per type. See
+[signing and verification](/webhooks/signing-and-verification) for the signature
+scheme.
+
+## The sandbox toolkit
+
+Every `nombaone.sandbox()` method gives you deterministic control of the real
+billing engine, and each one fails **locally** — it returns `Error::Config` with no
+network call — if the client was built with a live key.
+
+```rust
+// A card that declines like a thin balance does: "not yet", not "no".
+let method = nombaone.sandbox().create_payment_method(SandboxPaymentMethodParams {
+    customer_id: customer.id.clone(),
+    behavior: Some(SandboxPaymentMethodBehavior::DeclineInsufficientFunds),
+    ..Default::default()
+}).await?;
+
+// The test clock — run the subscription's next billing cycle through the real engine, now.
+let cycle = nombaone.sandbox().advance_cycle(&subscription.id).await?;
+println!("{}", cycle.outcome); // "paid" | "past_due" | …
+
+// Fire a real, signed webhook at your registered endpoints.
+nombaone.sandbox().simulate_webhook(SandboxSimulateWebhookParams {
+    event_type: "invoice.paid".into(), ..Default::default()
+}).await?;
+```
+
+The behaviors are `Success` (the default), `DeclineInsufficientFunds`,
+`DeclineExpiredCard`, `DeclineDoNotHonor`, and `RequiresOtp`. The sandbox sends no
+organic webhooks — `simulate_webhook` is how you rehearse a handler. For your own
+unit tests, enable the `test-util` feature to get `nombaone::testing::MockTransport`,
+a queue-backed transport you inject with `.transport(...)` and assert on afterward —
+no real HTTP. See the [sandbox toolkit](/sandbox-toolkit/overview) for the full
+story.
+
+## The honest hard parts
+
+We would rather you read these here than discover them at 2am.
+
+> **Pin idna_adapter on older toolchains**
+>
+> The crate builds on Rust 1.85+. On rustc &lt; 1.86 a *fresh* dependency resolve
+> pulls `icu 2.2` through `reqwest → url → idna`; such consumers add
+> `idna_adapter = "=1.1.0"` to their `[dependencies]`, or use cargo's MSRV-aware
+> resolver. On rustc ≥ 1.86 nothing is needed.
+
+> **Two methods return a PaymentMethod, not what you'd guess**
+>
+> `subscriptions().update_payment_method(...)` returns the updated `PaymentMethod` —
+> it swaps the card during dunning — and `mandates().retrieve(id)` returns a
+> `PaymentMethod` too, because a mandate's standing lives on the payment-method row.
+> That is what the wire carries; the types say so.
+
+- **Mandates activate asynchronously.** A new mandate is `consent_pending` until the
+bank confirms — listen for the `payment_method.updated` webhook; do not poll, and
+do not charge early.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not yet."
+Read `dunning().retrieve()` and honor `grace_access_until` before cutting access.
+Involuntary churn ends as `status: Canceled` with `cancellation_reason: Involuntary`
+— there is no `churned` status (there is a `subscription.churned` event).
+- **Prices are immutable; plans archive.** To change pricing, deactivate the price
+and create a new one; plans archive rather than delete.
+- **The invoice list filter omits `partially_paid`.** `InvoiceListStatus` has no
+`partially_paid` variant, even though an `Invoice` object can carry that status —
+filter on `Open` and inspect the amounts.
+- **Sandbox settlements.** An organization without a settlement sub-account gets a
+typed `SETTLEMENT_SUBACCOUNT_NOT_FOUND` on escrow and payout — a real business
+state whose `hint` explains itself.
+
+## Next
+
+- **[Method reference](/sdks/rust/reference)**: 
+Every method in the crate, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.
+
+---
+
+---
+title: "Rust method reference"
+type: reference
+summary: "Every method in the nombaone crate, grouped by namespace, each linking to the full request, response, and a ready-to-run Rust sample."
+canonical: https://docs.nombaone.xyz/sdks/rust/reference
+---
+
+# Rust method reference
+
+Every method in the `nombaone` crate, grouped by the namespace you reach it through
+on the client (`nombaone.customers().create`, `nombaone.plans().prices().create`,
+and so on). Single-resource methods return an `ApiCall` you `.await` for the
+resource; `list` methods return a `Paginator`. Open any method for its full
+request and response shape, with a copy-runnable sample in Rust and every other SDK.
 
 ---
 

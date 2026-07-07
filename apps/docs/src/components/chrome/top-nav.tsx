@@ -28,7 +28,7 @@ const RESOURCES: { label: string; href: string; external?: boolean }[] = [
   { label: "Best practices", href: "/concepts/hard-parts" },
   { label: "Cookbook", href: "/cookbook" },
   { label: "Pricing", href: "https://nombaone.xyz/pricing", external: true },
-  { label: "CLI, SDKs, and libraries", href: "/getting-started/quickstart" },
+  { label: "Quickstart", href: "/getting-started/quickstart" },
   { label: "Release notes", href: "/changelog" },
 ];
 
@@ -45,11 +45,15 @@ const PRIMARY: { label: string; href: string; isActive: (p: string) => boolean }
     label: "Docs",
     href: "/",
     // Docs is the catch-all, minus the sections that own a top-nav entry (API,
-    // AI) or live under the Resources menu — so only one pill is ever active.
+    // SDKs, AI) or live under the Resources menu — so only one pill is ever active.
     isActive: (p) =>
-      !p.startsWith("/reference") && !p.startsWith("/agents") && !isResourcesActive(p),
+      !p.startsWith("/reference") &&
+      !p.startsWith("/sdks") &&
+      !p.startsWith("/agents") &&
+      !isResourcesActive(p),
   },
   { label: "API Reference", href: "/reference", isActive: (p) => p.startsWith("/reference") },
+  { label: "SDKs", href: "/sdks", isActive: (p) => p.startsWith("/sdks") },
   { label: "AI", href: "/agents", isActive: (p) => p.startsWith("/agents") },
 ];
 

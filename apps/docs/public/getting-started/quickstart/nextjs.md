@@ -14,7 +14,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-Call from a **route handler** or server action, never the browser. `fetch` is built in; read the key from `process.env.NOMBAONE_SECRET_KEY`.
+Call from a **route handler** or server action, never the browser. `fetch` is built in; read the key from `process.env.NOMBAONE_API_KEY`.
 
 ## 2 · Create a plan
 

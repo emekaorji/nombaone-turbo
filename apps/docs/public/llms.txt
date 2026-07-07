@@ -11,7 +11,7 @@ This is the agent index. Every link points at a clean Markdown mirror (append `.
 - [Your first subscription](https://docs.nombaone.xyz/getting-started/your-first-subscription.md): Create a plan, a price, and a subscription that bills, end to end.
 - [Verify us in your devtools](https://docs.nombaone.xyz/getting-started/verify-in-your-devtools.md): Fire a real signed webhook and watch it land in your own logs.
 
-## CLI, SDKs, & Libraries
+## Quickstart
 
 - [Quickstart](https://docs.nombaone.xyz/getting-started/quickstart.md): Get a sandbox key and reach your first real subscription in minutes.
 - [Node.js](https://docs.nombaone.xyz/getting-started/quickstart/node.md)
@@ -21,6 +21,29 @@ This is the agent index. Every link points at a clean Markdown mirror (append `.
 - [PHP](https://docs.nombaone.xyz/getting-started/quickstart/php.md)
 - [Ruby](https://docs.nombaone.xyz/getting-started/quickstart/ruby.md)
 - [cURL](https://docs.nombaone.xyz/getting-started/quickstart/curl.md)
+
+## SDKs & CLI
+
+- [Overview](https://docs.nombaone.xyz/sdks.md): The nine official SDKs and the CLI, side by side: pick your language and install.
+- [Node.js & TypeScript](https://docs.nombaone.xyz/sdks/node.md): The @nombaone/node SDK: one library for Node, Next.js, and every JS runtime.
+- [Method reference](https://docs.nombaone.xyz/sdks/node/reference.md)
+- [Python](https://docs.nombaone.xyz/sdks/python.md): The nombaone SDK for Python, with sync and async clients.
+- [Method reference](https://docs.nombaone.xyz/sdks/python/reference.md)
+- [Go](https://docs.nombaone.xyz/sdks/go.md): The nombaone-go SDK: context-first, zero dependencies.
+- [Method reference](https://docs.nombaone.xyz/sdks/go/reference.md)
+- [PHP](https://docs.nombaone.xyz/sdks/php.md): The nombaone/nombaone-php SDK for PHP, Laravel, and Symfony.
+- [Method reference](https://docs.nombaone.xyz/sdks/php/reference.md)
+- [Ruby](https://docs.nombaone.xyz/sdks/ruby.md): The nombaone gem for Ruby and Rails, with zero runtime dependencies.
+- [Method reference](https://docs.nombaone.xyz/sdks/ruby/reference.md)
+- [Java](https://docs.nombaone.xyz/sdks/java.md): The xyz.nombaone:nombaone SDK for Java, Kotlin, and Spring.
+- [Method reference](https://docs.nombaone.xyz/sdks/java/reference.md)
+- [.NET](https://docs.nombaone.xyz/sdks/dotnet.md): The NombaOne SDK for C# and .NET, async from top to bottom.
+- [Method reference](https://docs.nombaone.xyz/sdks/dotnet/reference.md)
+- [Rust](https://docs.nombaone.xyz/sdks/rust.md): The nombaone crate: async-first on tokio, with an optional blocking API.
+- [Method reference](https://docs.nombaone.xyz/sdks/rust/reference.md)
+- [Elixir](https://docs.nombaone.xyz/sdks/elixir.md): The nombaone Hex package for Elixir and Phoenix.
+- [Method reference](https://docs.nombaone.xyz/sdks/elixir/reference.md)
+- [CLI](https://docs.nombaone.xyz/sdks/cli.md): The nombaone command-line tool: tail webhooks and scaffold locally.
 
 ## Guides
 

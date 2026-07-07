@@ -14,7 +14,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-The `curl` extension ships with PHP. Read the key from `getenv("NOMBAONE_SECRET_KEY")`.
+The `curl` extension ships with PHP. Read the key from `getenv("NOMBAONE_API_KEY")`.
 
 ## 2 · Create a plan
 

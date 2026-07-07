@@ -1,0 +1,14 @@
+---
+title: "Rust method reference"
+type: reference
+summary: "Every method in the nombaone crate, grouped by namespace, each linking to the full request, response, and a ready-to-run Rust sample."
+canonical: https://docs.nombaone.xyz/sdks/rust/reference
+---
+
+# Rust method reference
+
+Every method in the `nombaone` crate, grouped by the namespace you reach it through
+on the client (`nombaone.customers().create`, `nombaone.plans().prices().create`,
+and so on). Single-resource methods return an `ApiCall` you `.await` for the
+resource; `list` methods return a `Paginator`. Open any method for its full
+request and response shape, with a copy-runnable sample in Rust and every other SDK.

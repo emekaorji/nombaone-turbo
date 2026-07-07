@@ -43,7 +43,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
 const res = await fetch("https://sandbox.api.nombaone.xyz/v1/examples", {
   method: "POST",
   headers: {
-    Authorization: `Bearer ${process.env.NOMBAONE_SECRET_KEY}`,
+    Authorization: `Bearer ${process.env.NOMBAONE_API_KEY}`,
     "Content-Type": "application/json",
     "Idempotency-Key": crypto.randomUUID(),
   },

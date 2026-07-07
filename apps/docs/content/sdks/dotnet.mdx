@@ -1,0 +1,312 @@
+---
+title: .NET SDK
+description: "The NombaOne SDK for C# on .NET 8 and netstandard2.0: async from top to bottom, with typed errors, automatic retries that never double-charge, cursor pagination, and a webhook verifier that needs no API key."
+section: sdks
+---
+
+`NombaOne` is the official SDK for C# and .NET. One library serves every runtime —
+.NET 8 and later, and any `netstandard2.0` target including Mono and Unity — with
+complete types and one dependency. It is async from top to bottom: every call
+returns a `Task<T>` and takes a trailing `CancellationToken`. It talks to the same
+API as every other SDK, so the money behaves identically wherever you run it.
+
+<SdkHeader id="dotnet" />
+
+```bash
+dotnet add package NombaOne
+```
+
+The NuGet id is `NombaOne`, the client class is `Nombaone`, and the namespace is
+`NombaOne` — all three read "nombaone". Your secret key is read from
+`NOMBAONE_API_KEY` (or passed to the constructor); it is server-side only — never
+ship it to a browser, mobile, or desktop client.
+
+```csharp
+using NombaOne; // the client, options, params, models, and error types
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo typed as `long`: ₦2,500.00
+is `250_000`. Every call is asynchronous, so `await` it; each one also accepts a
+trailing `CancellationToken` you can thread through.
+
+```csharp
+using NombaOne;
+
+using var nombaone = new Nombaone(); // reads NOMBAONE_API_KEY
+
+// 1. Something to sell.
+var plan = await nombaone.Plans.CreateAsync(new PlanCreateParams { Name = "Pro" });
+var price = await nombaone.Plans.Prices.CreateAsync(plan.Id, new PriceCreateParams
+{
+    UnitAmountInKobo = 250_000, // ₦2,500.00
+    Interval = "month",
+});
+
+// 2. Someone to bill.
+var customer = await nombaone.Customers.CreateAsync(new CustomerCreateParams
+{
+    Email = "ada@example.com",
+    Name = "Ada Lovelace",
+});
+
+// 3. A way to pay — in the sandbox, mint a deterministic test card.
+var method = await nombaone.Sandbox.CreatePaymentMethodAsync(
+    new SandboxPaymentMethodParams { CustomerId = customer.Id });
+
+// 4. The subscription. The engine runs it from now on.
+var subscription = await nombaone.Subscriptions.CreateAsync(new SubscriptionCreateParams
+{
+    CustomerId = customer.Id,
+    PriceId = price.Id,
+    PaymentMethodId = method.Id,
+});
+
+Console.WriteLine(subscription.Status); // "active"
+```
+
+Only the key and the host change when you go live: an `nbo_live_…` key routes to
+the live host automatically.
+
+## Constructing the client
+
+```csharp
+new Nombaone();                          // key from NOMBAONE_API_KEY
+new Nombaone("nbo_sandbox_…");           // explicit key
+new Nombaone(new NombaoneOptions { … }); // full options
+```
+
+The environment and host are derived from the key prefix. The constructor throws a
+`NombaoneException` with an actionable message when no key resolves, or when the key
+prefix is unrecognized and no `BaseUrl` is given.
+
+| Option | Type | Default | Meaning |
+|---|---|---|---|
+| `ApiKey` | `string?` | `NOMBAONE_API_KEY` | The secret key. Server-side only. |
+| `BaseUrl` | `string?` | derived from key prefix | Override the API origin. Required for an unrecognized prefix. |
+| `Timeout` | `TimeSpan?` | 30s | Per-attempt timeout. |
+| `MaxRetries` | `int?` | `2` (3 attempts) | Retries network failures, timeouts, 408/429/5xx, and in-flight idempotency conflicts. A `POST` retry always reuses its idempotency key. |
+| `HttpClient` | `HttpClient?` | new one | Bring your own for proxies, handlers, pooling, or tests; a supplied client is left undisposed. |
+| `DefaultHeaders` | `IReadOnlyDictionary<string,string>?` | — | Headers sent on every request. |
+
+`Nombaone` implements `IDisposable` — the `using` above disposes the internally
+created `HttpClient` at end of scope. Read `nombaone.Mode` (`"sandbox"` or `"live"`)
+and `nombaone.BaseUrl` to see where a client points; `Nombaone.SandboxBaseUrl` and
+`Nombaone.LiveBaseUrl` hold both hosts.
+
+## Conventions
+
+- **Money is integer kobo.** Every money field and param is a `long` ending in
+  `InKobo`, PascalCase on the model (`UnitAmountInKobo`), and `Currency` is always
+  `"NGN"`. ₦1.00 is `100`. There are no floats or decimals for money, anywhere.
+- **Timestamps are `DateTimeOffset`.** They arrive parsed (UTC), typed
+  `DateTimeOffset?` where the API can omit them — never a raw string.
+- **`Optional<T>` clears a field.** Most optional inputs are simply omitted when
+  unset. A few update fields can be *cleared* by sending JSON `null`; those are typed
+  `Optional<T>?` — `Phone = "+2348012345678"` sets, `Phone = Optional<string>.Null`
+  clears, and leaving `Phone` unset changes nothing.
+- **Idempotency is automatic.** A UUID idempotency key is generated for every `POST`
+  and reused across automatic retries, so a dropped connection can never
+  double-charge. On payouts, pass your own stable key — it doubles as the payout's
+  durable reference, so use something like your payout row id.
+- **IDs are opaque strings** of the form `nbo…` with a type suffix (`…cus`, `…sub`,
+  `…inv`). Never validate them yourself.
+
+Per call, every method's last two arguments are an optional `RequestOptions` and a
+`CancellationToken`:
+
+| Field | Meaning |
+|---|---|
+| `IdempotencyKey` | Override the auto-generated key. Required practice on payouts. |
+| `Headers` | Extra headers; a `null` value removes an SDK default. |
+| `Timeout` | Per-attempt timeout for this call. |
+| `MaxRetries` | Retry budget for this call; `0` fails fast. |
+
+A `CancellationToken` you cancel is never retried and surfaces as
+`OperationCanceledException`.
+
+## Return values and pagination
+
+Every call is asynchronous. A non-list method returns a `Task<T>` — `await` it for
+the resource. Every returned model carries its `RawResponse` (`.StatusCode`,
+`.Headers`) and a `RequestId` shortcut, so the raw response and the id to quote to
+support arrive with the result.
+
+Every `ListAsync(...)` returns a `Task<NombaonePage<T>>` for one page; the paired
+`ListAutoPagingAsync(...)` returns an `IAsyncEnumerable<T>` you `await foreach` to
+stream every item across every page — the cursors and your original filters are
+threaded for you.
+
+```csharp
+// One page.
+NombaonePage<Invoice> page = await nombaone.Invoices.ListAsync(
+    new InvoiceListParams { Status = "open", Limit = 50 });
+foreach (var invoice in page.Data) { }
+
+// Manual paging.
+if (page.HasNextPage) { var next = await page.NextPageAsync(); }
+
+// Every item across every page — breaking the loop stops fetching.
+await foreach (var invoice in nombaone.Invoices.ListAutoPagingAsync(
+    new InvoiceListParams { Status = "open" }))
+{
+    Console.WriteLine(invoice.Id);
+}
+```
+
+Filters use `Limit` (1–100, default 20) and an opaque `Cursor`.
+
+## Errors
+
+Every error is typed. The base is `NombaoneException` (also thrown for config
+mistakes); any non-2xx response is a `NombaoneApiException` with a status-specific
+subclass, and transport failures are `NombaoneConnectionException` /
+`NombaoneTimeoutException`.
+
+A `NombaoneApiException` carries `StatusCode`, a machine-readable `Code`, a `Hint`,
+a `DocUrl`, an optional `Fields` map (on 422s), and the `RequestId`. The `Hint` is
+folded into `Exception.Message`, so the fix arrives with the failure.
+
+| Status | Class | Notes |
+|---|---|---|
+| 400 | `BadRequestException` | Malformed request. |
+| 401 | `AuthenticationException` | Missing, invalid, or wrong-environment key. |
+| 403 | `PermissionDeniedException` | Missing scope, or a foreign resource. |
+| 404 | `NotFoundException` | Wrong id, or wrong environment. |
+| 409 | `ConflictException` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `ValidationException` | `ex.Fields` has per-field messages. |
+| 429 | `RateLimitException` | Adds `RetryAfter` (seconds), `Limit`, `Remaining`. |
+| 5xx | `ServerException` | Safe to retry — the SDK already did. |
+
+```csharp
+try
+{
+    await nombaone.Subscriptions.CreateAsync(subscriptionParams);
+}
+catch (ValidationException ex)  { Console.WriteLine(ex.Fields);     } // per-field messages
+catch (RateLimitException ex)   { Console.WriteLine(ex.RetryAfter); } // seconds
+catch (NotFoundException ex)    { Console.WriteLine(ex.Code);       } // e.g. "CUSTOMER_NOT_FOUND"
+catch (NombaoneApiException ex) { Console.WriteLine($"{ex.Code}: {ex.Hint} ({ex.RequestId})"); }
+```
+
+Branch on `ex.Code` — against the `NombaoneErrorCodes` constants
+(`NombaoneErrorCodes.CustomerNotFound`) — or on the exception type; never on
+`ex.Message`, which may be reworded. Every code and its fix is in the
+[error reference](/errors).
+
+## Webhooks
+
+The webhook verifier is the static `NombaOne.Webhooks.WebhookVerifier`, and it needs
+**no API key** — a receiver usually holds only the signing secret.
+`ConstructEvent` has `byte[]` and `string` overloads; prefer the `byte[]` overload
+with the exact raw request bytes.
+
+```csharp
+using NombaOne.Webhooks;
+
+app.MapPost("/nombaone/webhooks", async (HttpRequest req) =>
+{
+    req.EnableBuffering();
+    using var reader = new StreamReader(req.Body);
+    var rawBody = await reader.ReadToEndAsync();               // 1. the RAW body, never re-serialized
+    var signature = req.Headers["X-Nombaone-Signature"].ToString();
+
+    WebhookEvent evt;
+    try
+    {
+        evt = WebhookVerifier.ConstructEvent(                 // 2. verify before you parse
+            rawBody, signature,
+            Environment.GetEnvironmentVariable("NOMBAONE_WEBHOOK_SECRET")!);
+    }
+    catch (WebhookVerificationException) { return Results.BadRequest(); }
+
+    if (AlreadyProcessed(evt.Event.Id)) return Results.Ok();  // 3. dedupe on the event id
+
+    switch (evt.Type)
+    {
+        case WebhookEventTypes.InvoicePaid:           Unlock(evt.Data.Reference!);   break;
+        case WebhookEventTypes.InvoiceActionRequired: Email(evt.Data.CheckoutLink!); break;
+        case WebhookEventTypes.InvoicePaymentFailed:  Note(evt.Data.Reason!);        break;
+    }
+    return Results.Ok(); // respond 2xx fast; do the work async
+});
+```
+
+Three rules the SDK enforces: feed the **raw** body (never a re-serialized object);
+verify before you parse; and **dedupe on `evt.Event.Id`**, because delivery is
+at-least-once. Compare `evt.Type` against the `WebhookEventTypes` constants — the
+catalog is open, so an unknown future type still arrives as a plain `Type` string.
+See [signing and verification](/webhooks/signing-and-verification) for the signature
+scheme.
+
+## The sandbox toolkit
+
+Every `nombaone.Sandbox` method is sandbox-only and throws a `NombaoneException`
+locally, before any network call, if the client holds a live key.
+
+```csharp
+// A deterministic test method — no real card.
+var method = await nombaone.Sandbox.CreatePaymentMethodAsync(new SandboxPaymentMethodParams
+{
+    CustomerId = customer.Id,
+    Behavior = "decline_insufficient_funds", // a thin balance: "not yet", not "no"
+});
+
+// The test clock — run the next billing cycle through the real engine, now.
+var cycle = await nombaone.Sandbox.AdvanceCycleAsync(subscription.Id);
+Console.WriteLine(cycle.Outcome); // "past_due"
+
+// Fire a real, signed webhook at your registered endpoints.
+await nombaone.Sandbox.SimulateWebhookAsync(new SandboxSimulateWebhookParams { Type = "invoice.paid" });
+```
+
+The behaviors are `success` (default), `decline_insufficient_funds`,
+`decline_expired_card`, `decline_do_not_honor`, and `requires_otp`. The sandbox
+sends no organic webhooks — `SimulateWebhookAsync` is how you rehearse a handler.
+See the [sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather surface these than let you discover them at 2am.
+
+<Callout type="warning" title="Dunning state is scheduled asynchronously">
+  Right after a failed cycle the subscription is `past_due`, but
+  `Subscriptions.Dunning.RetrieveAsync` may report `status: none` until the first
+  retry is scheduled. Do not read dunning state synchronously off the failure — wait
+  for the dunning webhook, then read it.
+</Callout>
+
+- **Two calls return a `PaymentMethod`.** `Subscriptions.UpdatePaymentMethodAsync`
+  returns the attached `PaymentMethod`, and `Mandates.RetrieveAsync` returns a
+  `PaymentMethod` too (a mandate's standing lives on the payment-method row). That is
+  what the wire carries — the return types say so.
+- **Mandate creation may 504 on the sandbox.** `Mandates.CreateAsync` starts
+  `consent_pending`; on the deployed sandbox the NIBSS upstream can return a `504`,
+  surfacing as a `ServerException` / `SYSTEM_UPSTREAM_ERROR`. Pass `MaxRetries = 0`
+  to fail fast while that upstream is down, and never charge before the
+  `payment_method.updated` webhook.
+- **`Mode` is `"sandbox"` on the wire.** Every resource's `Mode` is `"sandbox"` or
+  `"live"` — the value that pairs with your keys and hosts. Read that, never
+  `"test"`.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not yet."
+  Read `Subscriptions.Dunning.RetrieveAsync` and honor `GraceAccessUntil` — keep
+  access on until it passes. Involuntary churn ends as `canceled` with
+  `CancellationReason = "involuntary"`.
+- **Prices are immutable, plans archive.** To change pricing, deactivate the price
+  and create a new one; plans archive rather than delete.
+
+## Next
+
+<CardGroup cols={3}>
+  <Card title="Method reference" href="/sdks/dotnet/reference">
+    Every method in the SDK, grouped by namespace.
+  </Card>
+  <Card title="Handle webhooks" href="/guides/handle-webhooks">
+    Receive, verify, and dedupe events end to end.
+  </Card>
+  <Card title="Error reference" href="/errors">
+    Every code, what triggers it, and how to fix it.
+  </Card>
+</CardGroup>
