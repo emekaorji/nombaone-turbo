@@ -1,8 +1,9 @@
 # Docs — Plan Index & Coordination Ledger
 
-> Start here. The docs roadmap is 11 files: this index, the **contract**
-> ([`docs-plan-00-overview.md`](./docs-plan-00-overview.md) — read it first), and nine
-> phase plans. Below: the recommended build order, the cross-phase seams the plan authors
+> Start here. The docs roadmap is 12 files: this index, the **contract**
+> ([`docs-plan-00-overview.md`](./docs-plan-00-overview.md) — read it first), nine
+> phase plans (01–09), and the post-launch **SDK phase**
+> ([`docs-plan-10-sdks-libraries.md`](./docs-plan-10-sdks-libraries.md)). Below: the recommended build order, the cross-phase seams the plan authors
 > surfaced (so integration risks live in one place), and the open decisions that need a
 > human call. **All implementation paths are the real docs app at repo-root `apps/docs/**`**
 > — `workbench/apps/docs/**` holds only these plan files.
@@ -21,6 +22,7 @@
 | `docs-plan-07-concepts-hard-parts.md` | 07 | ~? | Explanation + the 17 Hard-Parts essays; kobo linter; idempotency lab; OTP wall; reconciliation cookbook + scrollytelling. |
 | `docs-plan-08-api-reference-webhooks.md` | 08 | ~? | Hand-authored per-endpoint reference (18 modules/~80 ops); webhook catalog + verifier; the rail-switcher. |
 | `docs-plan-09-agent-native-launch.md` | 09 | ~? | `.md`/`llms.txt`/MCP/Ask-AI; cmd+K executes; changelog + RSS; merchant track; launch gates. |
+| `docs-plan-10-sdks-libraries.md` | 10 | ~24 | **Post-launch**: the `/sdks/*` tree for the nine shipped SDKs + CLI; per-SDK guides + a generated method index; `registry.ts`; `check:sdks` gate; grounds MANIFESTO tenet 3. |
 
 ## Recommended build order (dependency-correct)
 

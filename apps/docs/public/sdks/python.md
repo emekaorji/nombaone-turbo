@@ -1,0 +1,350 @@
+---
+title: "Python SDK"
+type: reference
+summary: "The nombaone Python SDK: sync and async clients over one surface, typed pydantic models, automatic retries that never double-charge, cursor pagination, and a keyless webhook verifier."
+canonical: https://docs.nombaone.xyz/sdks/python
+---
+
+# Python SDK
+
+`nombaone` is the official SDK for Python. One library gives you a synchronous
+`Nombaone` client and an asyncio `AsyncNombaone` client over the identical
+surface — typed `pydantic` models, automatic retries that never double-charge,
+and a webhook verifier. It talks to the same API as every other SDK, so the money
+behaves identically wherever you run it.
+
+```bash
+pip install nombaone
+# uv add nombaone · poetry add nombaone · pipenv install nombaone
+```
+
+The SDK ships `py.typed` for complete type hints, runs on Python 3.9 and up, and
+depends only on `httpx` and `pydantic`. Your secret key is read from
+`NOMBAONE_API_KEY` (or passed to the constructor); it is server-side only — never
+ship it to a browser or mobile app.
+
+```python
+from nombaone import Nombaone, AsyncNombaone       # sync + async clients
+from nombaone import webhooks, ValidationError      # webhook verifier, typed errors
+```
+
+## Your first subscription
+
+This is the whole lifecycle — a plan, a price, a customer, a way to pay, and a
+subscription — against the sandbox. Money is integer kobo: ₦2,500.00 is `250_000`.
+
+```python
+import os
+from nombaone import Nombaone
+
+nombaone = Nombaone(os.environ["NOMBAONE_API_KEY"])
+
+# 1. Something to sell.
+plan = nombaone.plans.create(name="Pro")
+price = nombaone.plans.prices.create(
+    plan.id,
+    unit_amount_in_kobo=250_000,  # ₦2,500.00
+    interval="month",
+)
+
+# 2. Someone to bill.
+customer = nombaone.customers.create(email="ada@example.com", name="Ada Lovelace")
+
+# 3. A way to pay — in the sandbox, mint a deterministic test card.
+method = nombaone.sandbox.create_payment_method(customer_id=customer.id)
+
+# 4. The subscription. The engine takes it from here.
+subscription = nombaone.subscriptions.create(
+    customer_id=customer.id,
+    price_id=price.id,
+    payment_method_id=method.id,
+)
+
+print(subscription.status)  # "active"
+```
+
+Only the key changes when you go live: an `nbo_live_…` key routes to
+`https://api.nombaone.xyz` automatically. From there the same object moves through
+its whole life.
+
+```python
+nombaone.subscriptions.pause(subscription.id)
+nombaone.subscriptions.resume(subscription.id)
+nombaone.subscriptions.cancel(subscription.id, mode="at_period_end")  # keep access until the cycle closes
+```
+
+## Constructing the client
+
+```python
+Nombaone(
+    api_key=None,          # or NOMBAONE_API_KEY
+    base_url=None,         # override the derived host
+    timeout=30.0,          # per-attempt seconds
+    max_retries=2,         # automatic retry budget
+    default_headers=None,  # sent on every request
+    http_client=None,      # bring your own httpx.Client
+)
+```
+
+Pass the key as the first argument, or let it resolve from the environment. The
+constructor raises a `NombaoneError` with an actionable message when no key
+resolves, or when the key prefix is unrecognized and no `base_url` is given.
+`AsyncNombaone` takes the same arguments.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `api_key` | `NOMBAONE_API_KEY` env | The secret key. Missing → raises; unknown prefix with no `base_url` → raises. |
+| `base_url` | derived from key prefix | Override the API origin. Always wins; required for an unrecognized prefix. |
+| `timeout` | `30.0` | Per-attempt timeout in **seconds** (not milliseconds). |
+| `max_retries` | `2` (3 attempts) | Retries transport failures, timeouts, 408/429/5xx, and in-progress idempotency conflicts. A `POST` retry always reuses its `Idempotency-Key`. |
+| `default_headers` | `None` | Headers sent on every request. |
+| `http_client` | created for you | Inject an `httpx.Client` / `httpx.AsyncClient`, for tests, proxies, or instrumentation. |
+
+Read `nombaone.mode` (`"sandbox"` or `"live"`) and `nombaone.base_url` to see where
+a client points. `Nombaone` is a context manager (`with …:`) with a `.close()`;
+`AsyncNombaone` is an async context manager (`async with …:`) with an `.aclose()`.
+
+## Conventions
+
+- **Money is integer kobo.** `₦1.00 == 100`, every money field and param ends in
+`_in_kobo` and is an `int`, and `currency` is always `"NGN"`. `250_000` is
+₦2,500 — not ₦250,000; multiply naira by 100 exactly once, at the edge of your
+system. There are no floats or decimal strings for money, anywhere.
+- **snake_case attributes, camelCase on the wire.** You write
+`price.unit_amount_in_kobo`; the API sends `unitAmountInKobo`. The SDK maps both
+directions, so you never touch the wire names.
+- **Idempotency is automatic.** A UUID `Idempotency-Key` is generated for every
+`POST` and reused across automatic retries, so a dropped connection can never
+double-charge. On `settlements.create_payout` the key doubles as the payout's
+durable `merchantTxRef` — pass your own stable key there (below) so a retry from
+a *new process* can't create a second payout.
+- **IDs are opaque strings** of the form `nbo…` with a three-letter type suffix
+(`…cus`, `…sub`, `…inv`); never parse them, pass them back as received.
+Timestamps are ISO-8601 UTC strings; nullable fields are typed `Optional`.
+
+Per call, every method takes an optional last argument `options: RequestOptions`:
+
+| Field | Meaning |
+|---|---|
+| `idempotency_key` | Override the auto-generated key. Required practice on payouts. |
+| `headers` | Extra headers; a `None` value removes an SDK default. |
+| `timeout` | Per-attempt seconds for this call. |
+| `max_retries` | Retry budget for this call; `0` fails fast. |
+| `query` | Extra query params merged into the request. |
+
+```python
+from nombaone import RequestOptions
+
+nombaone.settlements.create_payout(
+    amount_in_kobo=5_000_000,  # ₦50,000.00
+    bank_code="058",
+    account_number="0123456789",
+    options=RequestOptions(idempotency_key=f"payout-{my_payout.id}", max_retries=0),
+)
+```
+
+## Return values and pagination
+
+Every non-list method returns the `pydantic` model directly, and every returned
+object carries `obj.last_response` with `.request_id`, `.status_code`, `.headers`,
+and the raw `.http_response` — quote `request_id` to support. Every `list()`
+returns a page you can read one at a time or iterate to stream every item across
+every page, with the cursors threaded for you.
+
+```python
+# One page + the cursor block.
+page = nombaone.invoices.list(status="open", limit=50)
+page.data                    # list[Invoice] on this page
+page.pagination.has_more     # bool
+page.pagination.next_cursor  # str | None
+
+# Manual paging — same filters, next cursor.
+if page.has_next_page():
+    page = page.next_page()
+
+# Every item across every page — breaking the loop stops fetching.
+for invoice in nombaone.invoices.list(status="open"):
+    print(invoice.id)
+
+# The request id, when you need it.
+customer = nombaone.customers.retrieve(customer_id)
+print(customer.last_response.request_id)
+```
+
+The async client has the identical surface on `AsyncNombaone`; only `await` and
+`async for` differ.
+
+```python
+import asyncio, os
+from nombaone import AsyncNombaone
+
+async def main():
+    async with AsyncNombaone(os.environ["NOMBAONE_API_KEY"]) as nombaone:
+        page = await nombaone.invoices.list(status="open", limit=50)
+        if page.has_next_page():
+            page = await page.next_page()
+
+        async for invoice in await nombaone.invoices.list(status="open"):
+            print(invoice.id)
+
+asyncio.run(main())
+```
+
+Pages are forward-only with no total counts: `limit` is 1–100 (default 20),
+`cursor` is opaque, and filters are preserved across every page.
+
+## Errors
+
+Every failed call raises a typed exception. The base is `NombaoneError` (also
+raised for config mistakes); any non-2xx response is an `APIError` with a
+status-specific subclass, and transport failures are `APIConnectionError` /
+`APITimeoutError`.
+
+An `APIError` carries `status_code`, a machine-readable `code`, a `hint`, a
+`doc_url`, an optional `fields` map (on 422s), and the `request_id`. The `hint` is
+baked into `str(err)`, so the fix prints with the failure.
+
+| Status | Class | Notes |
+|---|---|---|
+| — | `NombaoneError` | Base of everything the SDK raises. |
+| 400 | `BadRequestError` | Malformed request. |
+| 401 | `AuthenticationError` | Missing, invalid, or wrong-environment key. |
+| 403 | `PermissionDeniedError` | Missing scope, or a foreign resource. |
+| 404 | `NotFoundError` | Wrong id, or wrong environment. |
+| 409 | `ConflictError` | State conflicts, idempotency reuse or in-progress. |
+| 422 | `ValidationError` | `err.fields` has per-field messages. |
+| 429 | `RateLimitError` | Adds `retry_after` (seconds), `limit`, `remaining`. |
+| 5xx | `ServerError` | Safe to retry — the SDK already did. |
+| — | `APIConnectionError` | Transport failed to complete. |
+| — | `APITimeoutError` | One attempt exceeded its timeout (subclass of the above). |
+
+```python
+from nombaone import NotFoundError, RateLimitError, ValidationError, NombaoneError
+
+try:
+    nombaone.subscriptions.create(customer_id=cid, price_id=pid)
+except ValidationError as err:
+    print(err.fields)                 # {"paymentMethodId": ["..."]}
+except RateLimitError as err:
+    print(err.retry_after)            # seconds
+except NotFoundError as err:
+    print(err.code, err.request_id)   # e.g. "CUSTOMER_NOT_FOUND"
+except NombaoneError as err:
+    print(err)                        # the catch-all base
+```
+
+Branch on `err.code` or `isinstance` — never on `str(err)`, which may be reworded.
+Every code and its fix is in the [error reference](/errors).
+
+## Webhooks
+
+The webhook verifier is available as `nombaone.webhooks` and, importantly, as a
+standalone import that needs **no API key** — a receiver usually holds only the
+signing secret.
+
+```python
+import os
+from flask import Flask, request
+from nombaone import webhooks, WebhookVerificationError
+
+app = Flask(__name__)
+
+@app.post("/nombaone/webhooks")
+def hook():
+    try:
+        event = webhooks.construct_event(
+            request.get_data(),                              # 1. the RAW body, never re-serialized
+            request.headers.get("x-nombaone-signature", ""),
+            os.environ["NOMBAONE_WEBHOOK_SECRET"],           # shown once at endpoint creation
+        )
+    except WebhookVerificationError:
+        return "bad signature", 400                          # 2. verify before you parse
+
+    if already_processed(event.event.id):                    # 3. dedupe on the event id
+        return "", 200
+
+    if event.type == "invoice.paid":
+        unlock(event.data["reference"])
+    elif event.type == "invoice.action_required":
+        send(event.data["checkoutLink"])
+    elif event.type == "invoice.payment_failed":
+        note(event.data["reason"])
+
+    return "", 200  # respond 2xx fast; do the work async
+```
+
+Three rules the SDK enforces: feed the **raw** body (Flask `request.get_data()`,
+FastAPI `await request.body()`, Django `request.body`) — re-serializing the JSON
+changes the bytes and breaks the signature; verify before you parse; and **dedupe
+on `event.event.id`**, because delivery is at-least-once. Branch on `event.type`
+and read the delivery's `event.data` dict. `webhooks.generate_test_header(...)`
+mints a valid signature so you can unit-test the handler. See
+[signing and verification](/webhooks/signing-and-verification) for the signature
+scheme.
+
+## The sandbox toolkit
+
+Every `nombaone.sandbox` method is sandbox-only and raises `NombaoneError` locally,
+before any network call, if the client holds a live key.
+
+```python
+# A deterministic test method — no real card.
+method = nombaone.sandbox.create_payment_method(
+    customer_id=customer.id,
+    behavior="decline_insufficient_funds",  # a thin balance: "not yet", not "no"
+)
+
+# The test clock — run the next billing cycle through the real engine, now.
+result = nombaone.sandbox.advance_cycle(subscription.id)
+print(result.outcome)  # "past_due"
+
+# Fire a real, signed webhook at your registered endpoints.
+nombaone.sandbox.simulate_webhook(type="invoice.paid")
+```
+
+The behaviors are `success` (default), `decline_insufficient_funds`,
+`decline_expired_card`, `decline_do_not_honor`, and `requires_otp`; `kind` is
+`card` (default) or `mandate`. The sandbox sends no organic webhooks —
+`simulate_webhook` is how you rehearse a handler. See the
+[sandbox toolkit](/sandbox-toolkit/overview) for the full story.
+
+## The honest hard parts
+
+We would rather you read these here than discover them at 2am.
+
+> **update_payment_method returns a PaymentMethod, not a Subscription**
+>
+> `subscriptions.update_payment_method` returns the newly-attached `PaymentMethod`
+> — the OpenAPI spec labels it a `Subscription`, but the deployed API returns the
+> payment method and the SDK follows the runtime. `mandates.retrieve` returns a
+> `PaymentMethod` too, since a mandate's standing lives on the payment-method row.
+
+- **Mandates activate asynchronously.** `mandates.create` returns
+`consent_pending`; the mandate activates only after the customer authorizes it
+with their bank. Relay `mandate.consent_instruction`, then wait for the
+`payment_method.updated` webhook — do not poll, and do not charge early.
+- **Bank transfer is a push rail.** `payment_methods.create_virtual_account`
+issues a NUBAN; collection completes when the transfer arrives and reconciles —
+it is never instantly final.
+- **`past_due` is not canceled.** A failed charge on a thin balance means "not
+yet." Read `subscriptions.dunning.retrieve()` and honor `grace_access_until`
+before cutting access. Involuntary churn ends as `status="canceled"` with
+`cancellation_reason="involuntary"` — there is no `churned` status (there is a
+`subscription.churned` event).
+- **Prices are immutable, plans archive.** To change pricing, deactivate the price
+and create a new one; plans archive rather than delete.
+- **The filter names are inconsistent, on purpose — mirror them.** Subscriptions
+and invoices filter by `customer_id`; payment methods by `customer_ref`; prices
+by `plan_ref`.
+- **The invoice list `status` filter excludes `partially_paid`.** It accepts
+`draft`, `open`, `paid`, `void`, and `uncollectible` only — though an `Invoice`
+object can still carry a `partially_paid` status.
+
+## Next
+
+- **[Method reference](/sdks/python/reference)**: 
+Every method in the SDK, grouped by namespace.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Receive, verify, and dedupe events end to end.
+- **[Error reference](/errors)**: 
+Every code, what triggers it, and how to fix it.

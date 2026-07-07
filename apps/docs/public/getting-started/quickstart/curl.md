@@ -14,7 +14,7 @@ you go live.
 ## 1 · Get a sandbox key
 
 Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
-Just a shell. Export your key: `export NOMBAONE_SECRET_KEY=nbo_sandbox_…`.
+Just a shell. Export your key: `export NOMBAONE_API_KEY=nbo_sandbox_…`.
 
 ## 2 · Create a plan
 

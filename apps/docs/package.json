@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 8030",
-    "build": "pnpm run check:frontmatter && pnpm run check:style && pnpm run check:links && pnpm run check:openapi && pnpm run check:api-ref && pnpm run search:index && pnpm run ask:index && pnpm run agent:native && next build",
+    "build": "pnpm run check:frontmatter && pnpm run check:style && pnpm run check:links && pnpm run check:openapi && pnpm run check:api-ref && pnpm run check:sdks && pnpm run search:index && pnpm run ask:index && pnpm run agent:native && next build",
     "start": "next start --port 8030",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
@@ -12,6 +12,7 @@
     "check:links": "tsx scripts/check-links.ts",
     "check:openapi": "tsx scripts/check-openapi-honesty.ts",
     "check:api-ref": "tsx scripts/check-api-ref.ts",
+    "check:sdks": "tsx scripts/check-sdks.ts",
     "search:index": "tsx scripts/build-search-index.ts",
     "agent:native": "tsx scripts/build-agent-native.ts",
     "check:style": "tsx scripts/check-style.ts",

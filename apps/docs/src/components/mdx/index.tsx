@@ -24,6 +24,9 @@ import { LifecycleStateMachine } from "./lifecycle-state-machine";
 import { MoneyFlow } from "./money-flow";
 import { Quickstart } from "./quickstart";
 import { ReferenceDecoder } from "./reference-decoder";
+import { SdkHeader } from "./sdk-header";
+import { SdkMethodIndex } from "./sdk-method-index";
+import { SdkParityMatrix } from "./sdk-parity-matrix";
 import { Step, Steps } from "./steps";
 import { CodeGroup, Tab, Tabs } from "./tabs";
 import { WebhookVerifier } from "./webhook-verifier";
@@ -152,6 +155,9 @@ export const mdxComponents: MDXComponents = {
   QuickstartGrid,
   RailSwitcher,
   Snippet,
+  SdkHeader,
+  SdkMethodIndex,
+  SdkParityMatrix,
   Glossary,
   RequestExample,
   Variant,

@@ -43,7 +43,7 @@ Every decision, an endpoint's shape, an error's wording, a default's value, is m
 
 **Give developers so much that they eat until they're full, and still there's more.**
 
-"Anywhere, anything, anyhow." Every rail. Every language, Node, Python, Go, PHP, Ruby, whatever they run. Every framework, with real guides, not a lonely SDK. A CLI to tail webhooks and scaffold locally. Drop-in checkout for any stack. No-code bridges for the merchant with no engineer. Mobile SDKs. Raw primitives for the ones who want to build their own thing on top. A developer should almost never hit the wall where we say _"sorry, we don't support that."_ And when they do reach an edge, the primitives are there so they can build past it themselves. We win by having the answer to "can I use this with ___?" always be yes.
+"Anywhere, anything, anyhow." Every rail. Every language, an official, idiomatic SDK for Node, Python, Go, Ruby, PHP, Java, Rust, .NET, and Elixir, not a lonely wrapper. Every framework, with real guides. A CLI to tail webhooks and scaffold locally. Drop-in checkout for any stack. No-code bridges for the merchant with no engineer. Mobile, when the demand is there. Raw primitives for the ones who want to build their own thing on top. A developer should almost never hit the wall where we say _"sorry, we don't support that."_ And when they do reach an edge, the primitives are there so they can build past it themselves. We win by having the answer to "can I use this with ___?" always be yes.
 
 ### 4. From "can I use this?" to "yes, I can" in minutes
 

@@ -104,6 +104,15 @@ function DocsSection({
           {section.items.map((item) => (
             <li key={item.slug}>
               <NavLink item={item} onNavigate={onNavigate} />
+              {item.children && item.children.length > 0 && (
+                <ul className="ml-3 mt-0.5 space-y-0.5 border-l border-border/60 pl-2">
+                  {item.children.map((child) => (
+                    <li key={child.slug}>
+                      <NavLink item={child} dense onNavigate={onNavigate} />
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>

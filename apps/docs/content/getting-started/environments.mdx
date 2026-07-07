@@ -66,7 +66,7 @@ only works against the production deployment.
 A clean integration keeps the two modes strictly separate:
 
 - **Configuration**: load the key from an environment variable
-  (`NOMBAONE_SECRET_KEY`) so the same code runs against sandbox in staging and
+  (`NOMBAONE_API_KEY`) so the same code runs against sandbox in staging and
   live in production with no code change.
 - **Data**: sandbox references and live references are distinct; an id minted in
   sandbox will never resolve in live.
