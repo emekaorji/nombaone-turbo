@@ -15,6 +15,8 @@ import { resolveSchema, type Schema } from "./model";
 function byName(name: string, schema: Schema): unknown | undefined {
   const n = name.toLowerCase();
   if (/inkobo$/.test(name) || /amountinkobo/i.test(name)) return 250_000; // ₦2,500.00
+  if (n === "statuscode") return 200;
+  if (n === "success") return true;
   if (n === "email") return "ada@example.com";
   if (n === "name") return "Ada Lovelace";
   if (n === "phone") return "+2348012345678";

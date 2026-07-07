@@ -158,22 +158,10 @@ export const MANIFEST: ManifestSection[] = [
     kind: "api",
     mode: "reference",
     items: [
+      // The API resource + operation pages are generated from the OpenAPI model
+      // (src/lib/api-ref) and rendered under /reference/*; the sidebar builds
+      // that tree directly. Only the authored prose reference pages live here.
       { slug: "/reference/glossary", title: "Glossary", summary: "One word, one meaning: the canonical vocabulary." },
-      { slug: "/reference/customers", title: "Customers", summary: "Create and manage customers, credit, and discounts." },
-      { slug: "/reference/plans", title: "Plans", summary: "Product plans and their lifecycle." },
-      { slug: "/reference/prices", title: "Prices", summary: "Recurring prices, intervals, and versioning." },
-      { slug: "/reference/subscriptions", title: "Subscriptions", summary: "The engine's lifecycle surface." },
-      { slug: "/reference/payment-methods", title: "Payment methods", summary: "Cards, mandates, and virtual accounts." },
-      { slug: "/reference/mandates", title: "Mandates", summary: "Direct-debit consent and status." },
-      { slug: "/reference/invoices", title: "Invoices", summary: "Generated invoices and their state." },
-      { slug: "/reference/coupons", title: "Coupons", summary: "Discount definitions." },
-      { slug: "/reference/credits", title: "Credits", summary: "Customer credit grants and balance." },
-      { slug: "/reference/dunning", title: "Dunning", summary: "Recovery attempts and state." },
-      { slug: "/reference/settlements", title: "Settlements", summary: "Refunds, payouts, and escrow." },
-      { slug: "/reference/webhooks", title: "Webhook endpoints", summary: "Register, rotate, and inspect endpoints + deliveries." },
-      { slug: "/reference/events", title: "Events", summary: "The domain-event stream + catalog." },
-      { slug: "/reference/organization", title: "Organization", summary: "Your organization config + billing settings." },
-      { slug: "/reference/metrics", title: "Metrics", summary: "Billing metrics: MRR, churn, dunning funnel." },
       { slug: "/reference/examples", title: "Example", method: "POST", summary: "The deletable worked example (removed with the scaffold)." },
     ],
   },

@@ -7,6 +7,8 @@ import { CopyPage } from "@/components/chrome/copy-page";
 import { Pager } from "@/components/chrome/pager";
 import { Toc } from "@/components/chrome/toc";
 import { mdxComponents } from "@/components/mdx";
+import { ReferenceArticle } from "@/components/reference/reference-article";
+import { apiRefMeta, apiRefSlugs, resolveApiRef } from "@/lib/api-ref/routing";
 import { getPage, listRoutableSlugs } from "@/lib/content";
 import { mdxOptions } from "@/lib/mdx-pipeline";
 
@@ -36,7 +38,8 @@ function toSlug(segments: string[] | undefined): string {
 /** Prerender every authored page at build time. */
 export async function generateStaticParams(): Promise<{ slug?: string[] }[]> {
   const slugs = await listRoutableSlugs();
-  return slugs.map((slug) => ({
+  const all = [...new Set([...slugs, ...apiRefSlugs()])];
+  return all.map((slug) => ({
     slug: slug === "" ? [] : slug.replace(/^\//, "").split("/"),
   }));
 }
@@ -44,6 +47,17 @@ export async function generateStaticParams(): Promise<{ slug?: string[] }[]> {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const path = toSlug(slug);
+  const apiMatch = resolveApiRef(path);
+  if (apiMatch) {
+    const { title, description } = apiRefMeta(apiMatch);
+    return {
+      title,
+      description,
+      alternates: { canonical: path },
+      openGraph: { type: "article", title, description, url: path },
+      twitter: { card: "summary_large_image", title, description },
+    };
+  }
   const page = await getPage(path);
   if (!page) return {};
   const { title, description } = page.frontmatter;
@@ -60,6 +74,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function DocPage({ params }: PageProps) {
   const { slug } = await params;
   const resolvedSlug = toSlug(slug);
+
+  // Spec-driven API reference (`/reference`, `/reference/<resource>`,
+  // `/reference/<resource>/<operation>`) renders from the OpenAPI model; every
+  // other path is an authored MDX page.
+  const apiMatch = resolveApiRef(resolvedSlug);
+  if (apiMatch) {
+    return (
+      <div className="flex w-full">
+        <ReferenceArticle match={apiMatch} />
+      </div>
+    );
+  }
+
   const page = await getPage(resolvedSlug);
 
   if (!page) notFound();

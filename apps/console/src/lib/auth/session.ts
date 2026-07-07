@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 
 import { orgSessionsTable, orgUsersTable, organizationsTable } from '@nombaone/core-db';
 import { db } from '@nombaone/core-db/serverless';
+import { db as poolDb } from '@nombaone/core-db/pool';
 import type { OrgUserRole } from '@nombaone/sara/auth';
 import { and, eq, gt } from 'drizzle-orm';
 import { cookies } from 'next/headers';
@@ -38,7 +39,10 @@ export async function createSession(input: {
 }): Promise<{ token: string; expiresAt: Date }> {
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-  await db.insert(orgSessionsTable).values({
+  // Session creation is a WRITE on the login/signup hot path — route it through the
+  // pooled (node-postgres) connection, which stays warm, rather than the serverless
+  // neon-http driver whose per-request fetch can cold-start and fail the login.
+  await poolDb.insert(orgSessionsTable).values({
     tokenHash: sha256(token),
     userId: input.userId,
     organizationId: input.organizationId,

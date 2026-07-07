@@ -20,7 +20,7 @@ import { nombaoneDark, nombaoneLight } from "./shiki-theme";
 /** `<Snippet>`/SDK language → the Shiki grammar that highlights it. */
 const SHIKI_LANG: Record<string, string> = {
   curl: "bash",
-  node: "javascript",
+  node: "typescript",
   javascript: "javascript",
   typescript: "typescript",
   ts: "typescript",
@@ -28,6 +28,11 @@ const SHIKI_LANG: Record<string, string> = {
   go: "go",
   php: "php",
   ruby: "ruby",
+  java: "java",
+  rust: "rust",
+  dotnet: "csharp",
+  csharp: "csharp",
+  elixir: "elixir",
   json: "json",
   bash: "bash",
 };
