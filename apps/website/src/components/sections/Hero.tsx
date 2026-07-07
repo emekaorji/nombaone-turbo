@@ -10,7 +10,7 @@ import { Container } from "@/components/layout/Container";
 // bottom of the hero enumerates this exact set.
 const AUDIENCES = ["developer", "founder", "merchant", "team"];
 
-const APP_URL = "https://app.nombaone.xyz";
+const APP_URL = "https://console.nombaone.xyz";
 
 export function Hero() {
   const [index, setIndex] = useState(0);

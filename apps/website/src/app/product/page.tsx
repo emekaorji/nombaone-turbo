@@ -18,32 +18,34 @@ export const metadata = {
 
 // ── Stage 01 visual: tabbed code (.pen KAOgf) ──────────────────────────────
 const NODE_LINES: Line[] = [
-  [kw("import "), w("{ Nomba } "), kw("from "), str("'nomba-one';")],
+  [kw("import "), w("Nombaone "), kw("from "), str("'@nombaone/node';")],
   null,
-  [kw("const "), w("nomba = "), kw("new "), w("Nomba(process.env.NOMBA_KEY);")],
+  [kw("const "), w("nombaone = "), kw("new "), w("Nombaone(process.env.NOMBAONE_API_KEY);")],
   null,
-  [com("// charge a saved rail on the billing cycle")],
-  [kw("await "), w("nomba.subscriptions.charge({")],
-  [w("  subscription: "), str("'sub_8821',")],
-  [w("  idempotencyKey: "), str("'sub_8821_2026_03',")],
+  [com("// idempotent by construction: a crash-retry resolves to one charge")],
+  [kw("await "), w("nombaone.subscriptions.create({")],
+  [w("  customerId: "), str("'cus_8821',")],
+  [w("  priceId: "), str("'price_pro',")],
+  [w("  paymentMethodId: "), str("'pm_4d9f',")],
   [w("});")],
 ];
 const PY_LINES: Line[] = [
-  [kw("from "), w("nomba_one "), kw("import "), w("Nomba")],
+  [kw("from "), w("nombaone "), kw("import "), w("Nombaone")],
   null,
-  [w("nomba = Nomba(os.environ["), str("'NOMBA_KEY'"), w("])")],
+  [w("nombaone = Nombaone(os.environ["), str("'NOMBAONE_API_KEY'"), w("])")],
   null,
-  [com("# charge a saved rail on the billing cycle")],
-  [w("nomba.subscriptions.charge(")],
-  [w("    subscription="), str("'sub_8821',")],
-  [w("    idempotency_key="), str("'sub_8821_2026_03',")],
+  [com("# idempotent by construction: a crash-retry resolves to one charge")],
+  [w("nombaone.subscriptions.create(")],
+  [w("    customer_id="), str("'cus_8821',")],
+  [w("    price_id="), str("'price_pro',")],
+  [w("    payment_method_id="), str("'pm_4d9f',")],
   [w(")")],
 ];
 const CURL_LINES: Line[] = [
-  [w("curl https://api.nombaone.xyz/v1/subscriptions/charge \\")],
-  [w("  -H "), str("'Authorization: Bearer $NOMBA_KEY'"), w(" \\")],
+  [w("curl https://api.nombaone.xyz/v1/subscriptions \\")],
+  [w("  -H "), str("'Authorization: Bearer $NOMBAONE_API_KEY'"), w(" \\")],
   [w("  -H "), str("'Idempotency-Key: sub_8821_2026_03'"), w(" \\")],
-  [w("  -d "), str("subscription=sub_8821")],
+  [w("  -d "), str("'{\"customerId\":\"cus_8821\",\"priceId\":\"price_pro\"}'")],
 ];
 const STAGE1_TABS = [
   { label: "Node.js", lines: NODE_LINES },
@@ -58,7 +60,7 @@ function IdempotencyPanel() {
   return (
     <div className={cn(visualShell, "overflow-hidden")}>
       <div className="border-b border-border px-[18px] py-[14px]">
-        <span className="font-mono text-[13px] text-foreground">POST /v1/subscriptions/charge</span>
+        <span className="font-mono text-[13px] text-foreground">POST /v1/subscriptions</span>
       </div>
       <div className="flex flex-col gap-3 p-[18px]">
         <span className="font-mono text-[13px] text-muted-foreground">
@@ -270,9 +272,9 @@ export default function ProductPage() {
       <Container className="pb-20 md:pb-[120px] pt-14 md:pt-[88px]">
         <CTABand
           title="Start with a request, not a sales call."
-          primary={{ label: "Get an API key", href: "https://app.nombaone.xyz" }}
+          primary={{ label: "Get an API key", href: "https://console.nombaone.xyz" }}
           secondary={{ label: "Read the quickstart", href: "/guides" }}
-          npm="npm i nomba-one"
+          npm="npm i @nombaone/node"
           talk={{ label: "or talk to us →", href: "/trust" }}
         />
       </Container>

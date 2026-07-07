@@ -48,15 +48,17 @@ function Glyph({ icon, className }: { icon: IconRef; className?: string }) {
   return <Ic className={className} strokeWidth={1.75} />;
 }
 
-// Shared SDK snippets keep the file readable.
-const NODE_SDK = `import { Nomba } from 'nomba-one';
+// Real, published SDK usage. Every snippet reads NOMBAONE_API_KEY and creates a
+// subscription with { customerId, priceId, paymentMethodId } — the same call the
+// SDK READMEs ship. Package names, client classes, and namespaces are exact.
+const NODE_SDK = `import Nombaone from '@nombaone/node';
 
-const nomba = new Nomba(process.env.NOMBA_KEY);
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
 
-await nomba.subscriptions.create({
-  customer: 'cus_8821',
-  plan: 'plan_pro',
-  rail: 'auto',
+await nombaone.subscriptions.create({
+  customerId: 'cus_8821',
+  priceId: 'price_pro',
+  paymentMethodId: 'pm_4d9f',
 });`;
 
 const LANGS: Lang[] = [
@@ -68,14 +70,14 @@ const LANGS: Lang[] = [
       {
         label: "Next.js",
         icon: "nextdotjs",
-        code: `import { Nomba } from 'nomba-one';
+        code: `import Nombaone from '@nombaone/node';
 
-const nomba = new Nomba(process.env.NOMBA_KEY);
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
 
 export async function POST(req: Request) {
-  const { customer } = await req.json();
-  const sub = await nomba.subscriptions.create({
-    customer, plan: 'plan_pro', rail: 'auto',
+  const { customerId, priceId, paymentMethodId } = await req.json();
+  const sub = await nombaone.subscriptions.create({
+    customerId, priceId, paymentMethodId,
   });
   return Response.json(sub);
 }`,
@@ -83,41 +85,45 @@ export async function POST(req: Request) {
       {
         label: "Remix",
         icon: "remix",
-        code: `import { Nomba } from 'nomba-one';
+        code: `import Nombaone from '@nombaone/node';
 
-const nomba = new Nomba(process.env.NOMBA_KEY);
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
 
 export async function action({ request }) {
   const form = await request.formData();
-  return nomba.subscriptions.create({
-    customer: form.get('customer'), plan: 'plan_pro', rail: 'auto',
+  return nombaone.subscriptions.create({
+    customerId: form.get('customerId'),
+    priceId: form.get('priceId'),
+    paymentMethodId: form.get('paymentMethodId'),
   });
 }`,
       },
       {
         label: "Nuxt",
         icon: "nuxtdotjs",
-        code: `import { Nomba } from 'nomba-one';
+        code: `import Nombaone from '@nombaone/node';
 
-const nomba = new Nomba(process.env.NOMBA_KEY);
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
 
 export default defineEventHandler(async (event) => {
-  const { customer } = await readBody(event);
-  return nomba.subscriptions.create({
-    customer, plan: 'plan_pro', rail: 'auto',
+  const { customerId, priceId, paymentMethodId } = await readBody(event);
+  return nombaone.subscriptions.create({
+    customerId, priceId, paymentMethodId,
   });
 });`,
       },
       {
         label: "Express",
         icon: "express",
-        code: `const { Nomba } = require('nomba-one');
+        code: `const Nombaone = require('@nombaone/node').default;
 
-const nomba = new Nomba(process.env.NOMBA_KEY);
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
 
 app.post('/subscribe', async (req, res) => {
-  const sub = await nomba.subscriptions.create({
-    customer: req.body.customer, plan: 'plan_pro', rail: 'auto',
+  const sub = await nombaone.subscriptions.create({
+    customerId: req.body.customerId,
+    priceId: req.body.priceId,
+    paymentMethodId: req.body.paymentMethodId,
   });
   res.json(sub);
 });`,
@@ -126,29 +132,29 @@ app.post('/subscribe', async (req, res) => {
         label: "Hono",
         icon: "hono",
         code: `import { Hono } from 'hono';
-import { Nomba } from 'nomba-one';
+import Nombaone from '@nombaone/node';
 
 const app = new Hono();
-const nomba = new Nomba(process.env.NOMBA_KEY);
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
 
 app.post('/subscribe', async (c) => {
-  const { customer } = await c.req.json();
-  return c.json(await nomba.subscriptions.create({
-    customer, plan: 'plan_pro', rail: 'auto',
+  const { customerId, priceId, paymentMethodId } = await c.req.json();
+  return c.json(await nombaone.subscriptions.create({
+    customerId, priceId, paymentMethodId,
   }));
 });`,
       },
       {
         label: "Redwood",
         icon: "redwoodjs",
-        code: `import { Nomba } from 'nomba-one';
+        code: `import Nombaone from '@nombaone/node';
 
-const nomba = new Nomba(process.env.NOMBA_KEY);
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
 
 export const handler = async (event) => {
-  const { customer } = JSON.parse(event.body);
-  const sub = await nomba.subscriptions.create({
-    customer, plan: 'plan_pro', rail: 'auto',
+  const { customerId, priceId, paymentMethodId } = JSON.parse(event.body);
+  const sub = await nombaone.subscriptions.create({
+    customerId, priceId, paymentMethodId,
   });
   return { statusCode: 200, body: JSON.stringify(sub) };
 };`,
@@ -156,16 +162,16 @@ export const handler = async (event) => {
       {
         label: "Bun",
         icon: "bun",
-        code: `import { Nomba } from 'nomba-one';
+        code: `import Nombaone from '@nombaone/node';
 
-const nomba = new Nomba(process.env.NOMBA_KEY);
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
 
 Bun.serve({
   port: 3000,
   async fetch(req) {
-    const { customer } = await req.json();
-    return Response.json(await nomba.subscriptions.create({
-      customer, plan: 'plan_pro', rail: 'auto',
+    const { customerId, priceId, paymentMethodId } = await req.json();
+    return Response.json(await nombaone.subscriptions.create({
+      customerId, priceId, paymentMethodId,
     }));
   },
 });`,
@@ -174,14 +180,14 @@ Bun.serve({
         label: "Astro",
         icon: "astro",
         code: `import type { APIRoute } from 'astro';
-import { Nomba } from 'nomba-one';
+import Nombaone from '@nombaone/node';
 
-const nomba = new Nomba(import.meta.env.NOMBA_KEY);
+const nombaone = new Nombaone(import.meta.env.NOMBAONE_API_KEY);
 
 export const POST: APIRoute = async ({ request }) => {
-  const { customer } = await request.json();
-  const sub = await nomba.subscriptions.create({
-    customer, plan: 'plan_pro', rail: 'auto',
+  const { customerId, priceId, paymentMethodId } = await request.json();
+  const sub = await nombaone.subscriptions.create({
+    customerId, priceId, paymentMethodId,
   });
   return new Response(JSON.stringify(sub));
 };`,
@@ -195,17 +201,17 @@ export const POST: APIRoute = async ({ request }) => {
       {
         label: "Vercel Functions",
         icon: "vercel",
-        code: `const NOMBA_KEY = process.env.NOMBA_KEY;
+        code: `const NOMBAONE_API_KEY = process.env.NOMBAONE_API_KEY;
 
 export async function POST(req) {
-  const { customer } = await req.json();
+  const { customerId, priceId, paymentMethodId } = await req.json();
   const res = await fetch('https://api.nombaone.xyz/v1/subscriptions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: \`Bearer \${NOMBA_KEY}\`,
+      Authorization: \`Bearer \${NOMBAONE_API_KEY}\`,
     },
-    body: JSON.stringify({ customer, plan: 'plan_pro', rail: 'auto' }),
+    body: JSON.stringify({ customerId, priceId, paymentMethodId }),
   });
 
   if (res.ok) {
@@ -218,17 +224,17 @@ export async function POST(req) {
         icon: "supabase",
         code: `import { serve } from 'https://deno.land/std/http/server.ts';
 
-const NOMBA_KEY = Deno.env.get('NOMBA_KEY');
+const NOMBAONE_API_KEY = Deno.env.get('NOMBAONE_API_KEY');
 
 serve(async (req: Request): Promise<Response> => {
-  const { customer } = await req.json();
+  const { customerId, priceId, paymentMethodId } = await req.json();
   const res = await fetch('https://api.nombaone.xyz/v1/subscriptions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': \`Bearer \${NOMBA_KEY}\`,
+      'Authorization': \`Bearer \${NOMBAONE_API_KEY}\`,
     },
-    body: JSON.stringify({ customer, plan: 'plan_pro', rail: 'auto' }),
+    body: JSON.stringify({ customerId, priceId, paymentMethodId }),
   });
 
   return new Response(await res.text(), {
@@ -242,17 +248,17 @@ serve(async (req: Request): Promise<Response> => {
         icon: "deno",
         code: `import { serve } from 'https://deno.land/std/http/server.ts';
 
-const NOMBA_KEY = Deno.env.get('NOMBA_KEY');
+const NOMBAONE_API_KEY = Deno.env.get('NOMBAONE_API_KEY');
 
 serve(async (req: Request): Promise<Response> => {
-  const { customer } = await req.json();
+  const { customerId, priceId, paymentMethodId } = await req.json();
   const res = await fetch('https://api.nombaone.xyz/v1/subscriptions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': \`Bearer \${NOMBA_KEY}\`,
+      'Authorization': \`Bearer \${NOMBAONE_API_KEY}\`,
     },
-    body: JSON.stringify({ customer, plan: 'plan_pro', rail: 'auto' }),
+    body: JSON.stringify({ customerId, priceId, paymentMethodId }),
   });
 
   return new Response(await res.text(), {
@@ -263,14 +269,14 @@ serve(async (req: Request): Promise<Response> => {
       {
         label: "Cloudflare Workers",
         icon: "cloudflareworkers",
-        code: `import { Nomba } from 'nomba-one';
+        code: `import Nombaone from '@nombaone/node';
 
 export default {
   async fetch(request, env) {
-    const nomba = new Nomba(env.NOMBA_KEY);
-    const { customer } = await request.json();
-    const sub = await nomba.subscriptions.create({
-      customer, plan: 'plan_pro', rail: 'auto',
+    const nombaone = new Nombaone(env.NOMBAONE_API_KEY);
+    const { customerId, priceId, paymentMethodId } = await request.json();
+    const sub = await nombaone.subscriptions.create({
+      customerId, priceId, paymentMethodId,
     });
     return Response.json(sub);
   },
@@ -279,17 +285,17 @@ export default {
       {
         label: "AWS Lambda",
         icon: "awslambda",
-        code: `const NOMBA_KEY = process.env.NOMBA_KEY;
+        code: `const NOMBAONE_API_KEY = process.env.NOMBAONE_API_KEY;
 
 export const handler = async (event) => {
-  const { customer } = JSON.parse(event.body);
+  const { customerId, priceId, paymentMethodId } = JSON.parse(event.body);
   const res = await fetch('https://api.nombaone.xyz/v1/subscriptions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': \`Bearer \${NOMBA_KEY}\`,
+      'Authorization': \`Bearer \${NOMBAONE_API_KEY}\`,
     },
-    body: JSON.stringify({ customer, plan: 'plan_pro', rail: 'auto' }),
+    body: JSON.stringify({ customerId, priceId, paymentMethodId }),
   });
 
   if (res.ok) {
@@ -307,14 +313,14 @@ export const handler = async (event) => {
         label: "Ruby",
         icon: "ruby",
         hash: true,
-        code: `require 'nomba_one'
+        code: `require 'nombaone'
 
-nomba = NombaOne::Client.new(ENV['NOMBA_KEY'])
+nombaone = Nombaone.new(ENV['NOMBAONE_API_KEY'])
 
-nomba.subscriptions.create(
-  customer: 'cus_8821',
-  plan: 'plan_pro',
-  rail: 'auto',
+nombaone.subscriptions.create(
+  customer_id: 'cus_8821',
+  price_id: 'price_pro',
+  payment_method_id: 'pm_4d9f',
 )`,
       },
       {
@@ -323,10 +329,11 @@ nomba.subscriptions.create(
         hash: true,
         code: `class BillingController < ApplicationController
   def subscribe
-    nomba = NombaOne::Client.new(ENV['NOMBA_KEY'])
-    render json: nomba.subscriptions.create(
-      customer: params[:customer],
-      plan: 'plan_pro', rail: 'auto',
+    nombaone = Nombaone.new(ENV['NOMBAONE_API_KEY'])
+    render json: nombaone.subscriptions.create(
+      customer_id: params[:customer_id],
+      price_id: params[:price_id],
+      payment_method_id: params[:payment_method_id],
     )
   end
 end`,
@@ -341,14 +348,14 @@ end`,
         label: "Python",
         icon: "python",
         hash: true,
-        code: `from nomba_one import Nomba
+        code: `from nombaone import Nombaone
 
-nomba = Nomba(os.environ['NOMBA_KEY'])
+nombaone = Nombaone(os.environ['NOMBAONE_API_KEY'])
 
-nomba.subscriptions.create(
-    customer='cus_8821',
-    plan='plan_pro',
-    rail='auto',
+nombaone.subscriptions.create(
+    customer_id='cus_8821',
+    price_id='price_pro',
+    payment_method_id='pm_4d9f',
 )`,
       },
       {
@@ -356,14 +363,15 @@ nomba.subscriptions.create(
         icon: "django",
         hash: true,
         code: `from django.http import JsonResponse
-from nomba_one import Nomba
+from nombaone import Nombaone
 
-nomba = Nomba(os.environ['NOMBA_KEY'])
+nombaone = Nombaone(os.environ['NOMBAONE_API_KEY'])
 
 def subscribe(request):
-    sub = nomba.subscriptions.create(
-        customer=request.POST['customer'],
-        plan='plan_pro', rail='auto',
+    sub = nombaone.subscriptions.create(
+        customer_id=request.POST['customer_id'],
+        price_id=request.POST['price_id'],
+        payment_method_id=request.POST['payment_method_id'],
     )
     return JsonResponse(sub)`,
       },
@@ -372,15 +380,16 @@ def subscribe(request):
         icon: "flask",
         hash: true,
         code: `from flask import Flask, request, jsonify
-from nomba_one import Nomba
+from nombaone import Nombaone
 
-nomba = Nomba(os.environ['NOMBA_KEY'])
+nombaone = Nombaone(os.environ['NOMBAONE_API_KEY'])
 
 @app.post('/subscribe')
 def subscribe():
-    return jsonify(nomba.subscriptions.create(
-        customer=request.json['customer'],
-        plan='plan_pro', rail='auto',
+    return jsonify(nombaone.subscriptions.create(
+        customer_id=request.json['customer_id'],
+        price_id=request.json['price_id'],
+        payment_method_id=request.json['payment_method_id'],
     ))`,
       },
       {
@@ -388,15 +397,17 @@ def subscribe():
         icon: "fastapi",
         hash: true,
         code: `from fastapi import FastAPI
-from nomba_one import Nomba
+from nombaone import Nombaone
 
 app = FastAPI()
-nomba = Nomba(os.environ['NOMBA_KEY'])
+nombaone = Nombaone(os.environ['NOMBAONE_API_KEY'])
 
 @app.post('/subscribe')
-async def subscribe(customer: str):
-    return nomba.subscriptions.create(
-        customer=customer, plan='plan_pro', rail='auto',
+async def subscribe(customer_id: str, price_id: str, payment_method_id: str):
+    return nombaone.subscriptions.create(
+        customer_id=customer_id,
+        price_id=price_id,
+        payment_method_id=payment_method_id,
     )`,
       },
     ],
@@ -408,39 +419,41 @@ async def subscribe(customer: str):
       {
         label: "PHP",
         icon: "php",
-        code: `$nomba = new NombaOne\\Nomba(getenv('NOMBA_KEY'));
+        code: `$nombaone = new NombaOne\\Nombaone(getenv('NOMBAONE_API_KEY'));
 
-$nomba->subscriptions->create([
-    'customer' => 'cus_8821',
-    'plan' => 'plan_pro',
-    'rail' => 'auto',
+$nombaone->subscriptions->create([
+    'customerId' => 'cus_8821',
+    'priceId' => 'price_pro',
+    'paymentMethodId' => 'pm_4d9f',
 ]);`,
       },
       {
         label: "Laravel",
         icon: "laravel",
-        code: `use NombaOne\\Nomba;
+        code: `use NombaOne\\Nombaone;
 
 Route::post('/subscribe', function (Request $request) {
-    $nomba = new Nomba(env('NOMBA_KEY'));
-    return $nomba->subscriptions->create([
-        'customer' => $request->customer,
-        'plan' => 'plan_pro', 'rail' => 'auto',
+    $nombaone = new Nombaone(env('NOMBAONE_API_KEY'));
+    return $nombaone->subscriptions->create([
+        'customerId' => $request->customerId,
+        'priceId' => $request->priceId,
+        'paymentMethodId' => $request->paymentMethodId,
     ]);
 });`,
       },
       {
         label: "Symfony",
         icon: "symfony",
-        code: `use NombaOne\\Nomba;
+        code: `use NombaOne\\Nombaone;
 
 #[Route('/subscribe', methods: ['POST'])]
 public function subscribe(Request $request): JsonResponse
 {
-    $nomba = new Nomba($_ENV['NOMBA_KEY']);
-    return $this->json($nomba->subscriptions->create([
-        'customer' => $request->get('customer'),
-        'plan' => 'plan_pro', 'rail' => 'auto',
+    $nombaone = new Nombaone($_ENV['NOMBAONE_API_KEY']);
+    return $this->json($nombaone->subscriptions->create([
+        'customerId' => $request->get('customerId'),
+        'priceId' => $request->get('priceId'),
+        'paymentMethodId' => $request->get('paymentMethodId'),
     ]));
 }`,
       },
@@ -454,10 +467,10 @@ public function subscribe(Request $request): JsonResponse
         label: "CLI",
         icon: Terminal,
         hash: true,
-        code: `nomba subscriptions create \\
-  --customer cus_8821 \\
-  --plan plan_pro \\
-  --rail auto`,
+        code: `nombaone subscriptions create \\
+  --customer-id cus_8821 \\
+  --price-id price_pro \\
+  --payment-method-id pm_4d9f`,
       },
     ],
   },
@@ -470,14 +483,17 @@ public function subscribe(Request $request): JsonResponse
         icon: "go",
         code: `package main
 
-import "github.com/nombaone/nomba-go"
+import (
+    "context"
+    "github.com/nombaone/nombaone-go"
+)
 
 func main() {
-    nomba := nombaone.New(os.Getenv("NOMBA_KEY"))
-    nomba.Subscriptions.Create(&nombaone.SubscriptionParams{
-        Customer: "cus_8821",
-        Plan:     "plan_pro",
-        Rail:     "auto",
+    client, _ := nombaone.New() // reads NOMBAONE_API_KEY
+    client.Subscriptions.Create(context.Background(), nombaone.SubscriptionCreateParams{
+        CustomerID:      "cus_8821",
+        PriceID:         "price_pro",
+        PaymentMethodID: nombaone.String("pm_4d9f"),
     })
 }`,
       },
@@ -490,15 +506,15 @@ func main() {
       {
         label: "Rust",
         icon: "rust",
-        code: `use nomba_one::{Nomba, SubscriptionParams};
+        code: `use nombaone::{Nombaone, SubscriptionCreateParams};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let nomba = Nomba::new(std::env::var("NOMBA_KEY")?);
-    nomba.subscriptions().create(SubscriptionParams {
-        customer: "cus_8821",
-        plan: "plan_pro",
-        rail: "auto",
+    let nombaone = Nombaone::from_env()?; // reads NOMBAONE_API_KEY
+    nombaone.subscriptions().create(SubscriptionCreateParams {
+        customer_id: "cus_8821".into(),
+        price_id: "price_pro".into(),
+        ..Default::default()
     }).await?;
     Ok(())
 }`,
@@ -514,13 +530,15 @@ async fn main() -> anyhow::Result<()> {
         icon: "spring",
         code: `@RestController
 public class BillingController {
-  private final Nomba nomba = new Nomba(System.getenv("NOMBA_KEY"));
+  private final Nombaone nombaone = new Nombaone(System.getenv("NOMBAONE_API_KEY"));
 
   @PostMapping("/subscribe")
-  public Subscription subscribe(@RequestParam String customer) {
-    return nomba.subscriptions().create(
-      SubscriptionParams.builder()
-        .customer(customer).plan("plan_pro").rail("auto").build());
+  public Subscription subscribe(@RequestParam String customerId, @RequestParam String priceId) {
+    return nombaone.subscriptions().create(
+      SubscriptionCreateParams.builder()
+        .customerId(customerId)
+        .priceId(priceId)
+        .build());
   }
 }`,
       },
@@ -534,12 +552,12 @@ public class BillingController {
         label: "Elixir",
         icon: "elixir",
         hash: true,
-        code: `nomba = NombaOne.new(System.get_env("NOMBA_KEY"))
+        code: `client = Nombaone.new() # reads NOMBAONE_API_KEY
 
-NombaOne.Subscriptions.create(nomba, %{
-  customer: "cus_8821",
-  plan: "plan_pro",
-  rail: "auto"
+Nombaone.Subscriptions.create(client, %{
+  customer_id: "cus_8821",
+  price_id: "price_pro",
+  payment_method_id: "pm_4d9f"
 })`,
       },
       {
@@ -549,10 +567,10 @@ NombaOne.Subscriptions.create(nomba, %{
         code: `defmodule MyAppWeb.BillingController do
   use MyAppWeb, :controller
 
-  def subscribe(conn, %{"customer" => customer}) do
-    nomba = NombaOne.new(System.get_env("NOMBA_KEY"))
-    {:ok, sub} = NombaOne.Subscriptions.create(nomba, %{
-      customer: customer, plan: "plan_pro", rail: "auto"
+  def subscribe(conn, %{"customer_id" => customer_id, "price_id" => price_id}) do
+    client = Nombaone.new()
+    {:ok, sub} = Nombaone.Subscriptions.create(client, %{
+      customer_id: customer_id, price_id: price_id
     })
     json(conn, sub)
   end
@@ -567,13 +585,15 @@ end`,
       {
         label: "C#",
         icon: "dotnet",
-        code: `var nomba = new NombaOne.Client(
-    Mode.GetEnvironmentVariable("NOMBA_KEY"));
+        code: `using NombaOne;
 
-await nomba.Subscriptions.CreateAsync(new SubscriptionParams {
-    Customer = "cus_8821",
-    Plan = "plan_pro",
-    Rail = "auto",
+var nombaone = new Nombaone(); // reads NOMBAONE_API_KEY
+
+await nombaone.Subscriptions.CreateAsync(new SubscriptionCreateParams
+{
+    CustomerId = "cus_8821",
+    PriceId = "price_pro",
+    PaymentMethodId = "pm_4d9f",
 });`,
       },
     ],
@@ -587,18 +607,18 @@ await nomba.Subscriptions.CreateAsync(new SubscriptionParams {
         icon: "curl",
         hash: true,
         code: `curl https://api.nombaone.xyz/v1/subscriptions \\
-  -H "Authorization: Bearer $NOMBA_KEY" \\
-  -d customer=cus_8821 \\
-  -d plan=plan_pro \\
-  -d rail=auto`,
+  -H "Authorization: Bearer $NOMBAONE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"customerId":"cus_8821","priceId":"price_pro","paymentMethodId":"pm_4d9f"}'`,
       },
       {
         label: "wget",
         icon: Download,
         hash: true,
         code: `wget https://api.nombaone.xyz/v1/subscriptions \\
-  --header "Authorization: Bearer $NOMBA_KEY" \\
-  --post-data 'customer=cus_8821&plan=plan_pro&rail=auto'`,
+  --header "Authorization: Bearer $NOMBAONE_API_KEY" \\
+  --header "Content-Type: application/json" \\
+  --post-data '{"customerId":"cus_8821","priceId":"price_pro","paymentMethodId":"pm_4d9f"}'`,
       },
     ],
   },
@@ -723,12 +743,12 @@ export function CodeStack({ className }: { className?: string }) {
             <Github className="size-4" /> View on GitHub
           </a>
           <a
-            href="https://github.com/nombaone"
+            href="https://docs.nombaone.xyz/sdks"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
           >
-            <FileArchive className="size-4" /> Download ZIP
+            <FileArchive className="size-4" /> Read the SDK docs
           </a>
         </div>
       </div>

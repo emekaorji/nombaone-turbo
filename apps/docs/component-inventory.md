@@ -84,7 +84,7 @@
   the deleted resource.
 - **Metadata copy** in `src/app/layout.tsx` still says "wallets, a double-entry ledger, and
   Nigerian rails" (template-generic) and `metadataBase: docs.nombaone.xyz` — the product is
-  subscription billing, and the API's `docUrl` origin is `docs.nombaone.com`. Reconcile the
+  subscription billing, and the API's `docUrl` origin is `docs.nombaone.xyz`. Reconcile the
   brand copy + origin in **Phase 09** (launch) alongside the `docUrl`-host decision (index ledger).
 - **Template residue:** audited — `apps/docs` is a purpose-built app, no create-turbo starter
   cruft (no default README, `public/` is just the search index). Nothing to remove beyond the

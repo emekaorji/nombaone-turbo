@@ -1,13 +1,16 @@
 import { MobileBottomNav } from '@/components/shell/mobile-bottom-nav';
 import { MobileTopbar } from '@/components/shell/mobile-topbar';
+import { OnboardingRail } from '@/components/shell/onboarding-rail';
 import { Sidebar } from '@/components/shell/sidebar';
 import { Topbar } from '@/components/shell/topbar';
 import { requireSession } from '@/lib/auth';
+import { getOnboardingState } from '@/lib/onboarding';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession();
   const user = { name: session.user.name, email: session.user.email, role: session.user.role };
   const org = { name: session.org.name };
+  const onboarding = await getOnboardingState();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background print:h-auto print:overflow-visible">
@@ -30,6 +33,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <MobileBottomNav user={user} org={org} />
         </div>
       </div>
+      {/* Onboarding companion rail — follows the merchant until setup is done */}
+      {onboarding?.showRail ? <OnboardingRail initial={onboarding} /> : null}
     </div>
   );
 }

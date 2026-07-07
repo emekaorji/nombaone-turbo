@@ -13,7 +13,7 @@ export const metadata = {
     "Built so it can't quietly lose your money: an integer-kobo double-entry ledger, idempotent by construction, reconciled to the processor, with tenant isolation enforced at the schema level.",
 };
 
-const APP_URL = "https://app.nombaone.xyz";
+const APP_URL = "https://console.nombaone.xyz";
 
 const LEDGER: { entry: string; account: string; amount: string; header?: boolean }[] = [
   { entry: "ENTRY", account: "ACCOUNT", amount: "AMOUNT", header: true },
@@ -212,7 +212,7 @@ export default function TrustPage() {
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}
           secondary={{ label: "Read the quickstart", href: "/guides" }}
-          npm="npm i nomba-one"
+          npm="npm i @nombaone/node"
           talk={{ label: "or talk to us →", href: "/trust" }}
         />
       </Container>

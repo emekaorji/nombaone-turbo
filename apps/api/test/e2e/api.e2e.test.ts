@@ -174,7 +174,7 @@ describe('api e2e', () => {
     expect(typeof res.body.error.hint).toBe('string');
     expect(res.body.error.hint.length).toBeGreaterThan(0);
     expect(res.body.error.docUrl).toBe(
-      'https://docs.nombaone.com/errors#CLIENT_ROUTE_NOT_FOUND'
+      'https://docs.nombaone.xyz/errors#CLIENT_ROUTE_NOT_FOUND'
     );
   });
 });

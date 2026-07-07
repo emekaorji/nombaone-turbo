@@ -10,7 +10,7 @@ import { CTABand } from "@/components/sections/CTABand";
 import { getAllArticles, getArticle, listAllSlugs } from "@/lib/content";
 import { mdxOptions } from "@/lib/mdx-pipeline";
 
-const APP_URL = "https://app.nombaone.xyz";
+const APP_URL = "https://console.nombaone.xyz";
 
 export function generateStaticParams() {
   return listAllSlugs().map((slug) => ({ slug }));
@@ -109,7 +109,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}
           secondary={{ label: "Read the quickstart", href: "/guides" }}
-          npm="npm i nomba-one"
+          npm="npm i @nombaone/node"
           talk={{ label: "or talk to us →", href: "/trust" }}
         />
       </Container>

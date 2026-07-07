@@ -1,6 +1,7 @@
 import {
   customersTable,
   invoicesTable,
+  organizationsTable,
   paymentMethodsTable,
   pricesTable,
   subscriptionsTable,
@@ -26,6 +27,14 @@ export type OnboardingState = {
   doneCount: number;
   total: number;
   pct: number;
+  /** The merchant committed to the guided flow (clicked into a step). */
+  started: boolean;
+  /** They skipped or finished it — the companion rail stays hidden. */
+  dismissed: boolean;
+  /** All steps done. */
+  complete: boolean;
+  /** Whether the in-app companion rail should render: started, not dismissed. */
+  showRail: boolean;
 };
 
 export async function getOnboardingState(): Promise<OnboardingState | null> {
@@ -35,12 +44,17 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
   const mode = session.mode;
   const first = <T extends { c: number }>(rows: T[]): number => rows[0]?.c ?? 0;
 
-  const [customers, prices, methods, subs, invoices] = await Promise.all([
+  const [customers, prices, methods, subs, invoices, orgRows] = await Promise.all([
     db.select({ c: count() }).from(customersTable).where(and(eq(customersTable.organizationId, org), eq(customersTable.mode, mode))).then(first),
     db.select({ c: count() }).from(pricesTable).where(and(eq(pricesTable.organizationId, org), eq(pricesTable.mode, mode))).then(first),
     db.select({ c: count() }).from(paymentMethodsTable).where(and(eq(paymentMethodsTable.organizationId, org), eq(paymentMethodsTable.mode, mode))).then(first),
     db.select({ c: count() }).from(subscriptionsTable).where(and(eq(subscriptionsTable.organizationId, org), eq(subscriptionsTable.mode, mode))).then(first),
     db.select({ c: count() }).from(invoicesTable).where(and(eq(invoicesTable.organizationId, org), eq(invoicesTable.mode, mode))).then(first),
+    db
+      .select({ startedAt: organizationsTable.onboardingStartedAt, dismissedAt: organizationsTable.onboardingDismissedAt })
+      .from(organizationsTable)
+      .where(eq(organizationsTable.id, org))
+      .limit(1),
   ]);
 
   const done = [customers > 0, prices > 0, methods > 0, subs > 0, invoices > 0];
@@ -86,6 +100,9 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
   ];
 
   const doneCount = done.filter(Boolean).length;
+  const started = !!orgRows[0]?.startedAt;
+  const dismissed = !!orgRows[0]?.dismissedAt;
+  const complete = doneCount === steps.length;
   return {
     userName: session.user.name,
     mode,
@@ -93,5 +110,9 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
     doneCount,
     total: steps.length,
     pct: Math.round((doneCount / steps.length) * 100),
+    started,
+    dismissed,
+    complete,
+    showRail: started && !dismissed,
   };
 }

@@ -7,7 +7,7 @@ export function ErrorState({
   title = "Couldn't load subscriptions",
   hint = 'Something went wrong on our end while fetching\nyour subscriptions. This is not your fault.',
   requestId = 'req_7fa2c9e1b0',
-  docsHref = 'https://docs.nombaone.com/errors',
+  docsHref = 'https://docs.nombaone.xyz/errors',
   onRetry,
 }: {
   title?: string;

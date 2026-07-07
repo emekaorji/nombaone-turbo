@@ -148,6 +148,13 @@
       "when": 1783381986796,
       "tag": "0020_mute_quicksilver",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1783461241074,
+      "tag": "0021_solid_blazing_skull",
+      "breakpoints": true
     }
   ]
 }

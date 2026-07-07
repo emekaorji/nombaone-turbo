@@ -5,7 +5,7 @@ import { ERROR_CODE_META, PUBLIC_ERROR_CODES } from "@nombaone/errors";
  * registry (`@nombaone/errors` — `ERROR_CODE_META` + `PUBLIC_ERROR_CODES`), so it
  * is provably complete and can never drift: every public code the API answers
  * with has an entry here, anchored by its exact code. The live API emits
- * `docUrl: https://docs.nombaone.com/errors#<CODE>` on every failure, and each
+ * `docUrl: https://docs.nombaone.xyz/errors#<CODE>` on every failure, and each
  * entry below sets `id="<CODE>"` so that deep link resolves to the fix.
  *
  * A pure server component — the registry is a static import read at build time.
