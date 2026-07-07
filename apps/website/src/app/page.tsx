@@ -489,9 +489,9 @@ export default function HomePage() {
       <HomeSection id="cta">
         <CTABand
           title="Start with a request, not a sales call."
-          primary={{ label: "Get an API key", href: "https://app.nombaone.xyz" }}
+          primary={{ label: "Get an API key", href: "https://console.nombaone.xyz" }}
           secondary={{ label: "Read the quickstart", href: "/guides" }}
-          npm="npm i nomba-one"
+          npm="npm i @nombaone/node"
           talk={{ label: "or talk to us →", href: "/trust" }}
         />
       </HomeSection>

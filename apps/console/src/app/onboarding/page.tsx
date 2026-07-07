@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import { Check } from 'lucide-react';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { SkipOnboarding, StartStepCTA } from '@/components/onboarding/onboarding-cta';
 import { LogoSquare } from '@/components/shell/logo-square';
 import { getOnboardingState, type OnboardingStep } from '@/lib/onboarding';
 
@@ -46,9 +46,9 @@ export default async function OnboardingPage() {
             <span className="size-1.5 rounded-full bg-warning" />
             <span className="text-[12px] font-medium capitalize text-warning">{state.mode}</span>
           </span>
-          <Link href="/" className="text-[13px] text-muted-foreground transition-colors hover:text-foreground">
+          <SkipOnboarding className="text-[13px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60">
             Skip to console
-          </Link>
+          </SkipOnboarding>
         </div>
       </header>
 
@@ -92,12 +92,11 @@ export default async function OnboardingPage() {
                   </div>
                   <p className="text-[12.5px] text-subtle-foreground">{item.desc}</p>
                   {item.cta ? (
-                    <Link
+                    <StartStepCTA
                       href={item.cta.href ?? '/'}
-                      className="mt-1 inline-flex w-fit items-center gap-[7px] rounded bg-accent px-3.5 py-2 text-[13px] font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
-                    >
-                      {item.cta.label}
-                    </Link>
+                      label={item.cta.label}
+                      className="mt-1 inline-flex w-fit items-center gap-[7px] rounded bg-accent px-3.5 py-2 text-[13px] font-medium text-accent-foreground transition-colors hover:bg-accent-hover disabled:opacity-70"
+                    />
                   ) : null}
                 </div>
               </div>
@@ -107,9 +106,9 @@ export default async function OnboardingPage() {
           {/* Foot */}
           <div className="flex items-center justify-center gap-1.5">
             <span className="text-[13px] text-muted-foreground">Prefer to explore first?</span>
-            <Link href="/" className="text-[13px] font-medium text-accent hover:opacity-80">
+            <SkipOnboarding className="text-[13px] font-medium text-accent hover:opacity-80 disabled:opacity-60">
               Skip to the console
-            </Link>
+            </SkipOnboarding>
           </div>
         </div>
       </div>

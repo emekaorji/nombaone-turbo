@@ -1,4 +1,4 @@
-import { index, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
+import { index, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 import { createdAt, idPk, referenceCol } from './shared';
 
@@ -14,6 +14,11 @@ export const organizationsTable = pgTable(
     id: idPk(),
     reference: referenceCol(),
     name: text('name').notNull(),
+    // Getting-started onboarding UI state (console). `started` when the merchant
+    // commits to the guided flow (so the companion rail follows them into the app);
+    // `dismissed` when they skip or finish it. Both null = not yet engaged.
+    onboardingStartedAt: timestamp('onboarding_started_at', { withTimezone: true }),
+    onboardingDismissedAt: timestamp('onboarding_dismissed_at', { withTimezone: true }),
     createdAt: createdAt(),
   },
   (table) => ({

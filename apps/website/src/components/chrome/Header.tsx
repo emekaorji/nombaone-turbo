@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Logo } from "./Logo";
 
 const DOCS_URL = "https://docs.nombaone.xyz";
-const APP_URL = "https://app.nombaone.xyz";
+const APP_URL = "https://console.nombaone.xyz";
 
 type NavItem = {
   label: string;

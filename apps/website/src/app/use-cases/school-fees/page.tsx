@@ -14,7 +14,7 @@ export const metadata = {
     "Termly fees, collected and reconciled. Nomba One turns each term into a subscription that collects itself over mandate and transfer, with payday-timed dunning.",
 };
 
-const APP_URL = "https://app.nombaone.xyz";
+const APP_URL = "https://console.nombaone.xyz";
 
 // Term schedule card (.pen CApZP).
 const TERMS: { term: string; amount: string; status: string; tone: string }[] = [
@@ -33,29 +33,23 @@ const POINTS: { icon: LucideIcon; title: string; desc: string }[] = [
 
 // Code panel (.pen OxT62).
 const NODE_LINES: Line[] = [
-  [kw("const "), w("sub = "), kw("await "), w("nomba.subscriptions.create({")],
-  [w("  customer: "), str("'student_4821',")],
-  [w("  plan: "), str("'termly_fees',")],
-  [w("  rail: "), str("'auto',"), com("          // mandate, transfer, or card")],
-  [w("  schedule: "), str("'installments',")],
-  [w("  installments: "), w("3,")],
+  [kw("const "), w("sub = "), kw("await "), w("nombaone.subscriptions.create({")],
+  [w("  customerId: "), str("'cus_4821',")],
+  [w("  priceId: "), str("'price_term',"), com("        // one term's fee")],
+  [w("  paymentMethodId: "), str("'pm_9d2f',"), com(" // mandate, transfer, or card")],
   [w("});")],
 ];
 const PY_LINES: Line[] = [
-  [w("sub = nomba.subscriptions.create(")],
-  [w("    customer="), str("'student_4821',")],
-  [w("    plan="), str("'termly_fees',")],
-  [w("    rail="), str("'auto',"), com("  # mandate, transfer, or card")],
-  [w("    schedule="), str("'installments',")],
-  [w("    installments="), w("3,")],
+  [w("sub = nombaone.subscriptions.create(")],
+  [w("    customer_id="), str("'cus_4821',")],
+  [w("    price_id="), str("'price_term',"), com("        # one term's fee")],
+  [w("    payment_method_id="), str("'pm_9d2f',"), com(" # mandate, transfer, or card")],
   [w(")")],
 ];
 const CURL_LINES: Line[] = [
   [w("curl https://api.nombaone.xyz/v1/subscriptions \\")],
-  [w("  -d customer=student_4821 \\")],
-  [w("  -d plan=termly_fees \\")],
-  [w("  -d rail=auto -d schedule=installments \\")],
-  [w("  -d installments=3")],
+  [w("  -H "), str("'Authorization: Bearer $NOMBAONE_API_KEY'"), w(" \\")],
+  [w("  -d "), str("'{\"customerId\":\"cus_4821\",\"priceId\":\"price_term\",\"paymentMethodId\":\"pm_9d2f\"}'")],
 ];
 const CODE_TABS = [
   { label: "Node.js", lines: NODE_LINES },
@@ -143,7 +137,7 @@ export default function SchoolFeesPage() {
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}
           secondary={{ label: "Read the quickstart", href: "/guides" }}
-          npm="npm i nomba-one"
+          npm="npm i @nombaone/node"
           talk={{ label: "or talk to us →", href: "/trust" }}
         />
       </Container>

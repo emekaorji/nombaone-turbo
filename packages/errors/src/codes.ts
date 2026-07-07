@@ -340,7 +340,7 @@ export const toPublicErrorCode = (code: NombaoneErrorCode): NombaoneErrorCode =>
  * this base plus a `#<CODE>` anchor, so the docs site can host one page per code
  * (or one page with per-code anchors) and every API response deep-links to it.
  */
-export const DOCS_ERRORS_BASE = 'https://docs.nombaone.com/errors';
+export const DOCS_ERRORS_BASE = 'https://docs.nombaone.xyz/errors';
 
 /**
  * Developer-facing guidance attached to every error code (tenet 9 — "errors are

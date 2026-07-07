@@ -11,7 +11,7 @@ export const metadata = {
     "Built for how your business bills: SaaS, school fees, gyms and memberships, lending repayment, and platforms — one subscriptions engine tuned to how each business collects.",
 };
 
-const APP_URL = "https://app.nombaone.xyz";
+const APP_URL = "https://console.nombaone.xyz";
 
 const USE_CASES = [
   {
@@ -67,7 +67,7 @@ export default function UseCasesPage() {
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}
           secondary={{ label: "Read the quickstart", href: "/guides" }}
-          npm="npm i nomba-one"
+          npm="npm i @nombaone/node"
           talk={{ label: "or talk to us →", href: "/trust" }}
         />
       </Container>

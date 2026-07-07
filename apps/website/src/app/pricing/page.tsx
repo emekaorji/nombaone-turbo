@@ -12,7 +12,7 @@ export const metadata = {
     "Pricing you can read without a sales call. A free, complete sandbox to build against, usage-based pricing when you go live, and you never pay to talk to us.",
 };
 
-const APP_URL = "https://app.nombaone.xyz";
+const APP_URL = "https://console.nombaone.xyz";
 
 interface Tier {
   name: string;
@@ -188,7 +188,7 @@ export default function PricingPage() {
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}
           secondary={{ label: "Read the quickstart", href: "/guides" }}
-          npm="npm i nomba-one"
+          npm="npm i @nombaone/node"
           talk={{ label: "or talk to us →", href: "/trust" }}
         />
       </Container>

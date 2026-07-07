@@ -25,7 +25,7 @@ export const metadata = {
     "One REST API and real SDKs in every language you ship. The same create-subscription call in Next.js, Laravel, Django, or a curl one-liner — across card, direct debit, bank transfer, and crypto.",
 };
 
-const APP_URL = "https://app.nombaone.xyz";
+const APP_URL = "https://console.nombaone.xyz";
 
 // ── 01 Reach anywhere: labelled tile groups (.pen b6UR2 MatrixTile) ─────────
 const REACH: { label: string; tiles: { name: string; icon: LucideIcon }[] }[] = [
@@ -210,7 +210,7 @@ export default function IntegrationsPage() {
           title="Start with a request, not a sales call."
           primary={{ label: "Get an API key", href: APP_URL }}
           secondary={{ label: "Read the quickstart", href: "/guides" }}
-          npm="npm i nomba-one"
+          npm="npm i @nombaone/node"
           talk={{ label: "or talk to us →", href: "/trust" }}
         />
       </Container>

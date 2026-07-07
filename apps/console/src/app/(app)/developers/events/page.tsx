@@ -37,7 +37,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
           </p>
         </div>
         <Link
-          href="https://docs.nombaone.com/webhooks/event-catalog"
+          href="https://docs.nombaone.xyz/webhooks/event-catalog"
           target="_blank"
           rel="noopener noreferrer"
           title="Open the full event catalog in the docs"
