@@ -1,6 +1,6 @@
 ---
 title: "Mandates and consent: the compliance shape of direct debit"
-type: explanation
+type: reference
 summary: "Direct debit is a pull rail, but only after a one-time consent that has its own lifecycle."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/mandates-and-consent
 ---

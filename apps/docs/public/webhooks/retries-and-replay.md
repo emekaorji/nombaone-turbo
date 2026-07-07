@@ -8,15 +8,15 @@ canonical: https://docs.nombaone.xyz/webhooks/retries-and-replay
 # Retries & replay
 
 Networks fail, servers restart, deploys happen mid-request. nombaone assumes your
-endpoint will occasionally miss a delivery and is built to recover — automatically
+endpoint will occasionally miss a delivery and is built to recover: automatically
 with retries, and manually with replay. Both reuse the **same event id**, so a
 correctly [deduped](/webhooks/delivery-guarantee) handler treats a recovered
 delivery as already-seen.
 
 ## Automatic retries
 
-A delivery succeeds when your endpoint returns a `2xx` promptly. Anything else — a
-timeout, a `5xx`, a connection error — is retried on an increasing backoff, giving
+A delivery succeeds when your endpoint returns a `2xx` promptly. Anything else (a
+timeout, a `5xx`, a connection error) is retried on an increasing backoff, giving
 a briefly-down endpoint time to come back without you doing anything.
 
 > **Return 2xx first, work later**
@@ -26,7 +26,7 @@ a briefly-down endpoint time to come back without you doing anything.
 > earns retries it didn't need. Verify, dedupe, enqueue, return `200`.
 
 A delivery that keeps failing past the retry schedule is marked failed and stops
-retrying — it does not retry forever. You can always see where a delivery stands
+retrying. It does not retry forever. You can always see where a delivery stands
 and re-drive it yourself.
 
 ## Inspect deliveries
@@ -45,7 +45,7 @@ curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId} \
 
 ## Replay a delivery
 
-Redeliver a past event on demand — after fixing a handler bug, or to backfill an
+Redeliver a past event on demand, after fixing a handler bug, or to backfill an
 endpoint that was down:
 
 ```bash
@@ -56,7 +56,7 @@ curl -X POST \
 
 > **Replay keeps the original event id**
 >
-> A replay is the same event, delivered again — not a new one. Your dedupe store
+> A replay is the same event, delivered again, not a new one. Your dedupe store
 > should recognize it as already-processed. That is exactly what you want: replay
 > is safe precisely because your handler is idempotent.
 
@@ -64,10 +64,10 @@ curl -X POST \
 
 If your endpoint was down and you're unsure what you missed, don't try to rebuild
 state from a guessed event sequence. Read the resource directly (`GET
-/v1/subscriptions/{id}`) or replay the specific deliveries — the API is the source
+/v1/subscriptions/{id}`) or replay the specific deliveries. The API is the source
 of truth, and events are notifications about it.
 
-- **[Delivery guarantee](/webhooks/delivery-guarantee)** — 
+- **[Delivery guarantee](/webhooks/delivery-guarantee)**: 
 Why the event id makes retries and replay safe.
-- **[Handle webhooks](/guides/handle-webhooks)** — 
+- **[Handle webhooks](/guides/handle-webhooks)**: 
 Build the idempotent handler that makes this work.

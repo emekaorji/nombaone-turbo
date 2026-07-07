@@ -1,6 +1,6 @@
 ---
 title: Python quickstart
-description: Reach a real 201 with Python — create your first plan on the Nomba One sandbox in a few lines.
+description: "Reach a real 201 with Python: create your first plan on the Nomba One sandbox in a few lines."
 section: get-started
 ---
 
@@ -10,14 +10,14 @@ you go live.
 
 ## 1 · Get a sandbox key
 
-Grab a `nbo_sandbox_…` key — see [authentication](/getting-started/authentication).
+Grab a `nbo_sandbox_…` key. See [authentication](/getting-started/authentication).
 Install the HTTP client: `pip install requests`. Read the key from `NOMBAONE_SECRET_KEY`.
 
 ## 2 · Create a plan
 
 <Snippet method="POST" path="/v1/plans" body={{ name: "Pro" }} idempotent defaultLang="python" />
 
-A `201` comes back with the plan's `data.id` — its public reference. Amounts on
+A `201` comes back with the plan's `data.id`, its public reference. Amounts on
 its [prices](/guides/create-plans-and-prices) are **integer kobo**.
 
 ## Next

@@ -34,7 +34,7 @@ const STOPS = [
   {
     n: "02",
     title: "Create an example",
-    body: "POST one example — the worked endpoint that threads the whole money path.",
+    body: "POST one example: the worked endpoint that threads the whole money path.",
   },
   {
     n: "03",

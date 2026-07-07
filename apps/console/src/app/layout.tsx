@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
-import { Toaster } from '@nombaone/ui/components/ui/sonner';
-
-import { ThemeProvider } from '@/components/chrome/ThemeProvider';
+import { ThemeProvider } from '@/components/theme-provider';
 
 import './globals.css';
 
@@ -11,8 +9,8 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Nombaone · Console',
-  description: 'The Nombaone tenant dashboard — developers, webhooks, and money-path examples.',
+  title: 'Nomba One · Console',
+  description: 'Nomba One merchant console.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -23,10 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <ThemeProvider>
-          {children}
-          <Toaster position="top-right" richColors closeButton />
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

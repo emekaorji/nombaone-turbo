@@ -23,3 +23,6 @@ export const RECONCILE_NOMBA_JOB = 'reconcile-nomba';
 
 /** Direct debit: poll `consent_pending` mandates → `active` once NIBSS advice is sent. */
 export const MANDATE_ACTIVATION_SWEEP_JOB = 'mandate-activation-sweep';
+
+/** Prune API request logs older than the retention window (Developers → Logs). */
+export const REQUEST_LOG_RETENTION_JOB = 'request-log-retention';

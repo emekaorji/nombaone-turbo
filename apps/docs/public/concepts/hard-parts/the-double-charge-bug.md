@@ -1,6 +1,6 @@
 ---
 title: "The double-charge bug, and why idempotency keys aren't optional"
-type: explanation
+type: reference
 summary: "A retry or a crash turns one payment into two, and your customer notices before you do."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/the-double-charge-bug
 ---

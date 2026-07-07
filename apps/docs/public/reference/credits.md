@@ -1,7 +1,7 @@
 ---
 title: "Credits"
 type: reference
-summary: "Customer credit grants and balance — a stored amount that draws down before any charge. A sub-resource of the customer."
+summary: "Customer credit grants and balance: a stored amount that draws down before any charge. A sub-resource of the customer."
 canonical: https://docs.nombaone.xyz/reference/credits
 ---
 
@@ -31,5 +31,5 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
 >
 > When an invoice is collected, available credit is applied before the rail is
 > charged. The invoice shows the credit line and the reduced amount actually
-> charged — see [coupons and credits](/guides/coupons-and-credits) and
+> charged. See [coupons and credits](/guides/coupons-and-credits) and
 > [the ledger](/concepts/the-ledger).

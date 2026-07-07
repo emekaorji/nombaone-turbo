@@ -29,7 +29,7 @@ export function Glossary() {
             )}
             {entry.aliases && entry.aliases.length > 0 && (
               <span className="mt-1 block text-xs text-subtle-foreground">
-                also seen as {entry.aliases.map((a) => `"${a}"`).join(", ")} — we use{" "}
+                also seen as {entry.aliases.map((a) => `"${a}"`).join(", ")}; we use{" "}
                 <span className="font-mono text-muted-foreground">{entry.term}</span>.
               </span>
             )}

@@ -4,6 +4,19 @@
 >
 > Read this after the design is done and before the first console commit. It is the bridge from `workbench/NOMBAONE.pen` to `apps/console`.
 
+## 0a. Paradigm (authoritative, supersedes any "already built" language anywhere below)
+
+`apps/console` is a **boilerplate template ported from another project**, and we are moving in a product direction that template does not reflect. **Nothing in `apps/console` is authoritative or "built for Nomba One."** Treat the console as **greenfield**: build every surface from scratch against the Pencil design and these plan docs, and **strip out the ported boilerplate** as you go. Do not read any existing console file as our product, our auth, or our data layer. The ported files (including `src/lib/auth/*`, `src/lib/*-actions.ts`, existing screens) are at most reference scaffold, never "done."
+
+What genuinely exists to build ON (the substrate, per `workbench/console-refactor-notes.md`):
+
+- **`@nombaone/sara` = reusable infrastructure + primitives + cross-app services only** (no product money engine). Console imports: `sara/context` (`DomainContext {organizationId, mode}`, `Mode`, `InfraDb`, `InfraTxDb`), `/api-keys`, `/webhooks`, `/example`, `/org`, `/reference`, `/crypto`, `/money`, `/pagination`, `/idempotency`, `/ledger`, `/events`, `/rails`.
+- **The subscription-billing money engine is api-owned** in `apps/api/src/shared/services/` (billing, subscriptions, subscription-schedules, invoices, dunning, settlement, plans, prices, coupons, discounts, credits, payment-methods, proration, tenant-config, customers, reconciliation, scheduling, metrics). The console **must never import these** (a package may never import from an app; enforced by `pnpm check:boundaries`). The console gets money-engine data by **reading the DB directly via `@nombaone/core-db/pool`** (server-side) or by **calling `apps/api`**.
+- **The console owns its own merchant/org auth** in `apps/console/src/lib/auth/`, **built on sara auth primitives** (`hashPassword`, `verifyPassword`, `generateTotpSecret`, `verifyTotp`, `buildTotpUri`, `can`, `Capability`, `OrgUserRole`). Auth workflows (signup, login, session, users, password-reset) are ours to build here; they may not live in sara.
+- **`core-db`** holds the schema (org_users, org_sessions, password_reset_tokens, api_keys, and all money-engine tables). Money is integer kobo throughout.
+
+Consequence for everything below: sections that discuss "the current `apps/api` surface" are describing the **substrate the console consumes**, and remain valid as a data-availability map. Any section that treats a console-side artifact as pre-existing is void under this paradigm. The `apps/api` money engine is the source of truth for billing data; the console is 100% to-build.
+
 ## 0. The one rule this document exists to enforce
 
 Every field the console renders maps to either (a) a real DTO field that `apps/api` already returns, or (b) a named, tracked build dependency below. Nothing in the design is decoration that fakes data we cannot compute. When a surface shows a number, this doc says where that number comes from. If it comes from an endpoint that does not exist yet, that endpoint is listed here with its shape, so the design leads and engineering follows a written target instead of guessing.
@@ -30,11 +43,11 @@ live-gated provider legs  ────────►  Settlements/payouts, refu
 
 The four boxes on the left are the build-order spine. Everything else in docs 02 through 09 renders on data `apps/api` already returns, or on one of these four.
 
-## 2. Dependency #1: the console-auth API (gates the whole console)
+## 2. Build-from-scratch #1: console-owned merchant auth (gates the whole console)
 
-`apps/api` today authenticates callers by per-organization API key (`nbo_test_` / `nbo_live_`) only. The database already has `org_users`, `org_sessions`, `password_reset_tokens`, and `api_keys`, but no HTTP surface exposes user login, session issuance, OAuth, TOTP enrolment, team management, or key minting. The console cannot have a logged-in human without this.
+Per the refactor, **the console owns its merchant/org auth** in `apps/console/src/lib/auth/`, built on sara auth primitives. This is not an `apps/api` REST surface and not the operator `apps/admin` login; it is console-local workflows over `org_users` / `org_sessions` / `password_reset_tokens`, using sara primitives (`hashPassword`, `verifyPassword`, `generateTotpSecret`, `verifyTotp`, `buildTotpUri`, `can`) for the pure crypto/RBAC helpers. We BUILD these workflows for our product; any ported versions are reference only, not "done." `apps/api` itself authenticates its callers by per-organization API key (`nbo_sandbox_` / `nbo_live_`) and never issues console sessions.
 
-This is a distinct surface from both the public `/v1` tenant API (key-authenticated, machine-to-machine) and the operator `apps/admin` back-office. Build it as its own auth service or router group. Minimum shape the design assumes:
+Build the full auth surface from scratch as console server actions plus pages. Minimum shape the design assumes:
 
 - `POST /console/auth/login` (email + password) then a TOTP step: returns a session cookie, not a bearer token. The mobile and desktop Login frames (`svmeK`, `ExLVO`) both show the "protected by two-factor (TOTP) after sign-in" line, so TOTP is not optional in the design.
 - `POST /console/auth/google` (OAuth) for the "Continue with Google" button.

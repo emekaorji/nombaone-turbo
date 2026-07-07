@@ -13,6 +13,7 @@ import { randomDigits } from '@nombaone/utils';
 export type ReferenceDomain =
   | 'ORG' // organization (tenant)
   | 'USR' // org user
+  | 'IVT' // org invitation
   | 'KEY' // api key
   | 'EVT' // domain event
   | 'WHK' // webhook endpoint

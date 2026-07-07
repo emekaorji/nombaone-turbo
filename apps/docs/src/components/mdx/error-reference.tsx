@@ -75,7 +75,7 @@ export function ErrorReference() {
   return (
     <div className="not-prose mt-8 space-y-10">
       <p className="text-[16px] leading-7 text-foreground/85">
-        Every public error code, straight from the API&rsquo;s registry — so this list is
+        Every public error code, straight from the API&rsquo;s registry, so this list is
         complete and never drifts. When a request fails, the response carries the{" "}
         <code className="font-mono text-accent">code</code>, a plain-English{" "}
         <code className="font-mono text-accent">hint</code>, and a{" "}

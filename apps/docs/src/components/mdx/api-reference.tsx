@@ -58,7 +58,7 @@ function resolve(schema?: Schema): Schema | undefined {
 
 function typeLabel(schema?: Schema): string {
   const s = resolve(schema);
-  if (!s) return "—";
+  if (!s) return "unknown";
   if (s.enum) return s.enum.map((e) => `"${e}"`).join(" | ");
   if (s.type === "array") return `${typeLabel(s.items)}[]`;
   return s.type ?? "object";

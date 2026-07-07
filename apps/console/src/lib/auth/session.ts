@@ -1,93 +1,112 @@
 import { createHash, randomBytes } from 'node:crypto';
+
+import { orgSessionsTable, orgUsersTable, organizationsTable } from '@nombaone/core-db';
+import { db } from '@nombaone/core-db/serverless';
+import type { OrgUserRole } from '@nombaone/sara/auth';
 import { and, eq, gt } from 'drizzle-orm';
-
-import { orgSessionsTable } from '@nombaone/core-db/schema';
-
-import type { Mode, InfraDb, InfraTxScope } from '@nombaone/sara/context';
+import { cookies } from 'next/headers';
 
 /**
- * PARADIGM — OPAQUE-TOKEN sessions. The raw token is a high-entropy random
- * string handed to the client (httpOnly cookie); the server stores ONLY its
- * SHA-256 hash. A stolen database therefore yields no usable tokens, and lookup
- * is an indexed equality on the hash. There is no JWT and no server-side signing
- * key to rotate — revocation is a row delete, which is the whole point: sessions
- * are server-authoritative and instantly killable.
- *
- * SHA-256 (not bcrypt) is correct here because the token is already 256 bits of
- * uniform randomness — there is nothing to brute-force, so a fast hash that
- * supports an exact-match index is exactly what we want.
+ * Console session core — console-owned merchant auth (engineering doc §2).
+ * Opaque-token sessions: 32 bytes of entropy handed to the browser once in an
+ * httpOnly cookie; the server stores only the SHA-256 hash and validates it
+ * against `org_sessions` on every request. Revocation is a row delete, so logout
+ * is immediate and server-authoritative. The pinned `{organizationId, mode}` is
+ * never read from the client — it comes straight off the session row.
  */
 
-/** 32 bytes of entropy, base64url — what the client actually holds. */
-const mintRawToken = (): string => randomBytes(32).toString('base64url');
+export const SESSION_COOKIE = 'nbo_console_session';
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-/** The at-rest form: only this hash is ever persisted. */
-const hashToken = (rawToken: string): string =>
-  createHash('sha256').update(rawToken).digest('hex');
+export type SessionMode = 'sandbox' | 'live';
 
-/** Default session lifetime: 30 days. Overridable per call via `ttlMs`. */
-const DEFAULT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export type ConsoleSession = {
+  sessionId: string;
+  userId: string;
+  organizationId: string;
+  mode: SessionMode;
+  user: { id: string; email: string; name: string; role: OrgUserRole };
+  org: { id: string; name: string; reference: string };
+};
 
-/**
- * Open a session for an authenticated user and return the RAW token (the only
- * time it is ever materialized). The pinned `environment` is the console's
- * active sandbox/live mode, threaded into every subsequent request's DomainContext.
- */
-export const createSession = async (
-  txDb: InfraTxScope,
-  params: {
-    userId: string;
-    organizationId: string;
-    mode: Mode;
-    ttlMs?: number;
-  }
-): Promise<{ token: string }> => {
-  const token = mintRawToken();
-  const expiresAt = new Date(Date.now() + (params.ttlMs ?? DEFAULT_SESSION_TTL_MS));
+const sha256 = (raw: string): string => createHash('sha256').update(raw).digest('hex');
 
-  await txDb.insert(orgSessionsTable).values({
-    tokenHash: hashToken(token),
-    userId: params.userId,
-    organizationId: params.organizationId,
-    mode: params.mode,
+export async function createSession(input: {
+  userId: string;
+  organizationId: string;
+  mode: SessionMode;
+}): Promise<{ token: string; expiresAt: Date }> {
+  const token = randomBytes(32).toString('base64url');
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  await db.insert(orgSessionsTable).values({
+    tokenHash: sha256(token),
+    userId: input.userId,
+    organizationId: input.organizationId,
+    mode: input.mode,
     expiresAt,
   });
+  return { token, expiresAt };
+}
 
-  return { token };
-};
-
-/**
- * Resolve a raw token to its session context, or `null` if unknown/expired. The
- * expiry is enforced in SQL (`expiresAt > now()`) so a stale row never validates
- * even before a sweep deletes it. Returns the pinned scope the caller threads
- * into DomainContext — never trusting org/environment from the client.
- */
-export const validateSession = async (
-  db: InfraDb,
-  rawToken: string
-): Promise<{ organizationId: string; userId: string; mode: Mode } | null> => {
-  if (!rawToken) return null;
-
-  const [row] = await db
+/** Resolve a raw cookie token to the pinned session + user + org, or null if invalid/expired. */
+export async function validateToken(token: string): Promise<ConsoleSession | null> {
+  const rows = await db
     .select({
-      organizationId: orgSessionsTable.organizationId,
-      userId: orgSessionsTable.userId,
+      sessionId: orgSessionsTable.id,
       mode: orgSessionsTable.mode,
+      userId: orgUsersTable.id,
+      email: orgUsersTable.email,
+      name: orgUsersTable.name,
+      role: orgUsersTable.role,
+      orgId: organizationsTable.id,
+      orgName: organizationsTable.name,
+      orgRef: organizationsTable.reference,
     })
     .from(orgSessionsTable)
-    .where(
-      and(
-        eq(orgSessionsTable.tokenHash, hashToken(rawToken)),
-        gt(orgSessionsTable.expiresAt, new Date())
-      )
-    )
+    .innerJoin(orgUsersTable, eq(orgUsersTable.id, orgSessionsTable.userId))
+    .innerJoin(organizationsTable, eq(organizationsTable.id, orgSessionsTable.organizationId))
+    .where(and(eq(orgSessionsTable.tokenHash, sha256(token)), gt(orgSessionsTable.expiresAt, new Date())))
     .limit(1);
 
-  return row ?? null;
-};
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    sessionId: r.sessionId,
+    userId: r.userId,
+    organizationId: r.orgId,
+    mode: r.mode as SessionMode,
+    user: { id: r.userId, email: r.email, name: r.name, role: r.role as OrgUserRole },
+    org: { id: r.orgId, name: r.orgName, reference: r.orgRef },
+  };
+}
 
-/** Revoke a session by deleting its row — immediate, server-authoritative logout. */
-export const revokeSession = async (db: InfraDb, rawToken: string): Promise<void> => {
-  if (!rawToken) return;
-  await db.delete(orgSessionsTable).where(eq(orgSessionsTable.tokenHash, hashToken(rawToken)));
-};
+export async function revokeToken(token: string): Promise<void> {
+  await db.delete(orgSessionsTable).where(eq(orgSessionsTable.tokenHash, sha256(token)));
+}
+
+export async function setSessionMode(sessionId: string, mode: SessionMode): Promise<void> {
+  await db.update(orgSessionsTable).set({ mode }).where(eq(orgSessionsTable.id, sessionId));
+}
+
+/* ── cookie plumbing ── */
+
+export async function setSessionCookie(token: string, expiresAt: Date): Promise<void> {
+  const store = await cookies();
+  store.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    expires: expiresAt,
+  });
+}
+
+export async function clearSessionCookie(): Promise<void> {
+  const store = await cookies();
+  store.delete(SESSION_COOKIE);
+}
+
+export async function readSessionCookie(): Promise<string | undefined> {
+  const store = await cookies();
+  return store.get(SESSION_COOKIE)?.value;
+}

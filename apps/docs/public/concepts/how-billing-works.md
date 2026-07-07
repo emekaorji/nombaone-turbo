@@ -1,7 +1,7 @@
 ---
 title: "How billing works"
 type: explanation
-summary: "Cycles, invoices, collection, and the state machine underneath a subscription — the shape of the whole engine in one page."
+summary: "Cycles, invoices, collection, and the state machine underneath a subscription: the shape of the whole engine in one page."
 canonical: https://docs.nombaone.xyz/concepts/how-billing-works
 ---
 
@@ -9,7 +9,7 @@ canonical: https://docs.nombaone.xyz/concepts/how-billing-works
 
 A subscription is a customer on a price, billed on a repeating cycle. Everything Nomba
 One does is in service of one loop: **open a cycle, produce an invoice, collect it, and
-record the truth in the ledger** — then do it again next period.
+record the truth in the ledger**, then do it again next period.
 
 ## The loop
 
@@ -20,10 +20,10 @@ due for the subscription's current price (applying any scheduled change, prorati
 trial that lands on this boundary).
 2. **An invoice is finalized.** Line items, discounts, credits, and the total are locked.
 A zero-amount invoice settles with no rail call at all.
-3. **Collection is attempted** over the subscription's payment method's rail — a card or
+3. **Collection is attempted** over the subscription's payment method's rail: a card or
 mandate is pulled; a transfer exposes where to pay and waits. The result is one of:
 **paid**, **past due** (a real failure reason to branch on), or **pending** (the money
-is in flight — a transfer, or a card that needs the customer to complete OTP).
+is in flight: a transfer, or a card that needs the customer to complete OTP).
 4. **The ledger records it.** Every movement is posted as balanced double-entry legs. The
 invoice, its postings, and its webhooks all share one public reference.
 5. **The period advances** and the next cycle is scheduled.
@@ -31,23 +31,23 @@ invoice, its postings, and its webhooks all share one public reference.
 > **Idempotent by construction**
 >
 > The whole loop is idempotent on `(subscription, period)`. Re-run it, crash halfway,
-> retry it — it resolves to exactly one invoice and at most one charge. This is the floor:
+> retry it. It resolves to exactly one invoice and at most one charge. This is the floor:
 > a billing engine that occasionally double-charges is worthless.
 
 ## The subscription state machine
 
-A subscription moves through a small, explicit set of states — and the unhappy ones are
+A subscription moves through a small, explicit set of states, and the unhappy ones are
 first-class, not afterthoughts:
 
-- **`trialing`** — a trial is running; no charge yet.
-- **`active`** — billing normally each cycle.
-- **`past_due`** — a charge failed; [dunning](/concepts/hard-parts/dunning-for-thin-balances)
+- **`trialing`**: a trial is running; no charge yet.
+- **`active`**: billing normally each cycle.
+- **`past_due`**: a charge failed; [dunning](/concepts/hard-parts/dunning-for-thin-balances)
 owns recovery.
-- **`paused`** — billing suspended on purpose.
-- **`canceled`** — ended; no further cycles.
+- **`paused`**: billing suspended on purpose.
+- **`canceled`**: ended; no further cycles.
 
-The transitions you must handle — a charge failing, a customer needing OTP, a recovery, a
-churn — each fire a webhook event you can branch on. Document your handlers for
+The transitions you must handle (a charge failing, a customer needing OTP, a recovery, a
+churn) each fire a webhook event you can branch on. Document your handlers for
 `invoice.payment_failed`, `invoice.action_required`, and `invoice.payment_recovered`, not
 just `invoice.paid`.
 
@@ -67,7 +67,7 @@ transitions={[
 { from: "trialing", to: "canceled", trigger: "Canceled during the trial", webhook: "subscription.canceled" },
 { from: "active", to: "past_due", trigger: "A cycle's charge fails", webhook: "invoice.payment_failed" },
 { from: "past_due", to: "active", trigger: "A dunning retry (or completed OTP) recovers the charge", webhook: "invoice.payment_recovered" },
-{ from: "past_due", to: "canceled", trigger: "Dunning is exhausted — involuntary churn", webhook: "subscription.churned" },
+{ from: "past_due", to: "canceled", trigger: "Dunning is exhausted: involuntary churn", webhook: "subscription.churned" },
 { from: "active", to: "paused", trigger: "Billing is suspended on purpose", webhook: "subscription.paused" },
 { from: "paused", to: "active", trigger: "Billing resumes", webhook: "subscription.resumed" },
 { from: "active", to: "canceled", trigger: "Canceled voluntarily", webhook: "subscription.canceled" },
@@ -79,6 +79,6 @@ transitions={[
 Billing engines from elsewhere assume a card on file and a full balance. Neither holds in
 Nigeria: money arrives by transfer, balances are thin, and a failed charge usually means
 *"not yet,"* not *"no."* The rest of these concept pages are about the parts that follow
-from that reality — the [ledger](/concepts/the-ledger), [integer kobo](/concepts/money-is-integer-kobo),
+from that reality: the [ledger](/concepts/the-ledger), [integer kobo](/concepts/money-is-integer-kobo),
 [multi-rail push/pull](/concepts/multi-rail-push-and-pull), and
 [settlement](/concepts/settlement-and-sub-accounts).

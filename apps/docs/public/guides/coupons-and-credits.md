@@ -1,7 +1,7 @@
 ---
 title: "Coupons and credits"
 type: how-to
-summary: "Two ways to reduce what a customer pays — a coupon discounts an invoice by a percentage or a fixed amount, a credit grant is a balance that draws down first."
+summary: "Two ways to reduce what a customer pays: a coupon discounts an invoice by a percentage or a fixed amount, a credit grant is a balance that draws down first."
 canonical: https://docs.nombaone.xyz/guides/coupons-and-credits
 ---
 
@@ -61,7 +61,7 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/discount \
 
 ## Grant a credit
 
-A credit is money on the customer's account that draws down before any charge —
+A credit is money on the customer's account that draws down before any charge,
 useful for refunds-as-credit, goodwill, or prepaid balances:
 
 ```bash
@@ -75,22 +75,22 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
 >
 > When an invoice is collected, available credit is applied before the rail is
 > charged, oldest grant first. The invoice shows the credit line and the reduced
-> amount actually charged — every kobo accounted for in the ledger.
+> amount actually charged, every kobo accounted for in the ledger.
 
-## Coupon vs credit — which to use
+## Coupon vs credit: which to use
 
-- **Coupon** — a *rule* that reduces the price (a promo, a discounted tier). It
+- **Coupon**: a *rule* that reduces the price (a promo, a discounted tier). It
 recomputes each cycle for its duration.
-- **Credit** — a *balance* that is spent once, then gone. Use it for refunds you
+- **Credit**: a *balance* that is spent once, then gone. Use it for refunds you
 want kept on-platform, or prepaid top-ups.
 
 > **They stack in a defined order**
 >
-> On one invoice, credits and coupons both apply — the discount reduces the
+> On one invoice, credits and coupons both apply: the discount reduces the
 > amount due, then credit draws down the remainder. The order is fixed and shown
 > on the invoice, so the result is never ambiguous.
 
-- **[The ledger](/concepts/the-ledger)** — 
+- **[The ledger](/concepts/the-ledger)**: 
 How discounts and credits post as auditable lines.
-- **[Start a subscription](/guides/start-a-subscription)** — 
+- **[Start a subscription](/guides/start-a-subscription)**: 
 Where a discounted subscription begins.

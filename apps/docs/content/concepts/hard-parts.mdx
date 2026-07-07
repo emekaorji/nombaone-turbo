@@ -1,19 +1,19 @@
 ---
 title: The hard parts
-description: The parts of subscription billing that are genuinely hard — and how Nomba One handles each. Honest essays on the traps most billing systems hide until you hit them in production.
+description: The parts of subscription billing that are genuinely hard, and how Nomba One handles each. Honest essays on the traps most billing systems hide until you hit them in production.
 section: concepts
 order: 90
 ---
 
 Most billing docs show you the happy path and go quiet on the rest. These essays
 do the opposite: each one takes a part of subscription billing that is genuinely
-hard — especially in Nigeria, where money arrives by transfer and balances are
-thin — and explains the trap, why it's easy to get wrong, and how Nomba One
+hard (especially in Nigeria, where money arrives by transfer and balances are
+thin) and explains the trap, why it's easy to get wrong, and how Nomba One
 handles it. This is the reading that separates a toy from a billing system.
 
 ## Getting the money right
 
-The failures here are the expensive ones — a customer charged twice, a proration
+The failures here are the expensive ones: a customer charged twice, a proration
 off by a kobo, a webhook replay that credits a balance again.
 
 <CardGroup cols={2}>
@@ -41,10 +41,10 @@ transfer, cards need OTP, and a failed charge usually means "not yet."
     Why a recurring card charge hits OTP, and the checkout-link recovery model.
   </Card>
   <Card title="Mandates and consent" href="/concepts/hard-parts/mandates-and-consent">
-    The direct-debit lifecycle — create, consent, activate, debit — and its async gap.
+    The direct-debit lifecycle (create, consent, activate, debit) and its async gap.
   </Card>
   <Card title="When a transfer doesn't match the invoice" href="/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice">
-    Underpayment, overpayment, and the wrong reference — a real case, not an edge.
+    Underpayment, overpayment, and the wrong reference: a real case, not an edge.
   </Card>
   <Card title="Dunning for thin balances" href="/concepts/hard-parts/dunning-for-thin-balances">
     Why payday-timed retries beat fixed schedules when balances are thin.
@@ -53,7 +53,7 @@ transfer, cards need OTP, and a failed charge usually means "not yet."
 
 ## Time, cycles, and churn
 
-Billing is a scheduling problem, and calendars are hostile — months have different
+Billing is a scheduling problem, and calendars are hostile: months have different
 lengths, and subscriptions end in two very different ways.
 
 <CardGroup cols={2}>
@@ -61,7 +61,7 @@ lengths, and subscriptions end in two very different ways.
     What "bill on the 31st" means in February, and how the anchor is preserved.
   </Card>
   <Card title="Voluntary vs involuntary churn" href="/concepts/hard-parts/voluntary-vs-involuntary-churn">
-    Why the two are different events with different handling — cancel vs recover.
+    Why the two are different events with different handling: cancel vs recover.
   </Card>
   <Card title="A scheduler that survives a crash" href="/concepts/hard-parts/scheduler-that-survives-a-crash">
     How the billing loop resumes exactly-once after a mid-run failure.
@@ -87,5 +87,5 @@ features and become the whole product.
 
 <Callout type="note" title="Start with the concepts">
   New here? Read [how billing works](/concepts/how-billing-works) and
-  [the ledger](/concepts/the-ledger) first — the hard parts build on them.
+  [the ledger](/concepts/the-ledger) first. The hard parts build on them.
 </Callout>

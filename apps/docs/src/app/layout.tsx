@@ -22,12 +22,12 @@ const geistMono = Geist_Mono({
 });
 
 const DESCRIPTION =
-  'Developer documentation for Nomba One — a subscription-billing engine on Nomba (Nigerian payments): plans, cycles, proration, dunning, and settlement over card, direct debit, bank transfer, and crypto. Integer-kobo money on a double-entry ledger.';
+  'Developer documentation for Nomba One, a subscription-billing engine on Nomba (Nigerian payments): plans, cycles, proration, dunning, and settlement over card, direct debit, bank transfer, and crypto. Integer-kobo money on a double-entry ledger.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://docs.nombaone.xyz'),
   title: {
-    default: 'Nomba One — Developer Docs',
+    default: 'Nomba One: Developer Docs',
     template: '%s - Nomba One Docs',
   },
   description: DESCRIPTION,
@@ -55,12 +55,12 @@ export const metadata: Metadata = {
     locale: 'en_NG',
     url: 'https://docs.nombaone.xyz',
     siteName: 'Nomba One Docs',
-    title: 'Nomba One — Developer Docs',
+    title: 'Nomba One: Developer Docs',
     description: DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Nomba One — Developer Docs',
+    title: 'Nomba One: Developer Docs',
     description: DESCRIPTION,
     creator: '@nomba',
     site: '@nomba',

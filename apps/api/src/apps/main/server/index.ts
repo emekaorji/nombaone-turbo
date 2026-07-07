@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import { env } from '@shared/config/env';
-import { errorHandler, notFoundHandler, requestId } from '@shared/http';
+import { errorHandler, notFoundHandler, requestId, requestLog } from '@shared/http';
 import { platformGate } from '@shared/middlewares';
 import { httpMetrics, metricsHandler } from '@shared/observability/prometheus';
 
@@ -55,6 +55,9 @@ export const createMainApp = (): Express => {
   app.get('/metrics', metricsHandler);
 
   app.use(requestId);
+  // Persist one row per /v1 request (metadata + response body) for Developers → Logs.
+  // Mounted after requestId (needs req.requestId) and before routing (wraps res.json).
+  app.use(requestLog);
   app.use(platformGate);
 
   // The version prefix is applied at exactly ONE place.

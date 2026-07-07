@@ -1,6 +1,6 @@
 ---
 title: "Voluntary vs involuntary churn, and why conflating them corrupts your metrics"
-type: explanation
+type: reference
 summary: "A customer who quit and a customer lost to a failed retry are not the same number."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/voluntary-vs-involuntary-churn
 ---

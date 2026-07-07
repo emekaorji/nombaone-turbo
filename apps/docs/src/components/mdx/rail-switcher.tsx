@@ -29,7 +29,7 @@ const RAILS: Record<
     kind: "Pull",
     setup: "The customer authorizes a card; you store the token.",
     setupEndpoint: "POST /v1/payment-methods/setup",
-    collect: "On the billing date the engine charges the saved token — it initiates the debit.",
+    collect: "On the billing date the engine charges the saved token: it initiates the debit.",
     gotcha:
       "A recurring card charge in Nigeria often triggers a bank OTP/3-D Secure step it can't complete headlessly. The engine recovers by emitting invoice.action_required with a fresh checkout link.",
   },
@@ -38,9 +38,9 @@ const RAILS: Record<
     kind: "Pull",
     setup: "The customer authorizes a mandate; the bank confirms it asynchronously.",
     setupEndpoint: "POST /v1/payment-methods/setup",
-    collect: "On the billing date the engine pulls from the bank account — silently, no per-charge OTP.",
+    collect: "On the billing date the engine pulls from the bank account, silently, no per-charge OTP.",
     gotcha:
-      "A new mandate is consent_pending until the bank activates it. The engine sweeps pending mandates to active and fires payment_method.updated — you don't poll.",
+      "A new mandate is consent_pending until the bank activates it. The engine sweeps pending mandates to active and fires payment_method.updated. You don't poll.",
   },
   transfer: {
     label: "Bank transfer",
@@ -48,7 +48,7 @@ const RAILS: Record<
     setup: "The engine mints a virtual account for the customer.",
     setupEndpoint: "POST /v1/payment-methods/virtual-account",
     collect:
-      "The engine exposes where to pay and waits — the customer sends the money. There is no API call that reaches in and takes it.",
+      "The engine exposes where to pay and waits. The customer sends the money. There is no API call that reaches in and takes it.",
     gotcha:
       "A transfer can under- or over-pay, or arrive with the wrong reference. Settle only on a verified inbound event, never on the raw notification.",
   },
@@ -110,7 +110,7 @@ export function RailSwitcher() {
       </div>
 
       <p className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
-        The core never learns the rail&apos;s name — it calls one “collect for this reference” verb, and
+        The core never learns the rail&apos;s name: it calls one “collect for this reference” verb, and
         each rail adapts it.
       </p>
     </div>

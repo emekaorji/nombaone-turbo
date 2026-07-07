@@ -1,20 +1,16 @@
-import { redirect } from 'next/navigation';
+import { AuthBrandPanel } from '@/components/auth/brand-panel';
+import { MobileBrandBand } from '@/components/auth/mobile-brand-band';
 
-import { getSession } from '@/lib/session';
-
-/**
- * (auth) route group — the signed-OUT surface (signup, login, 2FA, password
- * reset). It is the layout/boundary counterpart to (app): a centred, chrome-less
- * card on a muted backdrop. An already-authenticated visitor is bounced to the
- * overview so the auth screens are never shown to a live session.
- */
-export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession();
-  if (session) redirect('/');
-
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-muted/30 px-4 py-10">
-      <div className="w-full max-w-sm">{children}</div>
-    </main>
+    <div className="flex h-screen overflow-hidden bg-background">
+      <AuthBrandPanel />
+      <div className="flex w-full flex-col lg:w-[560px] lg:shrink-0 lg:border-l lg:border-border lg:bg-surface-1">
+        <MobileBrandBand />
+        <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 pt-8 lg:justify-center lg:px-20 lg:pt-0">
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }

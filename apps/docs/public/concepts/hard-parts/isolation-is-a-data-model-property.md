@@ -1,6 +1,6 @@
 ---
 title: "Isolation as a property of the data model, not a middleware check"
-type: explanation
+type: reference
 summary: "If one forgotten route can leak another tenant's data, your isolation is a hope, not a guarantee."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/isolation-is-a-data-model-property
 ---

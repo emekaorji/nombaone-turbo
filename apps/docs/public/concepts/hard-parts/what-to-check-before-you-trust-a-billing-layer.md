@@ -1,6 +1,6 @@
 ---
 title: "What to check before you trust a billing layer with your revenue"
-type: explanation
+type: reference
 summary: "The demo always works. The questions that decide whether you keep your money are the ones a demo hides."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer
 ---
@@ -60,4 +60,4 @@ trust with your revenue.
 
 Read the exit criteria we hold ourselves to, or run the simulator and try to break it.
 
-See [the ledger](/concepts/the-ledger) — the source of truth — and [what to check before you trust a billing layer](/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer).
+See [the ledger](/concepts/the-ledger), the source of truth, and [what to check before you trust a billing layer](/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer).

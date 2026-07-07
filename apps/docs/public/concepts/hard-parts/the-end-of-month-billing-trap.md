@@ -1,6 +1,6 @@
 ---
 title: "The end-of-month billing trap (the Jan 31 problem)"
-type: explanation
+type: reference
 summary: "A subscription that starts on the 31st must not silently become a 28th-of-the-month subscription."
 canonical: https://docs.nombaone.xyz/concepts/hard-parts/the-end-of-month-billing-trap
 ---

@@ -7,7 +7,7 @@ canonical: https://docs.nombaone.xyz/webhooks/signing-and-verification
 
 # Signing & verification
 
-Never trust a webhook you haven't verified — the URL is public, so anyone could
+Never trust a webhook you haven't verified: the URL is public, so anyone could
 `POST` to it. Every genuine delivery carries an `X-Nombaone-Signature` header you
 check against your endpoint's signing secret.
 
@@ -22,7 +22,7 @@ HMAC_SHA256( `${t}.${rawBody}`, whsec )   // hex
 `t` is the delivery timestamp and `rawBody` is the **exact bytes** of the request
 body. Verify by recomputing `v1` and comparing.
 
-> **Sign the raw bytes — never re-serialize**
+> **Sign the raw bytes: never re-serialize**
 >
 > Compute the HMAC over the body exactly as received. `JSON.parse` then
 > `JSON.stringify` can reorder keys and change the bytes, so the signature won't
@@ -80,17 +80,17 @@ can't be replayed against you later.
 
 ## Try it in-browser
 
-Paste a body, timestamp, and secret and watch the exact signature compute — the
+Paste a body, timestamp, and secret and watch the exact signature compute, the
 real recipe, in your browser with Web Crypto:
 
-> **Interactive — `<WebhookVerifier>`.** View and run it live at https://docs.nombaone.xyz/webhooks/signing-and-verification
+> **Interactive: `<WebhookVerifier>`.** View and run it live at https://docs.nombaone.xyz/webhooks/signing-and-verification
 
 > **Rotate without downtime**
 >
 > `POST /v1/webhooks/{id}/rotate-secret` issues a new secret while briefly
 > honoring the old one, so you can roll it without dropping in-flight deliveries.
 
-- **[Delivery guarantee](/webhooks/delivery-guarantee)** — 
-At-least-once — why you dedupe after you verify.
-- **[Verify us in your devtools](/getting-started/verify-in-your-devtools)** — 
+- **[Delivery guarantee](/webhooks/delivery-guarantee)**: 
+At-least-once: why you dedupe after you verify.
+- **[Verify us in your devtools](/getting-started/verify-in-your-devtools)**: 
 Fire a real signed event and watch it verify.

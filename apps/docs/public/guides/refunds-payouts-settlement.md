@@ -1,7 +1,7 @@
 ---
 title: "Refunds, payouts & settlement"
 type: how-to
-summary: "Move money back out — refund a settled charge (the tenant leg only), read the escrow lock, and pay an organization's net to a bank account."
+summary: "Move money back out: refund a settled charge (the tenant leg only), read the escrow lock, and pay an organization's net to a bank account."
 canonical: https://docs.nombaone.xyz/guides/refunds-payouts-settlement
 ---
 
@@ -9,7 +9,7 @@ canonical: https://docs.nombaone.xyz/guides/refunds-payouts-settlement
 
 When a charge is collected and verified, the money **splits at collection**: your
 platform fee and the organization's net, each posted as balanced
-[ledger](/concepts/the-ledger) legs. This guide is how money moves back out —
+[ledger](/concepts/the-ledger) legs. This guide is how money moves back out:
 refunds, the escrow lock that guards them, and payouts. The model is explained in
 [settlement & sub-accounts](/concepts/settlement-and-sub-accounts); here is how to
 operate it.
@@ -29,14 +29,14 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/{id}/refund \
 
 > **The platform fee is not refunded**
 >
-> A refund reverses **only the organization's leg** — it debits the
+> A refund reverses **only the organization's leg**: it debits the
 > organization's settlement balance and credits back the payer. The platform fee
 > is non-refundable and is never touched. This keeps the ledger honest: a refund
 > posts a new reversing transaction, it does not mutate the original charge.
 
 Partial refunds accumulate: refund ₦1,000 of a ₦2,500 charge, then ₦1,500 later,
 and the settlement flips to fully `refunded`. You can never refund more than the
-net — the API rejects it, and the `Idempotency-Key` makes a retried refund safe.
+net. The API rejects it, and the `Idempotency-Key` makes a retried refund safe.
 
 ## Read the escrow lock
 
@@ -66,17 +66,17 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/payout \
 
 Two guards protect the money:
 
-- **`ESCROW_LOCKED`** — you tried to withdraw funds still inside the escrow
+- **`ESCROW_LOCKED`**: you tried to withdraw funds still inside the escrow
 window. Wait for release, or withdraw only the available portion.
-- **`PAYOUT_EXCEEDS_AVAILABLE`** — the amount is more than the available balance.
+- **`PAYOUT_EXCEEDS_AVAILABLE`**: the amount is more than the available balance.
 
 > **Ledger truth first, transfer second**
 >
 > A payout posts the ledger debit before the bank transfer is attempted, and if
 > the transfer fails it posts a compensating reversal. Funds are never faked as
-> sent and never stranded — the ledger and the bank stay reconciled.
+> sent and never stranded: the ledger and the bank stay reconciled.
 
-- **[Settlement & sub-accounts](/concepts/settlement-and-sub-accounts)** — 
+- **[Settlement & sub-accounts](/concepts/settlement-and-sub-accounts)**: 
 How the split and escrow model works.
-- **[Settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets)** — 
+- **[Settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets)**: 
 Matching money to organizations at scale.

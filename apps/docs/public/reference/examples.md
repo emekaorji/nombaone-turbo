@@ -7,7 +7,7 @@ canonical: https://docs.nombaone.xyz/reference/examples
 
 # Create an example
 
-Creates an **example** — the one deletable endpoint that demonstrates the whole
+Creates an **example**: the one deletable endpoint that demonstrates the whole
 money path end to end. Creating an example mints a public reference, posts a
 balanced double-entry transaction to the ledger, and emits a `example.created`
 event. The resource's `status` is **derived from the ledger**, never stored as a
@@ -17,7 +17,7 @@ Use this as the template for your own resources, then delete the slice.
 
 > **A teaching endpoint**
 >
-> The example slice exists to show how the primitives compose — a reference as
+> The example slice exists to show how the primitives compose: a reference as
 > the join key, a balanced ledger posting, idempotency, and an emitted event.
 > It carries no product meaning; the two kinds (`standard`, `priority`) differ
 > only as an enum illustration.
@@ -57,7 +57,7 @@ const { data } = await res.json();
 
 ## Request fields
 
-The amount to record, in integer kobo (NGN). Must be a positive integer —
+The amount to record, in integer kobo (NGN). Must be a positive integer.
 `15000` is ₦150.00. There are no floats or decimal strings.
 
 The example kind. An enum discriminator for illustration only; both kinds
@@ -112,7 +112,7 @@ behave identically.
 The response is the standard success envelope: `success`, `statusCode`, the
 resource in `data`, and `meta.requestId`.
 
-The example's **reference** — its stable public id (`nbo…exa`). The same
+The example's **reference**: its stable public id (`nbo…exa`). The same
 string joins the resource, its ledger postings, and its webhooks.
 
 The kind you created it with.

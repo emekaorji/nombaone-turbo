@@ -91,7 +91,7 @@ function bodyToMarkdown(body: string, canonical: string): string {
     const island = trimmed.match(/^<([A-Z][A-Za-z0-9]*)\b[^>]*\/>$/);
     if (island && ISLAND_NAMES.has(island[1])) {
       out.push("");
-      out.push(`> **Interactive — \`<${island[1]}>\`.** View and run it live at ${canonical}`);
+      out.push(`> **Interactive: \`<${island[1]}>\`.** View and run it live at ${canonical}`);
       out.push("");
       continue;
     }
@@ -127,8 +127,8 @@ function bodyToMarkdown(body: string, canonical: string): string {
     if (/^<Card\b/.test(trimmed)) {
       const title = attr(trimmed, "title");
       const href = attr(trimmed, "href");
-      if (title && href) out.push(`- **[${title}](${href})** — `);
-      else if (title) out.push(`- **${title}** — `);
+      if (title && href) out.push(`- **[${title}](${href})**: `);
+      else if (title) out.push(`- **${title}**: `);
       continue;
     }
 

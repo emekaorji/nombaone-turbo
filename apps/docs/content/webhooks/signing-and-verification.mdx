@@ -5,7 +5,7 @@ section: webhooks
 order: 3
 ---
 
-Never trust a webhook you haven't verified — the URL is public, so anyone could
+Never trust a webhook you haven't verified: the URL is public, so anyone could
 `POST` to it. Every genuine delivery carries an `X-Nombaone-Signature` header you
 check against your endpoint's signing secret.
 
@@ -20,7 +20,7 @@ HMAC_SHA256( `${t}.${rawBody}`, whsec )   // hex
 `t` is the delivery timestamp and `rawBody` is the **exact bytes** of the request
 body. Verify by recomputing `v1` and comparing.
 
-<Callout type="warning" title="Sign the raw bytes — never re-serialize">
+<Callout type="warning" title="Sign the raw bytes: never re-serialize">
   Compute the HMAC over the body exactly as received. `JSON.parse` then
   `JSON.stringify` can reorder keys and change the bytes, so the signature won't
   match. Capture the raw body before any framework parses it.
@@ -79,7 +79,7 @@ body. Verify by recomputing `v1` and comparing.
 
 ## Try it in-browser
 
-Paste a body, timestamp, and secret and watch the exact signature compute — the
+Paste a body, timestamp, and secret and watch the exact signature compute, the
 real recipe, in your browser with Web Crypto:
 
 <WebhookVerifier />
@@ -91,7 +91,7 @@ real recipe, in your browser with Web Crypto:
 
 <CardGroup cols={2}>
   <Card title="Delivery guarantee" href="/webhooks/delivery-guarantee">
-    At-least-once — why you dedupe after you verify.
+    At-least-once: why you dedupe after you verify.
   </Card>
   <Card title="Verify us in your devtools" href="/getting-started/verify-in-your-devtools">
     Fire a real signed event and watch it verify.

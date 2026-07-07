@@ -1,4 +1,5 @@
 export * from './request-id';
+export * from './request-log';
 export * from './json';
 export * from './paginated';
 export * from './validate';

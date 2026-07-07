@@ -1,11 +1,11 @@
 ---
 title: The sandbox clock
-description: Advance a subscription's next cycle on demand — rehearse a renewal, a proration, or a dunning retry in seconds instead of waiting a real billing period.
+description: "Advance a subscription's next cycle on demand: rehearse a renewal, a proration, or a dunning retry in seconds instead of waiting a real billing period."
 section: sandbox-toolkit
 order: 3
 ---
 
-A subscription bills on a repeating cycle — monthly, yearly. You can't wait a
+A subscription bills on a repeating cycle: monthly, yearly. You can't wait a
 month to test the second charge. The **sandbox clock** advances a subscription's next
 cycle immediately, running the same billing loop the scheduler would run on the
 real billing date: open the cycle, finalize the invoice, collect it, post to the
@@ -19,28 +19,28 @@ curl -X POST \
   -H "Authorization: Bearer nbo_sandbox_…"
 ```
 
-No body — it advances the target subscription by exactly one cycle and returns the
+No body. It advances the target subscription by exactly one cycle and returns the
 updated subscription with its new period and the invoice the cycle produced.
 
 ## What it lets you rehearse
 
-- **A clean renewal** — with a `success` method, watch the next invoice collect and
+- **A clean renewal**: with a `success` method, watch the next invoice collect and
   the period advance.
-- **A failed renewal → dunning** — with a `decline_insufficient_funds` method, watch
+- **A failed renewal → dunning**: with a `decline_insufficient_funds` method, watch
   the cycle fail, the subscription move to `past_due`, and dunning begin.
-- **A proration** — schedule a plan change, then advance to see the prorated invoice
+- **A proration**: schedule a plan change, then advance to see the prorated invoice
   the [change](/guides/proration-and-plan-changes) produces.
-- **A trial ending** — advance a `trialing` subscription to its first real charge.
+- **A trial ending**: advance a `trialing` subscription to its first real charge.
 
 <Callout type="note" title="It runs the real loop, not a shortcut">
-  Advancing the clock executes the exact cycle logic the production scheduler runs
-  — it just triggers it now instead of on the calendar. What you see is what live
+  Advancing the clock executes the exact cycle logic the production scheduler runs.
+  It just triggers it now instead of on the calendar. What you see is what live
   will do. See [how billing works](/concepts/how-billing-works).
 </Callout>
 
 <Callout type="warning" title="Sandbox mode only">
   `advance-cycle` exists only in sandbox mode. In live, cycles advance on their real
-  billing dates, driven by the scheduler — there is no way to force a live charge
+  billing dates, driven by the scheduler. There is no way to force a live charge
   early.
 </Callout>
 

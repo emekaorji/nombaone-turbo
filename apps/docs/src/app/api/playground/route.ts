@@ -80,7 +80,7 @@ export async function POST(request: Request): Promise<Response> {
     return error(
       403,
       "PATH_NOT_ALLOWED",
-      "That operation is not on the playground allowlist — it isn't in the API's OpenAPI snapshot.",
+      "That operation is not on the playground allowlist: it isn't in the API's OpenAPI snapshot.",
     );
   }
   // Test instruments (`/test/*`) must never be forwarded to a live base.
