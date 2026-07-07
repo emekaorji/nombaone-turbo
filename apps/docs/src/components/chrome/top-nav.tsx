@@ -49,7 +49,7 @@ const PRIMARY: { label: string; href: string; isActive: (p: string) => boolean }
     isActive: (p) =>
       !p.startsWith("/reference") && !p.startsWith("/agents") && !isResourcesActive(p),
   },
-  { label: "API Reference", href: "/reference/customers", isActive: (p) => p.startsWith("/reference") },
+  { label: "API Reference", href: "/reference", isActive: (p) => p.startsWith("/reference") },
   { label: "AI", href: "/agents", isActive: (p) => p.startsWith("/agents") },
 ];
 

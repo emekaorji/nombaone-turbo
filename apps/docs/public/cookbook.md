@@ -7,10 +7,6 @@ canonical: https://docs.nombaone.xyz/cookbook
 
 # Cookbook
 
-# Cookbook
-
-Task-focused recipes for common billing jobs on Nomba One. Each recipe is a short, self-contained path from a real problem to working code, with nothing left implicit.
-
 ## Recipes are on the way
 
 We are still writing the first batch. Until they land, two places already cover the ground a recipe would:

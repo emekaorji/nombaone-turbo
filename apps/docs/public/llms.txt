@@ -66,21 +66,6 @@ This is the agent index. Every link points at a clean Markdown mirror (append `.
 ## API reference
 
 - [Glossary](https://docs.nombaone.xyz/reference/glossary.md): One word, one meaning: the canonical vocabulary.
-- [Customers](https://docs.nombaone.xyz/reference/customers.md): Create and manage customers, credit, and discounts.
-- [Plans](https://docs.nombaone.xyz/reference/plans.md): Product plans and their lifecycle.
-- [Prices](https://docs.nombaone.xyz/reference/prices.md): Recurring prices, intervals, and versioning.
-- [Subscriptions](https://docs.nombaone.xyz/reference/subscriptions.md): The engine's lifecycle surface.
-- [Payment methods](https://docs.nombaone.xyz/reference/payment-methods.md): Cards, mandates, and virtual accounts.
-- [Mandates](https://docs.nombaone.xyz/reference/mandates.md): Direct-debit consent and status.
-- [Invoices](https://docs.nombaone.xyz/reference/invoices.md): Generated invoices and their state.
-- [Coupons](https://docs.nombaone.xyz/reference/coupons.md): Discount definitions.
-- [Credits](https://docs.nombaone.xyz/reference/credits.md): Customer credit grants and balance.
-- [Dunning](https://docs.nombaone.xyz/reference/dunning.md): Recovery attempts and state.
-- [Settlements](https://docs.nombaone.xyz/reference/settlements.md): Refunds, payouts, and escrow.
-- [Webhook endpoints](https://docs.nombaone.xyz/reference/webhooks.md): Register, rotate, and inspect endpoints + deliveries.
-- [Events](https://docs.nombaone.xyz/reference/events.md): The domain-event stream + catalog.
-- [Organization](https://docs.nombaone.xyz/reference/organization.md): Your organization config + billing settings.
-- [Metrics](https://docs.nombaone.xyz/reference/metrics.md): Billing metrics: MRR, churn, dunning funnel.
 - [Example](https://docs.nombaone.xyz/reference/examples.md): The deletable worked example (removed with the scaffold).
 
 ## Webhooks

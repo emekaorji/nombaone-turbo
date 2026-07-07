@@ -21,6 +21,7 @@ import { WEBHOOK_EVENT_CATALOG } from "@nombaone/core-contracts/types";
 import { PUBLIC_ERROR_CODES } from "@nombaone/errors";
 
 import { ALL_SLUGS } from "../content/manifest";
+import { apiRefSlugs } from "../src/lib/api-ref/routing";
 import { extractHeadings, slugify } from "../src/lib/content";
 
 import openapi from "../src/generated/openapi.json";
@@ -79,6 +80,9 @@ async function main() {
 
   const routable = new Set<string>(ALL_SLUGS);
   routable.add("");
+  // The disintegrated API reference is generated from the OpenAPI model, not
+  // authored MDX — register every /reference index/resource/operation slug.
+  for (const s of apiRefSlugs()) routable.add(s);
   const anchorsBySlug = new Map<string, Set<string>>();
   const linksByFile = new Map<string, { raw: string; targetSlug: string; anchor: string | null }[]>();
 

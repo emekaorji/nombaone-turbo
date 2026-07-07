@@ -29,7 +29,7 @@ rails.
 [`/v1/plans/{id}/prices`](/reference/prices): products, recurring amounts
 (integer kobo), intervals, and trials.
 - **Customers**: [`/v1/customers`](/reference/customers) with
-[credit grants](/reference/credits) and [discounts](/reference/coupons).
+[credit grants](/reference/customers/grant-credit) and [discounts](/reference/coupons).
 - **Subscriptions**: [`/v1/subscriptions`](/reference/subscriptions): the full
 lifecycle: create, change (with proration), pause, resume, cancel, resubscribe,
 scheduled changes, upcoming-invoice preview, and dunning inspection.

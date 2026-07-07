@@ -6,13 +6,13 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { getApiResources } from "@/lib/api-ref/model";
 import { cn } from "@/lib/cn";
 
 import { MethodChip } from "./method-chip";
 import { SearchTrigger } from "./search-trigger";
 
 import {
-  API_SECTION,
   DOCS_SECTIONS,
   findSection,
   type Badge,
@@ -38,6 +38,10 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   // section, a single-section tree for every `standalone` section (AI, Best
   // practices, CLI/SDKs, Release notes), and the shared prose tree otherwise.
   const pathname = usePathname() ?? "";
+  // The whole `/reference/*` tree (index, resources, operations) is the API
+  // reference, generated from the OpenAPI model; every other path resolves to
+  // its manifest section.
+  const isApi = pathname.startsWith("/reference");
   const section = findSection(pathname);
 
   return (
@@ -45,7 +49,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       <div className="sticky top-0 z-10 bg-background px-3 pb-2 pt-4">
         <SearchTrigger />
       </div>
-      {section?.kind === "api" ? (
+      {isApi ? (
         <ApiNav onNavigate={onNavigate} />
       ) : section?.standalone ? (
         <SectionsNav label={section.title} sections={[section]} onNavigate={onNavigate} />
@@ -109,28 +113,38 @@ function DocsSection({
 }
 
 /**
- * The "API Reference" view: the API section flattened. The `Overview` (/api) is
- * a top row; each resource with children becomes a top-level GROUP HEADER (the
- * resource name IS the group label) with its endpoints as rows one level under
- * it; single-page resources (Transfers, Withdrawals, …) render as their own
- * plain rows. No disclosure, no chevron, no extra indentation.
+ * The "API Reference" view, generated from the OpenAPI model: an Overview row
+ * and the Glossary, then every resource as a top-level GROUP HEADER (its name is
+ * the label) with a page per operation one level beneath it. Each resource has
+ * its own overview and each request its own page — nothing packed together.
  */
 function ApiNav({ onNavigate }: { onNavigate?: () => void }) {
-  if (!API_SECTION) return null;
-
+  const resources = getApiResources();
   return (
     <nav aria-label="API reference" className="flex flex-col gap-5 px-3 py-6">
-      {API_SECTION.items.map((item) =>
-        item.children ? (
-          <ApiGroup key={item.slug} resource={item} onNavigate={onNavigate} />
-        ) : (
-          <ul key={item.slug} className="space-y-px">
-            <li>
-              <NavLink item={item} dense onNavigate={onNavigate} />
-            </li>
-          </ul>
-        ),
-      )}
+      <ul className="space-y-px">
+        <li>
+          <NavLink item={{ slug: "/reference", title: "Overview" }} dense onNavigate={onNavigate} />
+        </li>
+        <li>
+          <NavLink item={{ slug: "/reference/glossary", title: "Glossary" }} dense onNavigate={onNavigate} />
+        </li>
+      </ul>
+      {resources.map((r) => (
+        <ApiGroup
+          key={r.slug}
+          resource={{
+            slug: `/reference/${r.slug}`,
+            title: r.title,
+            children: r.operations.map((op) => ({
+              slug: `/reference/${r.slug}/${op.slug}`,
+              title: op.title,
+              method: op.method.toUpperCase() as ManifestItem["method"],
+            })),
+          }}
+          onNavigate={onNavigate}
+        />
+      ))}
     </nav>
   );
 }
@@ -156,17 +170,8 @@ function ApiGroup({
         href={resource.slug}
         onClick={onNavigate}
         aria-current={active ? "page" : undefined}
-        className={cn(
-          "flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.6px] transition-colors hover:text-foreground",
-          active
-            ? "text-accent dark:text-accent"
-            : "text-accent dark:text-accent",
-        )}
+        className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted-foreground transition-colors hover:text-foreground"
       >
-        <span
-          aria-hidden
-          className="size-1 rounded-full bg-accent dark:bg-accent"
-        />
         <span className="truncate">{resource.title}</span>
         {resource.badge && <BadgePill badge={resource.badge} />}
       </Link>
