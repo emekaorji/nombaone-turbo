@@ -1,10 +1,11 @@
 'use client';
 
-import { Archive, Pencil, X } from 'lucide-react';
+import { Archive, ArrowUpDown, Loader2, Pencil, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
-import { archivePlanAction, deactivatePriceAction, updatePlanAction } from '@/lib/plans-actions';
+import { toKobo } from '@/lib/money';
+import { archivePlanAction, changePriceAction, deactivatePriceAction, updatePlanAction } from '@/lib/plans-actions';
 
 export function EditPlanButton({ planRef, name, description }: { planRef: string; name: string; description: string | null }) {
   const router = useRouter();
@@ -109,6 +110,121 @@ export function ArchivePlanButton({ planRef }: { planRef: string }) {
       <Archive className="size-[15px] text-muted-foreground" strokeWidth={1.75} />
       Archive
     </button>
+  );
+}
+
+/**
+ * Change what a cadence costs. Underneath this is a new price row plus a deactivation of the old one
+ * (a price is immutable — its money fields are never updated), which is exactly what grandfathers
+ * the people already paying. The copy says that out loud, because it is the merchant's guarantee,
+ * not an implementation note.
+ */
+export function ChangePriceButton({
+  priceRef,
+  current,
+  subscribers,
+}: {
+  priceRef: string;
+  current: string;
+  subscribers: number;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const kobo = toKobo(amount);
+
+  function close() {
+    setOpen(false);
+    setAmount('');
+    setError(null);
+  }
+
+  function submit(formData: FormData) {
+    startTransition(async () => {
+      const res = await changePriceAction(priceRef, formData);
+      if (res.status === 'error') setError(res.message);
+      else {
+        close();
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
+        className="flex items-center gap-1.5 text-[12.5px] font-medium text-foreground hover:underline"
+      >
+        <ArrowUpDown className="size-[13px] text-muted-foreground" strokeWidth={1.75} />
+        Change price
+      </button>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button type="button" aria-label="Close" className="absolute inset-0 bg-black/50" onClick={close} />
+          <div className="relative z-10 flex w-full max-w-[440px] flex-col gap-4 rounded-lg border border-border bg-surface-1 p-5 shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
+            <div className="flex items-center justify-between">
+              <span className="text-[15px] font-semibold text-foreground">Change price</span>
+              <button type="button" onClick={close} className="text-subtle-foreground hover:text-foreground">
+                <X className="size-[18px]" strokeWidth={1.75} />
+              </button>
+            </div>
+            <form action={submit} className="flex flex-col gap-3.5">
+              <label className="flex flex-col gap-[7px]">
+                <span className="text-[12.5px] font-medium text-foreground">New amount (₦)</span>
+                <input
+                  name="amount"
+                  autoFocus
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="6,000.00"
+                  className="rounded border border-border bg-surface-2 px-3 py-2.5 text-[13.5px] text-foreground outline-none focus:border-border-strong"
+                />
+                <span className="text-[11.5px] text-subtle-foreground">
+                  {kobo !== null ? (
+                    <>
+                      Stored as <span className="font-mono text-foreground">{kobo.toLocaleString('en-US')} kobo</span>.
+                    </>
+                  ) : (
+                    'Enter the new price in naira; it is stored as integer kobo.'
+                  )}
+                </span>
+              </label>
+              <p className="rounded border border-accent-border bg-accent-muted px-3.5 py-3 text-[12.5px] text-foreground">
+                {subscribers > 0
+                  ? `Existing subscribers keep ${current} — only new subscribers pay the new price.`
+                  : `The current ${current} is retired, not deleted. Anyone already on it would keep it; only new subscribers pay the new price.`}
+              </p>
+              {error ? <span className="text-[12px] text-danger">{error}</span> : null}
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={close}
+                  className="rounded border border-border-strong bg-surface-2 px-3.5 py-2 text-[12.5px] font-medium text-foreground transition-colors hover:bg-surface-3"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={pending || kobo === null}
+                  className="flex items-center justify-center gap-2 rounded bg-accent px-3.5 py-2 text-[12.5px] font-semibold text-accent-foreground transition-colors hover:bg-accent-hover disabled:opacity-50"
+                >
+                  {pending ? <Loader2 className="size-4 animate-spin" strokeWidth={2.25} /> : null}
+                  Change price
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 

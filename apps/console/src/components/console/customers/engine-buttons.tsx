@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
 
 import { attachTestMethodAction, createSubscriptionAction, type EngineActionState } from '@/lib/engine-actions';
+import { groupPricesByPlan } from '@/lib/price-options';
 import type { MethodOption, PriceOption } from '@/lib/subscription-form';
 
 const initial: EngineActionState = {};
@@ -140,8 +141,13 @@ export function NewSubscriptionButton({
             <label className="flex flex-col gap-1.5">
               <span className="text-[12px] font-medium text-muted-foreground">Price</span>
               <select name="priceId" required defaultValue={prices[0]?.reference} className={inputCls}>
-                {prices.map((p) => (
-                  <option key={p.reference} value={p.reference}>{p.label}</option>
+                {/* A plan carries a whole ladder now — group the options so the picker stays readable. */}
+                {groupPricesByPlan(prices).map((g) => (
+                  <optgroup key={g.planName} label={g.planName}>
+                    {g.prices.map((p) => (
+                      <option key={p.reference} value={p.reference}>{p.label}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </label>

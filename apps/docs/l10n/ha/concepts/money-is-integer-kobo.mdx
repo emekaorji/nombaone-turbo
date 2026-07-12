@@ -1,0 +1,56 @@
+---
+title: Kuɗi cikakkiyar lamba ce a kobo
+description: Dalilin da ya sa kowane adadi a API cikakkiyar lamba ce a kobo, yadda iyakar naira ke aiki, da yadda aka kawar da tarkon caji ninki 100×.
+---
+
+Kowane adadin kuɗi a API na Nomba One **cikakkiyar lamba ce a kobo**. Babu float, babu
+kirtanin lamba mai ɗigo, babu kuma shakku: `₦1 = 100 kobo`, don haka `250000` yana nufin ₦2,500.00.
+
+## Me ya sa kobo, me kuma ya sa cikakkun lambobi
+
+Kuɗi da aka ajiye a matsayin float kuskure ne da ke jiran faruwa: `0.1 + 0.2` ba `0.3` ba ne,
+kuskuren kewayewar lamba kuma yana taruwa a tsawon rayuwar subscription. Cikakkun lambobi a
+ƙaramin rukunin kuɗi suna sa lissafi ya zama daidai kuma abin dubawa. [Ledger](/concepts/the-ledger)
+yana ajiye cikakken kobo, API yana maganar cikakken kobo, kuma su biyun ba za su taɓa saɓa wa juna ba.
+
+## Kowane filin kuɗi yana faɗin rukuninsa
+
+Domin kada a taɓa rikita rukunin, **sunan kowane filin kuɗi yana ƙarewa da `InKobo`**:
+`amountInKobo`, `unitAmountInKobo`, `totalInKobo`, `amountDueInKobo`, da sauransu. Idan fili
+yana ɗauke da kuɗi, sunansa zai gaya maka rukunin. Ba sai ka yi hasashe ba.
+
+```json
+// A ₦5,000/month price
+{
+  "unitAmountInKobo": 500000,
+  "currency": "NGN",
+  "interval": "month"
+}
+```
+
+## Iyakar naira
+
+Ga wuri guda ɗaya da rukunin ke canjawa, mu kuma muna sarrafa shi don kada ka taɓa yin sa da
+kanka. Shafin checkout na Nomba kansa yana bayar da adadi a **naira**, yayin da injinmu da
+ledger ɗinmu ke amfani da cikakken **kobo**. Da a ce an rikita su biyun, to charge zai yi
+kuskure da ninki 100.
+
+Nomba One yana juyawa **a iyakar Nomba kaɗai** (kobo → naira lokacin fita zuwa Nomba, naira →
+kobo lokacin dawowa), ba a wani wuri kuma ba. A cikin haɗin naka, da kuma koʼina a wannan
+API, cikakken kobo ne kullum.
+
+<Callout type="warning" title="Tarkon ninki 100×">
+  Idan ka lissafa adadi a naira ka aika inda ake sa ran kobo, za ka caji ninki 100 fiye da
+  yadda ya kamata. Aika cikakken kobo. `₦2,500` shi ne `250000`, ba `2500` ba. Idan ka yi
+  shakka, ka ninka adadin naira da 100 sannan ka aika wannan.
+</Callout>
+
+Ka gwada shi. Rubuta adadin naira ka ga ainihin cikakken kobo da ya kamata ka aika:
+
+<MoneyUnit />
+
+## Kewayewar lamba
+
+Proration da rangwamen kaso na iya haifar da ragowar kobo da bai cika ba. Nomba One yana
+warware waɗannan a cikin ledger da tsari ƙayyadadde kuma rubutacce, don kafafun su daidaita
+zuwa ainihin kobo. Duba [proration matsalar ledger ce](/concepts/hard-parts/proration-is-a-ledger-problem).

@@ -1,20 +1,15 @@
 ---
 title: "Coupons"
 type: reference
-summary: "Discount definitions: percent or fixed amount off, with a duration. Create, read, update, and list. Generated from the live schema."
+summary: "Coupons — every operation on the resource."
 canonical: https://docs.nombaone.xyz/reference/coupons
 ---
 
 # Coupons
 
-A **coupon** is a reusable discount rule: a percentage or a fixed kobo amount off,
-applied for a `once`, `repeating`, or `forever` duration. Apply one to a
-[customer](/reference/customers) or a [subscription](/reference/subscriptions).
-See [coupons and credits](/guides/coupons-and-credits).
+Every operation on the coupons resource.
 
-> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/coupons
-
-> **A coupon is a rule; a credit is a balance**
->
-> Coupons recompute a discount each cycle for their duration. For a spent-once
-> balance, use a [credit grant](/reference/credits) instead.
+- [`POST /v1/coupons`](https://docs.nombaone.xyz/reference/coupons/create.md) — Create a coupon
+- [`GET /v1/coupons`](https://docs.nombaone.xyz/reference/coupons/list.md) — List coupons
+- [`GET /v1/coupons/{id}`](https://docs.nombaone.xyz/reference/coupons/retrieve.md) — Retrieve a coupon
+- [`PATCH /v1/coupons/{id}`](https://docs.nombaone.xyz/reference/coupons/update.md) — Update a coupon

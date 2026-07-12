@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useL10n } from "@/lib/l10n/context";
+
 /**
  * `<AskAI>` (Phase 09) — the in-docs assistant. A floating launcher opens a
  * panel that holds a multi-turn conversation, streaming answers from `/api/ask`
@@ -61,6 +63,7 @@ function loadHistory(): Message[] {
 }
 
 export function AskAI() {
+  const { t, locale } = useL10n();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -147,7 +150,7 @@ export function AskAI() {
 
       const reader = res.body?.getReader();
       if (!reader) {
-        setError("No response stream.");
+        setError(t("ask.noStream"));
         setMessages((m) => m.slice(0, -1));
         return;
       }
@@ -160,11 +163,11 @@ export function AskAI() {
         setLastAssistant(acc);
       }
       if (!acc.trim()) {
-        setError("The assistant returned an empty answer. Try rephrasing.");
+        setError(t("ask.empty"));
         setMessages((m) => m.slice(0, -1));
       }
     } catch {
-      setError("Something went wrong. Try again, or use search (⌘K).");
+      setError(t("ask.error"));
       setMessages((m) => m.slice(0, -1));
     } finally {
       setBusy(false);
@@ -179,18 +182,18 @@ export function AskAI() {
       <button
         type="button"
         onClick={openPanel}
-        aria-label="Ask AI about the docs"
+        aria-label={t("ask.open")}
         className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-lg transition-colors hover:border-[--accent] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span aria-hidden="true" className="text-[--accent]">✦</span>
-        Ask AI
+        {t("ask.label")}
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Ask AI">
+        <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={t("ask.label")}>
           <button
             type="button"
-            aria-label="Close"
+            aria-label={t("ask.close")}
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/40"
           />
@@ -198,7 +201,7 @@ export function AskAI() {
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <span aria-hidden="true" className="text-[--accent]">✦</span>
-                Ask the docs
+                {t("ask.title")}
               </div>
               <div className="flex items-center gap-1">
                 {messages.length > 0 && (
@@ -207,7 +210,7 @@ export function AskAI() {
                     onClick={newChat}
                     className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    New chat
+                    {t("ask.newChat")}
                   </button>
                 )}
                 <button
@@ -215,7 +218,7 @@ export function AskAI() {
                   onClick={() => setOpen(false)}
                   className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  Close
+                  {t("ask.close")}
                 </button>
               </div>
             </div>
@@ -256,7 +259,7 @@ export function AskAI() {
                     {m.content ? (
                       renderAnswer(m.content)
                     ) : streaming ? (
-                      <span className="text-muted-foreground">Searching the docs…</span>
+                      <span className="text-muted-foreground">{t("ask.searching")}</span>
                     ) : null}
                   </div>
                 ),
@@ -287,17 +290,24 @@ export function AskAI() {
                   }
                 }}
                 rows={2}
-                placeholder="Ask a question…"
+                placeholder={t("ask.placeholder")}
                 className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
               />
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Grounded in the docs · cites sources</span>
+                {/* The assistant retrieves from the English corpus (English is
+                    authoritative) and the model behind it is not competent in
+                    Yorùbá or Hausa. Rather than have it answer a Hausa question in
+                    confident, wrong Hausa, it answers in English and says so up
+                    front — on a translated page only. */}
+                <span className="text-xs text-muted-foreground">
+                  {locale === "en" ? t("ask.grounded") : t("ask.englishOnly")}
+                </span>
                 <button
                   type="submit"
                   disabled={busy || !input.trim()}
                   className="rounded-lg bg-[--accent] px-4 py-1.5 text-sm font-semibold text-[color:var(--accent-foreground)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  {busy ? "…" : "Ask"}
+                  {busy ? "…" : t("ask.send")}
                 </button>
               </div>
             </form>

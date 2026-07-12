@@ -26,7 +26,10 @@ import { extractHeadings, slugify } from "../src/lib/content";
 
 import openapi from "../src/generated/openapi.json";
 
+import { TRANSLATED_LOCALES } from "../src/lib/l10n/config";
+
 const CONTENT_DIR = path.join(process.cwd(), "content");
+const L10N_DIR = path.join(process.cwd(), "l10n");
 
 const spec = openapi as unknown as { paths: Record<string, Record<string, unknown>> };
 
@@ -75,8 +78,25 @@ function anchorsFor(slug: string, body: string): Set<string> {
 
 const LINK_RE = /(?:\]\(|href=")(\/[^)"\s#]*(?:#[^)"\s]*)?)/g;
 
+function parseLinks(content: string): { raw: string; targetSlug: string; anchor: string | null }[] {
+  const links: { raw: string; targetSlug: string; anchor: string | null }[] = [];
+  for (const m of content.matchAll(LINK_RE)) {
+    const href = m[1];
+    const [p, anchor] = href.split("#");
+    // Ignore public asset links (llms.txt, .md mirrors, .well-known, api routes).
+    if (/\.(txt|md|json|xml|png|svg|jpg)$/.test(p) || p.startsWith("/api/") || p.startsWith("/.well-known")) {
+      continue;
+    }
+    links.push({ raw: href, targetSlug: p.replace(/\/$/, "") || "", anchor: anchor ?? null });
+  }
+  return links;
+}
+
 async function main() {
   const files = await listMdx(CONTENT_DIR);
+
+  const deadPaths: string[] = [];
+  const deadAnchors: string[] = [];
 
   const routable = new Set<string>(ALL_SLUGS);
   routable.add("");
@@ -91,22 +111,51 @@ async function main() {
     const slug = fileToSlug(file);
     routable.add(slug);
     anchorsBySlug.set(slug, anchorsFor(slug, content));
-
-    const links: { raw: string; targetSlug: string; anchor: string | null }[] = [];
-    for (const m of content.matchAll(LINK_RE)) {
-      const href = m[1];
-      const [p, anchor] = href.split("#");
-      // Ignore public asset links (llms.txt, .md mirrors, .well-known, api routes).
-      if (/\.(txt|md|json|xml|png|svg|jpg)$/.test(p) || p.startsWith("/api/") || p.startsWith("/.well-known")) {
-        continue;
-      }
-      links.push({ raw: href, targetSlug: p.replace(/\/$/, "") || "", anchor: anchor ?? null });
-    }
-    linksByFile.set(slug, links);
+    linksByFile.set(slug, parseLinks(content));
   }
 
-  const deadPaths: string[] = [];
-  const deadAnchors: string[] = [];
+  /**
+   * The translated tree, validated against the SAME sets.
+   *
+   * Two properties make this work with no special-casing, and both are load-bearing:
+   *
+   *  - Translations author CANONICAL ENGLISH hrefs (`/concepts/the-ledger`, never
+   *    `/yo/concepts/the-ledger`) — the renderer adds the locale prefix. So their
+   *    link targets resolve against the same `routable` set as English.
+   *  - Translated headings carry the ENGLISH ids (`rehypeLocaleAnchor`), so their
+   *    anchors resolve against the same `anchorsBySlug` set as English.
+   *
+   * Which means 96 files that were previously unchecked now get the full gate for
+   * free. A translator who mangles an href or an anchor fails the build.
+   */
+  for (const locale of TRANSLATED_LOCALES) {
+    const root = path.join(L10N_DIR, locale);
+    let localeFiles: string[];
+    try {
+      localeFiles = await listMdx(root);
+    } catch {
+      continue; // locale not started yet
+    }
+
+    for (const file of localeFiles) {
+      const { content } = matter(await fs.readFile(file, "utf8"));
+      const rel = path.relative(root, file).replace(/\.mdx$/, "");
+      const slug = rel === "index" ? "" : `/${rel}`;
+
+      const links = parseLinks(content);
+      for (const link of links) {
+        // A locale-prefixed href in a source file is always a bug: the reader is
+        // already inside the locale, and `href()` prefixes on render, so this
+        // would produce `/yo/yo/...`.
+        if (/^\/(yo|ha)(\/|$)/.test(link.targetSlug)) {
+          deadPaths.push(
+            `${locale}${slug || "/"} → ${link.raw}  (locale-prefixed href — author the canonical English path; the renderer adds the prefix)`,
+          );
+        }
+      }
+      linksByFile.set(`${locale}${slug || "/"}`, links);
+    }
+  }
 
   for (const [slug, links] of linksByFile) {
     for (const link of links) {

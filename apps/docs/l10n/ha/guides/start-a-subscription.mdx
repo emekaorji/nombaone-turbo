@@ -1,0 +1,105 @@
+---
+title: Fara subscription
+description: "Yi wa customer rijista a kan price ta kowane rail: card, direct debit, ko bank transfer. Subscription ɗin iri ɗaya ne; yadda kuɗin ke shigowa ne kaɗai ya bambanta."
+section: guides
+order: 2
+---
+
+Subscription yana sanya **customer** a kan **price**, kuma yana caji shi kowane
+cycle. Subscription resource ba ya damuwa da ko wane rail ne: `POST /v1/subscriptions`
+guda ɗaya ne ke fara subscription na card, na direct debit, ko na bank transfer.
+Abin da ya bambanta shi ne **payment method** da ka haɗa, domin rails na karɓar
+kuɗi ta hanyoyi daban-daban: card da mandate ana *jansu* ne, bank transfer kuwa
+ana *turo* shi. Duba [multi-rail: push da pull](/concepts/multi-rail-push-and-pull)
+don ka ga dalilin da ya sa wannan bambanci yake da muhimmanci.
+
+## Saita payment method
+
+Pull rails suna buƙatar kayan biya da aka riga aka ba da izininsa, wanda aka ajiye.
+Fara setup: customer ɗin zai ba da izini (kuma, ga card, wataƙila ya kammala
+matakin OTP na banki) a mahaɗin da aka mayar:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/setup \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerRef": "{customerId}",
+    "amountInKobo": 250000,
+    "callbackUrl": "https://yourapp.com/billing/return"
+  }'
+```
+
+Ana tura customer ɗin ya kammala ba da izini, sannan a mayar da shi zuwa
+`callbackUrl` ɗinka. Payment method ɗin da ya fito daga nan shi ne abin da za ka yi
+caji a kansa kowane cycle.
+
+Ga subscription na **bank transfer**, sai ka ƙirƙiri virtual account maimakon haka:
+customer ɗin zai turo kuɗi zuwa gare shi a kowace ranar biyan kuɗi:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/virtual-account \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "customerRef": "{customerId}", "expectedAmount": 250000 }'
+```
+
+<Callout type="note" title="Yi gwaji mai sakamako tabbatacce a sandbox">
+  A cikin sandbox, ka tsallake matakin shafin da muke bayarwa:
+  `POST /v1/sandbox/payment-methods` tare da `behavior`
+  (`success`, `requires_otp`, `decline_insufficient_funds`) yana ba ka method wanda
+  aka riga aka san sakamakonsa, don haka za ka iya gwada hanya mai kyau da wadda ba
+  ta yi kyau ba kafin kuɗi na gaske ya shiga ciki.
+</Callout>
+
+## Fara subscription ɗin
+
+Yi wa customer ɗin rijista a kan price ɗin da wannan method:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "customerId": "{customerId}",
+    "priceId": "{priceId}",
+    "paymentMethodId": "{paymentMethodId}",
+    "collectionMethod": "charge_automatically"
+  }'
+```
+
+`status` ɗin da aka mayar zai gaya maka inda cycle na farko ya sauka:
+
+- **`active`**: an karɓi invoice na farko. Kana caji yanzu.
+- **`trialing`**: price ɗin yana da lokacin gwaji; babu caji tukuna.
+- **`past_due`**: caji na farko ya faɗi; [dunning](/guides/dunning-and-recovery)
+  shi ne ke kula da dawo da kuɗin yanzu. A kan balance mai sirara, wannan yakan nufi "ba yanzu ba", ba aʼa ba.
+- **`incomplete`**: caji ɗin yana buƙatar customer ya ɗauki mataki (matakin OTP na
+  card); event ɗin `invoice.action_required` yana ɗauke da sabon mahaɗin checkout.
+
+<Callout type="warning" title="Kada ka ɗauka cewa caji na farko zai yi nasara">
+  A Najeriya, pull na farko yana iya buƙatar OTP, ko kuma ya sauka a kan balance
+  mai sirara. Ka tanadi `past_due` da `incomplete` tun rana ta farko: ka reshe
+  hanyarka bisa webhook, ba bisa `201` kaɗai ba. Wannan shi ne bambanci tsakanin
+  abin wasa da tsarin biyan kuɗi na gaskiya.
+</Callout>
+
+## Na zaɓi: lokacin gwaji da quantity
+
+- **`trialDays`** a cikin kiran ƙirƙira yana fara lokacin gwaji ko da price ɗin ba shi da ɗaya.
+- **`quantity`** yana ninka price na kowane wuri (per-seat).
+- **`Idempotency-Key`** yana sa ƙirƙirar ta zama mai aminci ga sake gwadawa: sake
+  kira da key ɗaya yana mayar da subscription ɗin nan ɗaya, ba wani na biyu ba.
+
+## Bayan ya fara aiki
+
+<CardGroup cols={2}>
+  <Card title="Sarrafa webhooks" href="/guides/handle-webhooks">
+    Duk canjin yanayi yana tayar da event. Ka karɓe su ka kuma tabbatar da su domin
+    samun balance guda ɗaya daidai.
+  </Card>
+  <Card title="Canza payment method" href="/guides/refunds-payouts-settlement">
+    Ka musanya card, ka sake gwada rail da ya faɗi, ko ka mayar da customer zuwa direct debit.
+  </Card>
+</CardGroup>

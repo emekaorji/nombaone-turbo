@@ -1,0 +1,30 @@
+---
+title: "Ìdí tí bank transfer kì í fi ṣe ọ̀nà ìsanwó lásán"
+description: "O lè charge card. O kò lè charge bank transfer. Gbogbo àwòṣe ìsanwó ló ń yí padà."
+---
+
+## Ìṣẹ̀lẹ̀ náà
+
+Customer rẹ fẹ́ san owó nípasẹ̀ bank transfer — ọ̀nà tí ọ̀pọ̀ jùlọ àwọn ènìyàn ní Nàìjíríà fi ń gbé owó ní ti gidi. Ìwọ sì fà sí ọ̀nà kóòdù kan náà tí o ń lò fún card: charge ní ọjọ́ ìsanwó, kí o sì sàmì sí i pé a ti san án. Kò ṣiṣẹ́, ìdí rẹ̀ sì kì í ṣe àṣìṣe kóòdù.
+
+## Ọ̀nà tí kò jinlẹ̀
+
+O ka gbogbo rail sí ohun tí o lè fà owó jáde láti inú rẹ̀: ní ọjọ́ cycle, engine yóò dá owó kúrò nínú àkàǹtì customer, yóò sì gba ìdáhùn. Bẹ́ẹ̀ ni card ṣe ń ṣiṣẹ́. Bẹ́ẹ̀ náà ni direct debit ṣe ń ṣiṣẹ́. Nítorí náà o rò pé bẹ́ẹ̀ náà ni bank transfer rí.
+
+## Ìdí tí ó fi ń bàjẹ́
+
+A kò lè fa bank transfer. Kò sí ìpè API kankan tí ó lè wọ inú àkàǹtì customer kí ó sì mú owó jáde; customer fúnra rẹ̀ ni ó gbọ́dọ̀ tì í jáde. Bí àwòṣe ìsanwó rẹ bá gbà pé òun lè charge nígbàkúgbà tí ó bá wù ú, kò sí ibi tí rail bank transfer yóò bá bá a mu. Àti pé nígbà tí owó bá dé, ìfitónilétí tí ó sọ fún ọ jẹ́ ìránṣẹ́ láti ìta ayé tí a kò lè fọkàntán. Ṣíṣe ìgbésẹ̀ lórí rẹ̀ tààrà ni ọ̀nà tí o fi ń sàmì sí invoice pé a ti san án fún iye owó tí kò dé rárá.
+
+## Bí Nomba One ṣe ń bójú tó
+
+A ṣe àwòṣe bank transfer gẹ́gẹ́ bí ìtìjáde, láìfi òtítọ́ pamọ́. Yíyọ invoice bank transfer kan kò charge ohunkóhun; ó ń dá ipò `pending` padà pẹ̀lú ìtọ́sọ́nà ìsanwó, tí àkàǹtì àfojúnú tí a yà sọ́tọ̀ fún customer náà gbé lẹ́yìn. Engine yóò sì dúró de customer láti tì owó wọlé.
+
+Nígbà tí owó bá dé, ó ń wọlé gẹ́gẹ́ bí webhook, engine sì ń ka webhook náà sí àmì ìtọ́ka, kì í ṣe òtítọ́ tí a ti fìdí rẹ̀ múlẹ̀. Ó ń ṣàyẹ̀wò signature lórí àwọn bytes gan-an bí wọ́n ti dé, ó sì tún béèrè lọ́wọ́ Nomba pẹ̀lú transaction id olùpèsè náà láti gba òtítọ́ láti orísun. Invoice náà á sì settle nígbà tí ìbéèrè náà bá sọ pé ìsanwó náà ti settle, tí iye owó tí a san, ní kobo odidi, sì dọ́gba pẹ̀lú iye owó tí ó tọ́ sí. Bank transfer tí ó dé ní àìtó, tàbí tí ó pọ̀ jù, tàbí tí ó pẹ́, kò ní settle invoice náà ní ìkọ̀kọ̀; reconciliation alẹ́ ni yóò gbé e jáde gẹ́gẹ́ bí àìbámu iye owó fún àyẹ̀wò, dípò kí a kà á sí ìsanwó apá kan.
+
+Ìgbésẹ̀ ṣàyẹ̀wò-kí-o-tó-tún-béèrè yẹn, àti ìbámu iye owó tí ó le koko, ni ìyàtọ̀ tí ó wà láàrin “ìránṣẹ́ kan sọ pé a gba owó” àti “a ti fìdí rẹ̀ múlẹ̀ pé owó náà wà níbí.” Ìyípadà láàrin kobo àti iye owó ní náírà tí olùpèsè náà ń retí ń ṣẹlẹ̀ ní ààlà yẹn nìkan. Ní gbogbo ibòmíràn nínú engine, owó jẹ́ kobo odidi.
+
+## Wò ó
+
+Ṣiṣẹ́ simulator náà lórí rail bank transfer, kí o sì wo bí invoice ṣe ń dúró de ìtìwọlé owó, kí ó sì tún bá olùpèsè náà ṣe reconciliation kí ó tó settle.
+
+Wo [nígbà tí bank transfer kò bá bá invoice mu](/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice) àti [settlement láìsí spreadsheet](/concepts/hard-parts/settlement-without-spreadsheets).

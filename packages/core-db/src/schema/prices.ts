@@ -32,7 +32,23 @@ import { plansTable } from './plans';
  * columns are persisted here and READ later: 04's scheduler reads
  * `interval`/`interval_count`; 05's tiered path builds on `billing_scheme`.
  */
-export const priceIntervalEnum = pgEnum('price_interval', ['day', 'week', 'month', 'year']);
+/**
+ * Cadence unit. The SSOT for the value list is `PRICE_INTERVALS` in
+ * `@nombaone/core-contracts/billing` — it is re-typed here rather than imported
+ * because core-contracts already dev-depends on core-db, and importing back would
+ * close a package cycle. A test locks the two lists together
+ * (`apps/api/test/unit/billing-scheduling.test.ts`), so they cannot drift.
+ *
+ * APPEND-ONLY: `ALTER TYPE … ADD VALUE` appends, and reordering an existing
+ * Postgres enum needs a destructive type recreate. Add new units at the END.
+ */
+export const priceIntervalEnum = pgEnum('price_interval', [
+  'day',
+  'week',
+  'month',
+  'year',
+  'minute',
+]);
 export const priceUsageTypeEnum = pgEnum('price_usage_type', ['licensed', 'metered']);
 export const priceBillingSchemeEnum = pgEnum('price_billing_scheme', ['per_unit', 'tiered']);
 

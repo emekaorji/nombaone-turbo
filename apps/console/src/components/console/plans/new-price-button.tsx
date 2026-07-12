@@ -1,33 +1,47 @@
 'use client';
 
+import { intervalLabel, PRICE_INTERVALS } from '@nombaone/core-contracts/billing';
 import { Loader2, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 
+import { toKobo } from '@/lib/money';
 import { createPriceAction } from '@/lib/plans-actions';
 
-const INTERVALS = [
-  { value: 'month', label: 'Monthly' },
-  { value: 'year', label: 'Annual' },
-  { value: 'week', label: 'Weekly' },
-  { value: 'day', label: 'Daily' },
-];
+import type { PriceInterval } from '@nombaone/core-contracts/types';
 
-export function NewPriceButton({ planRef }: { planRef: string }) {
+/**
+ * The ladder's escape hatch: the cadences the plan form does not offer — a count other than 1
+ * (`month × 3` is quarterly) and the wall-clock `minute` unit a sandbox subscription bills on.
+ *
+ * Built FROM the enum, never re-typed: the hand-written list this replaces had already drifted
+ * (it predated `minute`), and a cadence list that lies is a mispriced subscription.
+ */
+const INTERVALS: { value: PriceInterval; label: string }[] = PRICE_INTERVALS.map((value) => ({
+  value,
+  label: value.charAt(0).toUpperCase() + value.slice(1),
+}));
+
+export function NewPriceButton({ planRef, label = 'Add price' }: { planRef: string; label?: string }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
+  const [interval, setInterval] = useState<PriceInterval>('month');
+  const [intervalCount, setIntervalCount] = useState('1');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
-  const cleaned = amount.replace(/[₦,\s]/g, '');
-  const kobo = /^\d+(\.\d{1,2})?$/.test(cleaned) ? Math.round(parseFloat(cleaned) * 100) : null;
+  // The SAME parser the server action uses, so the field cannot validate here and round differently there.
+  const kobo = toKobo(amount);
+  const count = /^\d+$/.test(intervalCount) ? parseInt(intervalCount, 10) : null;
 
   function close() {
     setOpen(false);
     setError(null);
     setAmount('');
+    setInterval('month');
+    setIntervalCount('1');
     formRef.current?.reset();
   }
 
@@ -51,7 +65,7 @@ export function NewPriceButton({ planRef }: { planRef: string }) {
         className="flex items-center gap-1.5 rounded bg-accent px-3 py-[7px] text-[13px] font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
       >
         <Plus className="size-4" strokeWidth={2} />
-        New price
+        {label}
       </button>
 
       {open ? (
@@ -88,20 +102,43 @@ export function NewPriceButton({ planRef }: { planRef: string }) {
                   )}
                 </span>
               </label>
-              <label className="flex flex-col gap-[7px]">
+              <div className="flex flex-col gap-[7px]">
                 <span className="text-[12.5px] font-medium text-foreground">Billing interval</span>
-                <select
-                  name="interval"
-                  defaultValue="month"
-                  className="rounded border border-border bg-surface-2 px-3 py-2.5 text-[13.5px] text-foreground outline-none focus:border-border-strong"
-                >
-                  {INTERVALS.map((iv) => (
-                    <option key={iv.value} value={iv.value}>
-                      {iv.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13.5px] text-subtle-foreground">Every</span>
+                  <input
+                    name="intervalCount"
+                    inputMode="numeric"
+                    aria-label="Interval count"
+                    value={intervalCount}
+                    onChange={(e) => setIntervalCount(e.target.value)}
+                    className="w-16 rounded border border-border bg-surface-2 px-3 py-2.5 text-[13.5px] text-foreground outline-none focus:border-border-strong"
+                  />
+                  <select
+                    name="interval"
+                    aria-label="Interval unit"
+                    value={interval}
+                    onChange={(e) => setInterval(e.target.value as PriceInterval)}
+                    className="flex-1 rounded border border-border bg-surface-2 px-3 py-2.5 text-[13.5px] text-foreground outline-none focus:border-border-strong"
+                  >
+                    {INTERVALS.map((iv) => (
+                      <option key={iv.value} value={iv.value}>
+                        {iv.label}
+                        {count !== null && count !== 1 ? 's' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <span className="text-[11.5px] text-subtle-foreground">
+                  {count !== null && count >= 1 ? (
+                    <>
+                      Bills <span className="text-foreground">{intervalLabel(interval, count)}</span>.
+                    </>
+                  ) : (
+                    'Bill every N intervals — N must be a whole number, 1 or more.'
+                  )}
+                </span>
+              </div>
               {error ? (
                 <p className="rounded border border-danger/40 bg-danger-bg px-3 py-2 text-[12.5px] text-danger">
                   {error}

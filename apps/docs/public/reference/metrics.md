@@ -1,20 +1,12 @@
 ---
 title: "Metrics"
 type: reference
-summary: "Billing metrics: MRR, churn, and the dunning funnel, computed from the ledger. Generated from the live schema."
+summary: "Metrics — every operation on the resource."
 canonical: https://docs.nombaone.xyz/reference/metrics
 ---
 
 # Metrics
 
-**Metrics** are the health of your billing, computed from the
-[ledger](/concepts/the-ledger) rather than estimated: monthly recurring revenue,
-churn, and the dunning recovery funnel. Because they read the same source of
-truth as every charge and settlement, they can't drift from the money.
+Every operation on the metrics resource.
 
-> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/metrics
-
-> **Derived, never stored beside the money**
->
-> Metrics are computed on read from ledger truth, so a cached number can never
-> quietly disagree with reality.
+- [`GET /v1/metrics/billing`](https://docs.nombaone.xyz/reference/metrics/billing.md) — Retrieve billing metrics

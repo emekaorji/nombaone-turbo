@@ -611,7 +611,7 @@ export const ERROR_CODE_META: Record<NombaoneErrorCode, ErrorCodeMeta> = {
     docUrl: `${DOCS_ERRORS_BASE}#PRICE_TIERED_NOT_SUPPORTED`,
   },
   CATALOG_INVALID_INTERVAL: {
-    hint: 'The billing interval is not valid. Use one of the supported intervals (e.g. `day`, `week`, `month`, `year`) with a positive interval count.',
+    hint: 'The billing interval is not valid. Use one of the supported intervals (`minute`, `day`, `week`, `month`, `year`) with a positive interval count — the count multiplies the unit, so `minute` × 10 bills every ten minutes and `month` × 3 bills quarterly.',
     docUrl: `${DOCS_ERRORS_BASE}#CATALOG_INVALID_INTERVAL`,
   },
 

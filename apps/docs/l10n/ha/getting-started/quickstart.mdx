@@ -1,0 +1,87 @@
+---
+title: Quickstart
+description: Sami maɓallin sirri na sandbox sannan ka yi kiranka na farko da aka tantance zuwa API na nombaone.
+section: get-started
+---
+
+Abu ɗaya kaɗai kake buƙata don kiran API na nombaone: maɓallin sirri na
+organization ɗinka. Wannan shafin zai bi da kai daga sifili har zuwa buƙata ta
+farko da aka tantance a cikin sandbox mode.
+
+<Steps>
+  <Step title="Ƙirƙiri organization ka kuma sami maɓallin sandbox">
+    Ka yi rajista, sai a ba organization ɗinka maɓallin sirri na **sandbox** wanda
+    yake kama da `nbo_sandbox_…`. Wannan maɓallin na organization ɗinka ne kaɗai,
+    kuma an ɗaure shi da sandbox mode: bayanan sandbox kaɗai zai iya taɓawa. Ka
+    ajiye shi a gefen server; kada ka taɓa aika shi zuwa browser ko manhajar
+    wayar hannu.
+  </Step>
+  <Step title="Aika buƙatarka ta farko">
+    Ka tantance kanka da header ɗin `Authorization: Bearer`. Duk `POST` da ke
+    motsa kuɗi yana kuma karɓar `Idempotency-Key`, domin sake gwadawa ba zai taɓa
+    aiwatar da abu sau biyu ba.
+
+    ```bash
+    # Create an example (the worked money-path endpoint), ₦150.00 = 15000 kobo
+    curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
+      -H "Authorization: Bearer nbo_sandbox_…" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: 1c4e7a90-2b3d-4f56-8a9b-0c1d2e3f4a5b" \
+      -d '{ "kind": "standard", "amount": 15000 }'
+    ```
+  </Step>
+  <Step title="Karanta amsar">
+    Nasara tana mayar da daidaitaccen ambulan: `success`, `statusCode`, abin da
+    aka ƙirƙira a cikin `data`, da kuma `meta.requestId` da za ka iya ambata
+    lokacin da kake neman taimako. `id` ɗin abin da aka ƙirƙira shi ne
+    **madogararsa**: tsayayyen id na jamaʼa wanda kuma ke haɗa rubuce-rubucen
+    ledger da webhooks ɗinsa.
+
+    ```json
+    {
+      "success": true,
+      "statusCode": 201,
+      "data": {
+        "id": "nbo749201835566exa",
+        "kind": "standard",
+        "status": "pending",
+        "amount": 15000,
+        "currency": "NGN",
+        "mode": "sandbox",
+        "createdAt": "2026-06-29T10:14:52.004Z"
+      },
+      "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+    }
+    ```
+  </Step>
+</Steps>
+
+<Callout type="tip" title="Adadin kuɗi lamba ce cikakkiya ta kobo">
+  `15000` yana nufin ₦150.00. API ba ya taɓa amfani da float ko rubutun decimal
+  don kuɗi.
+</Callout>
+
+## Zaɓi stack ɗinka
+
+Kowanne cikakkiyar hanya ce da ke tsaye da kanta zuwa ainihin `201` a cikin
+harshenka. Babu doguwar koyarwa guda ɗaya a cikin stack da ba ka amfani da shi.
+
+<QuickstartGrid />
+
+## A cikin harshenka
+
+Kiran farko iri ɗaya (ƙirƙirar plan) a cikin cURL, Node, Python, Go, PHP, ko
+Ruby. Zaɓi tab ɗinka; za a tuna da shi a duk faɗin takardun nan.
+
+<Snippet method="POST" path="/v1/plans" body={{ name: "Pro" }} idempotent />
+
+## Matakai na gaba
+
+<CardGroup cols={2}>
+  <Card title="Tantancewa" href="/getting-started/authentication">
+    Cikakkun ƙaʼidojin maɓallin sirri na kowace organization.
+  </Card>
+  <Card title="Endpoint ɗin misali" href="/reference/examples">
+    Cikakken madogara: kowane filin buƙata da na amsa.
+  </Card>
+</CardGroup>

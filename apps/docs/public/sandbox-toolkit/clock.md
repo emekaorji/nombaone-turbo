@@ -13,6 +13,15 @@ cycle immediately, running the same billing loop the scheduler would run on the
 real billing date: open the cycle, finalize the invoice, collect it, post to the
 ledger.
 
+> **When you want the scheduler itself in the loop**
+>
+> The sandbox clock calls the billing loop directly, so it proves the *billing*
+> math without waiting — but it bypasses the scheduler and the queue that would
+> normally trigger it. When you want to watch the whole chain fire on its own, give
+> the price a short wall-clock cadence instead (`interval: "minute"`,
+> `intervalCount: 10`) and let the real sweep pick it up. Slower, but nothing is
+> stubbed. See [create plans and prices](/guides/create-plans-and-prices).
+
 ## Advance a cycle
 
 ```bash

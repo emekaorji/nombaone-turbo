@@ -7,5 +7,9 @@
  *  - `@nombaone/core-contracts/types`        → types only
  *  - `@nombaone/core-contracts/validations`  → zod schemas only (forms can import
  *                                               these without dragging type files)
+ *  - `@nombaone/core-contracts/billing`      → the billing-interval primitives
+ *                                               (cadence math + money normalization
+ *                                               shared by the API and the console)
  */
 export * from './types';
+export * from './billing';

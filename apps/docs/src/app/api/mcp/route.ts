@@ -11,6 +11,7 @@ import {
 import openapi from "@/generated/openapi.json";
 import { getPage } from "@/lib/content";
 import { pageToMarkdown, sectionType } from "@/lib/md-mirror";
+import { normalizeForMatch, terms as tokenize } from "@/lib/tokenize";
 import { findSection } from "@content/manifest";
 
 /**
@@ -55,13 +56,13 @@ async function loadIndex(): Promise<IndexRecord[]> {
 
 async function searchDocs(query: string, limit = 6) {
   const index = await loadIndex();
-  const terms = query.toLowerCase().split(/\W+/).filter(Boolean);
+  const terms = tokenize(query);
   if (terms.length === 0) return [];
   const scored = index
     .map((r) => {
-      const title = (r.title ?? "").toLowerCase();
-      const heading = (r.heading ?? "").toLowerCase();
-      const hay = `${title} ${heading} ${(r.text ?? "").toLowerCase()}`;
+      const title = normalizeForMatch(r.title ?? "");
+      const heading = normalizeForMatch(r.heading ?? "");
+      const hay = `${title} ${heading} ${normalizeForMatch(r.text ?? "")}`;
       let score = 0;
       for (const t of terms) {
         if (title.includes(t)) score += 3;

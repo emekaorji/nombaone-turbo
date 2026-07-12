@@ -1,6 +1,8 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
+import { normalizeForMatch, terms as tokenize } from "./tokenize";
+
 /**
  * Lexical retrieval over the Ask-AI grounding index (Phase 09). Scores chunks
  * against a query by term overlap (title/heading weighted). No embeddings —
@@ -33,13 +35,13 @@ export interface Retrieved extends AskChunk {
 
 export async function retrieve(query: string, limit = 8): Promise<Retrieved[]> {
   const index = await loadIndex();
-  const terms = query.toLowerCase().split(/\W+/).filter((t) => t.length > 2);
+  const terms = tokenize(query, 3);
   if (terms.length === 0) return [];
 
   return index
     .map((chunk) => {
-      const title = chunk.title.toLowerCase();
-      const text = chunk.text.toLowerCase();
+      const title = normalizeForMatch(chunk.title);
+      const text = normalizeForMatch(chunk.text);
       let score = 0;
       for (const t of terms) {
         if (title.includes(t)) score += 3;

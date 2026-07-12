@@ -1,4 +1,5 @@
 export * from './create';
+export * from './create-with-prices';
 export * from './queries';
 export * from './update';
 export * from './archive';

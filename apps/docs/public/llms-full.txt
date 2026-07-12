@@ -178,6 +178,27 @@ OpenAPI snapshot between releases, so it can't silently omit a change.
 > **Added**. Anything that could break an integration waits for a new major version
 > and is called out explicitly.
 
+## 2026-07-12: v1
+
+### Added
+
+- **Create a plan and its prices in one call**: [`POST /v1/plans`](/reference/plans)
+now takes an optional `prices` array, so the product and every cadence it sells
+on (monthly, annual, …) are created in a single **atomic** request. Either the
+plan and all of its prices land, or none of them do — a rejected price no longer
+leaves behind a plan with no price that cannot be billed. The response carries
+`data.prices` in the order you sent them.
+
+Embedding prices also requires the `prices:write` scope; a key holding only
+`plans:write` can still create a bare plan. At most 10 prices per call, and no
+two on the same cadence (`interval` + `intervalCount`).
+
+This is additive: `POST /v1/plans` without a `prices` array behaves exactly as
+before (`data.prices` is then `[]`), and the nested
+[`POST /v1/plans/{id}/prices`](/reference/prices) is unchanged — it is still how
+you add a cadence, or a new amount, to a plan that already exists. See
+[create plans and prices](/guides/create-plans-and-prices).
+
 ## 2026-07-01: v1
 
 The initial public release. The full subscription-billing surface over Nigerian
@@ -2013,24 +2034,45 @@ subscribes to, and a **price** is how much and how often. Keeping them separate
 means one plan (say, "Pro") can carry a monthly price and a yearly price at once,
 and a customer moves between them without you re-modelling the product.
 
-## Create a plan
+## Create a plan and its prices in one call
 
-A plan just needs a name. Description and metadata are optional.
+Send the plan with a `prices` array and you get the whole catalog entry in one
+request — the product and every cadence it sells on:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
   -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
-  -d '{ "name": "Pro", "description": "Everything in the Pro tier" }'
+  -d '{
+    "name": "Pro",
+    "description": "Everything in the Pro tier",
+    "prices": [
+      { "unitAmountInKobo": 500000, "interval": "month" },
+      { "unitAmountInKobo": 5000000, "interval": "year" }
+    ]
+  }'
 ```
 
-The `data.id` is the plan's reference: you post prices to it.
+That is ₦5,000 a month or ₦50,000 a year — two months free on the annual price.
+The response carries `data.prices` in the order you sent them.
 
-## Add a price
+The call is **atomic**: either the plan and every price land, or nothing does. A
+rejected price never creates a half-built plan, so you cannot end up with a plan
+that has no price and cannot be billed.
 
-A price sets the amount (**integer kobo**) and the billing `interval`. Post it
-under the plan:
+> **Embedding prices needs `prices:write`**
+>
+> A key with only `plans:write` can still create a bare plan, but embedding
+> `prices` also requires `prices:write` — otherwise the call is rejected with
+> `API_KEY_SCOPE_FORBIDDEN`. Ship at most 10 prices, and no two on the same
+> cadence (`interval` + `intervalCount`).
+
+## Add a price later
+
+Prices are immutable and a plan collects them over its lifetime, so you add a new
+cadence — or a new amount — by posting to the plan. `data.id` from the create
+above is the plan's reference:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
@@ -2044,13 +2086,29 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
   }'
 ```
 
-`250000` is ₦2,500.00. `intervalCount` multiplies the interval. `interval:
-"month"` with `intervalCount: 3` bills quarterly.
+`250000` is ₦2,500.00.
+
+A cadence is a **unit times a count**. `interval` is one of `minute`, `day`,
+`week`, `month` or `year`; `intervalCount` multiplies it. So `interval: "month"`
+with `intervalCount: 3` bills quarterly, and `interval: "minute"` with
+`intervalCount: 10` bills every ten minutes. There is no separate `quarterly` or
+`ten_minutely` — the count covers every multiple of a unit we already have.
 
 > **Money is integer kobo**
 >
 > Every money field ends in `InKobo`. Send `250000` for ₦2,500, never `2500`.
 > This is the [100× trap](/concepts/money-is-integer-kobo).
+
+> **Sub-day cadences bill on the wall clock**
+>
+> `day`, `week`, `month` and `year` are **calendar** cadences: a boundary lands on
+> a calendar date at 02:00 (Africa/Lagos), and month and year snap the end of the
+> month against your anchor day — a Jan-31 anchor bills Feb-28, then Mar-31.
+> `minute` is a **wall-clock** cadence: it bills at an exact offset from the
+> instant the subscription activated, so a ten-minute subscription started at
+> 14:37 renews at 14:47. It is mostly useful for watching a real renewal loop run
+> in the time you have, rather than [advancing the clock](/sandbox-toolkit/clock)
+> by hand — but it is a real cadence, valid in both sandbox and live.
 
 ## Add a trial
 
@@ -2680,9 +2738,11 @@ next.
 
 ### Add a price
 
-Set the **amount** (for example ₦2,500) and the **interval**: monthly or
-yearly. You can add more than one price to the same plan, so the same product
-can be billed monthly *and* yearly.
+Set the **amount** (for example ₦2,500) and the **interval**: how often it
+bills. Pick a unit — minute, day, week, month or year — and how many of them,
+so "every 3 months" is a month interval with a count of 3. You can add more
+than one price to the same plan, so the same product can be billed monthly
+*and* yearly.
 
 ### Add a free trial (optional)
 
@@ -3301,6 +3361,15 @@ month to test the second charge. The **sandbox clock** advances a subscription's
 cycle immediately, running the same billing loop the scheduler would run on the
 real billing date: open the cycle, finalize the invoice, collect it, post to the
 ledger.
+
+> **When you want the scheduler itself in the loop**
+>
+> The sandbox clock calls the billing loop directly, so it proves the *billing*
+> math without waiting — but it bypasses the scheduler and the queue that would
+> normally trigger it. When you want to watch the whole chain fire on its own, give
+> the price a short wall-clock cadence instead (`interval: "minute"`,
+> `intervalCount: 10`) and let the real sweep pick it up. Slower, but nothing is
+> stubbed. See [create plans and prices](/guides/create-plans-and-prices).
 
 ## Advance a cycle
 

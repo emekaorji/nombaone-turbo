@@ -1,0 +1,92 @@
+---
+title: Komawa live
+description: "Jerin binciken da za ka yi kafin ka bar key na sandbox ka koma kuɗin gaske: canza key da host, sake yin rijistar webhook, tabbatar da signature a live, sannan ka tantance idempotency da maʼaunin kuɗi kafin charge na farko."
+section: guides
+order: 8
+---
+
+An yi niyyar sa komawa live ya zama ƙarami: ka canza key ɗinka na `nbo_sandbox_` zuwa `nbo_live_`, ka
+kuma canza host ɗinka daga `sandbox.api.nombaone.xyz` zuwa `api.nombaone.xyz`. Amma mode
+biyun ba sa raba komai (kowanne da data, balance, da webhook endpoint nasa), don haka
+ka bi wannan jerin binciken kafin charge na gaske na farko.
+
+## Canjin
+
+Farkon key ɗin shi ne ke ƙayyade komai. Babu wani parameter na mode: key na `nbo_live_`
+yana kaiwa live kaɗai, key na `nbo_sandbox_` kuwa sandbox kaɗai. Duba
+[environments](/getting-started/environments).
+
+```bash
+# Sandbox
+https://sandbox.api.nombaone.xyz/v1   +   nbo_sandbox_…
+
+# Live
+https://api.nombaone.xyz/v1           +   nbo_live_…
+```
+
+Ka ɗauko key ɗin daga environment variable domin kod ɗin nan guda ya yi aiki a kan biyun:
+
+```ts
+const base = process.env.NOMBAONE_BASE_URL;   // sandbox vs prod
+const key  = process.env.NOMBAONE_API_KEY; // nbo_sandbox_ vs nbo_live_
+```
+
+## Jerin bincike kafin ƙaddamarwa
+
+<Steps>
+  <Step title="Sake ƙirƙirar plan da price ɗinka a live">
+    Data na sandbox da na live sun rabu sarai: plan id da aka ƙirƙira a sandbox babu shi
+    a live. Sake ƙirƙirar plan, price, da coupon ɗinka da key na live
+    (ko ka gudanar da seed script ɗinka a kan base na live).
+  </Step>
+  <Step title="Yi rijistar webhook endpoint na live">
+    Webhook na kowane mode daban ne. Yi rijistar endpoint ɗinka na production da key na
+    live, ka kuma ajiye sabon secret ɗin `whsec_…`. Ya bambanta da secret ɗinka na
+    sandbox. Ka tabbatar da signature ta amfani da secret na live.
+  </Step>
+  <Step title="Tabbatar da bincikar signature da secret na live">
+    Ka aika da event na gaske ka tabbatar handler ɗinka yana bincika shi: HMAC a kan raw
+    body, kwatance mai ɗaukar lokaci ɗaya kullum. Handler da ya yi nasara a sandbox da
+    secret na sandbox zai ƙi event na live har sai ka mai da shi ga secret na live. Duba
+    [sarrafa webhook](/guides/handle-webhooks).
+  </Step>
+  <Step title="Tabbatar da maʼaunin kuɗi daga farko har ƙarshe">
+    Kowane adadi yana cikin **kobo na cikakken lamba**. Kafin charge na farko, ka tabbatar
+    price da ka sani yana nuna adadin naira daidai a UI ɗinka (`250000` → ₦2,500.00). Wannan
+    shi ne binciken da ke hana caji sau 100 fiye da kima. Duba
+    [kuɗi kobo ne na cikakken lamba](/concepts/money-is-integer-kobo).
+  </Step>
+  <Step title="Saka Idempotency-Key a kowace kira da ke motsa kuɗi">
+    Sake gwada aikawa saboda matsalar sadarwa ba makawa ne a production. Ka tabbatar kowane
+    `POST` da ke motsa kuɗi yana aika `Idempotency-Key` na musamman, domin sake gwadawa kada ya caje sau biyu.
+  </Step>
+  <Step title="Sarrafa hanyoyin da abubuwa ba sa tafiya daidai">
+    Ka tabbatar handler ɗinka na webhook yana da rassa domin `invoice.payment_failed`,
+    `invoice.action_required`, da `invoice.payment_recovered`, ba `invoice.paid`
+    kaɗai ba. A Najeriya, hanyoyin da abubuwa ba sa tafiya daidai su ne suka fi yawa.
+  </Step>
+</Steps>
+
+<Callout type="warning" title="Live yana motsa kuɗin gaske tun daga charge na farko">
+  Babu gwajin banza a live. Subscription ɗinka na farko a live zai tara kuɗin gaske
+  ta rail na gaske. Ka gudanar da maʼamala guda daga farko zuwa ƙarshe da ƙaramin adadi da
+  payment method na gaske da ke hannunka kafin ka shigar da customer.
+</Callout>
+
+## Bayan ƙaddamarwa
+
+- **Yi reconciliation.** [Ledger](/concepts/the-ledger) shi ne tushen gaskiya; idan webhook
+  ya ɓace, sake ɗebo resource ɗin maimakon sake gina yanayin da hannu.
+- **Kula da dunning.** Balance na gaske kaɗan ne: ka yi tsammanin `past_due` ka bar
+  [dunning](/guides/dunning-and-recovery) ya kwato kuɗin kafin ka yanke damar shiga.
+- **Payout.** Kuɗin da aka settle yana saukowa a sub-account na organization ƙarƙashin kullen
+  escrow; ka fitar da shi da [payout](/guides/refunds-payouts-settlement).
+
+<CardGroup cols={2}>
+  <Card title="Sarrafa webhook" href="/guides/handle-webhooks">
+    Tsarin karɓa → tabbatarwa → cire kwafi → aiwatarwa, a live.
+  </Card>
+  <Card title="Dunning da kwato kuɗi" href="/guides/dunning-and-recovery">
+    Abin da "past_due" ke nufi da gaske a kan balance mai kaɗan.
+  </Card>
+</CardGroup>

@@ -281,6 +281,71 @@
           "updatedAt"
         ]
       },
+      "PlanWithPrices": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "enum": [
+              "plan"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "live"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Price"
+            }
+          }
+        },
+        "required": [
+          "domain",
+          "id",
+          "name",
+          "description",
+          "status",
+          "metadata",
+          "mode",
+          "createdAt",
+          "updatedAt",
+          "prices"
+        ]
+      },
       "Price": {
         "type": "object",
         "properties": {
@@ -311,7 +376,8 @@
               "day",
               "week",
               "month",
-              "year"
+              "year",
+              "minute"
             ]
           },
           "intervalCount": {
@@ -2857,7 +2923,7 @@
                       "type": "integer"
                     },
                     "data": {
-                      "$ref": "#/components/schemas/Plan"
+                      "$ref": "#/components/schemas/PlanWithPrices"
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ResponseMeta"
@@ -2897,6 +2963,67 @@
                   "metadata": {
                     "type": "object",
                     "additionalProperties": {}
+                  },
+                  "prices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "unitAmountInKobo": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "interval": {
+                          "type": "string",
+                          "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year",
+                            "minute"
+                          ]
+                        },
+                        "intervalCount": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "default": 1
+                        },
+                        "usageType": {
+                          "type": "string",
+                          "enum": [
+                            "licensed",
+                            "metered"
+                          ],
+                          "default": "licensed"
+                        },
+                        "billingScheme": {
+                          "type": "string",
+                          "enum": [
+                            "per_unit",
+                            "tiered"
+                          ],
+                          "default": "per_unit"
+                        },
+                        "trialPeriodDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "default": 0
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "unitAmountInKobo",
+                        "interval"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 10
                   }
                 },
                 "required": [
@@ -3313,7 +3440,8 @@
                       "day",
                       "week",
                       "month",
-                      "year"
+                      "year",
+                      "minute"
                     ]
                   },
                   "intervalCount": {
@@ -6681,7 +6809,7 @@
                   "dunningIntervalsHours": {
                     "type": "array",
                     "items": {
-                      "type": "integer",
+                      "type": "number",
                       "exclusiveMinimum": true,
                       "minimum": 0
                     },

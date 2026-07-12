@@ -1,0 +1,253 @@
+---
+title: Subscription àkọ́kọ́ rẹ
+description: "Ṣẹ̀dá plan, price, customer, àti subscription tí ó ń gba owó: ìpè gidi márùn-ún dé 201 gidi, láti ìbẹ̀rẹ̀ dé òpin."
+section: get-started
+order: 4
+---
+
+Ní òpin ojú-ìwé yìí, wàá ní **subscription gidi** tí ó ń gba owó ní sandbox
+mode, tí o ṣẹ̀dá pẹ̀lú ìpè márùn-ún, ní nǹkan bí ìṣẹ́jú mẹ́wàá, láìsí àdàkọ èké
+kankan. Gbogbo ìpè tí ó wà nísàlẹ̀ ni ìbéèrè gidi tí server rẹ yóò ṣe ní
+production; kìkì API key náà (`nbo_sandbox_…`) àti host náà
+(`sandbox.api.nombaone.xyz`) ni yóò yí padà nígbà tí o bá lọ sí live.
+
+Ọ̀nà tí ó kúrú jùlọ ni orísun mẹ́rin àti card ìdánwò kan tí àbájáde rẹ̀ dájú:
+
+1. **plan** kan, ohun tí àwọn customer ń forúkọ sí,
+2. **price** kan lórí plan yẹn: iye owó, àti ìgbà mélòó,
+3. **customer** kan,
+4. **payment method** ìdánwò kan tí ó ń yege nígbà tí a bá pè é,
+5. **subscription** náà, tí ó ń pilẹ̀ invoice àkọ́kọ́ tí ó sì ń gba owó rẹ̀.
+
+<Callout type="tip" title="Kọ́kọ́ gba sandbox key">
+  Gbogbo ìpè ni ó ń fi `Authorization: Bearer nbo_sandbox_…` fi ara rẹ̀ hàn. Bí
+  o kò bá ní key síbẹ̀, wo [ìfidánimọ̀](/getting-started/authentication). Ìgbésẹ̀
+  kan ṣoṣo ni. Fi key náà pamọ́ sí ẹ̀gbẹ́ server.
+</Callout>
+
+<Steps>
+  <Step title="Ṣẹ̀dá plan">
+    **plan** ni ọjà tí customer ń forúkọ sí. Orúkọ ni ó gbé; owó náà wà lórí
+    àwọn price rẹ̀ (ìgbésẹ̀ tí ó tẹ̀lé e), nítorí náà plan kan ṣoṣo lè gbé price
+    oṣooṣù àti ti ọdọọdún papọ̀.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -d '{ "name": "Pro" }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const plan = await nbo("/v1/plans", {
+          method: "POST",
+          idempotencyKey: crypto.randomUUID(),
+          body: { name: "Pro" },
+        });
+        // plan.data.id → "nbo…pln"
+        ```
+      </Tab>
+    </CodeGroup>
+
+    `data.id` tí ó padà ni **ìtọ́kasí** plan náà. Fi pamọ́; ìpè tí ó tẹ̀lé e nílò
+    rẹ̀.
+  </Step>
+
+  <Step title="Fi price kún un">
+    **price** ni ó ń pinnu iye owó àti ìgbà tí a óò máa gba á (interval). Iye
+    owó jẹ́ **kobo ní nọ́ḿbà odidi**: `250000` túmọ̀ sí ₦2,500.00. Fi ránṣẹ́ sí
+    plan tí o ṣẹ̀ṣẹ̀ ṣẹ̀dá.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -d '{ "unitAmountInKobo": 250000, "interval": "month" }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const price = await nbo(`/v1/plans/${plan.data.id}/prices`, {
+          method: "POST",
+          idempotencyKey: crypto.randomUUID(),
+          body: { unitAmountInKobo: 250_000, interval: "month" },
+        });
+        // price.data.id → "nbo…prc"
+        ```
+      </Tab>
+    </CodeGroup>
+
+    <Callout type="warning" title="Owó jẹ́ kobo odidi: ìdẹkùn 100×">
+      Fi `250000` ránṣẹ́, kì í ṣe `2500`. Gbogbo pápá owó ni ó ń parí pẹ̀lú
+      `InKobo` kí ìwọ̀n rẹ̀ má bàa ṣe àyèméjì. Fífi naira ránṣẹ́ níbi tí kobo yẹ
+      kí ó wà yóò gba owó ní ìlọ́po 100×. Wo
+      [owó jẹ́ kobo odidi](/concepts/money-is-integer-kobo).
+    </Callout>
+  </Step>
+
+  <Step title="Ṣẹ̀dá customer">
+    **customer** ni ẹni tí o ń gba owó lọ́wọ́ rẹ̀. Ímeèlì àti orúkọ nìkan ni o
+    nílò láti bẹ̀rẹ̀.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/customers \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -d '{ "email": "ada@example.com", "name": "Ada Lovelace" }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const customer = await nbo("/v1/customers", {
+          method: "POST",
+          idempotencyKey: crypto.randomUUID(),
+          body: { email: "ada@example.com", name: "Ada Lovelace" },
+        });
+        // customer.data.id → "nbo…cus"
+        ```
+      </Tab>
+    </CodeGroup>
+  </Step>
+
+  <Step title="So payment method ìdánwò tí ó ń yege mọ́ ọn">
+    Ní sandbox mode, payment method **tí àbájáde rẹ̀ dájú** ni o ń so mọ́ ọn:
+    `behavior` ni ó ń pinnu àbájáde, nítorí náà ìgbìyànjú àkọ́kọ́ rẹ yóò yege
+    lọ́nà tí a mọ̀ọ́mọ̀ ṣe. Lo `success` níbí; àwọn behavior yòókù (decline, OTP
+    tí a béèrè, balance tí kò tó) yóò jẹ́ kí o ṣe àdánwò àwọn ọ̀nà tí kò dùn
+    lẹ́yìn ìgbà náà.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -d '{ "customerId": "{customerId}", "behavior": "success" }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const method = await nbo("/v1/sandbox/payment-methods", {
+          method: "POST",
+          body: { customerId: customer.data.id, behavior: "success" },
+        });
+        // method.data.id → "nbo…pm"
+        ```
+      </Tab>
+    </CodeGroup>
+
+    <Callout type="note" title="Sandbox mode nìkan">
+      `POST /v1/sandbox/payment-methods` wà ní sandbox mode nìkan. Ní live,
+      customer ni ó ń so card gidi, mandate, tàbí àṣẹ bank transfer mọ́ ọn. Wo
+      [multi-rail: títì àti fífà](/concepts/multi-rail-push-and-pull).
+    </Callout>
+  </Step>
+
+  <Step title="Bẹ̀rẹ̀ subscription náà">
+    Kó gbogbo rẹ̀ papọ̀: fi customer náà forúkọ sí price náà, kí o sì san owó
+    pẹ̀lú payment method ìdánwò náà. Èyí yóò pilẹ̀ **invoice àkọ́kọ́** yóò sì gba
+    owó rẹ̀, àti nítorí pé `success` ni behavior payment method náà, yóò padà wá
+    ní **active** pẹ̀lú invoice tí a ti san.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -d '{
+            "customerId": "{customerId}",
+            "priceId": "{priceId}",
+            "paymentMethodId": "{paymentMethodId}"
+          }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const sub = await nbo("/v1/subscriptions", {
+          method: "POST",
+          idempotencyKey: crypto.randomUUID(),
+          body: {
+            customerId: customer.data.id,
+            priceId: price.data.id,
+            paymentMethodId: method.data.id,
+          },
+        });
+        // sub.data.status → "active"
+        ```
+      </Tab>
+    </CodeGroup>
+
+    `201` pẹ̀lú àpò-ìdáhùn tí ó jẹ́ àṣà wa ni yóò fi ìdí rẹ̀ múlẹ̀:
+
+    ```json
+    {
+      "success": true,
+      "statusCode": 201,
+      "data": {
+        "id": "nbo749201835566sub",
+        "status": "active",
+        "customerId": "nbo…cus",
+        "priceId": "nbo…prc",
+        "currentPeriodEnd": "2026-08-03T10:14:52.004Z",
+        "mode": "sandbox"
+      },
+      "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+    }
+    ```
+
+    Subscription gidi nìyẹn. `data.id` ni ìtọ́kasí gbangba rẹ̀: id kan náà ni ó
+    so àwọn invoice rẹ̀, àwọn ìfiránṣẹ́ [ledger](/concepts/the-ledger) rẹ̀, àti
+    àwọn webhook rẹ̀ pọ̀.
+  </Step>
+</Steps>
+
+## Ohun tí ó ṣẹ̀ṣẹ̀ ṣẹlẹ̀
+
+Subscription náà ṣí cycle kan, ó parí invoice ₦2,500 kan, ó gba owó rẹ̀ nípasẹ̀
+payment method ìdánwò náà, ó sì fi ìṣíwọ́ owó náà sí ledger: gbogbo
+[ìyípo billing](/concepts/how-billing-works), lẹ́ẹ̀kan. Ní sáà tí ó tẹ̀lé e, yóò
+tún ṣiṣẹ́ fúnra rẹ̀.
+
+## Ìtẹ̀síwájú
+
+Àwọn ìpè mẹ́rin tí ó wà lókè ni ọ̀nà tí ohun gbogbo bá lọ dáadáa. Àwọn apá tí ó
+ń jẹ́ kí gbígba owó jẹ́ ohun gidi ní Nàìjíríà wà ní ọ̀nà-ìjápọ̀ kan sí ọ:
+
+<CardGroup cols={2}>
+  <Card title="Nígbà tí charge bá kùnà" href="/concepts/hard-parts/dunning-for-thin-balances">
+    Balance tí kò tó túmọ̀ sí pé charge tí ó kùnà sábà máa ń jẹ́ “kò tíì tó
+    àsìkò,” kì í ṣe “rárá.” Dunning ni ó ni ẹrù ìgbàpadà.
+  </Card>
+  <Card title="Card nílò OTP" href="/concepts/hard-parts/card-tokens-expire">
+    Charge card tí ó ń tún ara rẹ̀ ṣe ní Nàìjíríà sábà máa ń bá ìgbésẹ̀ OTP báńkì
+    pàdé. Wo bí ẹ̀rọ náà ṣe ń gbà á là pẹ̀lú ọ̀nà-ìjápọ̀ checkout tuntun.
+  </Card>
+  <Card title="Yan rail kan" href="/concepts/multi-rail-push-and-pull">
+    Card, direct debit, àti bank transfer ń gba owó lọ́nà tí ó yàtọ̀ síra. Ọ̀kan
+    nínú wọn ni a ń tì wá, kì í ṣe èyí tí a ń fà.
+  </Card>
+  <Card title="Bójú tó àwọn webhook" href="/guides/handle-webhooks">
+    Gbogbo ohun tí ó wà lókè ni ó ń tú event jáde. Gbà wọ́n, ṣàyẹ̀wò wọ́n, kí o sì
+    mú àdàkọ kúrò kí balance kan ṣoṣo tí ó tọ̀nà lè wà.
+  </Card>
+</CardGroup>
+
+<Callout type="tip" title="Trial, proration, àti idempotency">
+  `POST /v1/subscriptions` tún ń gba `trialDays`, `quantity`, àti
+  `collectionMethod`; gbogbo ìpè tí ó ń mú owó rìn ni ó ń gba `Idempotency-Key`
+  kí ìgbìyànjú tuntun má bàa gba owó lẹ́ẹ̀mejì. A ti sọ̀rọ̀ nípa ìwọ̀nyí nínú
+  [bí a ṣe ń bẹ̀rẹ̀ subscription](/guides/start-a-subscription) àti
+  [ledger](/concepts/the-ledger#idempotency-lives-here-too).
+</Callout>

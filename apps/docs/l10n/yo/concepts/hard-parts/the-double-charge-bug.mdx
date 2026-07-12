@@ -1,0 +1,41 @@
+---
+title: "Àṣìṣe gbígba owó lẹ́ẹ̀mejì, àti ìdí tí idempotency key kò fi jẹ́ àṣàyàn"
+description: "Ìgbìyànjú àtúntúnṣe tàbí ìjàmbá kan á sọ ìsanwó kan di méjì, oníbàárà rẹ á sì kíyèsí i kí ìwọ tó kíyèsí i."
+---
+
+## Ìṣẹ̀lẹ̀ náà
+
+Ọjọ́ kìíní oṣù ni. Iṣẹ́ ìdíyelé rẹ jí, ó sì bẹ̀rẹ̀ sí í gba owó lórí àwọn subscription tí àkókò wọn tó. Nígbà tí ó ti ṣe ìdá méjì nínú mẹ́ta iṣẹ́ náà, ìlànà náà kú lọ́wọ́ deploy tuntun, àìtó ìrántí (out-of-memory), tàbí ìsopọ̀ tí ó já. Ó tún bẹ̀rẹ̀, ó sì gbé iṣẹ́ náà ṣáájú láti ibi tí ó ti dúró. Àwọn subscription kan ti gba owó lára wọn tẹ́lẹ̀. Oníbàárà kan á san owó oṣù kan náà lẹ́ẹ̀mejì.
+
+## Ọ̀nà tí ó dà bí ẹni pé ó rọrùn
+
+Ka àwọn subscription tí àkókò wọn tó ní ọ̀kọ̀ọ̀kan, pe charge API fún ọ̀kọ̀ọ̀kan wọn, kí o sì sàmì sí i pé a ti san án nínú database rẹ. Yóò kọjá gbogbo àdánwò tí o bá kọ, nítorí pé àwọn àdánwò rẹ kì í kú ní àárín iṣẹ́.
+
+## Ìdí tí ó fi ń bàjẹ́
+
+Charge náà àti kíkọ "a ti san án" kì í ṣe ohun kan ṣoṣo tí kò ṣeé pín (atomic), bẹ́ẹ̀ sì ni kò sí ìdánilójú pé ìlànà náà yóò parí. Nígbà tí ó bá tún bẹ̀rẹ̀, o kò lè mọ ìyàtọ̀ láàárín "a ti gba owó" àti "a kò gba owó rí," nítorí náà o tún gba owó. Ní ọjà kan níbi tí balance ti tẹ́ẹ́rẹ́, gbígba owó lẹ́ẹ̀mejì láìròtẹ́lẹ̀ kì í kàn ṣe ọ̀rọ̀ refund lásán. Ó jẹ́ ìwé ẹ̀dùn sí ẹ̀ka ìrànlọ́wọ́, ó jẹ́ chargeback, ó sì jẹ́ oníbàárà tí kò ní gbẹ́kẹ̀lé charge kankan mọ́ láti ìsinsìnyí lọ. Ìṣiṣẹ́ búburú kan ṣoṣo lè ṣe èyí sí ẹgbẹẹgbẹ̀rún subscription lẹ́ẹ̀kan náà.
+
+## Bí Nomba One ṣe ń kojú rẹ̀
+
+Ààbò náà kì í ṣe koodu tí a fi ìrètí kọ, bẹ́ẹ̀ sì ni kì í ṣe okùn ìtọ́kasí ọlọ́gbọ́n kan. Database ni.
+
+Gbogbo billing period ni a ń gbà lẹ́ẹ̀kan ṣoṣo. Kí owó kankan tó yẹ̀, ẹ̀rọ náà ń ṣe insert kan tí ó jẹ́ pé ó gba period náà tàbí kò ṣe nǹkan kan rárá:
+
+```sql
+insert into subscription_periods (subscription_id, period_index, ...)
+values ($1, $2, ...)
+on conflict (subscription_id, period_index) do nothing
+returning id;
+```
+
+Àwọn unique index méjì ni ó mú kí ẹ̀dà kejì má ṣeé ṣe rárá ní ti ìkọ́lé: ọ̀kan lórí
+`subscription_periods (subscription_id, period_index)`, àti èkejì lórí invoice fúnra rẹ̀,
+`invoices (subscription_id, period_index)`. Èyíkéyìí nínú wọn fúnra rẹ̀ ti tọ́ka sí pé period kọ̀ọ̀kan lè mú invoice kan ṣoṣo jáde, kódà bí gbogbo advisory lock àti cache tí ó wà lókè rẹ̀ bá kùnà.
+
+Ààbò lòdì sí ìjàmbá wá láti inú pípín ìforúkọsílẹ̀ ya sọ́tọ̀ kúrò lára ìṣiṣẹ́. Scheduler náà ń forúkọ iṣẹ́ atúnṣíṣe kan ṣoṣo sílẹ̀ fún iṣẹ́ kọ̀ọ̀kan, tí a fi id iṣẹ́ náà tọ́ka sí, nítorí náà bí o bá tan ẹ̀rọ mẹ́wàá, ètò ìṣèlò kan ṣoṣo ni yóò jáde, kì í ṣe mẹ́wàá. Sweep náà kàn ń fi bill-job kan ṣoṣo sí ìlà fún subscription kọ̀ọ̀kan tí àkókò rẹ̀ tó; kì í gba owó ní ojú ẹsẹ̀ rárá. Charge fúnra rẹ̀ máa ń ṣẹlẹ̀ lẹ́ẹ̀kan ṣoṣo, nínú worker, lẹ́yìn ìgbà tí a ti gba period náà. Pa iṣẹ́ náà níbikíbi kí o sì tún un bẹ̀rẹ̀, yóò yọrí sí charge kan ṣoṣo àti àkọsílẹ̀ ledger kan ṣoṣo, ní gbogbo ìgbà. Gbígba owó lẹ́ẹ̀mejì kò ṣeé ṣe nítorí bí a ṣe kọ́ ọ, kì í ṣe pé koodu tí a fi ọwọ́ ìṣọ́ra kọ ni ó ń ṣọ́ ọ.
+
+## Wò ó
+
+Ṣe simulator náà pẹ̀lú ìdílọ́wọ́ ní àárín ìṣiṣẹ́, kí o sì wo bí ó ṣe ń yọrí sí charge kan ṣoṣo. Tàbí kà bí scheduler àti gbígba period ṣe ń fi ipá mú èyí ṣẹ.
+
+Wo [ledger náà](/concepts/the-ledger#idempotency-lives-here-too) fún bí a ṣe ń fi ipá mú idempotency ṣẹ, àti [scheduler tí ó ń yè lẹ́yìn ìjàmbá](/concepts/hard-parts/scheduler-that-survives-a-crash).

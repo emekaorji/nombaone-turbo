@@ -73,8 +73,13 @@
   --r-xl: 20px;
   --r-full: 999px;
 
-  /* --- fonts (real Geist values arrive via next/font on <html>) --- */
-  --font-sans: var(--font-geist-sans), "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* --- fonts (real Geist values arrive via next/font on <html>) ---
+   * Inter sits behind Geist purely as a glyph safety net. Geist covers every
+   * glyph English needs, so an English page never reaches Inter — but Geist has
+   * no ɓ ɗ ƙ and no ṣ, so without this a stray Yorùbá or Hausa letter anywhere
+   * in the English docs would be served by whatever the reader's OS happens to
+   * have. Now it lands in a face we chose. */
+  --font-sans: var(--font-geist-sans), "Geist", var(--font-intl), "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, "SF Mono", Menlo, Monaco, monospace;
 
   /* --- semantic tokens: DARK (default) --- */
@@ -158,6 +163,25 @@
   /* docs-specific: code surfaces read cleanly on the light page (not pure white) */
   --code-bg: #fafafa;
   --code-titlebar-bg: #ffffff;
+}
+
+/* ============================================================================
+   Translated locales are set WHOLLY in Inter, not in Geist-with-fallback.
+
+   Per-glyph fallback would put two typefaces inside a single word — the `ƙ` in
+   `ƙarƙashin`, the `ṣ` in `ṣíṣe`, arriving from a different face than the
+   letters touching them. One family per page instead. `--font-mono` is
+   untouched: code is ASCII.
+
+   THIS RULE MUST STAY UNLAYERED. The `:root` block above is unlayered, and in
+   the CSS cascade an unlayered declaration beats EVERY layered one no matter
+   how specific — so the same rule inside `@layer base` silently loses to
+   `:root` and the page renders in Geist anyway. Sitting unlayered, it wins on
+   specificity: `html[data-locale="yo"]` (0,1,1) > `:root` (0,1,0).
+   ============================================================================ */
+html[data-locale="yo"],
+html[data-locale="ha"] {
+  --font-sans: var(--font-intl), "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* ============================================================================

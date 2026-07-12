@@ -1,0 +1,56 @@
+---
+title: Karanta settlement
+description: "Fahimci payout ka kuma gano inda kuɗinka yake daidai: abin da ya settle, kuɗin sabis da aka cire, abin da ke akwai yanzu, da abin da aka riƙe na ɗan lokaci kafin ka janye."
+section: merchants
+order: 5
+---
+
+Lokacin da customer ya biya, kuɗin ba sa ɓacewa cikin wani akwatin duhu. **Settlement**
+shi ne rikodin da ke nuna cewa kuɗin da aka karɓa ya zama *naka*: abin da aka karɓa,
+kuɗin sabis, da ragowarka. Daga console kana iya ganin inda kowace naira take a kowane lokaci.
+
+## Abin da settlement ke nunawa
+
+- **Abin da aka karɓa**: abin da customer ya biya.
+- **Kuɗin sabis**: kuɗin dandali da aka cire daga wannan biyan.
+- **Ragowarka**: abin da ya rage, wanda naka ne.
+- **Matsayi**: settled (ya zama naka), ko refunded.
+
+Ragowarka takan settle zuwa account ɗinka na Nomba, a shirye don a yi payout zuwa bankinka.
+
+## Inda kuɗinka yake
+
+A kowane lokaci, balance ɗinka yana ɗaya daga cikin wurare uku:
+
+- **Akwai (available)**: ya settle kuma yana shirye ka janye shi zuwa bankinka yanzu.
+- **An riƙe (escrow)**: kuɗi daga biyan kuɗi na kwanan nan, wanda ake riƙe na ɗan gajeren
+  lokaci domin a iya sarrafa refund cikin sauƙi kafin kuɗin su fita. Ba da daɗewa ba zai zama available.
+- **An biya (paid out)**: an riga an janye shi zuwa bankinka.
+
+<Callout type="note" title="Dalilin da ya sa ake riƙe wasu kuɗi na ɗan lokaci">
+  Ana riƙe biyan kuɗi na kwanan nan na ɗan gajeren lokaci a escrow domin idan an buƙaci
+  refund, a iya cire shi daga wannan biyan kafin ka janye shi. Matakin tsaro ne: kuɗin
+  naka ne har yanzu, kuma zai koma available nan ba da daɗewa ba.
+</Callout>
+
+## Refund da payout
+
+- **Refund**: kana iya mayar da kuɗin da customer ya biya. Ba a mayar da kuɗin sabis na
+  dandali da ke kansa ba; sauran yana komawa ga customer.
+- **Payout**: janye balance ɗinka da ke akwai zuwa account ɗin bankinka. Abin da za ka iya
+  janyewa shi ne ragowarka da ta settle, ban da duk abin da har yanzu ake riƙe a escrow.
+
+<Callout type="tip" title="Kowace lamba tana da alaƙa da wani biyan kuɗi">
+  Kowane settlement yana da alaƙa kai tsaye da subscription da invoice ɗin da ya fito daga
+  gare su, don haka payout ba wata lamba ce mai ban mamaki ba: kana iya bin sawunta har zuwa
+  customer da cycle ɗin da ya haifar da ita.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Ƙirƙiri plan" href="/merchants/create-a-plan">
+    Inda kuɗin ke farawa.
+  </Card>
+  <Card title="Bayani gaba ɗaya" href="/merchants/overview">
+    Duk hanyar da ba ta buƙatar coding, daga farko zuwa ƙarshe.
+  </Card>
+</CardGroup>

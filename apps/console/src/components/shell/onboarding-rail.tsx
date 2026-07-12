@@ -52,15 +52,19 @@ function RailStep({ item }: { item: OnboardingStep }) {
  */
 export function OnboardingRail({ initial }: { initial: OnboardingState }) {
   const [state, setState] = useState<OnboardingState>(initial);
+  const [adopted, setAdopted] = useState<OnboardingState>(initial);
   const [hidden, setHidden] = useState(false);
   const pathname = usePathname();
   const [, startTransition] = useTransition();
 
-  // A fresh server render of the shell (e.g. a step modal calling router.refresh)
-  // passes new state — adopt it so completed steps tick off without a navigation.
-  useEffect(() => {
+  // A fresh server render of the shell (e.g. a step modal calling router.refresh) passes
+  // new state — adopt it so completed steps tick off without a navigation. Done DURING
+  // render (React's "adjust state when a prop changes" pattern), not in an effect: an
+  // effect that setStates on every new prop cascades an extra render pass.
+  if (initial !== adopted) {
+    setAdopted(initial);
     setState(initial);
-  }, [initial]);
+  }
 
   useEffect(() => {
     let alive = true;

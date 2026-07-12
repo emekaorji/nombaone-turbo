@@ -1,12 +1,17 @@
 export const dynamic = 'force-dynamic';
 
-import { Info, Layers } from 'lucide-react';
+import { AlertTriangle, Info, Layers } from 'lucide-react';
 import Link from 'next/link';
 
 import { EmptyState } from '@/components/console/empty-state';
 import { NewPlanButton } from '@/components/console/plans/new-plan-button';
 import { NewPriceButton } from '@/components/console/plans/new-price-button';
-import { ArchivePlanButton, DeactivatePriceButton, EditPlanButton } from '@/components/console/plans/plan-action-buttons';
+import {
+  ArchivePlanButton,
+  ChangePriceButton,
+  DeactivatePriceButton,
+  EditPlanButton,
+} from '@/components/console/plans/plan-action-buttons';
 import { listPlans, type PlanStatus } from '@/lib/plans';
 
 function StatusPill({ status }: { status: PlanStatus }) {
@@ -32,9 +37,9 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[26px] font-semibold tracking-[-0.4px] text-foreground">Plans and prices</h1>
+          <h1 className="text-[26px] font-semibold tracking-[-0.4px] text-foreground">Plans</h1>
           <p className="text-[14px] text-muted-foreground">
-            Your catalog. Prices are versioned and immutable, so a change is a new price.
+            Your catalog. Change a price any time — existing subscribers keep the price they signed up on.
           </p>
         </div>
         <NewPlanButton />
@@ -46,7 +51,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           iconTone="accent"
           title="No plans yet"
           titleSize={16}
-          description={'Create your first plan, then add a price.\nSubscriptions bill against a price.'}
+          description={'Create your first plan and set what it costs.'}
         />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-[18px] lg:flex-row">
@@ -65,8 +70,17 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
                   <span className="text-[15px] font-semibold text-foreground">{p.name}</span>
                   <StatusPill status={p.status} />
                 </div>
+                {/* The ladder, in one line — what a customer can actually be put on. */}
+                {p.billable ? (
+                  <span className="truncate text-[12.5px] text-muted-foreground">{p.ladder}</span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-[12.5px] text-warning">
+                    <AlertTriangle className="size-[13px] shrink-0" strokeWidth={2} />
+                    Can&apos;t be billed — no price
+                  </span>
+                )}
                 <span className="text-[12.5px] text-subtle-foreground">
-                  {p.subscribers} subscribers · {p.pricesCount} {p.pricesCount === 1 ? 'price' : 'prices'}
+                  {p.subscribers} {p.subscribers === 1 ? 'subscriber' : 'subscribers'}
                 </span>
                 <div className="flex items-baseline justify-end gap-1.5">
                   <span className="text-[17px] font-semibold tracking-[-0.3px] text-foreground">{p.mrr}</span>
@@ -86,7 +100,9 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
                   <StatusPill status={detail.status} />
                 </div>
                 <div className="flex items-center gap-2.5">
-                  {detail.status === 'active' ? <EditPlanButton planRef={detail.reference} name={detail.name} description={detail.description} /> : null}
+                  {detail.status === 'active' ? (
+                    <EditPlanButton planRef={detail.reference} name={detail.name} description={detail.description} />
+                  ) : null}
                   {detail.status === 'active' ? <ArchivePlanButton planRef={detail.reference} /> : null}
                   <NewPriceButton planRef={detail.reference} />
                 </div>
@@ -109,48 +125,69 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
               </div>
             </div>
 
-            {/* Prices card */}
+            {/* The price ladder */}
             <div className="flex min-h-0 flex-1 flex-col gap-[14px] overflow-hidden rounded-lg border border-border bg-surface-1 p-[18px]">
-              <span className="text-[15px] font-semibold text-foreground">Prices</span>
-
-              <div className="flex items-start gap-2.5 rounded border border-accent-border bg-accent-muted px-3.5 py-3">
-                <Info className="mt-px size-4 shrink-0 text-accent" strokeWidth={2} />
-                <p className="text-[12.5px] text-foreground">
-                  Prices are immutable. To change pricing, add a new price and deactivate the old one. Existing
-                  subscribers keep the price they signed up on.
-                </p>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-[15px] font-semibold text-foreground">What it costs</span>
+                {detail.billable ? (
+                  <span className="truncate font-mono text-[12.5px] text-muted-foreground">{detail.ladder}</span>
+                ) : null}
               </div>
 
-              {detail.prices.length === 0 ? (
-                <div className="flex flex-col items-center gap-1 py-8 text-center">
-                  <span className="text-[13.5px] font-medium text-foreground">No prices yet</span>
-                  <span className="text-[12.5px] text-muted-foreground">Add a price so this plan can be billed.</span>
+              {/* A legacy plan with nothing to bill against. The create form can no longer produce one,
+                  but the rows it already produced are still here — so this is a repair, not a step. */}
+              {!detail.billable ? (
+                <div className="flex items-start gap-2.5 rounded border border-warning/40 bg-warning-bg px-3.5 py-3">
+                  <AlertTriangle className="mt-px size-4 shrink-0 text-warning" strokeWidth={2} />
+                  <div className="flex flex-1 flex-col items-start gap-2.5">
+                    <p className="text-[12.5px] text-foreground">
+                      This plan can&apos;t be billed yet — add a price. Nobody can subscribe to it until you do.
+                    </p>
+                    <NewPriceButton planRef={detail.reference} label="Add a price" />
+                  </div>
                 </div>
               ) : (
-                <div className="flex flex-col overflow-x-auto">
-                  <div className="flex min-w-[600px] items-center gap-[14px] border-b border-border px-1 py-2.5 font-mono text-[10.5px] tracking-[0.4px] text-subtle-foreground">
-                    <span className="flex-1">AMOUNT</span>
-                    <span className="w-[120px]">INTERVAL</span>
-                    <span className="w-[150px]">TYPE</span>
-                    <span className="w-[96px] text-right">SUBSCRIBERS</span>
-                    <span className="w-[104px]">STATUS</span>
-                    <span className="w-[110px]" />
-                  </div>
+                <div className="flex items-start gap-2.5 rounded border border-accent-border bg-accent-muted px-3.5 py-3">
+                  <Info className="mt-px size-4 shrink-0 text-accent" strokeWidth={2} />
+                  <p className="text-[12.5px] text-foreground">
+                    Change a price whenever you like. The old price is retired, not rewritten — existing subscribers
+                    keep what they signed up on, and only new subscribers pay the new one.
+                  </p>
+                </div>
+              )}
+
+              {detail.prices.length === 0 ? null : (
+                <div className="flex flex-col">
                   {detail.prices.map((p, i) => (
                     <div
                       key={p.reference}
-                      className={`flex min-w-[600px] items-center gap-[14px] px-1 py-3 ${i < detail.prices.length - 1 ? 'border-b border-border' : ''}`}
+                      className={`flex flex-wrap items-center gap-x-4 gap-y-2 px-1 py-3.5 ${i < detail.prices.length - 1 ? 'border-b border-border' : ''} ${p.active ? '' : 'opacity-60'}`}
                     >
-                      <span className="flex-1 font-mono text-[13.5px] font-medium text-foreground">{p.amount}</span>
-                      <span className="w-[120px] text-[12.5px] text-muted-foreground">{p.interval}</span>
-                      <span className="w-[150px] font-mono text-[11.5px] text-subtle-foreground">{p.type}</span>
-                      <span className="w-[96px] text-right font-mono text-[13px] text-foreground">{p.subscribers}</span>
-                      <span className="w-[104px]">
-                        <StatusPill status={p.active ? 'active' : 'archived'} />
-                      </span>
-                      <span className="w-[110px]">
-                        {p.active ? <DeactivatePriceButton priceRef={p.reference} /> : null}
-                      </span>
+                      <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[14px] font-medium text-foreground">{p.short}</span>
+                          {p.savings > 0 ? (
+                            <span className="rounded-full bg-success-bg px-2 py-[2px] text-[11px] font-medium text-success">
+                              save {p.savings}%
+                            </span>
+                          ) : null}
+                          {p.active ? null : (
+                            <span className="rounded-full bg-surface-2 px-2 py-[2px] text-[11px] font-medium text-muted-foreground">
+                              Retired
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[12px] text-subtle-foreground">
+                          Bills {p.cadence} · {p.type} · {p.subscribers}{' '}
+                          {p.subscribers === 1 ? 'subscriber' : 'subscribers'}
+                        </span>
+                      </div>
+                      {p.active ? (
+                        <div className="flex items-center gap-4">
+                          <ChangePriceButton priceRef={p.reference} current={p.short} subscribers={p.subscribers} />
+                          <DeactivatePriceButton priceRef={p.reference} />
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>

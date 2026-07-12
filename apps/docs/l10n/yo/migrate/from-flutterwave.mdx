@@ -1,0 +1,51 @@
+---
+title: Wíwá láti Flutterwave
+description: Fi ìpínyà tx_ref / flw_ref àti àwòṣe payment plan ti Flutterwave wé ohun tí ó dọ́gba pẹ̀lú wọn ní Nomba One — ìtọ́kasí kan ṣoṣo, kobo odidi.
+section: migrate
+order: 4
+---
+
+Tí o bá ti so Flutterwave pọ̀ mọ́ ètò rẹ rí, ìyípadà tí ó tóbi jùlọ jẹ́ ìtura:
+**ìtọ́kasí kan dípò méjì**. Níbi tí Flutterwave ti ń fún ọ ní `tx_ref` tí ìwọ ń
+ṣẹ̀dá àti `flw_ref` tí òun ń ṣẹ̀dá (tí o sì ní láti mú kí wọ́n bára wọn mu),
+Nomba One ń fún resource kọ̀ọ̀kan ní ìdánimọ̀ `nbo…` kan ṣoṣo tí àwọn ledger
+postings rẹ̀ àti webhooks rẹ̀ jọ ń lò.
+
+## Àwòrán èròǹgbà
+
+| Flutterwave | Nomba One | Àkíyèsí |
+|---|---|---|
+| Payment Plan | [Plan](/reference/plans) + [Price](/reference/prices) | Iye owó àti àárín ìgbà wà lórí price. |
+| `tx_ref` (tìrẹ) + `flw_ref` (tiwọn) | ìtọ́kasí `nbo…` kan ṣoṣo | Ìdánimọ̀ kan fún resource kọ̀ọ̀kan, níbi gbogbo. Wo [ledger náà](/concepts/the-ledger). |
+| Subscriptions lórí plan | [Subscriptions](/reference/subscriptions) | Èrò kan náà, ṣùgbọ́n pẹ̀lú ìgbésí-ayé tí ó gbòòrò sí i. |
+| `amount` (náírà, float) | `unitAmountInKobo` (kobo odidi) | Kò sí float: `250000` = ₦2,500.00. |
+| Webhook `event` | [Àwọn event tí a kójọ](/webhooks/event-catalog) | Wọ́n ní irú, a ti ṣàkọsílẹ̀ wọn, a sì fọwọ́ sí wọn. |
+
+## Àwọn ohun mẹ́ta tí ó yí padà
+
+- **Ìtọ́kasí kan ṣoṣo.** Dáwọ́ dídi `tx_ref` mú `flw_ref` dúró. Pẹ̀lú ìdánimọ̀
+  `nbo…` èyíkéyìí, o lè rí resource náà, àwọn ledger postings rẹ̀, àti àwọn
+  event rẹ̀. Èyí mú gbogbo ẹ̀yà àṣìṣe “ìdánimọ̀ wo ni kí n tọ́jú?” kúrò.
+- **Kobo odidi, kò sí float.** Iye owó Flutterwave wà ní náírà, ó sì sábà máa ń
+  jẹ́ float. Nomba One máa ń jẹ́ kobo odidi nígbà gbogbo. Wo
+  [owó jẹ́ kobo odidi](/concepts/money-is-integer-kobo) kí o sì ṣọ́ra fún
+  [ìdẹ̀kùn 100×](/concepts/money-is-integer-kobo) nígbà tí o bá ń ṣí àwọn iye owó rẹ.
+- **Fi HMAC lórí raw body ṣàyẹ̀wò webhooks.** Fi
+  [ọ̀nà ìfọwọ́sí](/webhooks/signing-and-verification) rọ́pò àyẹ̀wò header
+  `verif-hash`: HMAC-SHA256 lórí `timestamp.rawBody`, pẹ̀lú ìfiwéra tí àkókò rẹ̀ dúró ṣinṣin.
+
+<Callout type="tip" title="Bank transfer jẹ́ ọ̀nà kíkún, kì í ṣe ọ̀nà àbáyọ">
+  Flutterwave ń wo àwọn transfer bí charge ẹ̀ẹ̀kan ṣoṣo tí ìwọ ni yóò rán mọ́
+  plan. Ní Nomba One, transfer jẹ́ rail subscription tòótọ́. Ẹ̀rọ náà yóò fi ibi
+  tí a ó ti san owó hàn, yóò sì ṣe settlement nígbà tí owó bá dé. Wo
+  [multi-rail: títì àti fífà](/concepts/multi-rail-push-and-pull).
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Láti ọ̀dọ̀ olùṣàkóso ìsanwó èyíkéyìí" href="/migrate/generic">
+    Ìwé ìlànà fún ṣíṣe méjèèjì lẹ́ẹ̀kan náà láìsí àkókò ìdádúró.
+  </Card>
+  <Card title="Subscription àkọ́kọ́ rẹ" href="/getting-started/your-first-subscription">
+    Kọ́ ìṣàn kan náà láti ìbẹ̀rẹ̀ dé òpin.
+  </Card>
+</CardGroup>

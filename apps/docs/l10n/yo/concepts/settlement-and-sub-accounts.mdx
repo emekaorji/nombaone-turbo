@@ -1,0 +1,45 @@
+---
+title: Settlement àti sub-accounts
+description: Bí ìkówọlé tí a ti fọwọ́ sí ṣe ń pín sí ọ̀yà pẹpẹ àti net oníṣòwò, tí ó ń settle sí sub-account Nomba wọn, tí ó sì ń dúró láìséwu fún claw-back pẹ̀lú escrow lock.
+---
+
+Nígbà tí a bá ti gba charge subscription tí a sì ti fọwọ́ sí i, owó náà kì í kàn dúró sí
+àdàgún kan ṣoṣo. Ó **ń pín ní ìgbà ìkówọlé**, ó sì ń settle sí ibi tó tọ́. Nomba One jẹ́
+multi-tenant láti ìpìlẹ̀: owó organization kọ̀ọ̀kan jẹ́ tirẹ̀ nìkan.
+
+## Pínpín ní ìgbà ìkówọlé
+
+A ń pín ìkówọlé tí a fọwọ́ sí sí ẹsẹ̀ méjì, tí a sì ń kọ wọ́n sínú [ledger](/concepts/the-ledger):
+
+- **Ọ̀yà pẹpẹ**: ọ̀yà tí pẹpẹ rẹ ń gbà, tí ẹ̀rọ ìṣírò ọ̀yà ń ṣírò.
+- **Net organization náà**: ohun tó ṣẹ́ kù, tí í ṣe ti oníṣòwò.
+
+Net náà ń settle sí **sub-account Nomba** ti organization yẹn. A ń fi pínpín náà sílẹ̀ gẹ́gẹ́ bí
+ẹsẹ̀ ledger tó dọ́gba, nítorí náà gross máa ń dọ́gba pẹ̀lú ọ̀yà àti net nígbà gbogbo, dé kobo gan-an.
+
+## Sub-accounts
+
+**Sub-account** ni àkàǹtì organization náà lórí Nomba, níbi tí net tí ó ti settle ti ń bọ́ sí.
+Multi-tenancy túmọ̀ sí pé integration kan ṣoṣo lè máa ṣiṣẹ́ fún ọ̀pọ̀ oníṣòwò, tí ẹnìkọ̀ọ̀kan ní
+sub-account tirẹ̀, customer tirẹ̀, àti owó tirẹ̀ tí a ya sọ́tọ̀. Wo
+[ìyàsọ́tọ̀ jẹ́ ohun ìní àwòṣe-dátà](/concepts/hard-parts/isolation-is-a-data-model-property).
+
+## Escrow, refund, àti payout
+
+Owó tí ó ti settle kì í ṣe ohun tí o lè yọ jáde lẹ́sẹ̀kẹsẹ̀. **Escrow lock** fún settlement
+tuntun máa ń dì wọ́n mú fún àkókò kan, kí a lè fa owó padà nípasẹ̀ refund kí owó tó kúrò:
+
+- **Refund**: ó ń yí **ẹsẹ̀ organization nìkan** padà sí ọ̀dọ̀ ẹni tó san; a kì í dá ọ̀yà pẹpẹ
+  padà, a kì í sì í fọwọ́ kàn án rárá. Refund ń fi ìdúnàdúrà ìyípadà tuntun sílẹ̀, nítorí náà
+  ledger yóò wà ní pípé.
+- **Payout**: ó ń yọ balance organization tí ó wà ní àyè (net tí ó ti settle, láìsí escrow lock
+  àti ìwọ̀n buffer tó kéré jù) sí àkàǹtì báǹkì.
+
+<Callout type="note" title="Kò ní jẹ́ ìrọ́, kò sì ní dí lọ́nà">
+  A ń ṣọ́ ẹsẹ̀ provider fún refund àti payout: a máa ń kọ òtítọ́ ledger sílẹ̀ nígbà gbogbo,
+  gbígbé owó gidi lórí Nomba sì ń ṣẹlẹ̀ lẹ́yìn ìfìdí rẹ̀ múlẹ̀ lórí ìlà nìkan, pẹ̀lú ìyípadà
+  àtúnṣe tí gbígbé owó bá kùnà, kí a má bàa purọ́ pé a ti fi owó ránṣẹ́, kí owó má sì dí lọ́nà.
+</Callout>
+
+Fún òtítọ́ iṣẹ́ ojoojúmọ́ nípa bí a ṣe ń fi owó bá oníṣòwò mu láìsí spreadsheet, wo
+[settlement láìsí spreadsheet](/concepts/hard-parts/settlement-without-spreadsheets).

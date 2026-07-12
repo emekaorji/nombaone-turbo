@@ -1,0 +1,46 @@
+---
+title: Nomba One
+description: "Mayar da tura kuɗi sau ɗaya zuwa gudanar da kasuwancin subscription: plans, cycles, proration, dunning, reconciliation, da settlement a kan kowane rail, an gina shi bisa yadda kuɗi ke motsi a Najeriya da gaske."
+toc: false
+order: 0
+---
+
+Nomba tana bayar da kayan aikin da suke tura kuɗi. **Nomba One** ita ce sashen da take
+mayar da tura kuɗi _sau ɗaya_ zuwa gudanar da kasuwancin subscription (plans, cycles,
+proration, dunning, reconciliation, da settlement), domin kada wata tawaga ta sake gina
+shi. Yana aiki a kan kowane rail (card, direct debit, transfer, crypto), an kuma gina
+shi bisa yadda kuɗi ke motsi a nan da gaske: balance mai ƙaranci, transfer da farko,
+inda charge da ya faskara yakan nufi _"ba yanzu ba,"_ ba _"aʼa"_ ba.
+
+Waɗannan takardu **ana iya gudanar da su, kuma gaskiya ne**. Za ka iya kallon
+subscription yana biya, ya faskara saboda balance mai ƙaranci, sannan ya farfaɗo ta
+hanyar dunning (a kan sandbox na gaske, cikin devtools naka) kafin ka rubuta layi ɗaya.
+Kowane error zai gaya maka daidai abin da za ka yi, kuma sassan da suka fi wahala
+(dunning, reconciliation, da tarkon biya sau biyu) suna a bayyane cikin takardun.
+
+<Callout type="note" title="Kuɗi kobo ne cikakke">
+  Kowane adadi a cikin API lamba ce cikakkiya ta **kobo** (₦1 = kobo 100). `250000` shi
+  ne ₦2,500.00. Babu float, babu decimal string. Ana kiran kowane field na kuɗi da
+  `…InKobo` domin kada a kuskure maʼaunin.
+</Callout>
+
+## Fara nan
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" href="/getting-started/quickstart">
+    Karɓi sandbox key, sannan ka kai ga subscription naka na farko cikin ʼyan mintuna.
+  </Card>
+  <Card title="Authentication" href="/getting-started/authentication">
+    Secret key `nbo_sandbox_` / `nbo_live_` na kowace organization, da yadda yake aiki.
+  </Card>
+  <Card title="Environments" href="/getting-started/environments">
+    Sandbox da live, da yadda key ɗaya ke ɗaure kowace buƙata da mode ɗaya.
+  </Card>
+</CardGroup>
+
+## An gina shi don a tabbatar, ba don a amince kawai ba
+
+Sauran takardun suna zuwa (cikakkun jagorori, simulator na subscription, error
+reference, da **sassan da suka fi wahala** cikin gaskiya), kowanne kuma za a iya
+gudanar da shi a kan sandbox domin ka tabbatar yana aiki maimakon ka amince da maganarmu
+kawai. Fara da quickstart da ke sama; za ka ga `201` na gaske kafin ka ɗauki wani mataki.

@@ -13,6 +13,10 @@ import {
   subscriptionPeriodsTable,
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
+import { upsertOrgBillingSettings } from '@nombaone/sara/org';
+import { registerRail } from '@nombaone/sara/rails';
+import { mintReference } from '@nombaone/sara/reference';
+
 import {
   confirmInvoiceFromWebhook,
   processInboundInvoiceEvent,
@@ -22,11 +26,8 @@ import {
 } from '@shared/services/billing';
 import { applyCreditsOldestFirst } from '@shared/services/credits';
 import { createCustomer } from '@shared/services/customers';
-import { upsertOrgBillingSettings } from '@nombaone/sara/org';
 import { createPlan } from '@shared/services/plans';
 import { createPrice } from '@shared/services/prices';
-import { registerRail } from '@nombaone/sara/rails';
-import { mintReference } from '@nombaone/sara/reference';
 import { churnFromPastDue, enterPastDue, loadSubscriptionRow } from '@shared/services/subscriptions';
 
 import { startHarness, type Harness } from '../helpers/harness';
@@ -428,8 +429,11 @@ describe('subscriptions + billing e2e', () => {
     const before = await loadSubscriptionRow(harness.db, ctxA, subRef);
     const result = await runCycle(harness.db, ctxA, subRef);
     expect(result.outcome).toBe('open');
-    expect(await countKind(result.invoice.reference, 'charge')).toBe(0);
-    expect(await countKind(result.invoice.reference, 'settlement')).toBe(0);
+    // An `open` cycle always mints an invoice — only a cancel-at-period-end trip does not.
+    const openInvoice = result.invoice;
+    if (!openInvoice) throw new Error('expected an invoice for an `open` cycle');
+    expect(await countKind(openInvoice.reference, 'charge')).toBe(0);
+    expect(await countKind(openInvoice.reference, 'settlement')).toBe(0);
     const after = await loadSubscriptionRow(harness.db, ctxA, subRef);
     expect(after.currentPeriodIndex).toBe(before.currentPeriodIndex + 1);
   });

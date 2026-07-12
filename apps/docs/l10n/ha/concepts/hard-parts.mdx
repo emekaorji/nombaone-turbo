@@ -1,0 +1,93 @@
+---
+title: Sassan da suka fi wahala
+description: Sassan billing na subscription da suke da wahala da gaske, da yadda Nomba One ke tunkarar kowanne. Rubuce-rubuce na gaskiya kan tarkunan da yawancin tsarin billing ke ɓoyewa har sai ka faɗa cikinsu a production.
+section: concepts
+order: 90
+---
+
+Yawancin takardun billing suna nuna maka hanya mai sauƙi kawai, su yi shiru kan sauran.
+Waɗannan rubuce-rubucen suna yin akasin haka: kowanne yana ɗaukar wani ɓangare na billing
+na subscription da yake da wahala da gaske (musamman a Najeriya, inda kuɗi ke shigowa ta
+bank transfer, balance kuma ba kasafai yake cika ba), sannan ya bayyana tarkon, dalilin da
+ya sa yake da sauƙi a yi kuskure, da yadda Nomba One ke tunkarar sa. Wannan shi ne karatun
+da ke bambanta abin wasa da tsarin billing na gaskiya.
+
+## Samun kuɗin daidai
+
+Kurakuran da ke nan su ne masu tsada: an yi wa customer charge sau biyu, proration da ya
+karkace da kobo ɗaya, ko sake kunna webhook da ya sake ƙara credit a balance.
+
+<CardGroup cols={2}>
+  <Card title="Tarkon charge sau biyu" href="/concepts/hard-parts/the-double-charge-bug">
+    Dalilin da ya sa madauwarin billing da ke yin charge sau biyu lokaci-lokaci ba shi da amfani, da yadda idempotency ke hana hakan.
+  </Card>
+  <Card title="Proration matsala ce ta ledger" href="/concepts/hard-parts/proration-is-a-ledger-problem">
+    Yadda ɓangarorin kobo da suka fito daga canji a tsakiyar cycle ke daidaituwa domin ƙafafun ledger su daidaita kullum.
+  </Card>
+  <Card title="Sake aika webhook ≠ sake yin charge" href="/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge">
+    Dalilin da ya sa delivery aƙalla sau ɗaya ke nufin handler ɗinka dole ya zama idempotent ga ledger.
+  </Card>
+</CardGroup>
+
+## Rail na Najeriya
+
+Zaton cewa card yana kwance a fayil tare da balance cike zato ne na ƙasashen waje. A nan,
+ana tura kuɗi ne ta bank transfer, card na buƙatar OTP, kuma charge da ya kasa yawanci na
+nufin “ba yanzu ba.”
+
+<CardGroup cols={2}>
+  <Card title="Bank transfer ba wani payment method ba ne kawai" href="/concepts/hard-parts/bank-transfer-is-not-just-another-method">
+    Dalilin da ya sa ba a iya jan rail da ake turawa, da abin da “karɓar kuɗi” ke nufi lokacin da customer ne ya fara shi.
+  </Card>
+  <Card title="Card token na ƙarewa" href="/concepts/hard-parts/card-tokens-expire">
+    Dalilin da ya sa charge na card mai maimaituwa ke bugun OTP, da tsarin dawowa ta checkout link.
+  </Card>
+  <Card title="Mandate da izini" href="/concepts/hard-parts/mandates-and-consent">
+    Zagayen rayuwar direct debit (ƙirƙira, izini, kunnawa, cirewa) da giɓin async da ke tattare da shi.
+  </Card>
+  <Card title="Lokacin da transfer bai yi daidai da invoice ba" href="/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice">
+    Biyan kuɗi ƙasa da kuɗin, biyan fiye da kuɗin, da reference mara daidai: lamari ne na hakika, ba na gefe ba.
+  </Card>
+  <Card title="Dunning don balance mara yawa" href="/concepts/hard-parts/dunning-for-thin-balances">
+    Dalilin da ya sa sake gwadawa a lokacin albashi ya fi tsayayyen jadawali sakamako lokacin da balance bai cika ba.
+  </Card>
+</CardGroup>
+
+## Lokaci, cycle, da churn
+
+Billing matsalar tsara lokaci ce, kalanda kuma ba ta jin ƙai: watanni ba su daidaita a
+tsawo ba, subscription kuma na ƙarewa ta hanyoyi biyu mabambanta sosai.
+
+<CardGroup cols={2}>
+  <Card title="Tarkon billing na ƙarshen wata" href="/concepts/hard-parts/the-end-of-month-billing-trap">
+    Abin da “yi billing a ranar 31” ke nufi a watan Fabrairu, da yadda ake kiyaye anchor.
+  </Card>
+  <Card title="Churn na son rai da na tilas" href="/concepts/hard-parts/voluntary-vs-involuntary-churn">
+    Dalilin da ya sa su biyun event ne daban da ke buƙatar kulawa daban: sokewa da dawo da mai amfani.
+  </Card>
+  <Card title="Scheduler da ke tsira daga faɗuwar tsarin" href="/concepts/hard-parts/scheduler-that-survives-a-crash">
+    Yadda madauwarin billing ke ci gaba sau ɗaya tak bayan gazawa a tsakiyar aiki.
+  </Card>
+</CardGroup>
+
+## Multi-tenancy da amana
+
+Idan kana gudanar da billing don ʼyan kasuwa da yawa, ware bayanai da settlement sun daina
+zama ƙarin fasali — sun zama duk kayan da kake sayarwa.
+
+<CardGroup cols={2}>
+  <Card title="Settlement ba tare da spreadsheet ba" href="/concepts/hard-parts/settlement-without-spreadsheets">
+    Daidaita kuɗi da ʼyan kasuwa a kan babban sikeli, ba tare da mafarki mai ban tsoro na reconciliation ba.
+  </Card>
+  <Card title="Ware bayanai fasali ne na tsarin data" href="/concepts/hard-parts/isolation-is-a-data-model-property">
+    Dalilin da ya sa dole a gina multi-tenancy cikin schema tun farko, ba a manne shi da filter daga baya ba.
+  </Card>
+  <Card title="Abin da za ka duba kafin ka amince da wani billing layer" href="/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer">
+    Tambayoyin da ya kamata ka yi wa kowane tsarin billing kafin ka bi ta cikinsa da kuɗi na gaske.
+  </Card>
+</CardGroup>
+
+<Callout type="note" title="Fara da ainihin fahimta">
+  Sabo ne a nan? Fara karanta [yadda billing ke aiki](/concepts/how-billing-works) da
+  [ledger](/concepts/the-ledger). Sassan da suka fi wahala sun gina kan waɗannan.
+</Callout>

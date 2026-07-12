@@ -1,0 +1,80 @@
+---
+title: Tantancewa
+description: "Ana tantance kowane buƙata da maɓallin sirri na organization ɗinka, wanda ake aikawa a matsayin Bearer token. Farkon maɓallin shi ke ɗaure shi da mode guda: sandbox ko live."
+section: get-started
+---
+
+nombaone API na tantancewa da **maɓallin sirri guda ɗaya ga kowace organization**.
+Kana aikawa da shi a matsayin Bearer token a cikin kowane buƙata:
+
+```http
+Authorization: Bearer nbo_sandbox_…
+```
+
+Babu wani client id na daban ko wani matakin sa hannu: maɓallin sirri shi ne ke gane
+organization ɗinka, shi ne kuma ke tabbatar da cewa buƙatar taka ce — don haka dole ne ya zauna a kan server kaɗai.
+
+## Tsarin maɓalli
+
+Maɓallin sirri ya ƙunshi farkon da ke nuna mode, sai bit 256 na haruffa bazuwar a bayansa:
+
+| Farko | Mode | Misali |
+|---|---|---|
+| `nbo_sandbox_` | Sandbox | `nbo_sandbox_a1b2c3d4…` |
+| `nbo_live_` | Live | `nbo_live_x9y8z7w6…` |
+
+Ana nuna maka cikakken maɓallin sirri **sau ɗaya kacal**, lokacin ƙirƙira shi, kuma
+ba za a taɓa iya dawo da shi ba bayan haka: hash kawai API ke ajiyewa. Idan ka rasa
+shi, sai ka sauya maɓallin ka kuma sabunta sabar ɗinka.
+
+<Callout type="danger" title="Ka kula da maɓallin sirri kamar kalmar sirri">
+  Maɓallin sirri na iya motsa kuɗi a cikin live mode. Kada ka taɓa saka shi cikin
+  git, kada ka sa shi cikin lambar da ke aiki a gefen abokin ciniki ko cikin
+  manhajar wayar hannu, kuma kada ka rubuta shi cikin log. Ka ɗauko shi daga
+  environment variable ko daga secrets manager.
+</Callout>
+
+## Maɓallin shi ke ɗaure mode
+
+Mode ba parameter ne na daban ba: **daga farkon maɓallin ake samo shi**, ana kuma
+tabbatar da shi a kowane buƙata. Maɓallin `nbo_sandbox_` ba zai taɓa iya taɓa komai
+ba sai bayanan sandbox; maɓallin `nbo_live_` kuma ba zai iya taɓa komai ba sai
+bayanan live. Babu yadda buƙata guda za ta ƙetare wannan iyaka, shi ya sa za ka iya
+riƙe maɓallan biyu gefe da gefe ba tare da tsoron cewa kiran sandbox zai kai ga live ba.
+
+Duba [environments](/getting-started/environments) domin ganin maʼanar wannan ɗaurin
+a aikace.
+
+## Tantance buƙata
+
+Buƙata guda wadda aka tantance, a cikin harshen shirye-shiryenka. Sauya tab ɗin:
+
+<Snippet method="GET" path="/v1/customers" />
+
+Maɓallin da ba a samu ba, wanda tsarinsa ya lalace, ko wanda aka soke, yana mayar da
+`401 Unauthorized`. Duba [`API_KEY_INVALID`](/errors#API_KEY_INVALID) domin gyara.
+Ga ambulan kuskuren:
+
+```json
+{
+  "success": false,
+  "statusCode": 401,
+  "error": {
+    "code": "API_KEY_INVALID",
+    "message": "Invalid or missing API key."
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+## Sauya maɓalli
+
+Sauyawa na fitar da sabon sirri, ya kuma soke tsohon. Tun da maɓallin yana tantancewa
+yana kuma ɗaure mode, maɓallin da aka sauya yana ci gaba da kasancewa a cikin mode
+ɗaya: maɓallin sandbox da aka sauya, sandbox ne har yanzu.
+
+<Callout type="tip">
+  Ka riƙa sauya maɓallan bisa tsarin lokaci, da kuma duk lokacin da ka yi zargin an
+  fallasa su. Ka sabunta duk server ɗin da ke riƙe da tsohon sirri kafin a soke
+  tsohon maɓallin, domin gudun samun tazarar da hidima za ta tsaya.
+</Callout>

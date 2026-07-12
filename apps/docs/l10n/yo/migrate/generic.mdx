@@ -1,0 +1,72 @@
+---
+title: Láti ara ẹ̀rọ ìsanwó èyíkéyìí
+description: "Ìlànà ìṣípòpadà tí kò ní ìdádúró sí Nomba One: ṣiṣẹ́ méjèèjì lẹ́gbẹ̀ẹ́ ara wọn, kó àwọn oníbàárà tuntun lọ ní àkọ́kọ́, kí o sì fa ẹ̀rọ àtijọ́ gbẹ láìsí ìyípadà lójijì."
+section: migrate
+order: 5
+---
+
+O kò nílò ìyípadà lójijì kí o tó lè kó lọ sí Nomba One. Ọ̀nà tó dájú ni láti ṣiṣẹ́
+ẹ̀rọ ìsanwó méjèèjì lẹ́gbẹ̀ẹ́ ara wọn: àwọn subscription tuntun á bẹ̀rẹ̀ lórí Nomba One,
+àwọn tó ti wà tẹ́lẹ̀ á sì máa bá ìsanwó wọn lọ lórí ètò àtijọ́ títí wọn yóò fi sọ ara
+wọn dọ̀tun sórí Nomba One. Kò sí ohun tí yóò bàjẹ́ láàárín ìṣípòpadà, o sì lè dáwọ́ dúró
+nígbàkúgbà.
+
+## Ìlànà iṣẹ́ náà
+
+<Steps>
+  <Step title="Ṣe àwòkọ́ àkójọ ọjà rẹ nínú Nomba One">
+    Tún àwọn [plans àti prices](/guides/create-plans-and-prices) rẹ ṣẹ̀dá pẹ̀lú test
+    key. Iye owó jẹ́ [integer kobo](/concepts/money-is-integer-kobo). Rí i dájú pé
+    àwọn nọ́mbà náírà bá ara wọn mu kí o tó fọwọ́ kan live.
+  </Step>
+  <Step title="So webhooks pọ̀ kí o sì ṣàyẹ̀wò wọn">
+    Forúkọ endpoint rẹ sílẹ̀ kí o sì fi ìdí ìjẹ́rìísí ìbùwọ́lù múlẹ̀ pẹ̀lú
+    [live secret](/webhooks/signing-and-verification). Lo
+    [ṣàyẹ̀wò wa nínú devtools rẹ](/getting-started/verify-in-your-devtools) láti fi ìdí
+    ọ̀nà náà múlẹ̀ kí àwọn event gidi tó bẹ̀rẹ̀ sí í wọlé.
+  </Step>
+  <Step title="Darí àwọn subscription tuntun sí Nomba One">
+    Tọ́ àwọn tí wọ́n ṣẹ̀ṣẹ̀ forúkọ sílẹ̀ sọ́nà Nomba One, nígbà tí àwọn subscription tó ti
+    wà tẹ́lẹ̀ yóò máa bá ìsanwó wọn lọ lórí ẹ̀rọ àtijọ́. Ìgbà yìí ni o ti bẹ̀rẹ̀, láìsí ewu
+    kankan fún àwọn customer tó wà lọ́wọ́lọ́wọ́.
+  </Step>
+  <Step title="Kó àwọn customer tó wà tẹ́lẹ̀ lọ bí wọ́n ṣe ń sọ̀tun">
+    Bí subscription àtijọ́ kọ̀ọ̀kan ṣe ń tó àkókò ìsọdọ̀tun, bẹ̀rẹ̀ cycle rẹ̀ tó ń bọ̀ lórí
+    Nomba One dípò. Kíkó wọn lọ ní ààlà ìsọdọ̀tun máa ń dènà gbígba owó lẹ́ẹ̀mejì àti
+    ìdààmú proration.
+  </Step>
+  <Step title="Fa ẹ̀rọ àtijọ́ gbẹ kí o sì fẹ̀yìn tì í">
+    Nígbà tí ètò àtijọ́ kò bá ní subscription tó ń ṣiṣẹ́ mọ́, pa á. Kò sí ìyípadà lójijì
+    rí — ìfilọ́wọ́sọ́wọ́ lásán ni.
+  </Step>
+</Steps>
+
+## Àwọn òfin tó ń jẹ́ kí ó wà láàbò
+
+<Callout type="warning" title="Má ṣe gba owó lọ́wọ́ customer kan lórí méjèèjì lẹ́ẹ̀kan náà">
+  Customer kan gbọ́dọ̀ wà lórí ẹ̀rọ ìsanwó kan ṣoṣo ní àkókò kan. Kó o lọ ní ààlà
+  ìsọdọ̀tun, kí o sì fagi lé subscription àtijọ́ ní kété tí tuntun bá bẹ̀rẹ̀ — kì í ṣe
+  ṣáájú, kì í sì ṣe lẹ́yìn.
+</Callout>
+
+- **Idempotency-Key lórí gbogbo ìpè tó ń gbé owó**, kí ìgbìyànjú àtúnpè nígbà ìṣípòpadà
+  má bàa gba owó lẹ́ẹ̀mejì. Wo [lílọ sí live](/guides/going-live).
+- **Ṣe reconciliation láti inú ledger, kì í ṣe láti inú ìrántí.** Lẹ́yìn tí o bá ti kó
+  customer kan lọ, [ledger](/concepts/the-ledger) ni orísun òtítọ́ lórí ohun tí wọ́n ti san.
+- **Jẹ́ kí handler webhook àtijọ́ máa ṣiṣẹ́ lọ** títí tí ẹ̀rọ àtijọ́ yóò fi gbẹ pátápátá:
+  àwọn event tó bá pẹ́ dé ṣì nílò ìtọ́jú.
+
+<Callout type="tip" title="Card token kì í sábà ṣí lọ">
+  Àwọn card token tí a ti fipamọ́ kì í sábà lè kúrò lórí ẹ̀rọ kan lọ sórí òmíràn. Ṣètò
+  láti tún àwọn àlàyé ìsanwó gbà ní ààlà ìsọdọ̀tun ([payment link](/guides/start-a-subscription)
+  tàbí ìgbésẹ̀ ìṣàgbékalẹ̀ card) dípò kí o rò pé àwọn token yóò ṣí lọ.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Lílọ sí live" href="/guides/going-live">
+    Àkọsílẹ̀ àyẹ̀wò tó yẹ kí o ṣe ṣáájú ìyípadà náà.
+  </Card>
+  <Card title="Ṣàkóso webhooks" href="/guides/handle-webhooks">
+    Mú balance kan tó tọ́ jálẹ̀ ìṣípòpadà náà.
+  </Card>
+</CardGroup>

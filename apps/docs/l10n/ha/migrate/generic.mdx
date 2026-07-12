@@ -1,0 +1,73 @@
+---
+title: Daga kowane processor
+description: "Tsari na matsawa zuwa Nomba One ba tare da tsayar da aiki ba: gudanar da su biyu tare, fara da sabbin kwastomomi, sannan a kwashe tsohon processor ba tare da yankewa kwatsam ba."
+section: migrate
+order: 5
+---
+
+Ba kwa buƙatar yankewa kwatsam kafin ku koma Nomba One. Hanya mafi aminci ita ce a
+gudanar da processor guda biyu a lokaci ɗaya: sabbin subscription su fara a Nomba One,
+yayin da waɗanda suke akwai za su ci gaba da biya a tsohon tsarin har sai sun kai
+lokacin sabuntawa sun tsallaka. Babu abin da zai lalace tsakiyar aikin, kuma kuna iya
+tsayawa a kowane lokaci.
+
+## Tsarin aikin
+
+<Steps>
+  <Step title="Sake gina katalogin ku a Nomba One">
+    Sake ƙirƙirar [plans da prices](/guides/create-plans-and-prices) ɗinku da test key.
+    Adadin kuɗi yana cikin [integer kobo](/concepts/money-is-integer-kobo). Ku tabbatar
+    lambobin naira sun yi daidai kafin ku taɓa live.
+  </Step>
+  <Step title="Haɗa webhooks kuma ku tabbatar da su">
+    Yi rijistar endpoint ɗinku sannan ku tabbatar da tantance sa hannu da
+    [live secret](/webhooks/signing-and-verification). Yi amfani da
+    [tabbatar da mu a cikin devtools](/getting-started/verify-in-your-devtools) don
+    tabbatar da bututun kafin event na gaskiya su fara gudana.
+  </Step>
+  <Step title="Tura sabbin subscription zuwa Nomba One">
+    Ku kai sabbin masu rajista zuwa Nomba One, yayin da subscription da suke akwai suke
+    ci gaba da biya a tsohon processor. Nan ne farkon aikin, ba tare da wani haɗari ga
+    customer na yanzu ba.
+  </Step>
+  <Step title="Matsar da customer da suke akwai yayin da suke sabuntawa">
+    Duk lokacin da tsohuwar subscription ta kai lokacin sabuntawa, sai ku fara cycle
+    ɗinta na gaba a Nomba One maimakon tsohon wurin. Matsawa a kan iyakar sabuntawa yana
+    hana karɓar kuɗi sau biyu da kuma matsalar proration.
+  </Step>
+  <Step title="Kwashe tsohon processor ku kashe shi">
+    Idan tsohon tsarin bai sauran wata subscription mai aiki, sai ku kashe shi. Ba a taɓa
+    yin yankewa kwatsam ba — mikawa kawai aka yi.
+  </Step>
+</Steps>
+
+## Dokokin da ke kiyaye lafiyar aikin
+
+<Callout type="warning" title="Kada ku taɓa cajin customer a wurare biyu lokaci guda">
+  Customer dole ne ya kasance mai aiki a processor guda ɗaya kacal a kowane lokaci. Ku
+  matsar a kan iyakar sabuntawa, sannan ku soke tsohuwar subscription a daidai lokacin da
+  sabuwar ta fara — ba kafin ba, ba bayan ba.
+</Callout>
+
+- **Idempotency-Key a kan kowace kira da ke motsa kuɗi**, domin sake gwadawa yayin
+  matsawar kada ya haifar da caji sau biyu. Duba [zuwa live](/guides/going-live).
+- **Ku yi reconciliation daga ledger, ba daga tunani ba.** Bayan matsar da customer,
+  [ledger](/concepts/the-ledger) shi ne tushen gaskiya kan abin da suka biya.
+- **Ku bar tsohon webhook handler yana aiki** har sai tsohon processor ya kare gaba ɗaya:
+  event da suka makara suna buƙatar sarrafawa.
+
+<Callout type="tip" title="Card token ba safai suke tsallakawa ba">
+  Card token da aka ajiye ba safai suke iya tsallakawa daga wannan processor zuwa wancan
+  ba. Ku shirya sake karɓar bayanan biyan kuɗi a kan iyakar sabuntawa
+  ([payment link](/guides/start-a-subscription) ko matakin saita card) maimakon zaton
+  token za su tsallaka.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Zuwa live" href="/guides/going-live">
+    Jerin abubuwan da za ku duba kafin sauyawar.
+  </Card>
+  <Card title="Sarrafa webhooks" href="/guides/handle-webhooks">
+    Kiyaye balance guda ɗaya daidai a duk tsawon matsawar.
+  </Card>
+</CardGroup>

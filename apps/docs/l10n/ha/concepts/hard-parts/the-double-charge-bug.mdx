@@ -1,0 +1,41 @@
+---
+title: "Matsalar caji sau biyu, da dalilin da ya sa idempotency key ba zaɓi ba ne"
+description: "Sake gwadawa ko faɗuwar tsari yana mai da biyan kuɗi ɗaya biyu, kuma customer ɗinka zai lura kafin kai."
+---
+
+## Yanayin da ake ciki
+
+Ranar 1 ga wata ce. Aikin billing ɗinka ya farka, ya fara cajin subscription ɗin da lokacinsu ya yi. Bayan ya kai kusan kashi biyu bisa uku na aikin, sai wani deploy, ƙarancin ƙwaƙwalwa (out-of-memory), ko yankewar haɗi ya kashe tsarin. Sai ya sake farawa, ya ci gaba da aikin daga inda ya tsaya. An riga an caji wasu daga cikin waɗannan subscription. Wani customer ya biya kuɗin wata guda sau biyu.
+
+## Hanyar da ta fi sauƙin kai
+
+Ka zagaya kan subscription ɗin da lokacinsu ya yi, ka kira charge API kan kowanne, sannan ka yi masa alamar "an biya" a cikin database ɗinka. Zai wuce duk gwajin da ka rubuta, saboda gwajinka ba ya mutuwa a tsakiyar aiki.
+
+## Dalilin da ya sa yake gazawa
+
+Caji da rubuta "an biya" ba abu ɗaya ba ne da ba ya rabuwa (atomic), kuma babu tabbacin cewa tsarin zai kammala. Idan ya sake farawa, ba za ka iya bambanta "an riga an caji" da "ba a taɓa caji ba" ba, don haka sai ka sake caji. A kasuwar da balance ke da ƙaranci, cire kuɗi sau biyu ba tare da sani ba, ba batun refund kawai ba ne. Tikitin koke ne, chargeback ne, kuma customer ne wanda yanzu ba ya amincewa da kowane caji na gaba. Aiki ɗaya marar kyau na iya yin haka ga dubban subscription a lokaci guda.
+
+## Yadda Nomba One ke magance shi
+
+Kariyar ba wani code na fatan alheri ba ne, kuma ba wani reference string mai wayo ba ne. Database ce.
+
+Ana kwace kowane billing period sau ɗaya tak. Kafin kuɗi ya motsa, engine ɗin yana gudanar da insert wanda ko dai ya ci period ɗin ko kuma bai yi komai ba:
+
+```sql
+insert into subscription_periods (subscription_id, period_index, ...)
+values ($1, $2, ...)
+on conflict (subscription_id, period_index) do nothing
+returning id;
+```
+
+Unique index guda biyu suna sa kwafi ya zama abin da ba zai yiwu ba a tsarin gini: ɗaya kan
+`subscription_periods (subscription_id, period_index)`, na biyu kuma kan invoice ɗin kansa,
+`invoices (subscription_id, period_index)`. Ko wanne daga cikinsu shi kaɗai yana nufin cewa period na N zai iya haifar da invoice guda ɗaya kawai, ko da duk advisory lock da cache da ke samansa sun gaza.
+
+Kariya daga faɗuwa tana zuwa ne daga raba yin rijista da zartar da aiki. Scheduler yana yin rijistar aiki mai maimaituwa guda ɗaya tak ga kowane aiki, wanda id ɗin aikin ke bambanta shi, don haka ko da ka tayar da instance goma, jadawali ɗaya za ka samu, ba goma ba. Sweep yana saka bill-job guda ɗaya kawai a layi ga kowane subscription da lokacinsa ya yi; ba ya taɓa caji kai tsaye. Cajin kansa yana faruwa sau ɗaya, a cikin worker, bayan an kwace period ɗin. Ka kashe aikin a duk inda ka ga dama sannan ka sake farawa, kullum zai ƙare da caji guda ɗaya da shigarwar ledger guda ɗaya. Caji sau biyu ba zai yiwu ba saboda yadda aka gina tsarin, ba don code mai hankali ne ke tsare shi ba.
+
+## Duba shi
+
+Ka gudanar da simulator tare da katsewa a tsakiyar aiki, ka kalli yadda yake ƙarewa da caji guda ɗaya. Ko kuma ka karanta yadda scheduler da kwace period ke tabbatar da wannan.
+
+Duba [ledger](/concepts/the-ledger#idempotency-lives-here-too) don ganin yadda ake tabbatar da idempotency, da kuma [scheduler da ke tsira daga faɗuwa](/concepts/hard-parts/scheduler-that-survives-a-crash).

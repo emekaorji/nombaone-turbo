@@ -1,20 +1,14 @@
 ---
 title: "Prices"
 type: reference
-summary: "Recurring prices: amount in integer kobo, interval, trials. Read and deactivate individual prices. Generated from the live schema."
+summary: "Prices — every operation on the resource."
 canonical: https://docs.nombaone.xyz/reference/prices
 ---
 
 # Prices
 
-A **price** sets how much and how often. It belongs to a [plan](/reference/plans),
-carries an amount in **integer kobo**, a billing `interval`, and optional trial.
-A [subscription](/reference/subscriptions) references a price, not a plan.
+Every operation on the prices resource.
 
-> **Prices are created under a plan**
->
-> To create or list prices, use `/v1/plans/{id}/prices` on the
-> [plans](/reference/plans#post-plans-id-prices) resource. The operations here read
-> and deactivate an individual price by id.
-
-> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/prices
+- [`GET /v1/prices`](https://docs.nombaone.xyz/reference/prices/list.md) — List prices
+- [`GET /v1/prices/{id}`](https://docs.nombaone.xyz/reference/prices/retrieve.md) — Retrieve a price
+- [`POST /v1/prices/{id}/deactivate`](https://docs.nombaone.xyz/reference/prices/deactivate.md) — Deactivate a price

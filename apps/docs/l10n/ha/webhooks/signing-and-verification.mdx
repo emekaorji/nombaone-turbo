@@ -1,0 +1,100 @@
+---
+title: Sa hannu da tantancewa
+description: Ana sa wa kowace delivery hannu da HMAC-SHA256 kan tambarin lokaci da raw body. Ka tantance kafin ka yi parse, ka kwatanta cikin lokaci mai daidaito, ka ƙi tambarin lokaci da ya tsufa.
+section: webhooks
+order: 3
+---
+
+Kada ka taɓa amincewa da webhook da ba ka tantance ba: URL ɗin a bayyane yake, don haka
+kowa na iya yin `POST` zuwa gare shi. Kowace delivery ta gaskiya tana ɗauke da header
+ɗin `X-Nombaone-Signature` da za ka kwatanta da signing secret na endpoint ɗinka.
+
+## Sa hannun
+
+Header ɗin shi ne `t=<unix>,v1=<hex>`, inda `v1` yake:
+
+```
+HMAC_SHA256( `${t}.${rawBody}`, whsec )   // hex
+```
+
+`t` shi ne tambarin lokacin delivery, `rawBody` kuma shi ne **ainihin bytes** na body
+ɗin buƙatar. Ka tantance ta hanyar sake ƙididdige `v1` sannan ka kwatanta.
+
+<Callout type="warning" title="Ka sa hannu kan raw bytes: kada ka sake yin serialize">
+  Ka ƙididdige HMAC kan body ɗin daidai yadda ka karɓe shi. `JSON.parse` sannan
+  `JSON.stringify` na iya sake tsara key ɗin su canza bytes, don haka sa hannun ba
+  zai yi daidai ba. Ka kama raw body kafin wani framework ya yi masa parse.
+</Callout>
+
+## Misalin aiwatarwa
+
+<CodeGroup>
+  <Tab label="TypeScript">
+    ```ts
+    import { createHmac, timingSafeEqual } from "node:crypto";
+
+    export function verify(rawBody: string, header: string, secret: string) {
+      const parts = Object.fromEntries(header.split(",").map((kv) => kv.split("=")));
+      const { t, v1 } = parts;
+
+      // Reject stale deliveries (replay protection).
+      const age = Math.abs(Date.now() / 1000 - Number(t));
+      if (age > 300) throw new Error("timestamp too old");
+
+      const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+      const ok =
+        v1.length === expected.length &&
+        timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+      if (!ok) throw new Error("invalid signature");
+    }
+    ```
+  </Tab>
+  <Tab label="Python">
+    ```python
+    import hmac, hashlib, time
+
+    def verify(raw_body: bytes, header: str, secret: str) -> None:
+        parts = dict(kv.split("=") for kv in header.split(","))
+        t, v1 = parts["t"], parts["v1"]
+
+        if abs(time.time() - int(t)) > 300:
+            raise ValueError("timestamp too old")
+
+        expected = hmac.new(
+            secret.encode(), f"{t}.".encode() + raw_body, hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(v1, expected):
+            raise ValueError("invalid signature")
+    ```
+  </Tab>
+</CodeGroup>
+
+## Ƙaʼidodi biyu masu muhimmanci
+
+- **Kwatantawa cikin lokaci mai daidaito.** Ka yi amfani da `timingSafeEqual` /
+  `compare_digest`, kada ka taɓa amfani da `===`. Kwatantawa ta kai tsaye tana tona
+  asirin byte ɗaya bayan ɗaya a ƙarƙashin harin auna lokaci.
+- **Ka ƙi tambarin lokaci da ya tsufa.** Ka iyakance `t` zuwa ʼyan mintuna kaɗan domin
+  kada a sake kunna delivery da aka kama a kanka daga baya.
+
+## Gwada shi a cikin browser
+
+Ka liƙa body, tambarin lokaci, da secret, sannan ka kalli yadda ake ƙididdige ainihin
+sa hannun — hanyar gaskiya — a cikin browser ɗinka da Web Crypto:
+
+<WebhookVerifier />
+
+<Callout type="tip" title="Canza shi ba tare da katsewar hidima ba">
+  `POST /v1/webhooks/{id}/rotate-secret` yana fitar da sabon secret yayin da yake ci
+  gaba da karɓar tsohon na ɗan lokaci, don haka za ka iya canza shi ba tare da rasa
+  delivery da ke kan hanya ba.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Tabbacin delivery" href="/webhooks/delivery-guarantee">
+    Aƙalla sau ɗaya: dalilin da ya sa kake dedupe bayan ka tantance.
+  </Card>
+  <Card title="Ka tantance mu a cikin devtools ɗinka" href="/getting-started/verify-in-your-devtools">
+    Ka harba event na gaske da aka sa wa hannu sannan ka kalli yadda ake tantance shi.
+  </Card>
+</CardGroup>

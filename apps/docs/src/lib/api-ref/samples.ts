@@ -22,7 +22,9 @@ function byName(name: string, schema: Schema): unknown | undefined {
   if (n === "phone") return "+2348012345678";
   if (n === "currency") return "NGN";
   if (n === "country") return "NG";
-  if (n === "interval") return schema.enum?.[0] ?? "month";
+  // Prefer the canonical case over enum[0] — the enum list is append-ordered, so
+  // whichever unit happens to sit first should not decide what every sample shows.
+  if (n === "interval") return schema.enum?.includes("month") ? "month" : (schema.enum?.[0] ?? "month");
   if (n === "intervalcount") return 1;
   if (n === "quantity") return 1;
   if (n === "percentoff") return 20;

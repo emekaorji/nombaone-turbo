@@ -1,25 +1,30 @@
 ---
 title: "Subscriptions"
 type: reference
-summary: "The engine's lifecycle surface: create, change, pause, resume, cancel, inspect dunning, and preview the upcoming invoice. Generated from the live schema."
+summary: "Subscriptions — every operation on the resource."
 canonical: https://docs.nombaone.xyz/reference/subscriptions
 ---
 
 # Subscriptions
 
-A **subscription** puts a customer on a price and bills it every cycle. It is the
-engine's richest resource: beyond create and read, it exposes the whole lifecycle,
-plan changes with proration, pause/resume, cancel/resubscribe, scheduled
-changes, dunning inspection, and the upcoming-invoice preview.
+Every operation on the subscriptions resource.
 
-For the concepts underneath, see [how billing works](/concepts/how-billing-works)
-and the [subscription state machine](/concepts/how-billing-works#the-subscription-state-machine);
-for the workflows, see [start a subscription](/guides/start-a-subscription) and
-[proration and plan changes](/guides/proration-and-plan-changes).
-
-> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/subscriptions
-
-> **Money-moving operations take an Idempotency-Key**
->
-> `create`, `change`, and anything that can trigger a charge accept an
-> `Idempotency-Key` header so a retry never double-applies. Always send one.
+- [`POST /v1/subscriptions`](https://docs.nombaone.xyz/reference/subscriptions/create.md) — Create a subscription
+- [`GET /v1/subscriptions`](https://docs.nombaone.xyz/reference/subscriptions/list.md) — List subscriptions
+- [`GET /v1/subscriptions/{id}`](https://docs.nombaone.xyz/reference/subscriptions/retrieve.md) — Retrieve a subscription
+- [`PATCH /v1/subscriptions/{id}`](https://docs.nombaone.xyz/reference/subscriptions/update.md) — Update a subscription
+- [`POST /v1/subscriptions/{id}/pause`](https://docs.nombaone.xyz/reference/subscriptions/pause.md) — Pause a subscription
+- [`GET /v1/subscriptions/{id}/events`](https://docs.nombaone.xyz/reference/subscriptions/list-events.md) — List subscription events
+- [`POST /v1/subscriptions/{id}/cancel`](https://docs.nombaone.xyz/reference/subscriptions/cancel.md) — Cancel a subscription
+- [`POST /v1/subscriptions/{id}/change`](https://docs.nombaone.xyz/reference/subscriptions/change.md) — Change the plan or price
+- [`POST /v1/subscriptions/{id}/resume`](https://docs.nombaone.xyz/reference/subscriptions/resume.md) — Resume a subscription
+- [`GET /v1/subscriptions/{id}/dunning`](https://docs.nombaone.xyz/reference/subscriptions/dunning.md) — Retrieve dunning state
+- [`DELETE /v1/subscriptions/{id}/discount`](https://docs.nombaone.xyz/reference/subscriptions/remove-discount.md) — Remove a discount
+- [`DELETE /v1/subscriptions/{id}/schedule`](https://docs.nombaone.xyz/reference/subscriptions/cancel-schedule.md) — Cancel the schedule
+- [`GET /v1/subscriptions/{id}/schedule`](https://docs.nombaone.xyz/reference/subscriptions/retrieve-schedule.md) — Retrieve the schedule
+- [`POST /v1/subscriptions/{id}/discount`](https://docs.nombaone.xyz/reference/subscriptions/apply-discount.md) — Apply a discount
+- [`POST /v1/subscriptions/{id}/schedule`](https://docs.nombaone.xyz/reference/subscriptions/create-schedule.md) — Schedule a change
+- [`POST /v1/subscriptions/{id}/resubscribe`](https://docs.nombaone.xyz/reference/subscriptions/resubscribe.md) — Resubscribe a customer
+- [`POST /v1/subscriptions/{id}/payment-method`](https://docs.nombaone.xyz/reference/subscriptions/update-payment-method.md) — Update the payment method
+- [`GET /v1/subscriptions/{id}/dunning/attempts`](https://docs.nombaone.xyz/reference/subscriptions/dunning-attempts.md) — List dunning attempts
+- [`GET /v1/subscriptions/{id}/upcoming-invoice`](https://docs.nombaone.xyz/reference/subscriptions/upcoming-invoice.md) — Preview the upcoming invoice

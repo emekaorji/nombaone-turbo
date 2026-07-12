@@ -1,0 +1,87 @@
+---
+title: Dunning àti ìgbàpadà
+description: "Gba charge tí ó kùnà padà lórí balance tín-ínrín ní ọ̀nà Nàìjíríà: àwọn ìgbìyànjú tí a ṣe ní ìbámu pẹ̀lú \"kò tíì tó,\" ọ̀nà ìsanwó checkout OTP fún card, àti àwọn event tí ń sọ ìgbà tí o máa dá ìwọlé padà."
+section: guides
+order: 4
+---
+
+Nígbà tí charge bá kùnà, ọ̀pọ̀ àwọn ètò ìsanwó máa ń rò pé "rárá" ni. Ní Nàìjíríà,
+òtítọ́ ni pé **"kò tíì tó"** ni ó wọ́pọ̀ jù: balance náà tín-ínrín, ó sì máa kún,
+tàbí card náà nílò OTP ẹ̀ẹ̀kan ṣoṣo. Dunning ni ọ̀nà ìgbàpadà tí ẹ̀rọ náà ń lò fún
+èyí gan-an, a sì ṣe é ní ìbámu pẹ̀lú ìgbàpadà, kì í ṣe ìgbìyànjú afọ́jú lásán. Wo
+[dunning fún balance tín-ínrín](/concepts/hard-parts/dunning-for-thin-balances) fún
+ìdí rẹ̀; ìtọ́sọ́nà yìí sọ bí o ṣe ń ṣiṣẹ́ rẹ̀.
+
+## Ohun tí ó ń ṣẹlẹ̀ nígbà tí charge bá kùnà
+
+Nígbà tí gbígba owó cycle kan bá kùnà, subscription náà yóò lọ sí `past_due`,
+dunning yóò sì gba iṣẹ́ náà lọ́wọ́ fúnra rẹ̀:
+
+1. `invoice.payment_failed` yóò tanná pẹ̀lú **ìdí ìkùnà gidi** tí o lè gbé ìpinnu
+   lé (owó kò tó, card ti pé, OTP nílò, kì í ṣe "declined" lásán).
+2. Dunning yóò to àwọn ìgbìyànjú tuntun ṣe ní ìlà àkókò tirẹ̀, o kò ní ṣe nǹkan kan.
+3. Ìgbìyànjú kọ̀ọ̀kan yóò yọrí sí ìgbàpadà (→ `invoice.payment_recovered`,
+   subscription di `active`) tàbí kí ó parí gbogbo ìlà àkókò náà (→ subscription
+   yóò dúró ní `past_due` tàbí kí ó fagilé, gẹ́gẹ́ bí ìlànà rẹ).
+
+<Callout type="warning" title="Má gé ìwọlé kúrò ní ìkùnà àkọ́kọ́">
+  `past_due` kì í ṣe `canceled`. Lórí balance tín-ínrín, ìgbìyànjú tuntun máa ń
+  yọrí sí rere láàrin wákàtí díẹ̀. Gígé ìwọlé kúrò ní `invoice.payment_failed` ń lé
+  àwọn customer tí ì bá ti san owó lọ. Dúró kí ìlà àkókò dunning parí, tàbí kí
+  `subscription.canceled` dé.
+</Callout>
+
+## Ẹ̀ka card-OTP
+
+Charge **card** tí ń padà wá lemọ́lemọ́ ní Nàìjíríà máa ń fa ìgbésẹ̀ OTP/3-D Secure
+ti báńkì tí kò ṣe é parí láìsí ẹni tí ń tẹ̀ ẹ́. Nígbà tí èyí bá ṣẹlẹ̀, dunning kì í
+máa gbìyànjú ní ìdákẹ́jẹ́ẹ́ láéláé. Ó ń tú `invoice.action_required` jáde pẹ̀lú **ọ̀nà
+ìsanwó checkout tuntun**. Rán customer náà lọ síbẹ̀; nígbà tí ó bá parí OTP níbẹ̀,
+invoice náà yóò dá, subscription yóò sì padà bọ̀ sípò. Èyí ni ìdáhùn ọjà wa sí rail
+tí a kò lè fà ní ìdákẹ́jẹ́ẹ́. Wo
+[àwọn card token máa ń pé](/concepts/hard-parts/card-tokens-expire).
+
+## Yẹ ipò dunning wò
+
+Ka ibi tí ìgbàpadà dé fún subscription kan:
+
+```bash
+# Current dunning status
+curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
+  -H "Authorization: Bearer nbo_sandbox_…"
+
+# The full attempt history
+curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning/attempts \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+## Ṣe àdánwò rẹ̀ ní test
+
+So payment method test kan tí ń kùnà mọ́ ọn, kí o sì wo bí àyíká náà ṣe ń ṣiṣẹ́:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "customerId": "{customerId}", "behavior": "decline_insufficient_funds" }'
+```
+
+Lo `requires_otp` láti ṣe àdánwò ẹ̀ka checkout-link, kí o sì
+[ṣàyẹ̀wò wa nínú devtools rẹ](/getting-started/verify-in-your-devtools) láti tú event
+`invoice.action_required` jáde sí endpoint tìrẹ.
+
+## Àwọn event tí o gbọ́dọ̀ mú
+
+- **`invoice.payment_failed`**: ó ti wọ dunning. Kọ ọ́ sílẹ̀; má lé customer lọ síbẹ̀.
+- **`invoice.action_required`**: fi ọ̀nà ìsanwó checkout tí ó wà nínú payload ránṣẹ́ sí customer.
+- **`invoice.payment_recovered`**: dá ìwọlé déédéé padà.
+- **`subscription.canceled`**: dunning ti parí (bí ìlànà rẹ bá fagilé). Nísinsìnyí, gé ìwọlé kúrò.
+
+<CardGroup cols={2}>
+  <Card title="Ìdí tí balance tín-ínrín fi yí dunning padà" href="/concepts/hard-parts/dunning-for-thin-balances">
+    Ìdí tí ó wà lẹ́yìn ìlà àkókò ìgbìyànjú tuntun.
+  </Card>
+  <Card title="Mú àwọn webhook" href="/guides/handle-webhooks">
+    Gba àwọn event wọ̀nyí, kí o sì ṣàyẹ̀wò wọn dáadáa.
+  </Card>
+</CardGroup>

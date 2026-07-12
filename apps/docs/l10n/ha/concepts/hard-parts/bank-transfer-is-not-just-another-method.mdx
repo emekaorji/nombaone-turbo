@@ -1,0 +1,30 @@
+---
+title: "Me ya sa bank transfer ba wata hanyar biya kawai ba ce"
+description: "Kana iya yin charge a card. Ba za ka iya yin charge a bank transfer ba. Duk tsarin biyan kuɗi ya sauya."
+---
+
+## Yanayin da ake ciki
+
+Customer ɗinka yana son ya biya ta hanyar bank transfer — hanyar da mafi yawan mutane a Najeriya suke tura kuɗi da gaske. Sai ka koma ga irin kodin da kake amfani da shi wajen card: ka yi charge a ranar biyan kuɗi, sannan ka sanya alama cewa an biya. Ba ya aiki, kuma dalilin ba kuskuren kodi ba ne.
+
+## Hanyar da ake ganin ta fi sauƙi
+
+Ka ɗauki kowane rail a matsayin abin da za ka iya ja kuɗi daga cikinsa: a ranar cycle, engine ɗin zai cire kuɗi daga asusun customer sannan ya samu amsa. Haka card ke aiki. Haka kuma direct debit ke aiki. Don haka ka ɗauka cewa bank transfer ma haka yake.
+
+## Dalilin da ya sa hakan ke gazawa
+
+Ba za a iya jan bank transfer ba. Babu wani kiran API da zai shiga asusun customer ya ciro kuɗin; customer ɗin ne dole ya tura shi. Idan tsarin biyan kuɗinka ya ɗauka cewa zai iya yin charge duk lokacin da ya ga dama, to babu inda rail ɗin bank transfer zai dace. Sannan idan kuɗin ya iso, saƙon da ke sanar da kai saƙo ne daga duniyar waje wanda ba a amince da shi ba. Yin aiki da shi kai tsaye shi ne yadda kake sanya alamar cewa an biya invoice na kuɗin da bai taɓa isowa ba.
+
+## Yadda Nomba One ke tafiyar da shi
+
+An tsara bank transfer a matsayin turawa, ba tare da ɓoye gaskiya ba. Fitar da invoice na bank transfer ba ya yin charge ga komai; yana mayar da matsayin `pending` da umarnin biyan kuɗi, tare da asusun kama-da-wane da aka keɓe wa wannan customer. Sannan engine ɗin sai ya jira customer ya tura kuɗi ciki.
+
+Idan kuɗin ya iso, yana shigowa ne a matsayin webhook, kuma engine ɗin yana ɗaukar wannan webhook a matsayin nuni kawai, ba a matsayin tabbatacciyar gaskiya ba. Yana tantance signature bisa ainihin bytes ɗin kamar yadda suka zo, sannan ya sake tambayar Nomba da transaction id ɗin mai bayarwa domin ya samu gaskiya daga tushe. Invoice ɗin yana settle ne kawai idan sake tambayar ya ce biyan ya settle, kuma adadin da aka biya, a kobo cikakke, ya yi daidai da adadin da ake bin bashi. Bank transfer da ya shigo da ƙasa da adadin, ko fiye da shi, ko a makare, ba zai settle invoice ɗin a shiru ba; reconciliation na dare zai fito da shi a matsayin rashin daidaiton adadi domin a duba, ba a ajiye shi a matsayin biya na ɓangare ba.
+
+Wannan matakin tantancewa-sannan-sake-tambaya, tare da tsauraran daidaiton adadi, su ne bambanci tsakanin “saƙo ya ce an biya mu” da “mun tabbatar kuɗin yana nan.” Juyawa tsakanin kobo da adadin naira da mai bayarwa ke tsammani yana faruwa a wannan iyaka kaɗai. Ko ina cikin engine ɗin, kuɗi kobo cikakke ne.
+
+## Ka gan shi
+
+Gudanar da simulator a kan rail ɗin bank transfer sannan ka kalli yadda invoice ɗin ke jiran a tura kuɗin, sai ya yi reconciliation da mai bayarwa kafin ya settle.
+
+Duba [lokacin da bank transfer bai yi daidai da invoice ba](/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice) da kuma [settlement ba tare da spreadsheet ba](/concepts/hard-parts/settlement-without-spreadsheets).

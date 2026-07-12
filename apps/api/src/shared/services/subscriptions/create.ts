@@ -8,10 +8,10 @@ import {
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
-import { computeAnchor, computeAnchorAtOrAfter } from '../billing/scheduling';
 import { emitEvent } from '@nombaone/sara/events';
 import { mintReference } from '@nombaone/sara/reference';
+
+import { computeAnchor, computeAnchorAtOrAfter } from '../billing/scheduling';
 import { getSubscriptionByReference } from './queries';
 
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
@@ -113,13 +113,19 @@ export async function createSubscription(
       ? 'active'
       : 'incomplete';
 
-  // The billing anchor (normalized to the billing hour): period 0 starts at the
-  // trial end for a trial, else at activation. `next_billing_at` is the sweep's
-  // due cursor — a trial bills at trial end; a non-trial is due now (charged inline
-  // by startSubscription for charge_automatically, or by the next sweep otherwise).
-  // The TRIAL anchor is clamped at-or-AFTER the trial end so normalizing to the
-  // billing hour can never pull the first charge into the trial window (A8).
-  const anchor = trialing ? computeAnchorAtOrAfter(trialEnd ?? now) : computeAnchor(now);
+  // The billing anchor: period 0 starts at the trial end for a trial, else at
+  // activation. `next_billing_at` is the sweep's due cursor — a trial bills at trial
+  // end; a non-trial is due now (charged inline by startSubscription for
+  // charge_automatically, or by the next sweep otherwise). The TRIAL anchor is
+  // clamped at-or-AFTER the trial end so normalizing to the billing hour can never
+  // pull the first charge into the trial window (A8).
+  //
+  // The anchor is cadence-aware: calendar prices normalize to the billing hour,
+  // wall-clock prices (`minute`) anchor on the activation instant itself — a
+  // 10-minute subscription started at 14:37 must bill at 14:47, not at 02:00.
+  const anchor = trialing
+    ? computeAnchorAtOrAfter(trialEnd ?? now, price.interval)
+    : computeAnchor(now, price.interval);
 
   const reference = mintReference('SUB');
 

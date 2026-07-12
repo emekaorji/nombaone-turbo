@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@nombaone/ui/components/ui/dropdown-menu";
 
+import { useL10n } from "@/lib/l10n/context";
+
 /**
  * Copy-page / open-in-AI / MCP affordance in the article header (docs-as-data).
  * A split button: the left half copies the page's clean Markdown mirror; the
@@ -37,6 +39,7 @@ interface CopyPageProps {
 }
 
 export function CopyPage({ slug }: CopyPageProps) {
+  const { t } = useL10n();
   const [copied, setCopied] = useState<string | null>(null);
 
   const mdRel = slug === "" ? "/index.md" : `${slug}.md`;
@@ -54,15 +57,15 @@ export function CopyPage({ slug }: CopyPageProps) {
     try {
       const text = await (await fetch(mdRel)).text();
       await navigator.clipboard.writeText(text);
-      flash("Copied");
+      flash(t("copy.copied"));
     } catch {
-      flash("Copy failed");
+      flash(t("copy.failed"));
     }
   }
 
   async function copyMcp() {
     await navigator.clipboard.writeText(MCP_URL);
-    flash("Copied");
+    flash(t("copy.copied"));
   }
 
   const config = mcpConfigB64();
@@ -70,61 +73,61 @@ export function CopyPage({ slug }: CopyPageProps) {
     {
       key: "copy",
       icon: <CopyIcon />,
-      title: "Copy page",
+      title: t("copy.page"),
       onSelect: copyMarkdown,
     },
     {
       key: "view",
       icon: <MarkdownIcon />,
-      title: "View as Markdown",
+      title: t("copy.viewMarkdown"),
       href: mdRel,
       external: true,
     },
     {
       key: "llms-full",
       icon: <FileText size={16} strokeWidth={1.7} aria-hidden />,
-      title: "Open llms-full.txt",
+      title: t("copy.openLlmsFull"),
       href: "/llms-full.txt",
       external: true,
     },
     {
       key: "chatgpt",
       icon: <OpenAIIcon />,
-      title: "Open in ChatGPT",
+      title: t("copy.openInChatGpt"),
       href: `https://chatgpt.com/?hints=search&q=${aiPrompt}`,
       external: true,
     },
     {
       key: "claude",
       icon: <ClaudeIcon />,
-      title: "Open in Claude",
+      title: t("copy.openInClaude"),
       href: `https://claude.ai/new?q=${aiPrompt}`,
       external: true,
     },
     {
       key: "perplexity",
       icon: <PerplexityIcon />,
-      title: "Open in Perplexity",
+      title: t("copy.openInPerplexity"),
       href: `https://www.perplexity.ai/search?q=${aiPrompt}`,
       external: true,
     },
     {
       key: "mcp",
       icon: <McpIcon />,
-      title: "Copy MCP Server",
+      title: t("copy.copyMcp"),
       onSelect: copyMcp,
     },
     {
       key: "cursor",
       icon: <CursorIcon />,
-      title: "Connect to Cursor",
+      title: t("copy.connectCursor"),
       href: `cursor://anysphere.cursor-deeplink/mcp/install?name=${MCP_NAME}&config=${encodeURIComponent(config)}`,
       external: true,
     },
     {
       key: "vscode",
       icon: <VscodeIcon />,
-      title: "Connect to VS Code",
+      title: t("copy.connectVscode"),
       href: `https://insiders.vscode.dev/redirect/mcp/install?name=${MCP_NAME}&config=${encodeURIComponent(JSON.stringify({ url: MCP_URL }))}`,
       external: true,
     },
@@ -138,11 +141,11 @@ export function CopyPage({ slug }: CopyPageProps) {
         className="inline-flex items-center gap-2 px-3 py-1.5 font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         {copied ? <Check size={15} className="text-success-600 dark:text-success-400" aria-hidden /> : <CopyIcon />}
-        {copied ?? "Copy page"}
+        {copied ?? t("copy.page")}
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger
-          aria-label="More page actions"
+          aria-label={t("copy.moreActions")}
           className="group grid place-items-center border-l border-border px-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
           <ChevronDown size={15} aria-hidden className="transition-transform duration-200 group-data-[state=open]:rotate-180" />

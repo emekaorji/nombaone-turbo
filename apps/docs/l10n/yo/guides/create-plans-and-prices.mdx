@@ -1,0 +1,111 @@
+---
+title: Ṣẹ̀dá plan àti price
+description: "Ṣe àwòṣe ìdíyelé rẹ: plan ló gbé ọjà náà, price ló gbé owó náà. Ṣètò interval, trial, àti price púpọ̀ lórí plan kan."
+section: guides
+order: 1
+---
+
+Ìdíyelé nínú nombaone jẹ́ resource méjì: **plan** ni ọjà tí customer ń forúkọ
+sílẹ̀ sí, **price** sì ni iye owó àti ìgbà mélòó. Yíyà wọn sọ́tọ̀ túmọ̀ sí pé plan
+kan ṣoṣo (bí àpẹẹrẹ, "Pro") lè gbé price oṣooṣù àti price ọdọọdún papọ̀, kí
+customer sì yí padà láàrin wọn láìsí pé o tún ṣe àwòṣe ọjà náà.
+
+## Ṣẹ̀dá plan
+
+Orúkọ nìkan ni plan nílò. Àpèjúwe àti metadata jẹ́ àṣàyàn.
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "name": "Pro",
+    "description": "Everything in the Pro tier",
+    "prices": [
+      { "unitAmountInKobo": 500000, "interval": "month" },
+      { "unitAmountInKobo": 5000000, "interval": "year" }
+    ]
+  }'
+```
+
+`data.id` ni ìtọ́kasí plan náà: ibẹ̀ ni o ti ń fi àwọn price ránṣẹ́.
+
+## Fi price kún un
+
+Price ń ṣètò iye owó (**kobo odidi**) àti `interval` ìsanwó. Fi í ránṣẹ́ lábẹ́ plan
+náà:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "unitAmountInKobo": 250000,
+    "interval": "month",
+    "intervalCount": 1
+  }'
+```
+
+`250000` jẹ́ ₦2,500.00.
+
+Ìlù ìsanwó jẹ́ **ẹyọ ìwọ̀n ní ìlọ́po iye kan**. `interval` jẹ́ ọ̀kan nínú `minute`,
+`day`, `week`, `month` tàbí `year`; `intervalCount` ni ó ń sọ ọ́ di ìlọ́po. Nítorí
+náà `interval: "month"` pẹ̀lú `intervalCount: 3` ń san owó ní gbogbo oṣù mẹ́ta,
+`interval: "minute"` pẹ̀lú `intervalCount: 10` sì ń sanwó ní gbogbo ìṣẹ́jú mẹ́wàá.
+Kò sí `quarterly` tàbí `ten_minutely` lọ́tọ̀ — iye náà ti bo gbogbo ìlọ́po ẹyọ tí a
+ti ní.
+
+<Callout type="warning" title="Owó jẹ́ kobo odidi">
+  Gbogbo ààyè owó ni ó parí ní `InKobo`. Fi `250000` ránṣẹ́ fún ₦2,500, kì í ṣe
+  `2500` láé. Èyí ni [ìdẹkùn ìlọ́po 100](/concepts/money-is-integer-kobo).
+</Callout>
+
+<Callout type="note" title="Ìlù tí kò tó ọjọ́ kan ń sanwó lórí aago gidi">
+  `day`, `week`, `month` àti `year` jẹ́ ìlù **kàlẹ́ndà**: ààlà kan ń bà lé ọjọ́
+  kàlẹ́ndà ní 02:00 (Africa/Lagos), oṣù àti ọdún sì ń fa òpin oṣù wọlé bá ọjọ́
+  ìdákọ̀ró rẹ mu — ìdákọ̀ró Jan-31 yóò sanwó ní Feb-28, lẹ́yìn náà Mar-31. `minute`
+  jẹ́ ìlù **aago gidi**: ó ń sanwó ní ààyè gangan láti ìṣẹ́jú tí subscription náà
+  ti bẹ̀rẹ̀ sí ṣiṣẹ́, nítorí náà subscription ìṣẹ́jú mẹ́wàá tí ó bẹ̀rẹ̀ ní 14:37 yóò
+  tún sanwó ní 14:47. Ó wúlò jùlọ fún wíwo bí ìyípo ìsanwó gidi ṣe ń ṣiṣẹ́ láàrin
+  àkókò tí o ní, dípò [tí o ó fi ọwọ́ ti aago síwájú](/sandbox-toolkit/clock) —
+  ṣùgbọ́n ìlù gidi ni, ó sì tọ̀nà ní sandbox àti live méjèèjì.
+</Callout>
+
+## Fi trial kún un
+
+Ṣètò `trialPeriodDays` lórí price náà. Subscription tí ó bẹ̀rẹ̀ lórí rẹ̀ yóò wọ ipò
+`trialing`: kò sí charge títí tí trial yóò fi parí, lẹ́yìn náà ni a ó gba invoice
+àkọ́kọ́.
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "unitAmountInKobo": 250000, "interval": "month", "trialPeriodDays": 14 }'
+```
+
+## Àwọn price púpọ̀ lórí plan kan
+
+Ṣẹ̀dá iye price tí ó bá bí o ṣe ń tà á lórí plan kan: oṣooṣù àti ọdọọdún, àwọn
+ìpele NGN, iye owó ìpolówó. Subscription ń tọ́ka sí **price**, kì í ṣe plan,
+nítorí náà yíyí customer padà láti oṣooṣù sí ọdọọdún jẹ́
+[ìyípadà plan](/guides/proration-and-plan-changes) sí price mìíràn lórí plan kan
+náà, a ó sì ṣe proration fún ọ.
+
+## Ìfipamọ́
+
+Plan lè lọ sí àkópamọ́ (`POST /v1/plans/{id}/archive`), price sì lè di aláìṣiṣẹ́
+(`POST /v1/prices/{id}/deactivate`), kí o baà lè dá subscription tuntun dúró lórí
+wọn láìfọwọ́ kan àwọn tí ó ti ń sanwó tẹ́lẹ̀. Àwọn subscription tí ó wà tẹ́lẹ̀ yóò pa
+price wọn mọ́; ìfipamọ́ kàn ń dí lílò tuntun lọ́wọ́ ni.
+
+<CardGroup cols={2}>
+  <Card title="Bẹ̀rẹ̀ subscription" href="/guides/start-a-subscription">
+    Fi customer sí price kan, lórí rail èyíkéyìí.
+  </Card>
+  <Card title="Proration àti ìyípadà plan" href="/guides/proration-and-plan-changes">
+    Gbé customer láti price kan sí òmíràn láàrin cycle, lọ́nà tí ó tọ́.
+  </Card>
+</CardGroup>

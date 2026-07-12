@@ -10,10 +10,14 @@ import type { InvoiceResponseData } from './invoice';
 export interface AdvanceCycleResponseData {
   domain: 'advance_cycle_result'; // response object-type discriminator
   subscriptionId: string;
-  /** The billing outcome of the cycle: paid | past_due | pending | open. */
+  /** The billing outcome of the cycle: paid | past_due | pending | open | canceled. */
   outcome: string;
-  /** The invoice the cycle produced (or the existing one if the period was already billed). */
-  invoice: InvoiceResponseData;
+  /**
+   * The invoice the cycle produced (or the existing one if the period was already
+   * billed). `null` when the outcome is `canceled` — a subscription flagged
+   * cancel-at-period-end ends at the boundary instead of renewing, so nothing is billed.
+   */
+  invoice: InvoiceResponseData | null;
 }
 
 /** Result of POST /v1/sandbox/webhooks/simulate — the minted event + how many deliveries fired. */

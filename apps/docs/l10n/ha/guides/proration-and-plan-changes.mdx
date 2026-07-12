@@ -1,0 +1,83 @@
+---
+title: Proration da canje-canjen plan
+description: "Haɓaka, rage, ko canza interval a tsakiyar cycle: kira ɗaya, tare da proration da aka lissafa a matsayin ƙafafun ledger masu daidaituwa, don a caji customer bambancin daidai."
+section: guides
+order: 6
+---
+
+Da wuya customer ya tsaya kan price guda har abada. Suna haɓakawa, suna ragewa,
+suna ƙara kujeru, ko su canza daga wata-wata zuwa shekara-shekara — galibi **a
+tsakiyar cycle**, bayan sun riga sun biya kuɗin wani ɓangare na lokacin. Canjin
+plan yana matsar da subscription zuwa sabon price kuma ya daidaita bambancin,
+kuma tun da
+[proration matsalar ledger ce](/concepts/hard-parts/proration-is-a-ledger-problem),
+ana lissafa shi da ƙafafun kobo masu daidaituwa, ba tsammani na floating-point ba.
+
+## Canza price
+
+Ka nuna wa subscription wani price daban. Kira guda ɗaya yana kula da canjin da
+proration tare:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "priceId": "{newPriceId}", "prorationBehavior": "create_prorations" }'
+```
+
+Injin yana mayar da kuɗin ɓangaren tsohon price da ba a yi amfani da shi ba, sannan
+ya caji ɓangaren sabon price da aka yi amfani da shi, har zuwa kobo ɗaya tak. A kan
+**haɓaka**, customer yana biyan bambancin nan take; a kan **ragewa**, credit ɗin
+yana shiga invoice na gaba.
+
+## Duba tukun kafin ka tabbatar
+
+Nuna wa customer ainihin kuɗin da canji zai ci kafin ka aiwatar da shi:
+
+```bash
+curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/upcoming-invoice \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+Invoice mai zuwa yana nuna layukan proration, don haka babu abin mamaki a kan
+biyan kuɗi na gaba.
+
+## Canza interval
+
+Matsawa daga wata-wata → shekara-shekara canji ne zuwa price mai `interval` daban a
+kan plan guda. Saita `intervalSwitch: true` don injin ya daidaita billing anchor:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "priceId": "{yearlyPriceId}", "intervalSwitch": true }'
+```
+
+## Sarrafa halin proration
+
+- **`create_prorations`**: lissafa bambancin sannan a yi amfani da shi (shi ne tsoho
+  don haɓakawa).
+- **`none`**: canza price ba tare da proration ba; sabon adadin zai fara aiki daga
+  cycle na gaba.
+
+<Callout type="note" title="Canjin adadi ma yana prorate">
+  Ƙara kujeru ko cire su a tsakiyar cycle hanya ɗaya ce: ka tura `quantity` zuwa
+  `change`, sannan bambancin kowace kujera yana prorate daidai kamar canjin price.
+</Callout>
+
+<Callout type="tip" title="Tsara canji don sabuntawa na gaba">
+  Domin gujewa proration na tsakiyar cycle gaba ɗaya, ka tsara canjin ya fara aiki a
+  iyakar lokacin da ke gaba ta hanyar `POST /v1/subscriptions/{id}/schedule`.
+  Customer zai kammala lokacin da ya biya, sannan ya sabunta a kan sabon price.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Me ya sa proration matsalar ledger ce" href="/concepts/hard-parts/proration-is-a-ledger-problem">
+    Yadda ragowar kobo ke daidaituwa don ƙafafun su daidaita kullum.
+  </Card>
+  <Card title="Ƙirƙiri plan da price" href="/guides/create-plans-and-prices">
+    Tsara price ɗin da customer ke motsawa a tsakaninsu.
+  </Card>
+</CardGroup>

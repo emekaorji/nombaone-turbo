@@ -1,0 +1,54 @@
+---
+title: "Multi-rail: push da pull"
+description: Dalilin da ya sa ake jawo kuɗi ta rail na card da mandate amma ana turo kuɗi ta bank transfer, da yadda subscription guda ɗaya ke aiki daidai a kan dukkansu.
+---
+
+Nomba One na tafiyar da subscription guda ɗaya a kan kowane rail: card, direct debit, bank transfer,
+da crypto. Amma rail ɗin nan ba iri ɗaya suke ba, kuma yin kamar iri ɗaya ne shi ne hanya mafi
+yawaita ta ɓata billing a nan. Layin da ya raba su shi ne **push vs pull**.
+
+## Rail na pull: mu ne muke fara aikin
+
+Rail na **pull** yana ba engine damar fara motsa kuɗin da kansa a ranar billing:
+
+- **Card**: yin charge a kan token na card da aka ajiye. A Najeriya, charge na card mai maimaituwa
+  yakan tarar da matakin OTP/3-D Secure na banki, don haka ba kullum yake wucewa shiru ba. Duba
+  [token na card na ƙarewa](/concepts/hard-parts/card-tokens-expire) da tsarin dawo da OTP.
+- **Direct debit (mandate)**: jawo kuɗi daga asusun banki da customer ya ba da izini a kai ta
+  [mandate](/concepts/hard-parts/mandates-and-consent). Abin dogaro ne, kuma yana aiki shiru da
+  zarar ya kunnu.
+
+Ga rail na pull, "collect" na nufin: a gwada debit ɗin, a sami amsa, a yi rikodinsa.
+
+## Rail na push: customer ne yake fara aikin
+
+Ba za a iya jawo rail na **push** ba. Babu wani kiran API da zai kai hannu cikin asusun customer ya
+ɗauko kuɗin. **Sai customer ɗin da kansa ya aiko da shi**:
+
+- **Bank transfer**: hanyar da kuɗi ya fi motsawa a Najeriya. A ranar billing, engine na nuna *inda
+  za a biya* (asusu na virtual), sannan ya jira kuɗin ya iso.
+
+Ga rail na push, "collect" na nufin: a nuna umarnin biya, sannan a yi settlement lokacin da event
+mai shigowa da aka tantance ya tabbatar da turawar kuɗin — ba bisa sanarwa mara tantancewa kaɗai ba.
+Shi ya sa [kuɗin da aka tura da bai dace da invoice ba](/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice)
+lamari ne na gaske da dole ka tanadar masa, ba wani abu na gefe ba.
+
+<Callout type="note" title="Tsarin gama-gari na rail">
+  Tushen injin ɗin bai taɓa sanin sunan wani rail ba. Interface guda ɗaya yake magana da shi,
+  "collect don wannan reference", kowane rail kuma yana daidaita shi yadda ya dace da kansa. Wannan
+  shi ne ya sa subscription guda ɗaya zai iya gudana a kan card, mandate, ko transfer, alhali ana
+  sarrafa bambancin push/pull a ƙarƙashinka.
+</Callout>
+
+Sauya tsakanin rail ɗin domin ka ga yadda kalmar "collect" guda ɗaya ke aiki a kan kowanne:
+
+<RailSwitcher />
+
+## Dalilin da ya sa wannan bambanci ke tsara komai
+
+Tun da ba za a iya jawo transfer ba, tsarin "yi charge a ranar billing sannan a sanya alamar an
+biya" ba shi da inda zai dace a ciki. An gina Nomba One a kan wannan bambanci maimakon ɓoye shi:
+rail na push na yin settlement ta hanyar asynchronous, balance mai sirara na nufin pull da ya faɗi
+yana nufin *"ba tukuna ba"* ba *"aʼa"* ba, kuma an daidaita
+[dunning](/concepts/hard-parts/dunning-for-thin-balances) domin dawo da kuɗi, ba don sake gwadawa
+kawai ba.

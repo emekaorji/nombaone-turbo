@@ -1,8 +1,10 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
+import GithubSlugger, { slug as githubSlug } from "github-slugger";
 import matter from "gray-matter";
 
+import { DEFAULT_LOCALE, type Locale } from "@/lib/l10n/config";
 import { ALL_SLUGS, findNavItem, findSection, type Badge } from "@content/manifest";
 
 /**
@@ -12,10 +14,28 @@ import { ALL_SLUGS, findNavItem, findSection, type Badge } from "@content/manife
  *
  * The catch-all route resolves a URL slug to a file here, compiles the body
  * with `@mdx-js/mdx`'s `evaluate`, and hands the heading tree to the TOC rail.
+ *
+ * LOCALES: every entry point takes an optional trailing `locale`, defaulting to
+ * English — so every existing call site keeps its exact current behaviour. A
+ * locale resolves against `l10n/<locale>/` instead of `content/`; English never
+ * moves. Nothing about a page's identity changes with locale: the slug, the
+ * heading ids, and the manifest position are all shared, and only the prose
+ * differs.
  */
 
 /** Absolute path to the `content/` directory at the app root. */
 export const CONTENT_DIR = path.join(process.cwd(), "content");
+
+/** Absolute path to the translations tree, a SIBLING of `content/`. */
+export const L10N_DIR = path.join(process.cwd(), "l10n");
+
+/**
+ * Where a locale's pages live. English is `content/`; a translation is
+ * `l10n/<locale>/`, mirroring the English path exactly.
+ */
+export function localeDir(locale: Locale): string {
+  return locale === DEFAULT_LOCALE ? CONTENT_DIR : path.join(L10N_DIR, locale);
+}
 
 export interface Frontmatter {
   title: string;
@@ -30,7 +50,7 @@ export interface Frontmatter {
 }
 
 export interface TocHeading {
-  /** `rehype-slug`-compatible id (kebab, deduped is not needed at depth ≤ 3). */
+  /** The heading's real DOM id, minted by the same `github-slugger` as `rehype-slug`. */
   id: string;
   /** Visible heading text. */
   text: string;
@@ -41,6 +61,8 @@ export interface TocHeading {
 export interface DocPage {
   /** URL path, leading slash, no extension. `''` for home. */
   slug: string;
+  /** The language this body is written in. */
+  locale: Locale;
   /** Absolute path to the resolved `.mdx` file. */
   filePath: string;
   frontmatter: Frontmatter;
@@ -48,15 +70,25 @@ export interface DocPage {
   body: string;
   /** Ordered h2/h3 headings for the on-this-page rail. */
   headings: TocHeading[];
+  /**
+   * On a TRANSLATED page: the ENGLISH heading ids, in order — handed to
+   * `rehypeLocaleAnchor` so the rendered headings carry language-neutral
+   * fragments. Undefined on English, which owns its own ids.
+   */
+  anchorIds?: string[];
 }
 
 /**
- * Slug → file path. Home (`''`) maps to `content/index.mdx`; every other slug
- * maps to `content/<slug>.mdx`. Returns `null` if the file does not exist.
+ * Slug → file path, within a locale. Home (`''`) maps to `index.mdx`; every
+ * other slug maps to `<slug>.mdx`. Returns `null` if the file does not exist —
+ * which, for a translated locale, is the ordinary "not translated yet" case.
  */
-export async function resolveSlugToFile(slug: string): Promise<string | null> {
+export async function resolveSlugToFile(
+  slug: string,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<string | null> {
   const rel = slug === "" ? "index" : slug.replace(/^\//, "");
-  const filePath = path.join(CONTENT_DIR, `${rel}.mdx`);
+  const filePath = path.join(localeDir(locale), `${rel}.mdx`);
   try {
     await fs.access(filePath);
     return filePath;
@@ -67,17 +99,19 @@ export async function resolveSlugToFile(slug: string): Promise<string | null> {
 
 /**
  * Extract the on-this-page heading tree from raw MDX. We parse ATX headings
- * (`## `, `### `) line by line and slugify the text the same way `rehype-slug`
- * does (github-slugger semantics: lowercase, spaces→hyphens, strip
- * non-word/space/hyphen). Fenced code blocks are skipped so `# comments`
- * inside snippets never leak into the TOC.
+ * (`## `, `### `) line by line and slugify the text with `github-slugger` —
+ * the very package `rehype-slug` uses to mint the real DOM ids — so the TOC
+ * anchor and the heading it points at are guaranteed to agree, including on
+ * non-ASCII headings. Fenced code blocks are skipped so `# comments` inside
+ * snippets never leak into the TOC.
+ *
+ * A fresh `GithubSlugger` per document reproduces rehype-slug's dedup exactly
+ * (two "Request" headings → `request`, `request-1`), because rehype-slug also
+ * instantiates one slugger per file.
  */
 export function extractHeadings(body: string): TocHeading[] {
   const headings: TocHeading[] = [];
-  // Dedup repeated slugs exactly like `rehype-slug`/github-slugger does on the
-  // real heading ids (e.g. two "Request" headings → `request`, `request-1`), so
-  // TOC keys stay unique AND the TOC anchors resolve to the right heading.
-  const seen = new Map<string, number>();
+  const slugger = new GithubSlugger();
   let inFence = false;
 
   for (const rawLine of body.split("\n")) {
@@ -97,22 +131,18 @@ export function extractHeadings(body: string): TocHeading[] {
       .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
       .replace(/[*_`]/g, "")
       .trim();
-    const base = slugify(text);
-    const count = seen.get(base) ?? 0;
-    seen.set(base, count + 1);
-    headings.push({ id: count === 0 ? base : `${base}-${count}`, text, depth });
+    headings.push({ id: slugger.slug(text), text, depth });
   }
 
   return headings;
 }
 
-/** github-slugger-compatible slug (matches `rehype-slug` output). */
+/**
+ * Stateless slug, identical to what `rehype-slug` mints for a heading. Use
+ * `extractHeadings` when you need per-document dedup; this is for one-off ids.
+ */
 export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-");
+  return githubSlug(text);
 }
 
 /**
@@ -138,6 +168,7 @@ function buildStubPage(slug: string): DocPage {
 
   return {
     slug,
+    locale: DEFAULT_LOCALE,
     filePath: "",
     frontmatter: { title, description: summary, section: findSection(slug)?.key, toc: false },
     body,
@@ -145,11 +176,24 @@ function buildStubPage(slug: string): DocPage {
   };
 }
 
-/** Load + parse a single page by slug. A manifest route without an authored
- * `.mdx` renders a stub (not a 404); an unknown slug returns `null` (real 404). */
-export async function getPage(slug: string): Promise<DocPage | null> {
-  const filePath = await resolveSlugToFile(slug);
+/**
+ * Load + parse a single page by slug, in a locale.
+ *
+ * English: a manifest route without an authored `.mdx` renders a stub (not a
+ * 404); an unknown slug returns `null` (real 404).
+ *
+ * A translated locale NEVER renders a stub. If the translation is absent this
+ * returns `null` and the route 308s to the English page — which is a better
+ * answer than a "coming soon" card in a language we haven't written yet, and it
+ * makes partial translation a valid production state from day one.
+ */
+export async function getPage(
+  slug: string,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<DocPage | null> {
+  const filePath = await resolveSlugToFile(slug, locale);
   if (!filePath) {
+    if (locale !== DEFAULT_LOCALE) return null;
     return ALL_SLUGS.includes(slug) ? buildStubPage(slug) : null;
   }
 
@@ -170,20 +214,49 @@ export async function getPage(slug: string): Promise<DocPage | null> {
     toc: typeof data.toc === "boolean" ? data.toc : undefined,
   };
 
+  const headings = extractHeadings(content);
+
+  // A translated page borrows the ENGLISH heading ids. Links are authored against
+  // the canonical English slug — `/concepts/the-ledger#idempotency-lives-here-too`
+  // — and the renderer only prefixes the PATH, never the fragment. If the Yorùbá
+  // page minted `#ìdí-tí-èyí-fi-ṣe-pàtàkì` from its own text, every deep link into
+  // it would silently land at the top of the page. So the fragment stays
+  // language-neutral and the visible text is what changes.
+  //
+  // The TOC gets the same ids, or it would link to anchors the DOM does not have.
+  let anchorIds: string[] | undefined;
+  if (locale !== DEFAULT_LOCALE) {
+    const englishPath = await resolveSlugToFile(slug, DEFAULT_LOCALE);
+    if (englishPath) {
+      const english = matter(await fs.readFile(englishPath, "utf8")).content;
+      anchorIds = extractHeadings(english).map((h) => h.id);
+      for (const [index, heading] of headings.entries()) {
+        const id = anchorIds[index];
+        if (id) heading.id = id;
+      }
+    }
+  }
+
   return {
     slug,
+    locale,
     filePath,
     frontmatter,
     body: content,
-    headings: extractHeadings(content),
+    headings,
+    anchorIds,
   };
 }
 
 /**
- * Walk every `.mdx` under `content/` and return its slug. Used by the
+ * Walk every `.mdx` in a locale's tree and return its slug. Used by the
  * search-index builder and `generateStaticParams`. `index.mdx` → `''`.
+ *
+ * A translated locale's tree may not exist yet — that is not an error, it is an
+ * empty locale, so we return `[]` rather than throwing during a build.
  */
-export async function listAllSlugs(): Promise<string[]> {
+export async function listAllSlugs(locale: Locale = DEFAULT_LOCALE): Promise<string[]> {
+  const root = localeDir(locale);
   const slugs: string[] = [];
 
   async function walk(dir: string): Promise<void> {
@@ -196,13 +269,30 @@ export async function listAllSlugs(): Promise<string[]> {
       }
       if (!entry.name.endsWith(".mdx")) continue;
 
-      const rel = path.relative(CONTENT_DIR, full).replace(/\.mdx$/, "");
+      const rel = path.relative(root, full).replace(/\.mdx$/, "");
       slugs.push(rel === "index" ? "" : `/${rel}`);
     }
   }
 
-  await walk(CONTENT_DIR);
+  try {
+    await walk(root);
+  } catch {
+    return [];
+  }
   return slugs;
+}
+
+/**
+ * The slugs a translated locale actually covers — authored translations only.
+ *
+ * Deliberately NOT unioned with `ALL_SLUGS`: the manifest is the English IA, and
+ * a locale is only ever as complete as the files that exist for it. This is what
+ * `generateStaticParams` prerenders and what `href()` consults to decide whether
+ * to link into the locale or straight back to English.
+ */
+export async function listTranslatedSlugs(locale: Locale): Promise<string[]> {
+  if (locale === DEFAULT_LOCALE) return [];
+  return listAllSlugs(locale);
 }
 
 /**

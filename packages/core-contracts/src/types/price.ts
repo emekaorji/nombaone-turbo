@@ -1,11 +1,15 @@
+import type { PriceInterval } from '../billing/interval';
 import type { Mode } from './common';
 
 /**
  * PRICE DTO — an immutable, versioned way to charge for a plan. Money is integer
  * kobo; `currency` is always `NGN`. `planId` is the plan's public **reference**
  * (never the internal UUID). `active` is the explicit sellability flag.
+ *
+ * The cadence unit is declared once, in `../billing/interval` — re-exported here
+ * so `@nombaone/core-contracts/types` stays the stable import path for the type.
  */
-export type PriceInterval = 'day' | 'week' | 'month' | 'year';
+export type { PriceInterval, CalendarInterval, WallClockInterval } from '../billing/interval';
 export type PriceUsageType = 'licensed' | 'metered';
 export type PriceBillingScheme = 'per_unit' | 'tiered';
 

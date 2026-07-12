@@ -1,0 +1,79 @@
+---
+title: Àtúngbìyànjú & replay
+description: Delivery tí kò bá gba 2xx lákòókò ni a máa ń tún gbìyànjú lórí ètò backoff; o tún lè fi ọwọ́ ṣe replay delivery èyíkéyìí tí ó ti kọjá. Méjèèjì ń pa event id kan náà mọ́.
+section: webhooks
+order: 5
+---
+
+Nẹ́tíwọ́kì máa ń kùnà, sáfà máa ń tún bẹ̀rẹ̀, deploy sì máa ń wáyé láàárín ìbéèrè.
+nombaone gbà pé endpoint rẹ yóò máa pàdánù delivery lẹ́ẹ̀kọ̀ọ̀kan, a sì kọ́ ọ láti
+bọ́ sípò padà: fúnra rẹ̀ pẹ̀lú àtúngbìyànjú, àti pẹ̀lú ọwọ́ nípa replay. Méjèèjì ń
+lo **event id kan náà**, nítorí náà handler tí ó ń [ṣe dedupe](/webhooks/delivery-guarantee)
+dáadáa yóò kà delivery tí a gbà padà bí èyí tí ó ti rí tẹ́lẹ̀.
+
+## Àtúngbìyànjú aládàáṣe
+
+Delivery kan yóò yege bí endpoint rẹ bá dá `2xx` padà kíákíá. Ohunkóhun mìíràn
+(àkókò tí ó tán, `5xx`, tàbí àṣìṣe ìsopọ̀) ni a óò tún gbìyànjú lórí backoff tí ń
+pọ̀ sí i, èyí ń fún endpoint tí ó ṣẹ̀ṣẹ̀ dákẹ́ ní àyè láti padà bọ̀ láìsí pé o ṣe
+ohunkóhun.
+
+<Callout type="tip" title="Dá 2xx padà kọ́kọ́, ṣiṣẹ́ lẹ́yìn náà">
+  Ọ̀nà tí ó yára jù láti yẹra fún àtúngbìyànjú ni láti fọwọ́ sí i lẹ́sẹ̀kẹsẹ̀ kí o sì
+  ṣe iṣẹ́ náà lẹ́yìn náà ní ọ̀nà asynchronous. Handler tí ó ń ṣe iṣẹ́ tí ó lọ́ra nínú
+  ìbéèrè náà dà bí ìkùnà, ó sì ń rí àtúngbìyànjú tí kò yẹ kó rí gbà. Ṣàyẹ̀wò, ṣe
+  dedupe, kó sínú ìlà, kí o sì dá `200` padà.
+</Callout>
+
+Delivery tí ó bá ń kùnà lọ títí ètò àtúngbìyànjú fi kọjá ni a máa ń sàmì sí bí
+èyí tí ó kùnà, kì í sì í tún gbìyànjú mọ́. Kì í tún gbìyànjú títí ayérayé. O lè rí
+ibi tí delivery kan dúró sí nígbà gbogbo, kí o sì tún tì í ṣiṣẹ́ fúnra rẹ.
+
+## Ṣàyẹ̀wò àwọn delivery
+
+A ń ṣàkọsílẹ̀ gbogbo ìgbìyànjú. Ṣe àkójọ àwọn delivery ti endpoint kan, tàbí kà
+ọ̀kan:
+
+```bash
+# All deliveries for an endpoint
+curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries \
+  -H "Authorization: Bearer nbo_sandbox_…"
+
+# One delivery, with its attempts and your endpoint's responses
+curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId} \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+## Ṣe replay delivery kan
+
+Tún fi event tí ó ti kọjá ránṣẹ́ nígbà tí o bá fẹ́, lẹ́yìn tí o bá ti tún àṣìṣe
+handler ṣe, tàbí láti kún endpoint tí ó ti dákẹ́:
+
+```bash
+curl -X POST \
+  https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId}/replay \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+<Callout type="warning" title="Replay ń pa event id ìpilẹ̀ṣẹ̀ mọ́">
+  Replay jẹ́ event kan náà tí a tún fi ránṣẹ́, kì í ṣe èyí tuntun. Ibi ìpamọ́ dedupe
+  rẹ gbọdọ̀ mọ̀ ọ́n bí èyí tí a ti ṣe ìlànà rẹ̀ tán. Ìyẹn gan-an ni ohun tí o fẹ́:
+  replay wà ní ààbò nítorí pé handler rẹ jẹ́ idempotent.
+</Callout>
+
+## Ṣé o pàdánù àkókò kan? Ṣe reconciliation, má ṣe àtúnkọ́
+
+Bí endpoint rẹ bá ti dákẹ́ tí o kò sì mọ̀ dájú ohun tí o pàdánù, má ṣe gbìyànjú
+láti tún ipò rẹ̀ kọ́ láti inú ọ̀wọ́ event tí o kàn kò dá lójú. Ka resource náà
+tààrà (`GET
+/v1/subscriptions/{id}`) tàbí ṣe replay àwọn delivery pàtó náà. API ni orísun
+òtítọ́, event sì jẹ́ ìfitónilétí nípa rẹ̀.
+
+<CardGroup cols={2}>
+  <Card title="Ìdánilójú delivery" href="/webhooks/delivery-guarantee">
+    Ìdí tí event id fi mú kí àtúngbìyànjú àti replay wà ní ààbò.
+  </Card>
+  <Card title="Ṣàkóso webhook" href="/guides/handle-webhooks">
+    Kọ́ handler idempotent tí ó mú kí èyí ṣiṣẹ́.
+  </Card>
+</CardGroup>

@@ -1,0 +1,90 @@
+---
+title: Dunning da farfaɗowar biyan kuɗi
+description: "Ka dawo da charge da ya faɗi a kan balance mai ƙarancin kuɗi ta hanyar Najeriya: sake gwadawa da aka daidaita don \"ba yanzu ba,\" hanyar checkout ta OTP na card, da event ɗin da ke gaya maka lokacin mayar da damar shiga."
+section: guides
+order: 4
+---
+
+Lokacin da charge ya faɗi, yawancin tsarin biyan kuɗi na ɗauka cewa amsar "aʼa" ce.
+A Najeriya, gaskiyar magana ita ce **"ba yanzu ba"**: balance ɗin ya yi ƙaranci amma
+za a ƙara masa kuɗi, ko kuma card ɗin na buƙatar OTP na sau ɗaya. Dunning shi ne
+madauwarin farfaɗowa da injin ke amfani da shi domin wannan daidai, kuma an daidaita
+shi don dawo da kuɗi, ba wai kawai sake gwadawa a makance ba. Duba
+[dunning don balance mai ƙaranci](/concepts/hard-parts/dunning-for-thin-balances) don
+dalilin; wannan jagorar tana nuna yadda za ka gudanar da shi.
+
+## Abin da ke faruwa idan charge ya faɗi
+
+Idan tattara kuɗin cycle ya faɗi, subscription yana matsawa zuwa `past_due` kuma
+dunning ya karɓi ragamar aikin ta atomatik:
+
+1. `invoice.payment_failed` yana tashi tare da **ainihin dalilin faɗuwa** da za ka
+   rarraba aikinka a kai (rashin isasshen kuɗi, card ya ƙare, ana buƙatar OTP, ba
+   wai "declined" na gama-gari ba).
+2. Dunning yana tsara sake gwadawa a kan lokacinsa, ba sai ka yi komai ba.
+3. Kowane sake gwadawa ko dai ya dawo da kuɗi (→ `invoice.payment_recovered`,
+   subscription ya zama `active`) ko kuma ya gama jadawalin (→ subscription ya ci
+   gaba da kasancewa `past_due` ko kuma a soke shi, bisa ga manufarka).
+
+<Callout type="warning" title="Kada ka yanke damar shiga a faɗuwa ta farko">
+  `past_due` ba `canceled` ba ne. A kan balance mai ƙaranci, sake gwadawa yakan yi
+  nasara cikin ʼyan saʼoʼi. Yanke damar shiga a kan `invoice.payment_failed` yana
+  korar customer waɗanda da sun biya. Ka jira jadawalin dunning ya ƙare, ko kuma ka
+  jira `subscription.canceled`.
+</Callout>
+
+## Reshen card-OTP
+
+Charge na **card** mai maimaituwa a Najeriya yakan haifar da matakin OTP/3-D Secure
+na banki wanda ba za a iya kammala shi ba tare da mutum ba. Idan haka ta faru,
+dunning ba ya ci gaba da sake gwadawa a shiru har abada. Yana fitar da
+`invoice.action_required` tare da **sabuwar hanyar checkout**. Ka aika da customer
+zuwa can; idan ya kammala OTP a wurin, invoice ɗin zai sasanta kuma subscription zai
+farfaɗo. Wannan ita ce amsar da samfurinmu ya bayar ga rail da ba za a iya janyo kuɗi
+a kansa a shiru ba. Duba [token na card suna ƙarewa](/concepts/hard-parts/card-tokens-expire).
+
+## Duba yanayin dunning
+
+Karanta inda farfaɗowa ta kai ga wani subscription:
+
+```bash
+# Current dunning status
+curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
+  -H "Authorization: Bearer nbo_sandbox_…"
+
+# The full attempt history
+curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning/attempts \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+## Gwada shi a test
+
+Ka haɗa payment method na test wanda ke faɗuwa, sannan ka kalli yadda madauwarin ke
+gudana:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "customerId": "{customerId}", "behavior": "decline_insufficient_funds" }'
+```
+
+Yi amfani da `requires_otp` don gwada reshen checkout-link, kuma
+[ka tabbatar da mu a cikin devtools ɗinka](/getting-started/verify-in-your-devtools)
+don fitar da event `invoice.action_required` zuwa endpoint ɗinka.
+
+## Event ɗin da za ka sarrafa
+
+- **`invoice.payment_failed`**: an shiga dunning. Ka yi rikodinsa; kada ka kori customer tukuna.
+- **`invoice.action_required`**: ka aika wa customer hanyar checkout da ke cikin payload.
+- **`invoice.payment_recovered`**: ka mayar da damar shiga kamar yadda take.
+- **`subscription.canceled`**: dunning ya ƙare (idan manufarka ta soke). Yanzu ka yanke damar shiga.
+
+<CardGroup cols={2}>
+  <Card title="Dalilin da ya sa balance mai ƙaranci ke canza dunning" href="/concepts/hard-parts/dunning-for-thin-balances">
+    Dalilin da ke bayan lokacin sake gwadawa.
+  </Card>
+  <Card title="Sarrafa webhook" href="/guides/handle-webhooks">
+    Karɓa da tabbatar da waɗannan event yadda ya kamata.
+  </Card>
+</CardGroup>

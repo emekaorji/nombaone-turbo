@@ -4,6 +4,7 @@ import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 
 import { rehypeErrorAutolink } from "./rehype-error-autolink";
+import { rehypeLocaleAnchor } from "./rehype-locale-anchor";
 import { nombaoneDark, nombaoneLight } from "./shiki-theme";
 
 import type { Options as PrettyCodeOptions } from "rehype-pretty-code";
@@ -44,24 +45,41 @@ const prettyCodeOptions: PrettyCodeOptions = {
   },
 };
 
-export const mdxOptions: Pick<CompileOptions, "format" | "remarkPlugins" | "rehypePlugins"> = {
-  // Force full MDX parsing. Without this, next-mdx-remote can treat the source
-  // as `md`/`detect`, which enables indented-code parsing and mangles multi-line
-  // JSX *expression* attributes (e.g. `legs={[ {…}, {…} ]}` over several lines),
-  // dropping them so the component receives `undefined`. `mdx` disables indented
-  // code and parses the attribute as proper JS.
-  format: "mdx",
-  remarkPlugins: [remarkGfm],
-  rehypePlugins: [
-    rehypeSlug,
-    rehypeErrorAutolink,
-    [rehypePrettyCode, prettyCodeOptions],
-    [
-      rehypeAutolinkHeadings,
-      {
-        behavior: "wrap",
-        properties: { className: ["heading-anchor"], ariaHidden: true, tabIndex: -1 },
-      },
-    ],
-  ],
-};
+type MdxOptions = Pick<CompileOptions, "format" | "remarkPlugins" | "rehypePlugins">;
+
+function options(anchorIds?: string[]): MdxOptions {
+  return {
+    // Force full MDX parsing. Without this, next-mdx-remote can treat the source
+    // as `md`/`detect`, which enables indented-code parsing and mangles multi-line
+    // JSX *expression* attributes (e.g. `legs={[ {…}, {…} ]}` over several lines),
+    // dropping them so the component receives `undefined`. `mdx` disables indented
+    // code and parses the attribute as proper JS.
+    format: "mdx",
+    remarkPlugins: [remarkGfm],
+    rehypePlugins: [
+      rehypeSlug,
+      // On a TRANSLATED page, overwrite rehype-slug's language-specific ids with
+      // the English ones, so `#idempotency-lives-here-too` resolves in every
+      // locale. Runs immediately after rehype-slug and before the autolinker,
+      // which reads the final id.
+      ...(anchorIds ? [[rehypeLocaleAnchor, anchorIds] as const] : []),
+      rehypeErrorAutolink,
+      [rehypePrettyCode, prettyCodeOptions],
+      [
+        rehypeAutolinkHeadings,
+        {
+          behavior: "wrap",
+          properties: { className: ["heading-anchor"], ariaHidden: true, tabIndex: -1 },
+        },
+      ],
+    ] as MdxOptions["rehypePlugins"],
+  };
+}
+
+/** English (and anything else that owns its own heading ids). */
+export const mdxOptions: MdxOptions = options();
+
+/** A translated page: its headings take the English page's ids. */
+export function mdxOptionsForLocale(anchorIds: string[]): MdxOptions {
+  return options(anchorIds);
+}

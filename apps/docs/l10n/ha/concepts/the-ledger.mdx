@@ -1,0 +1,50 @@
+---
+title: Ledger mai shigarwa biyu
+description: "Tushen gaskiya da ke ƙarƙashin kowace invoice, charge, refund, da settlement: yadda rubutu mai shigarwa biyu ke tabbatar da kuɗi daidai yake."
+---
+
+A ƙarƙashin kowace subscription, invoice, da payout akwai **ledger mai shigarwa biyu**. Shi
+ne tushen gaskiya: ba matsayin invoice ba, ba balance da aka ajiye a cache ba, ba webhook ba.
+Ledger ɗin. Duk sauran lambobin da API ke mayarwa, daga gare shi ake samo su.
+
+## Debit da credit, ba alama ba
+
+Ana rubuta kowane motsin kuɗi a matsayin **transaction** da aka gina daga **legs** masu
+daidaita da juna. Kowace leg tana ɗauke da adadin kobo cikakke mai kyau, tare da **hanya**
+(debit ko credit) a kan wani **account**. Hanyar, ba alamar ƙari ko ta ragi ba, ita ce ke
+ɗauke da maʼanar. Transaction tana da inganci ne kawai idan debit ɗinta ya yi daidai da
+credit ɗinta: littattafan koyaushe suna daidaita, ta yadda aka gina su.
+
+Misali, invoice na ₦5,000 da aka biya yana sanya transaction na `charge` da ke yin debit ga
+cash sannan ya yi credit ga kuɗin shigar da ya amince da shi: an lissafa kowace kobo, a
+ɓangarorin biyu.
+
+## Me ya sa wannan yake da muhimmanci
+
+- **Babu abin da ke karkacewa a asirce.** Balance da aka ajiye a cache na iya zama ba daidai
+  ba; ledger da dole ne ya daidaita ba zai iya ɓoye kobo da ta ɓace ba. Ana karanta balance
+  daga ledger, ba a ajiye shi a gefensa ba.
+- **Ana iya bincika kowane motsi.** Refund, credit grant, settlement, payout: kowanne
+  transaction ne da za ka iya bibiya, tare da legs da ke bayyana ainihin abin da ya motsa da
+  inda ya tafi.
+- **Juyawa baya wani ɓangare ne na tsarin tun asali.** Refund ba ya soke charge ta hanyar
+  sauya shi; yana sanya sabuwar transaction mai daidaita da ke juya motsin baya, don haka
+  tarihin ya kasance cikakke kuma na gaskiya.
+
+<Callout type="note" title="Reference guda ɗaya ke haɗa kome">
+  Wani resource, rubuce-rubucensa a ledger, da webhook ɗinsa duk suna raba reference guda ɗaya na jamaʼa (`nbo…`).
+  Idan kana da reference na invoice, za ka iya samun charge ɗinsa, settlement ɗinsa, da event
+  ɗinsa: manufa guda, suna guda, [ko ina](/reference/glossary).
+</Callout>
+
+## Idempotency ma a nan yake zaune
+
+Tunda ledger shi ne tushen gaskiya, a kansa ake tilasta idempotency: motsin kuɗi yana ɗaukar
+tasirinsa a mataki guda da ba ya rabuwa, don haka buƙatar da aka sake gwadawa ko aka sake
+aikawa tana zama rubutu guda ɗaya kacal. Wannan shi ne yadda "[sake gwada webhook ba sake gwada charge ba ne](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)"
+ke ci gaba da zama gaskiya: ledger yana rubuta motsin sau ɗaya kawai.
+
+Aika `Idempotency-Key` iri ɗaya sau biyu, subscription guda ɗaya za ka samu; canza maɓallin,
+sai ka samu sabuwa. Ka gwada:
+
+<IdempotencyLab />

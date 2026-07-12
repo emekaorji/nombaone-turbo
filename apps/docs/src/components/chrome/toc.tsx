@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/cn";
+import { useL10n } from "@/lib/l10n/context";
 
 import type { TocHeading } from "@/lib/content";
 
@@ -13,6 +14,7 @@ import type { TocHeading } from "@/lib/content";
  * Honours `prefers-reduced-motion` via CSS (globals collapses smooth scroll).
  */
 export function Toc({ headings }: { headings: TocHeading[] }) {
+  const { t } = useL10n();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,9 +43,9 @@ export function Toc({ headings }: { headings: TocHeading[] }) {
   if (headings.length === 0) return null;
 
   return (
-    <nav aria-label="On this page" className="text-sm">
+    <nav aria-label={t("toc.onThisPage")} className="text-sm">
       <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted-foreground">
-        On this page
+        {t("toc.onThisPage")}
       </p>
       <ul className="space-y-1 border-l border-border">
         {headings.map((heading) => {

@@ -10,24 +10,45 @@ subscribes to, and a **price** is how much and how often. Keeping them separate
 means one plan (say, "Pro") can carry a monthly price and a yearly price at once,
 and a customer moves between them without you re-modelling the product.
 
-## Create a plan
+## Create a plan and its prices in one call
 
-A plan just needs a name. Description and metadata are optional.
+Send the plan with a `prices` array and you get the whole catalog entry in one
+request — the product and every cadence it sells on:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
   -H "Authorization: Bearer nbo_sandbox_…" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
-  -d '{ "name": "Pro", "description": "Everything in the Pro tier" }'
+  -d '{
+    "name": "Pro",
+    "description": "Everything in the Pro tier",
+    "prices": [
+      { "unitAmountInKobo": 500000, "interval": "month" },
+      { "unitAmountInKobo": 5000000, "interval": "year" }
+    ]
+  }'
 ```
 
-The `data.id` is the plan's reference: you post prices to it.
+That is ₦5,000 a month or ₦50,000 a year — two months free on the annual price.
+The response carries `data.prices` in the order you sent them.
 
-## Add a price
+The call is **atomic**: either the plan and every price land, or nothing does. A
+rejected price never creates a half-built plan, so you cannot end up with a plan
+that has no price and cannot be billed.
 
-A price sets the amount (**integer kobo**) and the billing `interval`. Post it
-under the plan:
+<Callout type="note" title="Embedding prices needs `prices:write`">
+  A key with only `plans:write` can still create a bare plan, but embedding
+  `prices` also requires `prices:write` — otherwise the call is rejected with
+  `API_KEY_SCOPE_FORBIDDEN`. Ship at most 10 prices, and no two on the same
+  cadence (`interval` + `intervalCount`).
+</Callout>
+
+## Add a price later
+
+Prices are immutable and a plan collects them over its lifetime, so you add a new
+cadence — or a new amount — by posting to the plan. `data.id` from the create
+above is the plan's reference:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
@@ -41,12 +62,28 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
   }'
 ```
 
-`250000` is ₦2,500.00. `intervalCount` multiplies the interval. `interval:
-"month"` with `intervalCount: 3` bills quarterly.
+`250000` is ₦2,500.00.
+
+A cadence is a **unit times a count**. `interval` is one of `minute`, `day`,
+`week`, `month` or `year`; `intervalCount` multiplies it. So `interval: "month"`
+with `intervalCount: 3` bills quarterly, and `interval: "minute"` with
+`intervalCount: 10` bills every ten minutes. There is no separate `quarterly` or
+`ten_minutely` — the count covers every multiple of a unit we already have.
 
 <Callout type="warning" title="Money is integer kobo">
   Every money field ends in `InKobo`. Send `250000` for ₦2,500, never `2500`.
   This is the [100× trap](/concepts/money-is-integer-kobo).
+</Callout>
+
+<Callout type="note" title="Sub-day cadences bill on the wall clock">
+  `day`, `week`, `month` and `year` are **calendar** cadences: a boundary lands on
+  a calendar date at 02:00 (Africa/Lagos), and month and year snap the end of the
+  month against your anchor day — a Jan-31 anchor bills Feb-28, then Mar-31.
+  `minute` is a **wall-clock** cadence: it bills at an exact offset from the
+  instant the subscription activated, so a ten-minute subscription started at
+  14:37 renews at 14:47. It is mostly useful for watching a real renewal loop run
+  in the time you have, rather than [advancing the clock](/sandbox-toolkit/clock)
+  by hand — but it is a real cadence, valid in both sandbox and live.
 </Callout>
 
 ## Add a trial

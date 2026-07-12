@@ -1,6 +1,8 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+import { DEFAULT_LOCALE, type Locale } from "@/lib/l10n/config";
+import { t } from "@/lib/l10n/t";
 import { siblings } from "@content/manifest";
 
 import { Feedback } from "./feedback";
@@ -11,7 +13,7 @@ import { Feedback } from "./feedback";
  * interactive bit, so it's a client island (`<Feedback>`); this stays a server
  * component.
  */
-export function Pager({ slug }: { slug: string }) {
+export function Pager({ slug, locale = DEFAULT_LOCALE }: { slug: string; locale?: Locale }) {
   const { prev, next } = siblings(slug);
 
   return (
@@ -27,7 +29,7 @@ export function Pager({ slug }: { slug: string }) {
             className="group flex flex-col rounded-lg border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-accent-border hover:shadow-md dark:hover:border-accent-border"
           >
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <ArrowLeft size={13} aria-hidden /> Previous
+              <ArrowLeft size={13} aria-hidden /> {t("pager.previous", locale)}
             </span>
             <span className="mt-1 font-medium text-foreground transition-colors group-hover:text-primary">
               {prev.title}
@@ -42,7 +44,7 @@ export function Pager({ slug }: { slug: string }) {
             className="group flex flex-col items-end rounded-lg border border-border bg-card p-4 text-right transition-all hover:-translate-y-0.5 hover:border-accent-border hover:shadow-md dark:hover:border-accent-border"
           >
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              Next <ArrowRight size={13} aria-hidden />
+              {t("pager.next", locale)} <ArrowRight size={13} aria-hidden />
             </span>
             <span className="mt-1 font-medium text-foreground transition-colors group-hover:text-primary">
               {next.title}

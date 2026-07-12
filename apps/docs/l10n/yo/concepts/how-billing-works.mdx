@@ -1,0 +1,85 @@
+---
+title: Bí billing ṣe ń ṣiṣẹ́
+description: "Àwọn cycle, invoice, gbígba owó, àti ẹ̀rọ ìpò tí ó wà lábẹ́ subscription: àwòrán gbogbo ẹ̀rọ náà ní ojú ìwé kan."
+---
+
+Subscription jẹ́ customer kan tí ó wà lórí price kan, tí a sì ń gba owó lọ́wọ́ rẹ̀ ní
+cycle tí ń padà wá lemọ́lemọ́. Gbogbo ohun tí Nomba One ń ṣe wà fún ìyípo kan ṣoṣo:
+**ṣí cycle sílẹ̀, ṣe invoice, gba owó rẹ̀, kí o sì kọ òtítọ́ náà sínú ledger**, lẹ́yìn
+náà kí o tún ṣe é ní sáà tí ó tẹ̀lé e.
+
+## Ìyípo náà
+
+Ọ̀nà kan náà ni cycle kọ̀ọ̀kan ń gbà:
+
+1. **Cycle kan ṣí sílẹ̀.** Ní ọjọ́ billing, ẹ̀rọ náà yóò ṣírò sáà náà àti iye owó tí ó
+   tọ́ sí price tí subscription náà wà lórí rẹ̀ lọ́wọ́lọ́wọ́ (ó ń fi ìyípadà tí a ti to
+   ṣe, proration, tàbí trial tí ó bá bọ́ sí ààlà yìí sínú ìṣírò náà).
+2. **A ó parí invoice kan.** Àwọn ìlà ohun kọ̀ọ̀kan, ẹ̀dínwó, credit, àti àpapọ̀ owó náà
+   ni a tì pa. Invoice tí iye rẹ̀ jẹ́ òdo yóò dá láìsí ìpè rail kankan rárá.
+3. **A ó gbìyànjú gbígba owó** lórí rail ti payment method tí subscription náà ní: a ó
+   fa card tàbí mandate; transfer yóò fi ibi tí a ti lè san owó hàn, yóò sì dúró.
+   Ọ̀kan lára ìwọ̀nyí ni àbájáde rẹ̀: **a san án**, **past due** (ìdí ìkùnà gidi tí o lè
+   gbé ìpinnu lé), tàbí **pending** (owó náà wà ní ojú ọ̀nà: transfer, tàbí card tí ó
+   nílò kí customer parí OTP).
+4. **Ledger yóò kọ ọ́ sílẹ̀.** Gbogbo ìṣíwọ́ owó ni a ń fi sínú rẹ̀ gẹ́gẹ́ bí ẹsẹ̀ méjì tí
+   ó dọ́gba. Invoice náà, àwọn ìfiránṣẹ́ rẹ̀, àti àwọn webhook rẹ̀ jọ ń lo reference
+   gbogbogbò kan náà.
+5. **Sáà náà yóò tẹ̀ síwájú**, a ó sì to cycle tí ó tẹ̀lé e ṣe.
+
+<Callout type="note" title="Idempotent láti ìpìlẹ̀ rẹ̀">
+  Gbogbo ìyípo náà jẹ́ idempotent lórí `(subscription, period)`. Tún un ṣiṣẹ́, jẹ́ kí ó
+  dá dúró láàárín, tún un gbìyànjú. Invoice kan péré ni yóò jáde, charge kan sì ni ó
+  pọ̀ jù tí ó lè ṣẹlẹ̀. Ìpìlẹ̀ ni èyí: ẹ̀rọ billing tí ó bá ń gba owó lẹ́ẹ̀mejì nígbà mìíràn
+  kò wúlò rárá.
+</Callout>
+
+## Ẹ̀rọ ìpò subscription
+
+Subscription ń kọjá nínú àwọn ìpò díẹ̀ tí ó hàn kedere, àwọn ìpò tí kò dùn mọ́ni sì jẹ́
+ohun pàtàkì gan-an, kì í ṣe àfikún ẹ̀yìn:
+
+- **`trialing`**: trial ń lọ lọ́wọ́; kò sí charge kankan síbẹ̀.
+- **`active`**: ó ń san owó bí ó ti yẹ ní cycle kọ̀ọ̀kan.
+- **`past_due`**: charge kan kùnà; [dunning](/concepts/hard-parts/dunning-for-thin-balances)
+  ni ó ń gbé iṣẹ́ ìgbàpadà.
+- **`paused`**: a dá billing dúró mọ̀ọ́mọ̀.
+- **`canceled`**: ó ti parí; kò sí cycle mìíràn mọ́.
+
+Àwọn ìyípadà tí o gbọ́dọ̀ mú (charge tí ó kùnà, customer tí ó nílò OTP, ìgbàpadà, àti
+ìjáde) ni ọ̀kọ̀ọ̀kan wọn ń tan webhook event tí o lè gbé ìpinnu lé. Kọ àwọn handler rẹ
+sílẹ̀ fún `invoice.payment_failed`, `invoice.action_required`, àti
+`invoice.payment_recovered`, kì í ṣe `invoice.paid` nìkan.
+
+Tẹ ìpò kan láti rí ohun tí ń mú subscription jáde kúrò nínú rẹ̀, àti webhook tí ó ń tanná:
+
+<LifecycleStateMachine
+  resource="subscription"
+  states={[
+    { id: "trialing", label: "trialing", tone: "active", initial: true, description: "Trial ń lọ lọ́wọ́; kò sí charge kankan síbẹ̀." },
+    { id: "active", label: "active", tone: "success", initial: true, description: "Ó ń san owó bí ó ti yẹ ní cycle kọ̀ọ̀kan. Subscription tí kò ní trial yóò bẹ̀rẹ̀ níbí." },
+    { id: "past_due", label: "past_due", tone: "warning", description: "Charge kan kùnà; dunning ni ó ń gbé iṣẹ́ ìgbàpadà. Lórí balance tín-ínrín, 'kò tíì tó' ni èyí, kì í ṣe 'rárá'." },
+    { id: "paused", label: "paused", tone: "neutral", description: "A dá billing dúró mọ̀ọ́mọ̀." },
+    { id: "canceled", label: "canceled", tone: "danger", terminal: true, description: "Ó ti parí; kò sí cycle mìíràn mọ́." },
+  ]}
+  transitions={[
+    { from: "trialing", to: "active", trigger: "Trial náà parí, charge àkọ́kọ́ sì yọrí sí rere", webhook: "subscription.activated" },
+    { from: "trialing", to: "canceled", trigger: "A fagilé rẹ̀ nígbà trial", webhook: "subscription.canceled" },
+    { from: "active", to: "past_due", trigger: "Charge ti cycle kan kùnà", webhook: "invoice.payment_failed" },
+    { from: "past_due", to: "active", trigger: "Ìgbìyànjú dunning (tàbí OTP tí a parí) gba charge náà padà", webhook: "invoice.payment_recovered" },
+    { from: "past_due", to: "canceled", trigger: "Dunning ti tán: ìjáde láìfẹ́", webhook: "subscription.churned" },
+    { from: "active", to: "paused", trigger: "A dá billing dúró mọ̀ọ́mọ̀", webhook: "subscription.paused" },
+    { from: "paused", to: "active", trigger: "Billing tẹ̀síwájú", webhook: "subscription.resumed" },
+    { from: "active", to: "canceled", trigger: "A fagilé rẹ̀ látọkànwá", webhook: "subscription.canceled" },
+  ]}
+/>
+
+## Ohun tí ó mú kí èyí ṣòro níhìn-ín
+
+Àwọn ẹ̀rọ billing láti ilẹ̀ òkèèrè ń rò pé card wà lọ́wọ́ ìwọ́ àti pé balance kún. Kò sí
+ọ̀kan nínú àwọn méjèèjì tí ó jẹ́ òtítọ́ ní Nàìjíríà: transfer ni owó fi ń dé, balance jẹ́
+tín-ínrín, charge tí ó sì kùnà sábà máa ń túmọ̀ sí *"kò tíì tó,"* kì í ṣe *"rárá."*
+Àwọn ojú ìwé èròǹgbà tí ó kù ń sọ nípa àwọn ẹ̀ka tí ó jáde láti inú òtítọ́ yẹn:
+[ledger](/concepts/the-ledger), [kobo tí ó jẹ́ nọ́ḿbà odidi](/concepts/money-is-integer-kobo),
+[ìtì/ìfà lórí rail púpọ̀](/concepts/multi-rail-push-and-pull), àti
+[settlement](/concepts/settlement-and-sub-accounts).

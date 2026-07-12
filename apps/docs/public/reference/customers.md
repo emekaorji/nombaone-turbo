@@ -1,25 +1,20 @@
 ---
 title: "Customers"
 type: reference
-summary: "Create and manage the people you bill, plus their credit grants and discounts. Every operation the API serves for customers, generated from the live schema."
+summary: "Customers — every operation on the resource."
 canonical: https://docs.nombaone.xyz/reference/customers
 ---
 
 # Customers
 
-A **customer** is who you bill. A customer holds contact details, an optional
-discount, and a credit balance that draws down before any charge. Customer ids
-are the `nbo…` references that join a person to their subscriptions, invoices, and
-[ledger](/concepts/the-ledger) postings.
+Every operation on the customers resource.
 
-Every operation below is generated from the API's own OpenAPI schema, so it always
-matches what the API actually serves.
-
-> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/customers
-
-> **Credit and discount live here**
->
-> A customer's credit grants (`/customers/{id}/credit`) and applied discount
-> (`/customers/{id}/discount`) are sub-resources of the customer. See
-> [coupons and credits](/guides/coupons-and-credits) for how they resolve on an
-> invoice.
+- [`POST /v1/customers`](https://docs.nombaone.xyz/reference/customers/create.md) — Create a customer
+- [`GET /v1/customers`](https://docs.nombaone.xyz/reference/customers/list.md) — List customers
+- [`GET /v1/customers/{id}`](https://docs.nombaone.xyz/reference/customers/retrieve.md) — Retrieve a customer
+- [`PATCH /v1/customers/{id}`](https://docs.nombaone.xyz/reference/customers/update.md) — Update a customer
+- [`GET /v1/customers/{id}/credit`](https://docs.nombaone.xyz/reference/customers/credit-balance.md) — Retrieve credit balance
+- [`POST /v1/customers/{id}/credit`](https://docs.nombaone.xyz/reference/customers/grant-credit.md) — Grant credit
+- [`DELETE /v1/customers/{id}/discount`](https://docs.nombaone.xyz/reference/customers/remove-discount.md) — Remove a discount
+- [`POST /v1/customers/{id}/discount`](https://docs.nombaone.xyz/reference/customers/apply-discount.md) — Apply a discount
+- [`DELETE /v1/customers/{id}/credit/{grantId}`](https://docs.nombaone.xyz/reference/customers/void-credit-grant.md) — Void a credit grant
