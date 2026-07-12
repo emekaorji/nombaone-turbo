@@ -1,15 +1,48 @@
 import { and, eq } from 'drizzle-orm';
 
-import { subscriptionsTable, type SubscriptionRow } from '@nombaone/core-db/schema';
+import { pricesTable, subscriptionsTable, type SubscriptionRow } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { emitEvent } from '@nombaone/sara/events';
+
+import { computeAnchor, periodBounds, type PeriodPrice } from '../billing/scheduling';
 import { assertLegalTransition, DEFAULT_EVENT_FOR_STATUS } from './fsm';
 import { getSubscriptionByReference, loadSubscriptionRow } from './queries';
 
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
 import type { SubscriptionResponseData, SubscriptionStatus } from './types';
 import type { WebhookEventType } from '@nombaone/core-contracts/types';
+
+/**
+ * The subscription's cadence (unit × count). Selected here rather than through
+ * `billing/effects.loadPriceById` because that module imports back into `subscriptions`
+ * — this file's own package — and the import would close a cycle. `billing/scheduling`
+ * is a pure leaf, so importing the period math from it is safe.
+ */
+async function loadCadence(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  priceId: string
+): Promise<PeriodPrice> {
+  const [row] = await txDb
+    .select({ interval: pricesTable.interval, intervalCount: pricesTable.intervalCount })
+    .from(pricesTable)
+    .where(
+      and(
+        eq(pricesTable.organizationId, ctx.organizationId),
+        eq(pricesTable.mode, ctx.mode),
+        eq(pricesTable.id, priceId)
+      )
+    )
+    .limit(1);
+  if (!row) {
+    throw AppError.UnprocessableEntity(
+      'the subscription references a price that no longer exists',
+      { priceId },
+      NOMBAONE_ERROR_CODES.PRICE_NOT_FOUND
+    );
+  }
+  return row;
+}
 
 type SubscriptionMutableFields = Partial<
   Pick<
@@ -20,9 +53,11 @@ type SubscriptionMutableFields = Partial<
     | 'cancelAtPeriodEnd'
     | 'cancellationReason'
     | 'pauseMaxDays'
+    | 'billingCycleAnchor'
     | 'currentPeriodStart'
     | 'currentPeriodEnd'
     | 'currentPeriodIndex'
+    | 'nextBillingAt'
     | 'trialEnd'
   >
 >;
@@ -127,8 +162,16 @@ export async function pauseSubscription(
   return getSubscriptionByReference(txDb, ctx, reference);
 }
 
-/** Resume: shift the period end by the elapsed paused duration so no period is
- *  skipped or double-billed (A10). */
+/**
+ * Resume: push the whole future schedule out by the elapsed paused duration, so no
+ * period is skipped or double-billed (A10).
+ *
+ * This shifts the ANCHOR, not just `current_period_end`. Every boundary is recomputed
+ * from the anchor by `periodBounds`, so writing `current_period_end` alone (as this did)
+ * was overwritten on the very next cycle — while `next_billing_at` kept its stale
+ * pre-pause value, which made the subscription due the instant it came back. Moving the
+ * anchor is what actually buys the customer back the time they were paused for.
+ */
 export async function resumeSubscription(
   txDb: InfraTxDb,
   ctx: DomainContext,
@@ -136,12 +179,50 @@ export async function resumeSubscription(
 ): Promise<SubscriptionResponseData> {
   const sub = await loadSubscriptionRow(txDb, ctx, reference);
   const set: SubscriptionMutableFields = { pausedAt: null };
-  if (sub.pausedAt && sub.currentPeriodEnd) {
+
+  if (sub.pausedAt) {
+    const cadence = await loadCadence(txDb, ctx, sub.priceId);
     const pausedMs = Date.now() - new Date(sub.pausedAt).getTime();
-    set.currentPeriodEnd = new Date(new Date(sub.currentPeriodEnd).getTime() + pausedMs);
+
+    const oldAnchor =
+      sub.billingCycleAnchor ??
+      computeAnchor(sub.currentPeriodStart ?? new Date(), cadence.interval);
+    // Re-normalize through computeAnchor so a calendar cadence stays pinned to the
+    // billing hour (the shift is day-granular for those, exact for a wall-clock one).
+    const anchor = computeAnchor(new Date(oldAnchor.getTime() + pausedMs), cadence.interval);
+    // `currentPeriodIndex` is the NEXT index to bill, so its period START is both the
+    // moment the paid coverage runs out and the moment the next charge is due.
+    const nextBoundary = periodBounds(anchor, cadence, sub.currentPeriodIndex).start;
+
+    set.billingCycleAnchor = anchor;
+    set.currentPeriodEnd = nextBoundary;
+    set.nextBillingAt = nextBoundary;
   }
+
   await transition(txDb, ctx, sub, 'active', { event: 'subscription.resumed', set });
   return getSubscriptionByReference(txDb, ctx, reference);
+}
+
+/**
+ * The cancel-at-period-end trip. `cancelSubscription({ mode: 'at_period_end' })` only
+ * RAISES the flag; this is what honors it, and `runCycle` is the only caller because it
+ * is the only place that knows a period just ended. Honoring it anywhere else would
+ * either cut the customer's paid time short or — as happened before this existed, when
+ * nothing read the flag at all — renew a subscription they had already cancelled.
+ *
+ * Voluntary by definition (the customer asked), so it emits `subscription.canceled`,
+ * never `subscription.churned`.
+ */
+export async function cancelAtBoundary(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  sub: SubscriptionRow
+): Promise<SubscriptionRow> {
+  const now = new Date();
+  return transition(txDb, ctx, sub, 'canceled', {
+    event: 'subscription.canceled',
+    set: { canceledAt: now, endedAt: now, cancellationReason: 'voluntary' },
+  });
 }
 
 // ── Internal ops (row → row) — called by billing (03d) / dunning (06) ────────

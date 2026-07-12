@@ -4,7 +4,7 @@ import { and, desc, eq } from 'drizzle-orm';
 
 import { getSession } from '@/lib/auth';
 import { naira } from '@/lib/money';
-import { monthlyKobo } from '@/lib/subscriptions';
+import { toMonthlyKobo } from '@nombaone/core-contracts/billing';
 
 export type CustomerHealth = 'healthy' | 'at_risk' | 'delinquent' | 'trialing' | 'new';
 
@@ -85,7 +85,7 @@ export async function listCustomers(sort: CustomerSortKey = 'mrr'): Promise<Cust
     statusesByCustomer.set(s.customerId, arr);
     // MRR = active subscriptions only, each normalized to monthly kobo.
     if (s.status === 'active') {
-      mrrByCustomer.set(s.customerId, (mrrByCustomer.get(s.customerId) ?? 0) + monthlyKobo(s.unitAmount, s.interval, s.intervalCount));
+      mrrByCustomer.set(s.customerId, (mrrByCustomer.get(s.customerId) ?? 0) + toMonthlyKobo(s.unitAmount, s.interval, s.intervalCount));
     }
   }
   const creditByCustomer = new Map<string, number>();

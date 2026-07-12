@@ -2,7 +2,7 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { buildSubscriptionLine, createInvoice, finalizeInvoiceWithAdjustments } from '../invoices';
-import { loadSubscriptionRow } from '../subscriptions';
+import { cancelAtBoundary, loadSubscriptionRow } from '../subscriptions';
 import { applyDuePhase } from '../subscription-schedules';
 import { claimPeriod } from './claim';
 import { collectForInvoice } from './collectForInvoice';
@@ -22,8 +22,10 @@ import type { InvoiceBillingReason } from '../invoices';
 import type { CollectOutcome } from './types';
 
 export interface RunCycleResult {
-  invoice: InvoiceRow;
-  outcome: CollectOutcome | 'open';
+  /** `null` when the cycle ENDED the subscription instead of billing it (a
+   *  cancel-at-period-end trip) — nothing was billed, so there is no invoice. */
+  invoice: InvoiceRow | null;
+  outcome: CollectOutcome | 'open' | 'canceled';
 }
 
 export interface RunCycleOptions {
@@ -58,12 +60,24 @@ export async function runCycle(
     periodIndex: loaded.currentPeriodIndex,
   });
   const sub = applied ? await loadSubscriptionRow(txDb, ctx, subscriptionRef) : loaded;
+
+  // Cancel-at-period-end trips HERE, and only here: this call IS the moment the paid
+  // coverage runs out and the next period would be billed. `cancelSubscription({ mode:
+  // 'at_period_end' })` only raises the flag. Nothing read it before, so a subscription
+  // the customer had already cancelled renewed forever. Return before claiming a period,
+  // so no invoice row is minted and the sweep drops the row (canceled is not billable).
+  if (sub.cancelAtPeriodEnd) {
+    await cancelAtBoundary(txDb, ctx, sub);
+    return { invoice: null, outcome: 'canceled' };
+  }
+
   const price = await loadPriceById(txDb, ctx, sub.priceId);
   const item = await loadPrimarySubscriptionItem(txDb, ctx, sub.id);
 
   // Period window for the index being billed — anchor-based precise math (04a):
   // boundaries are `anchor + n·interval` with EOM snap-back / leap handling.
-  const anchor = sub.billingCycleAnchor ?? computeAnchor(sub.currentPeriodStart ?? new Date());
+  const anchor =
+    sub.billingCycleAnchor ?? computeAnchor(sub.currentPeriodStart ?? new Date(), price.interval);
   const { start: periodStart, end: periodEnd } = periodBounds(
     anchor,
     { interval: price.interval, intervalCount: price.intervalCount },

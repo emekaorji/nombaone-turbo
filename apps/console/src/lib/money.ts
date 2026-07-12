@@ -1,7 +1,8 @@
 /**
  * Money is integer kobo everywhere in the domain; the UI divides by 100 for
- * display and NEVER stores a float (engineering doc §7). These are the only two
- * formatters the console uses so the rule is enforceable by inspection.
+ * display and NEVER stores a float (engineering doc §7). These are the only
+ * money formatters — and the only naira PARSER — the console uses, so the rule
+ * is enforceable by inspection.
  */
 
 const group = (n: number): string => n.toLocaleString('en-US');
@@ -19,6 +20,22 @@ export function nairaShort(kobo: number): string {
   if (abs >= 1_000_000) return `₦${trim(n / 1_000_000)}M`;
   if (abs >= 1_000) return `₦${trim(n / 1_000)}k`;
   return `₦${group(n)}`;
+}
+
+/**
+ * Parse a naira string the merchant typed ("2,500", "₦2,500.00") to integer kobo.
+ * Returns null on anything that is not a positive naira figure with at most 2 dp —
+ * the caller turns that into a field error rather than sending a NaN to the engine.
+ *
+ * Shared by the server action that inserts the price and by the client-side
+ * "Stored as N kobo" hint, so the field can never validate in the browser and
+ * then round differently on the server.
+ */
+export function toKobo(raw: string): number | null {
+  const cleaned = raw.replace(/[₦,\s]/g, '');
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  const kobo = Math.round(parseFloat(cleaned) * 100);
+  return Number.isSafeInteger(kobo) && kobo > 0 ? kobo : null;
 }
 
 const trim = (n: number): string => {

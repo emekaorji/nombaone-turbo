@@ -3,9 +3,9 @@ import { db } from '@nombaone/core-db/serverless';
 import { and, eq } from 'drizzle-orm';
 
 import { getSession } from '@/lib/auth';
-import { naira } from '@/lib/money';
+import { priceOptionLabel, type PriceOption } from '@/lib/price-options';
 
-export type PriceOption = { reference: string; label: string };
+export type { PriceGroup, PriceOption } from '@/lib/price-options';
 export type MethodOption = { reference: string; label: string; kind: string };
 export type SubscriptionFormOptions = { prices: PriceOption[]; methods: MethodOption[] };
 export type CustomerOption = { reference: string; name: string; email: string; methods: MethodOption[] };
@@ -19,21 +19,42 @@ function methodLabel(kind: string, brand: string | null, last4: string | null): 
       : 'Bank transfer';
 }
 
-const INTERVAL_SHORT: Record<string, string> = { day: 'day', week: 'wk', month: 'mo', year: 'yr' };
+/** The columns every price picker needs: the plan it belongs to (the group) and its own cadence. */
+const priceOptionColumns = {
+  reference: pricesTable.reference,
+  unitAmount: pricesTable.unitAmount,
+  interval: pricesTable.interval,
+  intervalCount: pricesTable.intervalCount,
+  planName: plansTable.name,
+};
+
+type PriceOptionRow = {
+  reference: string;
+  unitAmount: number;
+  interval: PriceOption['interval'];
+  intervalCount: number;
+  planName: string;
+};
+
+/** A plan is a ladder now, so a price is `plan + cadence`, and the picker groups on the plan. */
+const toPriceOption = (p: PriceOptionRow): PriceOption => ({
+  reference: p.reference,
+  planName: p.planName,
+  label: priceOptionLabel(p.unitAmount, p.interval, p.intervalCount),
+  interval: p.interval,
+  intervalCount: p.intervalCount,
+});
 
 /** The org's active prices (no customer scope) — for the change-plan picker. */
 export async function getActivePrices(): Promise<PriceOption[]> {
   const session = await getSession();
   if (!session) return [];
   const prices = await db
-    .select({ reference: pricesTable.reference, unitAmount: pricesTable.unitAmount, interval: pricesTable.interval, planName: plansTable.name })
+    .select(priceOptionColumns)
     .from(pricesTable)
     .innerJoin(plansTable, eq(pricesTable.planId, plansTable.id))
     .where(and(eq(pricesTable.organizationId, session.organizationId), eq(pricesTable.mode, session.mode), eq(pricesTable.active, true)));
-  return prices.map((p) => ({
-    reference: p.reference,
-    label: `${p.planName} · ${naira(p.unitAmount)}/${INTERVAL_SHORT[p.interval] ?? p.interval}`,
-  }));
+  return prices.map(toPriceOption);
 }
 
 /**
@@ -49,7 +70,7 @@ export async function getNewSubscriptionData(): Promise<NewSubscriptionData> {
   try {
   const [prices, customers, methods] = await Promise.all([
     db
-      .select({ reference: pricesTable.reference, unitAmount: pricesTable.unitAmount, interval: pricesTable.interval, planName: plansTable.name })
+      .select(priceOptionColumns)
       .from(pricesTable)
       .innerJoin(plansTable, eq(pricesTable.planId, plansTable.id))
       .where(and(eq(pricesTable.organizationId, organizationId), eq(pricesTable.mode, mode), eq(pricesTable.active, true))),
@@ -78,7 +99,7 @@ export async function getNewSubscriptionData(): Promise<NewSubscriptionData> {
   }
 
   return {
-    prices: prices.map((p) => ({ reference: p.reference, label: `${p.planName} · ${naira(p.unitAmount)}/${INTERVAL_SHORT[p.interval] ?? p.interval}` })),
+    prices: prices.map(toPriceOption),
     customers: customers.map((c) => ({ reference: c.reference, name: c.name, email: c.email, methods: methodsByCustomer.get(c.reference) ?? [] })),
   };
   } catch {
@@ -93,12 +114,7 @@ export async function getSubscriptionFormOptions(customerReference: string): Pro
 
   const [prices, methods] = await Promise.all([
     db
-      .select({
-        reference: pricesTable.reference,
-        unitAmount: pricesTable.unitAmount,
-        interval: pricesTable.interval,
-        planName: plansTable.name,
-      })
+      .select(priceOptionColumns)
       .from(pricesTable)
       .innerJoin(plansTable, eq(pricesTable.planId, plansTable.id))
       .where(and(eq(pricesTable.organizationId, organizationId), eq(pricesTable.mode, mode), eq(pricesTable.active, true))),
@@ -122,10 +138,7 @@ export async function getSubscriptionFormOptions(customerReference: string): Pro
   ]);
 
   return {
-    prices: prices.map((p) => ({
-      reference: p.reference,
-      label: `${p.planName} · ${naira(p.unitAmount)}/${INTERVAL_SHORT[p.interval] ?? p.interval}`,
-    })),
+    prices: prices.map(toPriceOption),
     methods: methods.map((m) => ({ reference: m.reference, kind: m.kind, label: methodLabel(m.kind, m.brand, m.last4) })),
   };
 }

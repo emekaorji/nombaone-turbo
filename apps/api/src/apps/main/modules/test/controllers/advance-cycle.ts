@@ -1,8 +1,8 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
+
 import { runCycle } from '@shared/services/billing';
 import { getInvoiceByReference } from '@shared/services/invoices';
 import { getSubscriptionByReference } from '@shared/services/subscriptions';
-
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
 import { jsonHandler } from '@shared/http';
@@ -52,7 +52,11 @@ export const advanceCycleController: RequestHandler = jsonHandler<AdvanceCycleRe
     const result = await runCycle(db, ctx, subscriptionId, {
       maxCatchUpPeriods: env.BILLING_MAX_CATCH_UP_PERIODS,
     });
-    const invoice = await getInvoiceByReference(db, ctx, result.invoice.reference);
+    // No invoice when the cycle tripped cancel-at-period-end: the subscription ended at
+    // the boundary rather than renewing, so there was nothing to bill.
+    const invoice = result.invoice
+      ? await getInvoiceByReference(db, ctx, result.invoice.reference)
+      : null;
 
     return {
       data: { domain: 'advance_cycle_result', subscriptionId, outcome: result.outcome, invoice },

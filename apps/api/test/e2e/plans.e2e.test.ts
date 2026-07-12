@@ -1,17 +1,22 @@
+import { and, eq } from 'drizzle-orm';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+import { domainEventsTable, plansTable, pricesTable } from '@nombaone/core-db/schema';
 
 import { startHarness, type Harness } from '../helpers/harness';
 
 /**
  * End-to-end coverage of the catalog (`plans` + immutable `prices`): CRUD, price
  * versioning by immutable rows, archive-not-delete, idempotency, name uniqueness,
- * tenant isolation, and the L5 default-fill on price create.
+ * tenant isolation, the L5 default-fill on price create, and the atomic
+ * plan-with-embedded-prices create (one intent = one call).
  */
 describe('catalog (plans & prices) e2e', () => {
   let harness: Harness;
   let bearerA: string;
   let bearerB: string;
+  let orgAId: string;
 
   const scopes = ['plans:read', 'plans:write', 'prices:read', 'prices:write'];
 
@@ -19,6 +24,7 @@ describe('catalog (plans & prices) e2e', () => {
     harness = await startHarness();
     const orgA = await harness.seedOrg('Cat A');
     const orgB = await harness.seedOrg('Cat B');
+    orgAId = orgA.organizationId;
     bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
     bearerB = (await harness.mintApiKey(orgB.organizationId, 'sandbox', scopes)).secret;
   });
@@ -212,5 +218,211 @@ describe('catalog (plans & prices) e2e', () => {
     ).send({ unitAmountInKobo: 100000, interval: 'month', billingScheme: 'tiered' });
     expect(tiered.status).toBe(400);
     expect(tiered.body.error.code).toBe('PRICE_TIERED_NOT_SUPPORTED');
+  });
+
+  // ── one intent = one call: POST /v1/plans with embedded `prices: [...]` ───────
+  describe('atomic plan + embedded prices', () => {
+    /** Every plan row tenant A holds under `name` — the rollback proof reads the DB
+     *  directly rather than a GET, which could be lying about what committed. */
+    const plansNamed = async (name: string): Promise<{ id: string }[]> =>
+      harness.db
+        .select({ id: plansTable.id })
+        .from(plansTable)
+        .where(and(eq(plansTable.organizationId, orgAId), eq(plansTable.name, name)));
+
+    const priceRowCount = async (): Promise<number> =>
+      (
+        await harness.db
+          .select({ id: pricesTable.id })
+          .from(pricesTable)
+          .where(eq(pricesTable.organizationId, orgAId))
+      ).length;
+
+    const planCreatedEventsFor = async (name: string): Promise<unknown[]> => {
+      const rows = await harness.db
+        .select({ payload: domainEventsTable.payload })
+        .from(domainEventsTable)
+        .where(
+          and(
+            eq(domainEventsTable.organizationId, orgAId),
+            eq(domainEventsTable.type, 'plan.created')
+          )
+        );
+      return rows.filter((row) => row.payload.name === name);
+    };
+
+    it('creates the plan and its prices in ONE call, in submission order', async () => {
+      const created = await idem(
+        asA(request(harness.app).post('/v1/plans')),
+        `pwp-${Date.now()}`
+      ).send({
+        name: `Embedded ${Date.now()}`,
+        prices: [
+          { unitAmountInKobo: 500000, interval: 'month' },
+          { unitAmountInKobo: 5000000, interval: 'year' },
+        ],
+      });
+      expect(created.status).toBe(201);
+      const planRef = created.body.data.id as string;
+
+      // Response order === request order: a client zips these two arrays.
+      expect(created.body.data.prices).toHaveLength(2);
+      expect(created.body.data.prices[0]).toMatchObject({
+        planId: planRef,
+        unitAmountInKobo: 500000,
+        interval: 'month',
+        intervalCount: 1,
+        currency: 'NGN',
+        active: true,
+      });
+      expect(created.body.data.prices[1]).toMatchObject({
+        unitAmountInKobo: 5000000,
+        interval: 'year',
+      });
+
+      // They really committed — read them back through the nested route.
+      const listed = await asA(request(harness.app).get(`/v1/plans/${planRef}/prices`));
+      expect(listed.status).toBe(200);
+      expect(listed.body.data).toHaveLength(2);
+      expect(new Set(listed.body.data.map((p: { id: string }) => p.id))).toEqual(
+        new Set(created.body.data.prices.map((p: { id: string }) => p.id))
+      );
+    });
+
+    it('rolls the WHOLE call back when one embedded price is rejected', async () => {
+      const name = `Rollback ${Date.now()}`;
+      const pricesBefore = await priceRowCount();
+
+      const failed = await idem(
+        asA(request(harness.app).post('/v1/plans')),
+        `pwp-rb-${Date.now()}`
+      ).send({
+        name,
+        prices: [
+          { unitAmountInKobo: 500000, interval: 'month' },
+          { unitAmountInKobo: 200000, interval: 'week' },
+          { unitAmountInKobo: 100000, interval: 'year', billingScheme: 'tiered' },
+        ],
+      });
+      expect(failed.status).toBe(400);
+      expect(failed.body.error.code).toBe('PRICE_TIERED_NOT_SUPPORTED');
+      // The offending row is named on the wire (`details` never leaves the server).
+      expect(failed.body.error.fields['prices.2.billingScheme']).toBeDefined();
+
+      // Nothing partial survived: no plan, no orphan prices, no event.
+      expect(await plansNamed(name)).toHaveLength(0);
+      expect(await priceRowCount()).toBe(pricesBefore);
+      expect(await planCreatedEventsFor(name)).toHaveLength(0);
+
+      // And the name is still free — the failed call left no ghost holding it.
+      const retry = await idem(
+        asA(request(harness.app).post('/v1/plans')),
+        `pwp-rb2-${Date.now()}`
+      ).send({ name });
+      expect(retry.status).toBe(201);
+    });
+
+    it('replays idempotently: the same key never mints a second set of prices', async () => {
+      const key = `pwp-idem-${Date.now()}`;
+      const body = {
+        name: `Replayed ${Date.now()}`,
+        prices: [
+          { unitAmountInKobo: 300000, interval: 'month' },
+          { unitAmountInKobo: 3000000, interval: 'year' },
+        ],
+      };
+
+      const first = await idem(asA(request(harness.app).post('/v1/plans')), key).send(body);
+      expect(first.status).toBe(201);
+
+      // A replay re-serves the cached data — 200, not a fresh 201.
+      const replay = await idem(asA(request(harness.app).post('/v1/plans')), key).send(body);
+      expect(replay.status).toBe(200);
+      expect(replay.body.data.id).toBe(first.body.data.id);
+      expect(replay.body.data.prices.map((p: { id: string }) => p.id)).toEqual(
+        first.body.data.prices.map((p: { id: string }) => p.id)
+      );
+
+      const listed = await asA(
+        request(harness.app).get(`/v1/plans/${first.body.data.id}/prices`)
+      );
+      expect(listed.body.data).toHaveLength(2); // 2, not 4
+    });
+
+    it('403s a plans:write-only key that embeds prices, but still lets it create a bare plan', async () => {
+      const org = await harness.seedOrg('Cat E');
+      const key = await harness.mintApiKey(org.organizationId, 'sandbox', [
+        'plans:read',
+        'plans:write',
+      ]);
+      const asKey = (r: request.Test): request.Test =>
+        r.set('Authorization', `Bearer ${key.secret}`);
+
+      // Embedding prices MINTS price rows — that needs `prices:write` too.
+      const escalated = await idem(
+        asKey(request(harness.app).post('/v1/plans')),
+        `pwp-scope-${Date.now()}`
+      ).send({
+        name: `Escalation ${Date.now()}`,
+        prices: [{ unitAmountInKobo: 500000, interval: 'month' }],
+      });
+      expect(escalated.status).toBe(403);
+      expect(escalated.body.error.code).toBe('API_KEY_SCOPE_FORBIDDEN');
+
+      // The ROUTE is unchanged: the same key still creates a plan without prices.
+      const allowed = await idem(
+        asKey(request(harness.app).post('/v1/plans')),
+        `pwp-scope2-${Date.now()}`
+      ).send({ name: `No Prices ${Date.now()}` });
+      expect(allowed.status).toBe(201);
+      expect(allowed.body.data.prices).toEqual([]);
+    });
+
+    it('422s two prices on the same cadence, an empty array, and more than 10 prices', async () => {
+      const dupe = await idem(
+        asA(request(harness.app).post('/v1/plans')),
+        `pwp-dupe-${Date.now()}`
+      ).send({
+        name: `Duplicate ${Date.now()}`,
+        prices: [
+          { unitAmountInKobo: 500000, interval: 'month' },
+          { unitAmountInKobo: 600000, interval: 'month' },
+        ],
+      });
+      expect(dupe.status).toBe(422);
+      expect(dupe.body.error.code).toBe('CLIENT_VALIDATION_FAILED');
+      expect(dupe.body.error.fields['prices.1.interval']).toBeDefined();
+
+      const empty = await idem(
+        asA(request(harness.app).post('/v1/plans')),
+        `pwp-empty-${Date.now()}`
+      ).send({ name: `Empty ${Date.now()}`, prices: [] });
+      expect(empty.status).toBe(422);
+      expect(empty.body.error.fields.prices).toBeDefined();
+
+      const tooMany = await idem(
+        asA(request(harness.app).post('/v1/plans')),
+        `pwp-cap-${Date.now()}`
+      ).send({
+        name: `Capped ${Date.now()}`,
+        // 11 DISTINCT cadences, so only the cap can be what rejects this.
+        prices: Array.from({ length: 11 }, (_, i) => ({
+          unitAmountInKobo: 100000 + i,
+          interval: 'month',
+          intervalCount: i + 1,
+        })),
+      });
+      expect(tooMany.status).toBe(422);
+      expect(tooMany.body.error.fields.prices).toBeDefined();
+    });
+
+    it('stays back-compatible: a bare create still 201s, with `prices: []`', async () => {
+      const created = await idem(
+        asA(request(harness.app).post('/v1/plans')),
+        `pwp-bare-${Date.now()}`
+      ).send({ name: `Bare ${Date.now()}` });
+      expect(created.status).toBe(201);
+      expect(created.body.data.prices).toEqual([]);
+    });
   });
 });

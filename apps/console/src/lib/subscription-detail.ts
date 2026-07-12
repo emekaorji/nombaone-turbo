@@ -1,3 +1,4 @@
+import { intervalShort } from '@nombaone/core-contracts/billing';
 import {
   customersTable,
   domainEventsTable,
@@ -117,7 +118,7 @@ export async function getSubscriptionDetail(reference: string): Promise<Subscrip
   const status = toStatus(sub.status);
   const railLabel = railLabelOf(sub.pmKind, sub.pmBrand, sub.pmLast4);
   const customerName = sub.customerName ?? sub.customerEmail;
-  const intervalLabel = sub.interval === 'month' ? 'mo' : sub.interval;
+  const intervalSuffix = intervalShort(sub.interval);
 
   // Dunning attempts for this subscription (append-only), newest first.
   const attempts = await db
@@ -211,7 +212,7 @@ export async function getSubscriptionDetail(reference: string): Promise<Subscrip
       ...(status === 'past_due' ? { tone: 'warning' as const } : {}),
     },
     { label: 'Customer', value: customerName },
-    { label: 'Price', value: `${sub.planName} · ${naira(sub.unitAmount)}/${intervalLabel}` },
+    { label: 'Price', value: `${sub.planName} · ${naira(sub.unitAmount)}/${intervalSuffix}` },
     { label: 'Rail', value: railLabel },
     { label: 'Collection', value: sub.collectionMethod === 'charge_automatically' ? 'Automatic' : 'Send invoice' },
     {
@@ -245,7 +246,7 @@ export async function getSubscriptionDetail(reference: string): Promise<Subscrip
       .from(pricesTable)
       .innerJoin(plansTable, eq(pricesTable.planId, plansTable.id))
       .where(inArray(pricesTable.id, phasePriceIds));
-    for (const p of priceRows) priceLabels.set(p.id, `${p.planName} · ${naira(p.unitAmount)}/${p.interval === 'month' ? 'mo' : p.interval}`);
+    for (const p of priceRows) priceLabels.set(p.id, `${p.planName} · ${naira(p.unitAmount)}/${intervalShort(p.interval)}`);
   }
   const scheduledChanges = pendingPhases.map((p) => ({
     label: `Switch to ${priceLabels.get(p.priceId) ?? 'another price'}${p.quantity && p.quantity > 1 ? ` ×${p.quantity}` : ''}`,
@@ -300,7 +301,7 @@ export async function getSubscriptionDetail(reference: string): Promise<Subscrip
     reference: sub.reference,
     customerName,
     status,
-    headline: `${sub.planName} · ${naira(sub.unitAmount)} / ${intervalLabel} · ${
+    headline: `${sub.planName} · ${naira(sub.unitAmount)} / ${intervalSuffix} · ${
       sub.collectionMethod === 'charge_automatically' ? 'Automatic' : 'Send invoice'
     }`,
     railLabel,

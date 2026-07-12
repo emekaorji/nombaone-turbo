@@ -15,9 +15,27 @@ import {
   updateSubscriptionMethodAction,
   type EngineActionState,
 } from '@/lib/engine-actions';
+import { groupPricesByPlan } from '@/lib/price-options';
 import type { PriceOption } from '@/lib/subscription-form';
 
 const initial: EngineActionState = {};
+
+/** A plan carries a whole ladder now, so the picker groups by plan instead of listing N flat rows. */
+function PriceOptions({ prices }: { prices: PriceOption[] }) {
+  return (
+    <>
+      {groupPricesByPlan(prices).map((g) => (
+        <optgroup key={g.planName} label={g.planName}>
+          {g.prices.map((p) => (
+            <option key={p.reference} value={p.reference}>
+              {p.label}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </>
+  );
+}
 
 export function SubscriptionActions({
   subscriptionReference,
@@ -251,9 +269,7 @@ export function SubscriptionActions({
               <label className="flex flex-col gap-1.5">
                 <span className="text-[12px] font-medium text-muted-foreground">New price</span>
                 <select name="priceId" required defaultValue={prices[0]?.reference} className="rounded border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none focus:border-accent-border">
-                  {prices.map((p) => (
-                    <option key={p.reference} value={p.reference}>{p.label}</option>
-                  ))}
+                  <PriceOptions prices={prices} />
                 </select>
               </label>
               <label className="flex flex-col gap-1.5">
@@ -295,9 +311,7 @@ export function SubscriptionActions({
                 <span className="text-[12px] font-medium text-muted-foreground">Price (defaults to the original)</span>
                 <select name="priceId" defaultValue="" className="rounded border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none focus:border-accent-border">
                   <option value="">Same as before</option>
-                  {prices.map((p) => (
-                    <option key={p.reference} value={p.reference}>{p.label}</option>
-                  ))}
+                  <PriceOptions prices={prices} />
                 </select>
               </label>
               {resubState.error ? <span className="text-[12px] text-danger">{resubState.error}</span> : null}

@@ -33,7 +33,8 @@ export async function getUpcomingInvoice(
   }
 
   const price = await loadPriceById(txDb, ctx, effectivePriceId);
-  const anchor = sub.billingCycleAnchor ?? computeAnchor(sub.currentPeriodStart ?? new Date());
+  const anchor =
+    sub.billingCycleAnchor ?? computeAnchor(sub.currentPeriodStart ?? new Date(), price.interval);
   const { start, end } = periodBounds(
     anchor,
     { interval: price.interval, intervalCount: price.intervalCount },

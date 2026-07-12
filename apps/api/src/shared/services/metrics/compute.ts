@@ -7,22 +7,10 @@ import {
   subscriptionItemsTable,
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
+import { toMonthlyKobo } from '@nombaone/core-contracts/billing';
 
 import type { DomainContext, InfraDb } from '@nombaone/sara/context';
 import type { BillingMetricsData, DunningFunnelData } from '@nombaone/core-contracts/types';
-
-/** Normalize a price's amount to a MONTHLY figure in kobo (integer, rounded). */
-function toMonthlyKobo(amount: number, interval: string, intervalCount: number): number {
-  const perOne =
-    interval === 'year'
-      ? amount / 12
-      : interval === 'week'
-        ? (amount * 52) / 12
-        : interval === 'day'
-          ? (amount * 365) / 12
-          : amount; // month
-  return Math.round(perOne / Math.max(1, intervalCount));
-}
 
 const ACTIVE_STATES = ['active', 'trialing'] as const;
 

@@ -1,3 +1,4 @@
+import { intervalLabel } from '@nombaone/core-contracts/billing';
 import { creditGrantsTable, customersTable, paymentMethodsTable, pricesTable, subscriptionsTable } from '@nombaone/core-db';
 import { db } from '@nombaone/core-db/serverless';
 import { and, asc, desc, eq } from 'drizzle-orm';
@@ -28,9 +29,6 @@ const fmtFull = (d: Date): string =>
   new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
 const initialsOf = (n: string): string =>
   n.split(/\s+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '·';
-const intervalLabel = (interval: string, count: number): string =>
-  count === 1 ? (interval === 'month' ? 'monthly' : interval === 'year' ? 'annual' : `every ${interval}`) : `every ${count} ${interval}s`;
-
 export async function getCustomerDetail(reference: string): Promise<CustomerDetail | null> {
   const session = await getSession();
   if (!session) return null;

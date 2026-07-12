@@ -10,7 +10,12 @@
  * These are kept hand-mirrored (not generated) because the DTOs are plain TS interfaces;
  * the conformance e2e round-trips a live response against the advertised schema so drift
  * is caught in CI.
+ *
+ * Enum VALUES, though, are imported rather than re-typed wherever a shared list exists —
+ * a hand-copied `enum: [...]` is exactly the kind of compiler-invisible surface that
+ * survives a green type-check while lying to every SDK generated from this document.
  */
+import { PRICE_INTERVALS } from '@nombaone/core-contracts/billing';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -39,6 +44,20 @@ const obj = (properties: Record<string, JsonSchema>, required: string[]): JsonSc
 const allRequired = (properties: Record<string, JsonSchema>, optional: string[] = []): JsonSchema =>
   obj(properties, Object.keys(properties).filter((k) => !optional.includes(k)));
 
+/** Shared by `Plan` and `PlanWithPrices` — the plan create's response is a plan PLUS
+ *  the prices embedded in the same call, and a field added here must reach both. */
+const PLAN_PROPERTIES: Record<string, JsonSchema> = {
+  domain: enm('plan'),
+  id: str(),
+  name: str(),
+  description: nstr(),
+  status: enm('active', 'archived'),
+  metadata: bag(),
+  mode: modeEnm(),
+  createdAt: dt(),
+  updatedAt: dt(),
+};
+
 export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
   Customer: allRequired({
     domain: enm('customer'),
@@ -52,17 +71,11 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     updatedAt: dt(),
   }),
 
-  Plan: allRequired({
-    domain: enm('plan'),
-    id: str(),
-    name: str(),
-    description: nstr(),
-    status: enm('active', 'archived'),
-    metadata: bag(),
-    mode: modeEnm(),
-    createdAt: dt(),
-    updatedAt: dt(),
-  }),
+  Plan: allRequired(PLAN_PROPERTIES),
+
+  // `POST /v1/plans` only. `prices` is ALWAYS on the wire (`[]` when none were
+  // embedded); the plan READS return `Plan`, which does not carry it.
+  PlanWithPrices: allRequired({ ...PLAN_PROPERTIES, prices: arr(ref('Price')) }),
 
   Price: allRequired({
     domain: enm('price'),
@@ -70,7 +83,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     planId: str(),
     unitAmountInKobo: int(),
     currency: ngn(),
-    interval: enm('day', 'week', 'month', 'year'),
+    interval: enm(...PRICE_INTERVALS),
     intervalCount: int(),
     usageType: enm('licensed', 'metered'),
     billingScheme: enm('per_unit', 'tiered'),
@@ -411,7 +424,7 @@ export const RESPONSE_DATA_BY_ROUTE: Record<string, RouteDataMapping> = {
   // Plans
   'get /v1/plans': { ref: 'Plan', list: true },
   'get /v1/plans/{id}': { ref: 'Plan' },
-  'post /v1/plans': { ref: 'Plan' },
+  'post /v1/plans': { ref: 'PlanWithPrices' },
   'patch /v1/plans/{id}': { ref: 'Plan' },
   'post /v1/plans/{id}/archive': { ref: 'Plan' },
   'get /v1/plans/{id}/prices': { ref: 'Price', list: true },

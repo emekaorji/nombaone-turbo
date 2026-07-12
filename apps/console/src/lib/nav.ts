@@ -25,7 +25,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: 'Subscriptions', href: '/subscriptions', icon: RefreshCw },
       { label: 'Customers', href: '/customers', icon: Users },
-      { label: 'Plans and prices', href: '/plans', icon: Layers },
+      { label: 'Plans', href: '/plans', icon: Layers },
       { label: 'Invoices', href: '/invoices', icon: FileText },
     ],
   },

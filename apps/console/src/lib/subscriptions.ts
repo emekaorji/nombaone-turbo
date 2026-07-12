@@ -1,3 +1,4 @@
+import { toMonthlyKobo } from '@nombaone/core-contracts/billing';
 import {
   customersTable,
   invoicesTable,
@@ -83,23 +84,6 @@ const EMPTY: SubscriptionsView = {
     ],
   },
 };
-
-/** A price bills every `intervalCount` × `interval`; fold to a monthly-equivalent kobo figure. */
-/** Normalize a price to monthly kobo (shared with the customers-MRR rollup). */
-export function monthlyKobo(unitAmount: number, interval: string, intervalCount: number): number {
-  const n = intervalCount || 1;
-  switch (interval) {
-    case 'day':
-      return Math.round((unitAmount * 30) / n);
-    case 'week':
-      return Math.round((unitAmount * 52) / 12 / n);
-    case 'year':
-      return Math.round(unitAmount / (12 * n));
-    case 'month':
-    default:
-      return Math.round(unitAmount / n);
-  }
-}
 
 const RAIL_BY_KIND: Record<string, Rail> = {
   card: 'card',
@@ -236,7 +220,7 @@ export async function getSubscriptionsView(sort: SubSortKey = 'at_risk'): Promis
   let activeCount = 0;
 
   const built = subs.map((s, idx) => {
-    const mk = monthlyKobo(s.unitAmount, s.interval, s.intervalCount);
+    const mk = toMonthlyKobo(s.unitAmount, s.interval, s.intervalCount);
     const status = toSubStatus(s.status);
     const rail = s.pmKind ? (RAIL_BY_KIND[s.pmKind] ?? null) : null;
     const due = dueBySub.get(s.id) ?? 0;

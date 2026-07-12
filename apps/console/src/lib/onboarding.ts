@@ -72,7 +72,7 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
     },
     {
       n: 2,
-      title: 'Create a plan and price',
+      title: 'Create a plan',
       desc: prices > 0 ? `${prices} price${prices === 1 ? '' : 's'} defined.` : 'What they pay, and how often.',
       state: stateFor(1),
       ...(done[1] ? {} : { cta: { label: 'Create a plan', href: '/plans' } }),

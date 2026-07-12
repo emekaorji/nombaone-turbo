@@ -9,6 +9,12 @@ export const metadata = {
 
 const ENTRIES: { date: string; version: string; title: string; body: string }[] = [
   {
+    date: "Jul 12, 2026",
+    version: "v0.15",
+    title: "A plan and its prices, in one step",
+    body: "Name a plan, set what it costs, and every cadence comes with it — the annual price derives from the monthly one, discount and all. One atomic API call, or one form in the console. A plan can no longer end up with no price and no way to bill it.",
+  },
+  {
     date: "Jul 2, 2026",
     version: "v0.14",
     title: "Card OTP → checkout-link dunning fallback",
