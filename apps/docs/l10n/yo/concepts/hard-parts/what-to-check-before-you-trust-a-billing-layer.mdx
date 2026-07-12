@@ -1,0 +1,67 @@
+---
+title: "Ohun tí o gbọ́dọ̀ yẹ̀wò kí o tó fi owó tí ń wọlé fún ọ lé ìpele billing lọ́wọ́"
+description: "Demo máa ń ṣiṣẹ́ nígbà gbogbo. Àwọn ìbéèrè tí ó pinnu bóyá o máa pa owó rẹ mọ́ ni àwọn tí demo ń fi pamọ́."
+---
+
+## Ipò náà
+
+O ń yan ìpele subscription kan, tàbí o ń pinnu bóyá o máa tẹ̀síwájú láti kọ́ tìrẹ. Gbogbo ọ̀nà ló ń ṣe demo
+tí ó rẹwà: plan kan, checkout kan, àṣeyọrí aláwọ̀ ewé kan. Kì í ṣe demo ni yóò pè ọ́ ní aago méjì òru. Àwọn
+ìbéèrè wọ̀nyí ni yóò ṣe é.
+
+## Ọ̀nà tí kò jinlẹ̀
+
+Kí o dá a lẹ́jọ́ nípa ọ̀nà tí ohun gbogbo ń gbà lọ dáadáa. Wo charge kan tí ó ṣàṣeyọrí, yin dashboard náà,
+ṣàyẹ̀wò pé SDK náà dùn ún lò, kí o sì máa lọ. Bí ó bá lè bill card kan nínú demo, dájúdájú ó lè ṣàkóso owó
+tí ń wọlé fún ọ.
+
+## Ìdí tí ó fi ń bàjẹ́
+
+Àwọn ìkùnà rẹ̀, kì í ṣe àwọn àṣeyọrí rẹ̀, ni ó ń ṣàlàyé billing. Ìpele kan tí a kò tíì pa láàárín iṣẹ́, tí
+kò tíì bá owó tín-ínrín pàdé nínú account, tí kò tíì ṣe reconciliation lórí bank transfer tí kò tó iye rẹ̀,
+yóò rí bákan náà pẹ̀lú èyí tí ó ti la gbogbo rẹ̀ kọjá — títí di oṣù tí yóò náni ní owó gidi àti ìgbẹ́kẹ̀lé
+gidi. Àlàfo tí ó wà láàárín “ó gba owó lórí card kan lẹ́ẹ̀kan” àti “kò ní sọ owó rẹ nù tàbí kí ó gbà á ní
+ìlọ́po méjì nígbà tí iṣẹ́ bá pọ̀” ni gbogbo ọjà náà.
+
+## Ohun tí o gbọ́dọ̀ yẹ̀wò lóòótọ́
+
+Bi olúkúlùkù àwọn ìbéèrè wọ̀nyí, kí o sì béèrè fún ọ̀nà iṣẹ́ gidi, kì í ṣe ìfọkànbalẹ̀ ọ̀rọ̀ lásán.
+
+- **Ààbò lòdì sí charge ìlọ́po méjì.** Bí a bá pa iṣẹ́ billing náà nígbà tí ó ti ṣe ìdá méjì nínú mẹ́ta, tí
+  ó sì tún bẹ̀rẹ̀, ṣé a lè charge period kan náà lẹ́ẹ̀mejì? Ìdáhùn gbọ́dọ̀ jẹ́ ìdíwọ̀n database tí o lè
+  dárúkọ, kì í ṣe “a ṣọ́ra ni.”
+- **Àdánù customer tí kò jẹ́ àṣàyàn wọn.** Nígbà tí charge kan bá kùnà, ṣé retry náà mọ ìdí tí ó fi kùnà
+  àti ìgbà tí customer yóò gba owó oṣù rẹ̀? Àkàbà retry tí kò yí padà nínú ọjà tí owó account ti máa ń
+  tín-ínrín jẹ́ owó tí a ti sọ nù láti ìbẹ̀rẹ̀.
+- **Push rail.** Ṣé ó lè bill customer kan tí ó lè san owó nípasẹ̀ bank transfer nìkan, ṣé ó sì ń jẹ́rìí i
+  pé owó náà dé gan-an kí ó tó sàmì sí invoice náà gẹ́gẹ́ bí èyí tí a ti san, àbí ó kàn ń gbẹ́kẹ̀lé ìwífúnni
+  tí ó gbà?
+- **Ledger náà.** Ṣé owó jẹ́ nọ́ńbà odidi, tí ledger náà kò sì ṣeé yí padà, àbí àwọn nọ́ńbà oníwẹ́wẹ́ (float)
+  àti ìmúdójúìwọ̀n tí ń kọ lórí ohun tí ó ti wà ni ó ń dúró láti ṣáko lọ ní kobo kọ̀ọ̀kan?
+- **Webhook.** Ṣé a fi ọwọ́ sí wọn, ṣé a ń tún wọn ṣe, ṣé a sì lè tún wọn dán padà, pẹ̀lú ìfiránṣẹ́ tí a sọ
+  ní tòótọ́ gẹ́gẹ́ bí “ó kéré tán lẹ́ẹ̀kan” kí ìhà tìrẹ lè yọ àwọn ẹ̀dà kúrò? Ẹnikẹ́ni tí ó bá ṣèlérí
+  “ẹ̀ẹ̀kan péré” ń ṣèlérí ohun tí nẹ́tíwọ́ọ̀kì kò lè fún un.
+- **Ìyàsọ́tọ̀.** Ṣé ìyàsọ́tọ̀ organization jẹ́ àbùdá inú àwòṣe dátà fúnra rẹ̀, tí a ń fi agbára mú lórí gbogbo
+  query, àbí ó jẹ́ àyẹ̀wò middleware tí route kan tí a gbàgbé lè fò rékọjá?
+
+## Bí Nomba One ṣe dáhùn, ní kedere
+
+Ààbò lòdì sí charge ìlọ́po méjì jẹ́ unique constraint lórí subscription àti period náà, kì í ṣe kóòdù tí ó
+kàn ń retí ohun rere. Dunning ń tẹ̀lé ọjọ́ owó oṣù, ó sì ń pín àwọn ìkùnà sí ẹ̀ka, nítorí náà a máa tún
+gbìyànjú fún account tí owó rẹ̀ tín-ínrín nígbà tí owó bá dé, a kò sì ní gbìyànjú rárá fún card tí àkókò rẹ̀
+ti pé. Bank transfer ń jẹ́rìí kí ó tó tún béèrè lọ́wọ́ provider, ó sì ń rí i pé iye owó náà bá ara mu
+pátápátá kí ó tó ṣe settlement. Ledger náà jẹ́ kobo odidi, kò ṣeé yí padà, ó sì jẹ́ àfikún nìkan. A fi ọwọ́
+sí webhook, ó kéré tán lẹ́ẹ̀kan ni a ń fi wọ́n ránṣẹ́, a ń yọ ẹ̀dà wọn kúrò, a ń tún wọn ṣe, a sì lè tún wọn
+dán padà — kì í ṣe ẹ̀ẹ̀kan péré láé. Ìyàsọ́tọ̀ jẹ́ `organization_id` àti `environment` lórí gbogbo ìlà, tí a
+ń fi agbára mú láti inú key tí a gbẹ́kẹ̀lé, kì í ṣe èrò ìkẹ́yìn middleware.
+
+Àti apá tí ó jẹ́ òtítọ́: direct debit mandate, payout, refund, àti escrow ti wà lára ohun tí a ti kọ́, ṣùgbọ́n
+a kò tíì ṣí wọn sílẹ̀ ní live nítorí payment provider. A ń ṣàpèjúwe wọn gẹ́gẹ́ bí agbára tí a ti kọ́, kì í ṣe
+gẹ́gẹ́ bí ohun tí a ti fi hàn ní iṣẹ́ gidi lórí ìwọ̀n ńlá. Ìpele billing tí kò ní sọ fún ọ èwo nínú àwọn ẹ̀ya
+rẹ̀ ni ó ti wà ní live kì í ṣe èyí tí o gbọ́dọ̀ fi owó rẹ lé lọ́wọ́.
+
+## Wò ó
+
+Ka àwọn ìdíwọ̀n ìjáde tí a fi ń díwọ̀n ara wa, tàbí kí o ṣiṣẹ́ simulator náà kí o sì gbìyànjú láti bà á jẹ́.
+
+Wo [ledger náà](/concepts/the-ledger), orísun òtítọ́, àti [ohun tí o gbọ́dọ̀ yẹ̀wò kí o tó fọkàn tán ìpele billing](/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer).

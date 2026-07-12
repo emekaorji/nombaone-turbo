@@ -1,0 +1,256 @@
+---
+title: Subscription naka na farko
+description: "Ƙirƙiri plan, price, customer, da subscription mai karɓar kuɗi: kiraye-kiraye biyar na gaske har zuwa 201, daga farko zuwa ƙarshe."
+section: get-started
+order: 4
+---
+
+A ƙarshen wannan shafi za ka kasance da **subscription na gaske** wanda ke
+karɓar kuɗi a sandbox mode, wanda ka ƙirƙira da kiraye-kiraye biyar, cikin
+kusan minti goma, ba tare da wani abu na ƙarya ba. Kowane kira da ke ƙasa shi
+ne ainihin buƙatar da server ɗinka zai aika a production; API key kaɗai
+(`nbo_sandbox_…`) da host (`sandbox.api.nombaone.xyz`) ne ke sauyawa idan ka
+koma live.
+
+Hanya mafi sauƙi ita ce albarkatu huɗu da card ɗaya na gwaji wanda sakamakonsa
+tabbatacce ne:
+
+1. **plan**, wato abin da customer ke yin rajista a kai,
+2. **price** a kan wannan plan: nawa ne, sau nawa,
+3. **customer**,
+4. **payment method** na gwaji wanda ke yin nasara duk lokacin da aka kira shi,
+5. **subscription**, wanda ke haifar da invoice na farko sannan ya karɓi kuɗinsa.
+
+<Callout type="tip" title="Fara samun sandbox key">
+  Kowane kira yana tantance kansa da `Authorization: Bearer nbo_sandbox_…`.
+  Idan ba ka da key tukuna, duba [tantancewa](/getting-started/authentication).
+  Mataki ɗaya ne kawai. Ka ajiye key ɗin a gefen server.
+</Callout>
+
+<Steps>
+  <Step title="Ƙirƙiri plan">
+    **plan** shi ne kayan da customer ke yin rajista a kai. Yana ɗauke da suna;
+    kuɗin yana zaune a kan price ɗinsa (mataki na gaba), don haka plan ɗaya na
+    iya riƙe price na wata-wata da na shekara-shekara a lokaci guda.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -d '{ "name": "Pro" }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const plan = await nbo("/v1/plans", {
+          method: "POST",
+          idempotencyKey: crypto.randomUUID(),
+          body: { name: "Pro" },
+        });
+        // plan.data.id → "nbo…pln"
+        ```
+      </Tab>
+    </CodeGroup>
+
+    `data.id` da ya dawo shi ne **reference** na plan ɗin. Ka ajiye shi; kira na
+    gaba yana buƙatarsa.
+  </Step>
+
+  <Step title="Ƙara price">
+    **price** shi ne ke tsayar da adadin kuɗi da lokacin cajin (interval).
+    Adadin kuɗi yana cikin **kobo, lamba cikakkiya**: `250000` yana nufin
+    ₦2,500.00. Ka aika shi zuwa plan ɗin da ka ƙirƙira.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -d '{ "unitAmountInKobo": 250000, "interval": "month" }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const price = await nbo(`/v1/plans/${plan.data.id}/prices`, {
+          method: "POST",
+          idempotencyKey: crypto.randomUUID(),
+          body: { unitAmountInKobo: 250_000, interval: "month" },
+        });
+        // price.data.id → "nbo…prc"
+        ```
+      </Tab>
+    </CodeGroup>
+
+    <Callout type="warning" title="Kuɗi kobo ne cikakke: tarkon 100×">
+      Ka aika `250000`, ba `2500` ba. Kowane filin kuɗi yana ƙarewa da `InKobo`
+      domin kada a taɓa yin shakka a kan maʼaunin. Aika naira inda ake tsammanin
+      kobo yana haifar da caji sau 100×. Duba
+      [kuɗi kobo ne cikakke](/concepts/money-is-integer-kobo).
+    </Callout>
+  </Step>
+
+  <Step title="Ƙirƙiri customer">
+    **customer** shi ne wanda kake cajin kuɗi. Imel da suna kaɗai kake buƙata
+    don farawa.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/customers \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -d '{ "email": "ada@example.com", "name": "Ada Lovelace" }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const customer = await nbo("/v1/customers", {
+          method: "POST",
+          idempotencyKey: crypto.randomUUID(),
+          body: { email: "ada@example.com", name: "Ada Lovelace" },
+        });
+        // customer.data.id → "nbo…cus"
+        ```
+      </Tab>
+    </CodeGroup>
+  </Step>
+
+  <Step title="Haɗa payment method na gwaji wanda ke yin nasara">
+    A sandbox mode kana haɗa payment method **wanda sakamakonsa tabbatacce ne**:
+    `behavior` ne ke yanke sakamakon, don haka gwajinka na farko yana yin nasara
+    da gangan. Yi amfani da `success` a nan; sauran behavior (decline, buƙatar
+    OTP, balance mara isa) suna ba ka damar gwada hanyoyin da ba sa daɗi daga
+    baya.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/payment-methods \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -d '{ "customerId": "{customerId}", "behavior": "success" }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const method = await nbo("/v1/sandbox/payment-methods", {
+          method: "POST",
+          body: { customerId: customer.data.id, behavior: "success" },
+        });
+        // method.data.id → "nbo…pm"
+        ```
+      </Tab>
+    </CodeGroup>
+
+    <Callout type="note" title="Sandbox mode kaɗai">
+      `POST /v1/sandbox/payment-methods` yana nan a sandbox mode kaɗai. A live,
+      customer ne ke haɗa card na gaske, mandate, ko umarnin bank transfer. Duba
+      [multi-rail: turawa da jawowa](/concepts/multi-rail-push-and-pull).
+    </Callout>
+  </Step>
+
+  <Step title="Fara subscription">
+    Ka haɗa komai wuri guda: ka yi wa customer rajista a kan price ɗin, kana
+    biya da payment method na gwaji. Wannan yana haifar da **invoice na farko**
+    ya kuma karɓi kuɗinsa, kuma tunda behavior ɗin `success` ne, yana dawowa
+    **active** tare da invoice da aka biya.
+
+    <CodeGroup>
+      <Tab label="cURL">
+        ```bash
+        curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+          -H "Authorization: Bearer nbo_sandbox_…" \
+          -H "Content-Type: application/json" \
+          -H "Idempotency-Key: $(uuidgen)" \
+          -d '{
+            "customerId": "{customerId}",
+            "priceId": "{priceId}",
+            "paymentMethodId": "{paymentMethodId}"
+          }'
+        ```
+      </Tab>
+      <Tab label="TypeScript">
+        ```ts
+        const sub = await nbo("/v1/subscriptions", {
+          method: "POST",
+          idempotencyKey: crypto.randomUUID(),
+          body: {
+            customerId: customer.data.id,
+            priceId: price.data.id,
+            paymentMethodId: method.data.id,
+          },
+        });
+        // sub.data.status → "active"
+        ```
+      </Tab>
+    </CodeGroup>
+
+    `201` tare da daidaitaccen ambulan na amsa yana tabbatar da hakan:
+
+    ```json
+    {
+      "success": true,
+      "statusCode": 201,
+      "data": {
+        "id": "nbo749201835566sub",
+        "status": "active",
+        "customerId": "nbo…cus",
+        "priceId": "nbo…prc",
+        "currentPeriodEnd": "2026-08-03T10:14:52.004Z",
+        "mode": "sandbox"
+      },
+      "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+    }
+    ```
+
+    Wannan subscription ne na gaske. `data.id` shi ne reference ɗinsa na
+    jamaʼa: id ɗaya yana haɗa invoice ɗinsa, rubuce-rubucen
+    [ledger](/concepts/the-ledger) ɗinsa, da webhook ɗinsa.
+  </Step>
+</Steps>
+
+## Abin da ya faru
+
+Subscription ɗin ya buɗe cycle, ya kammala invoice na ₦2,500, ya karɓi kuɗinsa
+ta payment method na gwaji, sannan ya sanya motsin kuɗin a ledger: cikakken
+[zagayen billing](/concepts/how-billing-works), sau ɗaya. A lokaci na gaba zai
+sake gudana da kansa.
+
+## Ci gaba da zurfafawa
+
+Kiraye-kiraye huɗu da ke sama su ne hanyar da komai ke tafiya daidai. Sassan da
+ke sa karɓar kuɗi ya zama na gaske a Najeriya suna nan, danna hanyar haɗi ɗaya:
+
+<CardGroup cols={2}>
+  <Card title="Lokacin da charge ya gaza" href="/concepts/hard-parts/dunning-for-thin-balances">
+    Balance mara isa yana nufin charge da ya gaza yawanci “bai kai lokaci ba,”
+    ba “aʼa” ba. Dunning ne ke da alhakin dawo da kuɗin.
+  </Card>
+  <Card title="Card na buƙatar OTP" href="/concepts/hard-parts/card-tokens-expire">
+    Cajin card mai maimaituwa a Najeriya sau da yawa yakan haɗu da matakin OTP
+    na banki. Duba yadda injin ke dawo da lamarin da sabuwar hanyar haɗi ta
+    checkout.
+  </Card>
+  <Card title="Zaɓi rail" href="/concepts/multi-rail-push-and-pull">
+    Card, direct debit, da bank transfer suna karɓar kuɗi ta hanyoyi
+    daban-daban. Ɗaya daga cikinsu ana turo shi ne, ba a jawo shi ba.
+  </Card>
+  <Card title="Sarrafa webhook" href="/guides/handle-webhooks">
+    Duk abin da ke sama yana harba event. Ka karɓe su, ka tantance su, ka kuma
+    cire kwafi don ka kiyaye balance ɗaya daidai.
+  </Card>
+</CardGroup>
+
+<Callout type="tip" title="Trial, proration, da idempotency">
+  `POST /v1/subscriptions` yana kuma karɓar `trialDays`, `quantity`, da
+  `collectionMethod`; kowane kira da ke motsa kuɗi yana karɓar `Idempotency-Key`
+  domin sake gwadawa ba zai taɓa yin caji sau biyu ba. An yi bayanin waɗannan a
+  [fara subscription](/guides/start-a-subscription) da
+  [ledger](/concepts/the-ledger#idempotency-lives-here-too).
+</Callout>

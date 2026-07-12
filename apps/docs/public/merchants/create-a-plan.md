@@ -25,9 +25,11 @@ next.
 
 ### Add a price
 
-Set the **amount** (for example ₦2,500) and the **interval**: monthly or
-yearly. You can add more than one price to the same plan, so the same product
-can be billed monthly *and* yearly.
+Set the **amount** (for example ₦2,500) and the **interval**: how often it
+bills. Pick a unit — minute, day, week, month or year — and how many of them,
+so "every 3 months" is a month interval with a count of 3. You can add more
+than one price to the same plan, so the same product can be billed monthly
+*and* yearly.
 
 ### Add a free trial (optional)
 

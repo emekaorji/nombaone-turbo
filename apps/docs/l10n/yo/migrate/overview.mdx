@@ -1,0 +1,57 @@
+---
+title: Ṣí lọ sí Nomba One
+description: Ṣé o ń wá láti ọ̀dọ̀ ẹ̀rọ ìsanwó mìíràn? Fi ohun tí o ti mọ̀ wé àwọn ohun tí ó bá a mu ní Nomba One, kí o sì ṣí lọ láìsí ìdádúró nípa ṣíṣe méjèèjì pọ̀.
+section: migrate
+order: 1
+---
+
+Tí o bá ti ń gba owó subscription lórí Paystack, Stripe, tàbí Flutterwave, o kò
+ní bẹ̀rẹ̀ láti ibi òdo: ọ̀pọ̀ nínú àwọn èrò náà ni ó bá ara wọn mu tààrà, àwọn tí kò
+sì bá mu, ó sábà máa ń jẹ́ pé Nomba One ti mú ìdẹkùn kan kúrò tí o ti kọ́ láti fara
+dà. Apá yìí fi bí o ṣe ń rò nísinsìnyí wé tiwa, ó sì fún ọ ní ọ̀nà tí ó dáàbò bò ọ́,
+tí kò sì ní ìdádúró, láti ṣí lọ.
+
+## Yan ibi tí o ti máa bẹ̀rẹ̀
+
+<CardGroup cols={2}>
+  <Card title="Tí o ń wá láti Paystack" href="/migrate/from-paystack">
+    Fi àwọn ìdẹkùn subscription ti Paystack wé àwọn ohun tí ó mọ́ tónítóní ní tiwa.
+  </Card>
+  <Card title="Tí o ń wá láti Stripe Billing" href="/migrate/from-stripe">
+    Ṣí ìsopọ̀ Stripe Billing lọ, èrò kan lẹ́yìn èrò kan.
+  </Card>
+  <Card title="Tí o ń wá láti Flutterwave" href="/migrate/from-flutterwave">
+    Tú tx_ref / flw_ref sí ìtọ́kasí kan ṣoṣo.
+  </Card>
+  <Card title="Láti ọ̀dọ̀ ẹ̀rọ ìsanwó èyíkéyìí" href="/migrate/generic">
+    Ìtọ́sọ́nà fún ṣíṣe méjèèjì pọ̀ láìsí ìdádúró kankan.
+  </Card>
+</CardGroup>
+
+## Ohun tí ó jọra ní gbogbo ibi
+
+Ibikíbi tí o ti ń wá, àwọn wọ̀nyí bá ara wọn mu ní kedere:
+
+- **Plan àti price**: ọjà náà àti iye owó tí ó ń padà wá léraléra.
+- **Customer**: ẹni tí o ń gba owó lọ́wọ́ rẹ̀.
+- **Subscription**: customer kan lórí price kan, tí a ń gba owó lọ́wọ́ rẹ̀ ní cycle kọ̀ọ̀kan.
+- **Webhook**: àwọn event tí ń sọ fún server rẹ ohun tí ó ṣẹlẹ̀.
+
+## Ohun tí Nomba One ń ṣe ní ọ̀nà mìíràn (mọ̀ọ́mọ̀)
+
+- **Ìtọ́kasí kan ṣoṣo, níbi gbogbo.** Ohun èlò kan, àwọn ìforúkọsílẹ̀ ledger rẹ̀, àti
+  àwọn webhook rẹ̀ ń pín id `nbo…` kan ṣoṣo, kò sí ìdàrúdàpọ̀ `tx_ref` sí `flw_ref`
+  sí `id`. Wo [ledger náà](/concepts/the-ledger).
+- **Kobo ní odidi nọ́mbà, nígbà gbogbo.** Kò sí float, kò sí decimal string tí ó ń da
+  ni láàmú: gbogbo field owó ni ó ń parí sí `InKobo`. Wo
+  [owó jẹ́ odidi kobo](/concepts/money-is-integer-kobo).
+- **Òtítọ́ nípa àwọn apá tí ó le.** Balance tí kò tó, OTP card, àti rail push-vs-pull
+  jẹ́ apá pàtàkì nínú ètò wa, kì í ṣe àwọn ọ̀ràn tí kò wọ́pọ̀ tí o máa ń kọsẹ̀ lù lẹ́yìn tí
+  o bá ti dé production. Wo àwọn [èrò ìpìlẹ̀](/concepts/how-billing-works).
+
+<Callout type="tip" title="Ṣí lọ láìsí ìyípadà òjijì">
+  O kò ní láti ṣí gbogbo ènìyàn lọ lẹ́ẹ̀kan náà.
+  [Ìtọ́sọ́nà ṣíṣe-méjèèjì-pọ̀](/migrate/generic) ń jẹ́ kí ẹ̀rọ ìsanwó àtijọ́ rẹ máa ṣiṣẹ́
+  lọ́wọ́ nígbà tí àwọn subscription tuntun bẹ̀rẹ̀ lórí Nomba One, kí ohunkóhun má bàa
+  bàjẹ́ láàrin ìṣílọ.
+</Callout>

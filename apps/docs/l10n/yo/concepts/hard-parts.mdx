@@ -1,0 +1,94 @@
+---
+title: Àwọn apá tó le
+description: Àwọn apá ìṣàkóso owó subscription tí ó le gan-an, àti bí Nomba One ṣe ń mú ọ̀kọ̀ọ̀kan wọn. Àwọn àròkọ olóòótọ́ nípa àwọn ìdẹkùn tí ọ̀pọ̀ ètò billing máa ń fi pamọ́ títí o fi bá wọn nínú production.
+section: concepts
+order: 90
+---
+
+Ọ̀pọ̀ ìwé ìtọ́sọ́nà billing máa ń fi ọ̀nà tó rọrùn nìkan hàn ọ́, wọ́n á sì dákẹ́ lórí ìyókù.
+Àwọn àròkọ wọ̀nyí ń ṣe ohun tó lòdì sí i: ọ̀kọ̀ọ̀kan wọn mú apá kan nínú ìṣàkóso owó
+subscription tí ó le gan-an (pàápàá ní Nàìjíríà, níbi tí owó ti ń wọlé nípasẹ̀ bank
+transfer, tí balance sì máa ń fẹ́rẹ̀ẹ́ ṣófo), ó sì ṣàlàyé ìdẹkùn náà, ìdí tí ó fi rọrùn
+láti ṣàṣìṣe, àti bí Nomba One ṣe ń mú un. Ìwé kíkà yìí ni ó ya ohun ìṣeré sọ́tọ̀ kúrò
+lára ètò billing gidi.
+
+## Kí owó náà tọ̀nà
+
+Àwọn ìkùnà tó wà níhìn-ín ni àwọn tó gbówó lórí jùlọ: customer kan tí a gba owó lọ́wọ́ rẹ̀
+lẹ́ẹ̀mejì, proration tí ó ṣì ní kobo kan, tàbí webhook replay tí ó tún fi credit sí balance
+kan lẹ́ẹ̀kejì.
+
+<CardGroup cols={2}>
+  <Card title="Ìdẹkùn charge lẹ́ẹ̀mejì" href="/concepts/hard-parts/the-double-charge-bug">
+    Ìdí tí ìyípo billing tí ó máa ń gba owó lẹ́ẹ̀mejì lẹ́ẹ̀kọ̀ọ̀kan fi jẹ́ aláìníláárí, àti bí idempotency ṣe ń dí i lọ́wọ́.
+  </Card>
+  <Card title="Proration jẹ́ ìṣòro ledger" href="/concepts/hard-parts/proration-is-a-ledger-problem">
+    Bí àwọn ìdá kobo tí ó ti inú ìyípadà àárín cycle wá ṣe ń yanjú kí àwọn ẹsẹ̀ ledger lè dọ́gba nígbà gbogbo.
+  </Card>
+  <Card title="Ìtúnfi webhook ránṣẹ́ ≠ ìtúnṣe charge" href="/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge">
+    Ìdí tí delivery tí ó kéré tán ẹ̀ẹ̀kan fi túmọ̀ sí pé handler rẹ gbọ́dọ̀ jẹ́ idempotent sí ledger.
+  </Card>
+</CardGroup>
+
+## Àwọn rail ti Nàìjíríà
+
+Èrò pé card wà ní fáìlì tí balance sì kún jẹ́ èrò àjèjì. Níhìn-ín, owó ni a ń tì jáde
+nípasẹ̀ bank transfer, card ń béèrè OTP, charge tí ó kùnà sì sábà máa ń túmọ̀ sí “kò tíì
+tó àsìkò.”
+
+<CardGroup cols={2}>
+  <Card title="Bank transfer kì í ṣe payment method lásán" href="/concepts/hard-parts/bank-transfer-is-not-just-another-method">
+    Ìdí tí rail tí a ń tì jáde kò fi ṣe é fà wọlé, àti ohun tí “gbígba owó” túmọ̀ sí nígbà tí customer ni ó bẹ̀rẹ̀ rẹ̀.
+  </Card>
+  <Card title="Àwọn card token máa ń dòpin" href="/concepts/hard-parts/card-tokens-expire">
+    Ìdí tí charge card àtúnṣe déédéé fi ń kọlu OTP, àti àwòṣe ìgbàpadà pẹ̀lú checkout link.
+  </Card>
+  <Card title="Mandate àti ìfọwọ́sí" href="/concepts/hard-parts/mandates-and-consent">
+    Ìgbà ayé direct debit (dá sílẹ̀, fọwọ́sí, mú ṣiṣẹ́, gba owó) àti àlàfo async tó wà nínú rẹ̀.
+  </Card>
+  <Card title="Nígbà tí transfer kò bá invoice mu" href="/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice">
+    Owó tí kò tó, owó tó pọ̀ jù, àti reference tí kò tọ̀nà: ọ̀ràn gidi ni, kì í ṣe ọ̀ràn ẹ̀gbẹ́.
+  </Card>
+  <Card title="Dunning fún balance tí kò kún" href="/concepts/hard-parts/dunning-for-thin-balances">
+    Ìdí tí ìtúngbìyànjú tí a bá ọjọ́ owó oṣù mu fi sàn ju àkọsílẹ̀ àsìkò tí ó dúró ṣinṣin nígbà tí balance kò kún.
+  </Card>
+</CardGroup>
+
+## Àkókò, cycle, àti churn
+
+Billing jẹ́ ìṣòro ìṣètò àkókò, kàlẹ́ndà kò sì ṣe àánú: oṣù kì í gùn bákan náà, subscription
+sì ń parí ní ọ̀nà méjì tí ó yàtọ̀ pátápátá síra wọn.
+
+<CardGroup cols={2}>
+  <Card title="Ìdẹkùn billing ìparí oṣù" href="/concepts/hard-parts/the-end-of-month-billing-trap">
+    Ohun tí “gba owó ní ọjọ́ kọkànlélọ́gbọ̀n” túmọ̀ sí ní oṣù Kejì, àti bí a ṣe ń tọ́jú anchor náà.
+  </Card>
+  <Card title="Churn tí ó jẹ́ àṣàyàn vs èyí tí kò jẹ́ àṣàyàn" href="/concepts/hard-parts/voluntary-vs-involuntary-churn">
+    Ìdí tí àwọn méjèèjì fi jẹ́ event ọ̀tọ̀ọ̀tọ̀ tí ó ní ìtọ́jú ọ̀tọ̀ọ̀tọ̀: fagilé vs gbà padà.
+  </Card>
+  <Card title="Scheduler tí ó ń là á já lẹ́yìn ìṣubú ètò" href="/concepts/hard-parts/scheduler-that-survives-a-crash">
+    Bí ìyípo billing ṣe ń tẹ̀síwájú ní ẹ̀ẹ̀kan ṣoṣo pé lẹ́yìn ìkùnà tí ó ṣẹlẹ̀ láàárín iṣẹ́.
+  </Card>
+</CardGroup>
+
+## Multi-tenancy àti ìgbẹ́kẹ̀lé
+
+Bí o bá ń ṣàkóso billing fún ọ̀pọ̀ oníṣòwò, ìyàsọ́tọ̀ àti settlement kì í ṣe àfikún mọ́ —
+wọ́n di gbogbo ọjà náà.
+
+<CardGroup cols={2}>
+  <Card title="Settlement láìsí spreadsheet" href="/concepts/hard-parts/settlement-without-spreadsheets">
+    Bí a ṣe ń bá owó mu pẹ̀lú àwọn oníṣòwò ní ìwọ̀n ńlá, láìsí reconciliation tí ó máa di àlá búburú.
+  </Card>
+  <Card title="Ìyàsọ́tọ̀ jẹ́ ànímọ́ àwòṣe dátà" href="/concepts/hard-parts/isolation-is-a-data-model-property">
+    Ìdí tí multi-tenancy fi gbọ́dọ̀ wà nínú schema láti ìbẹ̀rẹ̀, kì í ṣe kí a fi filter lẹ̀ ẹ́ mọ́ ọn lẹ́yìn.
+  </Card>
+  <Card title="Ohun tí o gbọ́dọ̀ ṣàyẹ̀wò kí o tó gbẹ́kẹ̀lé ètò billing kan" href="/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer">
+    Àwọn ìbéèrè tí o gbọ́dọ̀ béèrè lọ́wọ́ ètò billing èyíkéyìí kí o tó fi owó gidi kọjá nínú rẹ̀.
+  </Card>
+</CardGroup>
+
+<Callout type="note" title="Bẹ̀rẹ̀ pẹ̀lú àwọn èròngbà ìpìlẹ̀">
+  Ṣẹ̀ṣẹ̀ dé ni? Kọ́kọ́ ka [bí billing ṣe ń ṣiṣẹ́](/concepts/how-billing-works) àti
+  [ledger](/concepts/the-ledger). Àwọn apá tó le wọ̀nyí gbé lé wọn.
+</Callout>

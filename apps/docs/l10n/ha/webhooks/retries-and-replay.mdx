@@ -1,0 +1,82 @@
+---
+title: Sake gwadawa & replay
+description: Delivery da bai samu 2xx cikin lokaci ba ana sake gwada shi bisa jadawalin backoff; hakanan kana iya yin replay na duk wani delivery da ya wuce da hannunka. Duka biyun suna riƙe event id ɗaya.
+section: webhooks
+order: 5
+---
+
+Hanyoyin sadarwa suna kasawa, sabar suna sake farawa, deploy yana faruwa a
+tsakiyar buƙata. nombaone yana ɗaukar cewa endpoint ɗinka zai rasa delivery
+lokaci-lokaci, kuma an gina shi don farfaɗowa: ta atomatik da sake gwadawa, kuma
+da hannu ta hanyar replay. Duka biyun suna amfani da **event id ɗaya**, don haka
+handler da yake yin [dedupe](/webhooks/delivery-guarantee) yadda ya kamata zai
+ɗauki delivery da aka dawo da shi a matsayin wanda ya riga ya gani.
+
+## Sake gwadawa ta atomatik
+
+Delivery yana yin nasara idan endpoint ɗinka ya mayar da `2xx` ba tare da ɓata
+lokaci ba. Duk wani abu banda haka (ƙarewar lokaci, `5xx`, ko kuskuren haɗi) ana
+sake gwada shi bisa backoff mai ƙaruwa, wanda ke ba endpoint da ya ɗan faɗi
+damar dawowa ba tare da ka yi komai ba.
+
+<Callout type="tip" title="Fara mayar da 2xx, ka yi aikin daga baya">
+  Hanya mafi sauri ta guje wa sake gwadawa ita ce ka amince da saƙon nan take
+  sannan ka sarrafa shi ta hanyar asynchronous. Handler da yake yin aiki mai
+  jinkiri a cikin buƙatar yana kama da kasawa, kuma yana jawo sake gwadawa da
+  bai buƙata ba. Ka tabbatar, ka yi dedupe, ka jera shi a layi, sannan ka mayar
+  da `200`.
+</Callout>
+
+Delivery da ya ci gaba da kasawa har jadawalin sake gwadawa ya ƙare ana yi masa
+alama a matsayin wanda ya kasa, kuma ba a ƙara sake gwada shi. Ba ya sake
+gwadawa har abada. Kullum kana iya ganin inda delivery yake, ka kuma sake tura
+shi da kanka.
+
+## Duba delivery
+
+Ana rubuta kowane gwaji. Ka jera duk delivery na endpoint, ko ka karanta ɗaya:
+
+```bash
+# All deliveries for an endpoint
+curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries \
+  -H "Authorization: Bearer nbo_sandbox_…"
+
+# One delivery, with its attempts and your endpoint's responses
+curl https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId} \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+## Yin replay na delivery
+
+Ka sake aika event da ya wuce duk lokacin da kake buƙata, bayan ka gyara
+kuskuren handler, ko don cike gurbin endpoint da ya faɗi:
+
+```bash
+curl -X POST \
+  https://sandbox.api.nombaone.xyz/v1/webhooks/{id}/deliveries/{deliveryId}/replay \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+<Callout type="warning" title="Replay yana riƙe event id na asali">
+  Replay shi ne event ɗin nan ɗaya, an sake aika shi, ba sabo ba ne. Maʼajiyar
+  dedupe ɗinka ya kamata ta gane shi a matsayin wanda aka riga aka sarrafa.
+  Wannan shi ne ainihin abin da kake so: replay yana da aminci saboda handler
+  ɗinka idempotent ne.
+</Callout>
+
+## Ka rasa wani lokaci? Ka yi reconciliation, kada ka sake ginawa
+
+Idan endpoint ɗinka ya faɗi kuma ba ka da tabbas kan abin da ka rasa, kada ka yi
+ƙoƙarin sake gina yanayin daga jerin event da kake hasashe. Ka karanta resource
+kai tsaye (`GET
+/v1/subscriptions/{id}`) ko ka yi replay na takamaiman delivery ɗin. API ce
+tushen gaskiya, event kuwa saƙonnin sanarwa ne game da ita.
+
+<CardGroup cols={2}>
+  <Card title="Tabbacin delivery" href="/webhooks/delivery-guarantee">
+    Dalilin da ya sa event id ke sa sake gwadawa da replay su zama masu aminci.
+  </Card>
+  <Card title="Sarrafa webhook" href="/guides/handle-webhooks">
+    Gina handler idempotent da zai sa wannan ya yi aiki.
+  </Card>
+</CardGroup>

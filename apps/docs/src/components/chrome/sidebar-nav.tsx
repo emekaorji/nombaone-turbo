@@ -8,6 +8,9 @@ import { usePathname } from "next/navigation";
 
 import { getApiResources } from "@/lib/api-ref/model";
 import { cn } from "@/lib/cn";
+import { stripLocale } from "@/lib/l10n/config";
+import { useL10n } from "@/lib/l10n/context";
+import { navTitle, sectionTitle } from "@/lib/l10n/nav";
 
 import { MethodChip } from "./method-chip";
 import { SearchTrigger } from "./search-trigger";
@@ -33,6 +36,7 @@ import {
  * rail and the mobile drawer (`onNavigate` closes the drawer on selection).
  */
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useL10n();
   // Each top-nav destination powers its own sidebar, resolved from the section
   // the current page belongs to: the flattened API reference for the API
   // section, a single-section tree for every `standalone` section (AI, Best
@@ -54,7 +58,11 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       ) : section?.standalone ? (
         <SectionsNav label={section.title} sections={[section]} onNavigate={onNavigate} />
       ) : (
-        <SectionsNav label="Documentation" sections={DOCS_SECTIONS} onNavigate={onNavigate} />
+        <SectionsNav
+          label={t("nav.documentation")}
+          sections={DOCS_SECTIONS}
+          onNavigate={onNavigate}
+        />
       )}
     </div>
   );
@@ -87,6 +95,7 @@ function DocsSection({
   onNavigate?: () => void;
 }) {
   const [open, setOpen] = useState(true);
+  const { locale } = useL10n();
 
   return (
     <div>
@@ -96,7 +105,9 @@ function DocsSection({
         aria-expanded={open}
         className="flex w-full items-center justify-between px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted-foreground transition-colors hover:text-foreground"
       >
-        <span>{section.title}</span>
+        {/* Sections whose pages are all frozen in English keep their English
+            title on purpose — see `content/l10n/nav.*.ts`. */}
+        <span>{sectionTitle(section.key, locale) ?? section.title}</span>
         <Chevron open={open} />
       </button>
       {open && (
@@ -128,15 +139,24 @@ function DocsSection({
  * its own overview and each request its own page — nothing packed together.
  */
 function ApiNav({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useL10n();
   const resources = getApiResources();
   return (
-    <nav aria-label="API reference" className="flex flex-col gap-5 px-3 py-6">
+    <nav aria-label={t("nav.apiReference")} className="flex flex-col gap-5 px-3 py-6">
       <ul className="space-y-px">
         <li>
-          <NavLink item={{ slug: "/reference", title: "Overview" }} dense onNavigate={onNavigate} />
+          <NavLink
+            item={{ slug: "/reference", title: t("nav.overview") }}
+            dense
+            onNavigate={onNavigate}
+          />
         </li>
         <li>
-          <NavLink item={{ slug: "/reference/glossary", title: "Glossary" }} dense onNavigate={onNavigate} />
+          <NavLink
+            item={{ slug: "/reference/glossary", title: t("nav.glossary") }}
+            dense
+            onNavigate={onNavigate}
+          />
         </li>
       </ul>
       {resources.map((r) => (
@@ -207,10 +227,18 @@ function NavLink({
 }) {
   const pathname = usePathname();
   const active = isActive(pathname, item.slug);
+  const { locale, href } = useL10n();
+
+  // `href()` is what keeps the label and the destination honest with each other:
+  // it points into the locale only when this page is actually translated, and
+  // straight at English otherwise — so a reader never takes a redirect hop, and
+  // an English label never opens a Yorùbá page (or the reverse).
+  const target = href(item.slug);
+  const label = navTitle(item.slug, locale) ?? item.title;
 
   return (
     <Link
-      href={item.slug === "" ? "/" : item.slug}
+      href={target}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
@@ -223,7 +251,7 @@ function NavLink({
       )}
     >
       {item.method && <MethodChip method={item.method} />}
-      <span className="flex-1 truncate">{item.title}</span>
+      <span className="flex-1 truncate">{label}</span>
       {item.badge && <BadgePill badge={item.badge} />}
     </Link>
   );
@@ -259,8 +287,14 @@ function Chevron({ open }: { open: boolean }) {
 }
 
 /** Active when the slug matches the current path exactly (home is `/`). */
+/**
+ * Compare against the CANONICAL slug, not the raw path — on `/yo/concepts/the-ledger`
+ * the pathname carries a locale prefix that the manifest's slugs never do, so a
+ * naive equality check would leave every locale page unhighlighted.
+ */
 function isActive(pathname: string | null, slug: string): boolean {
   if (!pathname) return false;
-  const target = slug === "" ? "/" : slug;
-  return pathname === target;
+  const { slug: canonical } = stripLocale(pathname);
+  const target = slug === "" ? "" : slug;
+  return canonical === target;
 }

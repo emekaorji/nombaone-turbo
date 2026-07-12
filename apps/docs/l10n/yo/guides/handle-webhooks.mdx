@@ -1,0 +1,114 @@
+---
+title: Ṣíṣàkóso webhooks
+description: "Gba event, ṣàyẹ̀wò signature, yọ àdàkọ kúrò lórí event id, kí o sì gbé ìgbésẹ̀: ìlànà ìgbésẹ̀ mẹ́rin tí ó ń pa balance kan ṣoṣo tí ó tọ́ mọ́, láìka ìgbà mélòó tí event bá dé."
+section: guides
+order: 3
+---
+
+Webhooks ni ọ̀nà tí nombaone fi ń sọ fún server rẹ ohun tí ó ṣẹlẹ̀: a san invoice
+kan, charge kan kùnà, card kan nílò OTP, transfer kan dé. Ṣíṣàkóso wọn dáadáa jẹ́
+ìgbésẹ̀ mẹ́rin (**gbà, ṣàyẹ̀wò, yọ àdàkọ, gbé ìgbésẹ̀**), bí ọ̀kan nínú wọn bá sì
+yẹ̀, ìyẹn ni balance fi ń ṣìnà. Ìtọ́sọ́nà yìí ni ìlànà náà; láti kọ́kọ́ rí event tí
+ń wọlé sínú log tìrẹ, lọ ṣe [ṣàyẹ̀wò wa nínú devtools rẹ](/getting-started/verify-in-your-devtools).
+
+## 1 · Forúkọsílẹ̀ endpoint kan
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/nomba",
+    "enabledEvents": ["invoice.paid", "invoice.payment_failed", "invoice.action_required"]
+  }'
+```
+
+Ìdáhùn náà máa dá **signing secret** (`whsec_…`) padà, èyí tí a ó fi hàn lẹ́ẹ̀kan
+ṣoṣo. Fi pamọ́ sí ẹ̀gbẹ́ server. Forúkọsílẹ̀ endpoint fún mode kọ̀ọ̀kan: event
+sandbox kan kì í dé ibi kankan bí kò ṣe endpoint sandbox rẹ.
+
+## 2 · Ṣàyẹ̀wò signature náà: lórí raw body
+
+Delivery kọ̀ọ̀kan ń gbé signature kan lórí `` `${timestamp}.${rawBody}` ``. Ṣàyẹ̀wò
+**kí o tó parse**: ṣírò HMAC náà lórí àwọn baytì gan-an tí o gbà, kí o sì fi wé ara
+wọn ní àkókò tí kì í yàtọ̀.
+
+```ts
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+export function verifyWebhook(rawBody: string, header: string, secret: string) {
+  const { t, v1 } = parseHeader(header); // "t=…,v1=…"
+  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+  const ok =
+    v1.length === expected.length &&
+    timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+  if (!ok) throw new Error("invalid signature");
+}
+```
+
+<Callout type="warning" title="Má ṣe tún un serialize kí o tó ṣàyẹ̀wò">
+  Ka raw body ìbéèrè náà, kí o sì ṣe HMAC lórí àwọn baytì gan-an náà. `JSON.parse`
+  lẹ́yìn náà `JSON.stringify` lè yí ètò àwọn kọ́kọ́rọ́ padà, tí yóò sì yí àwọn baytì
+  padà, kí signature má bàa bá a mu mọ́. Àwọn framework tí wọ́n ń parse body fúnra
+  wọn yóò ba ìṣàyẹ̀wò náà jẹ́. Kọ́kọ́ mú raw body ná.
+</Callout>
+
+## 3 · Yọ àdàkọ kúrò lórí event id
+
+Delivery jẹ́ **ó kéré tán ẹ̀ẹ̀kan**: event kan náà lè dé ju ẹ̀ẹ̀kan lọ (àtúngbìdánwò,
+ìdíwọ́ kékeré nínú nẹ́tíwọ́ọ̀kì). Kọ `event.id` kọ̀ọ̀kan tí o ti ṣiṣẹ́ lé lórí sílẹ̀,
+kí o sì fo àwọn àtúndé. Handler náà gbọ́dọ̀ jẹ́ idempotent, nítorí pé
+[àtúngbìdánwò webhook kì í ṣe àtúngbìdánwò charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge):
+ìdáhùn lẹ́ẹ̀mejì sí `invoice.paid` kan ṣoṣo kò gbọ́dọ̀ fi owó kún balance lẹ́ẹ̀mejì.
+
+```ts
+if (await seen(event.id)) return respond(200); // already handled
+await markSeen(event.id);
+```
+
+## 4 · Dáhùn kíákíá, gbé ìgbésẹ̀ ní async
+
+Dá `2xx` padà lẹ́sẹ̀kẹsẹ̀, kí o wá ṣe iṣẹ́ náà. Handler tí ó lọ́ra máa dà bí ìkùnà,
+a ó sì tún un gbìdánwò, èyí kò burú (o ti yọ àdàkọ kúrò), ṣùgbọ́n kí ìdáhùn yára ni
+yóò dí kíkó tí wọn yóò kó ara wọn lù.
+
+```ts
+export async function POST(req: Request) {
+  const raw = await req.text();
+  verifyWebhook(raw, req.headers.get("x-nomba-signature")!, SECRET);
+  const event = JSON.parse(raw);
+  if (await seen(event.id)) return new Response(null, { status: 200 });
+  await markSeen(event.id);
+  await enqueue(event);              // do the real work off the request path
+  return new Response(null, { status: 200 });
+}
+```
+
+## Àwọn event tí ó ṣe pàtàkì
+
+Ṣàkóso àwọn ọ̀nà tí kò dùn pẹ̀lú, kì í ṣe `invoice.paid` nìkan:
+
+- **`invoice.paid`**: cycle kan ti kó owó. Fún un ní ààyè, fa àkókò náà gùn.
+- **`invoice.payment_failed`**: charge kan kùnà; subscription náà wà ní `past_due`,
+  [dunning](/guides/dunning-and-recovery) sì ń gbìdánwò. Má ṣe gba ààyè kúrò lọ́wọ́
+  wọn síbẹ̀: lórí balance tí kò pọ̀, ìtumọ̀ èyí ni “kò tíì tó.”
+- **`invoice.action_required`**: card kan nílò OTP; payload náà gbé ọ̀nà ìsopọ̀
+  checkout tuntun kan tí o lè fi ránṣẹ́ sí customer.
+- **`invoice.payment_recovered`**: dunning (tàbí customer tí ó parí OTP) yọrí sí
+  rere; dá ipò déédéé padà.
+
+<Callout type="tip" title="Ṣé o pàdánù ọ̀kan? Tún un gbà, má ṣe fojú bù ú">
+  Bí endpoint rẹ bá ti kú, má ṣe fi àwọn webhook tí o pàdánù ṣàtúnkọ́ ipò náà. Ka
+  resource náà (`GET /v1/subscriptions/{id}`) tàbí tún delivery kan ṣe
+  (`POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`). API ni orísun òtítọ́;
+  webhooks jẹ́ ìfitónilétí, kì í ṣe ledger.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Àkójọ event" href="/webhooks/event-catalog">
+    Gbogbo irú event, ìgbà tí ó ń jáde, àti payload rẹ̀.
+  </Card>
+  <Card title="Dunning àti ìgbàpadà" href="/guides/dunning-and-recovery">
+    Ohun tí ó ń ṣẹlẹ̀ láàárín payment_failed àti payment_recovered.
+  </Card>
+</CardGroup>

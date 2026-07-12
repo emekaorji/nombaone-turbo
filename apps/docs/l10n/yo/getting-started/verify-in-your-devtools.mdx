@@ -1,0 +1,134 @@
+---
+title: Ṣàyẹ̀wò wa nínú devtools rẹ
+description: "Sandbox kì í rán webhook jáde fúnra rẹ̀, torí náà a fún ọ ní event gidi tí a ti fọwọ́sí: forúkọ endpoint sílẹ̀, tà á jáde, kí o sì wo bí signature ṣe ń fẹsẹ̀ múlẹ̀ nínú log tìrẹ."
+section: get-started
+order: 5
+---
+
+Èyí ni òtítọ́ tí ọ̀pọ̀ ìwé ìtọ́sọ́nà ìsanwó kì í sọ fún ọ: Nomba sandbox **kì í**
+ti webhook jáde fúnra rẹ̀. Nítorí náà, dípò kí a máa ṣe bí ẹni pé ó ń ṣe é, a fún
+ọ ní **event gidi tí a fọwọ́sí**, tí ó bá ti production mu bàìtì-sí-bàìtì, tí o
+lè tà jáde nígbàkúgbà kí o sì wò ó bí ó ṣe ń balẹ̀ sínú tunnel tìrẹ. Ojú-ìwé yìí
+fi hàn pé páìpù náà ń ṣiṣẹ́ láti ìbẹ̀rẹ̀ dé òpin: forúkọsílẹ̀ → tà jáde → jẹ́rìí.
+
+<Callout type="note" title="Gidi ni, a sì fọwọ́sí i — kì í ṣe ìṣeré">
+  Event tí o máa tà jáde nísàlẹ̀ yìí jẹ́ payload gidi tí a fọwọ́sí láti ara sandbox
+  instrument, ìrísí kan náà àti ètò signature kan náà pẹ̀lú event live. Kò sí ohun
+  tí a hun tàbí tí a fi `setTimeout` ṣe níbí. `simulate` ni àrọ́pò olóòótọ́ fún
+  ìfiránṣẹ́ sandbox tààràtà. Ó jẹ́ ti sandbox mode nìkan, ó sì lè dé ó kéré tán
+  ẹ̀ẹ̀kan (ṣe dedupe lórí event id).
+</Callout>
+
+## 1 · Forúkọ endpoint sílẹ̀
+
+Fi webhook kan sí URL tí ó wà lábẹ́ ìdarí rẹ. Nígbà ìṣàgbékalẹ̀, ṣí sáfà agbègbè
+rẹ payá pẹ̀lú tunnel (ngrok, Cloudflare Tunnel) kí o sì forúkọ URL gbangba náà sílẹ̀:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-tunnel.ngrok.app/webhooks/nomba",
+    "enabledEvents": ["invoice.paid", "invoice.action_required"]
+  }'
+```
+
+Ìdáhùn náà ní **signing secret** ti endpoint náà nínú (`whsec_…`), tí a ó fi hàn
+lẹ́ẹ̀kan ṣoṣo. Fi pamọ́ sí ìhà sáfà. O nílò rẹ̀ láti jẹ́rìí sí gbogbo delivery.
+
+## 2 · Tà event gidi tí a fọwọ́sí jáde
+
+Béèrè lọ́wọ́ sandbox instrument kí ó rán event tí a fọwọ́sí sí endpoint tí o
+forúkọ sílẹ̀. Tà ọ̀kan tí ó ṣàṣeyọrí àti ọ̀kan tí kò ṣàṣeyọrí jáde:
+
+<CodeGroup>
+  <Tab label="invoice.paid">
+    ```bash
+    curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+      -H "Authorization: Bearer nbo_sandbox_…" \
+      -H "Content-Type: application/json" \
+      -d '{ "type": "invoice.paid" }'
+    ```
+  </Tab>
+  <Tab label="invoice.action_required">
+    ```bash
+    curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+      -H "Authorization: Bearer nbo_sandbox_…" \
+      -H "Content-Type: application/json" \
+      -d '{ "type": "invoice.action_required" }'
+    ```
+  </Tab>
+</CodeGroup>
+
+Wo tunnel rẹ tàbí log sáfà rẹ: `POST` gidi kan yóò dé sí endpoint rẹ, ó sì gbé
+ara event náà àti signature header dání. Ìyẹn gan-an ni ìjábọ̀ tí production ń rán.
+
+## 3 · Jẹ́rìí sí signature náà
+
+Má ṣe gba webhook tí o kò tíì jẹ́rìí sí i gbọ́ láé. A fi
+`HMAC_SHA256(` `${timestamp}.${rawBody}` `, secret)` fọwọ́sí gbogbo delivery lórí
+ara **raw** ti ìbéèrè náà. Jẹ́rìí sí i kí o tó parse rẹ̀. Fi wé e ní àkókò dídọ́gba.
+
+<Callout type="warning" title="Jẹ́rìí sí àwọn bàìtì raw, kí o tó parse">
+  Ṣírò HMAC náà lórí àwọn bàìtì gan-an tí o gbà, kì í ṣe lórí ohun tí o tún kọ
+  padà: `JSON.parse` lẹ́yìn náà `JSON.stringify` lè yí ètò àwọn kọ́kọ́rọ́ padà,
+  yóò sì yí àwọn bàìtì padà, signature náà kò sì ní bá a mu mọ́. Kọ́kọ́ ka ara
+  raw náà.
+</Callout>
+
+Èyí ni olùjẹ́rìí náà, tí ó ń ṣe ìlànà gidi náà nínú aṣàwákiri rẹ pẹ̀lú Web Crypto.
+Lẹ ara kan, timestamp, àti secret mọ́ ọ, kí o sì wò ó bí ó ṣe ń ṣírò signature tí
+sáfà náà ń retí:
+
+<WebhookVerifier />
+
+Ìmúṣẹ ìtọ́kasí fún sáfà rẹ:
+
+<CodeGroup>
+  <Tab label="TypeScript">
+    ```ts
+    import { createHmac, timingSafeEqual } from "node:crypto";
+
+    export function verify(rawBody: string, header: string, secret: string) {
+      const [ts, sig] = parseHeader(header); // "t=…,v1=…"
+      const expected = createHmac("sha256", secret)
+        .update(`${ts}.${rawBody}`)
+        .digest("hex");
+      const ok =
+        sig.length === expected.length &&
+        timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+      if (!ok) throw new Error("bad signature");
+    }
+    ```
+  </Tab>
+  <Tab label="Python">
+    ```python
+    import hmac, hashlib
+
+    def verify(raw_body: bytes, header: str, secret: str) -> None:
+        ts, sig = parse_header(header)  # "t=…,v1=…"
+        expected = hmac.new(
+            secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            raise ValueError("bad signature")
+    ```
+  </Tab>
+</CodeGroup>
+
+## Lẹ́yìn náà, dáhùn kíákíá, kí o sì ṣe dedupe
+
+Dá `2xx` padà kíákíá kí o sì ṣe iṣẹ́ náà lọ́nà asynchronous. Olùmúṣẹ tí ó lọ́ra dà
+bí ìkùnà, a ó sì tún un gbìdánwò. Nítorí pé delivery lè dé ó kéré tán ẹ̀ẹ̀kan,
+**ṣe dedupe lórí event id**: event kan náà lè dé lẹ́ẹ̀mejì, àti pé
+[títún webhook gbìdánwò kì í ṣe títún charge gbìdánwò](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge).
+
+<CardGroup cols={2}>
+  <Card title="Mímú webhook (ìtọ́sọ́nà)" href="/guides/handle-webhooks">
+    Àpẹẹrẹ kíkún: gbà → jẹ́rìí → dedupe → ṣe, fún balance kan ṣoṣo tí ó tọ́.
+  </Card>
+  <Card title="Àkójọ event" href="/webhooks/event-catalog">
+    Gbogbo irú event, ìgbà tí ó ń jáde, àti ìrísí payload rẹ̀.
+  </Card>
+</CardGroup>

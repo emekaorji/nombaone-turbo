@@ -6,6 +6,7 @@ import { ThumbsDown, ThumbsUp } from "lucide-react";
 
 import { getAnonymousId } from "@/lib/anonymous-id";
 import { cn } from "@/lib/cn";
+import { useL10n } from "@/lib/l10n/context";
 
 /**
  * "Was this page helpful?": the client island in the pager footer.
@@ -20,6 +21,7 @@ import { cn } from "@/lib/cn";
 type Status = "idle" | "sending" | "done";
 
 export function Feedback({ slug }: { slug: string }) {
+  const { t } = useL10n();
   const [status, setStatus] = useState<Status>("idle");
 
   async function send(helpful: boolean) {
@@ -40,7 +42,7 @@ export function Feedback({ slug }: { slug: string }) {
   if (status === "done") {
     return (
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        Thanks for the feedback!
+        {t("feedback.thanks")}
       </div>
     );
   }
@@ -49,12 +51,12 @@ export function Feedback({ slug }: { slug: string }) {
 
   return (
     <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
-      <span>Was this page helpful?</span>
+      <span>{t("feedback.question")}</span>
       <div className="flex gap-2">
-        <FeedbackButton label="Yes" disabled={disabled} onClick={() => send(true)}>
+        <FeedbackButton label={t("feedback.yes")} disabled={disabled} onClick={() => send(true)}>
           <ThumbsUp size={15} aria-hidden />
         </FeedbackButton>
-        <FeedbackButton label="No" disabled={disabled} onClick={() => send(false)}>
+        <FeedbackButton label={t("feedback.no")} disabled={disabled} onClick={() => send(false)}>
           <ThumbsDown size={15} aria-hidden />
         </FeedbackButton>
       </div>

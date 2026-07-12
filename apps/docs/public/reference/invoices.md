@@ -1,21 +1,14 @@
 ---
 title: "Invoices"
 type: reference
-summary: "Each cycle's invoice and its state: line items, amounts locked at finalization, and the collection result. Generated from the live schema."
+summary: "Invoices — every operation on the resource."
 canonical: https://docs.nombaone.xyz/reference/invoices
 ---
 
 # Invoices
 
-An **invoice** is what a subscription produces each cycle: line items, discounts,
-credits, and a total, locked at finalization. Its state (`draft`, `open`, `paid`,
-`past_due`, `void`) tracks collection. The invoice, its
-[ledger](/concepts/the-ledger) postings, and its webhooks all share one reference.
+Every operation on the invoices resource.
 
-> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/invoices
-
-> **Invoices are produced, not created by you**
->
-> You don't create invoices directly. A [subscription](/reference/subscriptions)
-> cycle produces them. These operations read and act on the invoices the engine
-> generates. See [how billing works](/concepts/how-billing-works).
+- [`GET /v1/invoices`](https://docs.nombaone.xyz/reference/invoices/list.md) — List invoices
+- [`GET /v1/invoices/{id}`](https://docs.nombaone.xyz/reference/invoices/retrieve.md) — Retrieve an invoice
+- [`POST /v1/invoices/{id}/void`](https://docs.nombaone.xyz/reference/invoices/void.md) — Void an invoice

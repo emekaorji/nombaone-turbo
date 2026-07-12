@@ -1,0 +1,53 @@
+---
+title: "Multi-rail: push àti pull"
+description: Ìdí tí a fi ń fa owó láti orí rail card àti mandate ṣùgbọ́n tí bank transfer jẹ́ èyí tí a ń tì, àti bí subscription kan ṣe ń ṣiṣẹ́ dáadáa lórí gbogbo wọn.
+---
+
+Nomba One ń ṣiṣẹ́ subscription kan náà lórí gbogbo rail: card, direct debit, bank transfer, àti
+crypto. Ṣùgbọ́n àwọn rail wọ̀nyí kò dọ́gba, ṣíṣe bí ẹni pé wọ́n dọ́gba sì ni ọ̀nà tí ó wọ́pọ̀ jùlọ láti
+ṣàṣìṣe nínú billing níbí. Ìlà ìpínyà náà ni **push vs pull**.
+
+## Rail pull: àwa ni a ń bẹ̀rẹ̀ ẹ̀
+
+Rail **pull** máa ń gba ààyè fún engine láti bẹ̀rẹ̀ ìgbésẹ̀ owó fúnra rẹ̀ ní ọjọ́ billing:
+
+- **Card**: gba charge lórí token card tí a fipamọ́. Ní Nàìjíríà, charge card tí ó ń tún ṣẹlẹ̀
+  léraléra máa ń kọlu ìgbésẹ̀ OTP/3-D Secure ti báǹkì, nítorí náà kì í ṣe pé ó máa ń dákẹ́ jẹ́ẹ́ nígbà
+  gbogbo. Wo [àwọn token card máa ń pé ọjọ́](/concepts/hard-parts/card-tokens-expire) àti àwòṣe
+  ìgbàpadà OTP.
+- **Direct debit (mandate)**: fa owó láti inú àkáǹtì báǹkì tí customer ti fún ní àṣẹ pẹ̀lú
+  [mandate](/concepts/hard-parts/mandates-and-consent). Ó ṣeé gbẹ́kẹ̀lé, ó sì máa ń dákẹ́ jẹ́ẹ́ lẹ́yìn
+  tí ó bá ti ń ṣiṣẹ́.
+
+Fún rail pull, "collect" túmọ̀ sí: gbìyànjú debit náà, gba ìdáhùn, kí o sì kọ ọ́ sílẹ̀.
+
+## Rail push: customer ni ó ń bẹ̀rẹ̀ ẹ̀
+
+Rail **push** kò ṣeé fà. Kò sí ìpè API kan tí ó lè bọ́ ọwọ́ sínú àkáǹtì customer kí ó sì mú owó náà
+jáde. **Customer gan-an ni ó gbọ́dọ̀ fi í ránṣẹ́**:
+
+- **Bank transfer**: ọ̀nà tí owó ń gbà rìn jùlọ ní Nàìjíríà. Ní ọjọ́ billing, engine yóò fi *ibi tí a
+  ó ti san án* hàn (àkáǹtì àfojúrí), yóò sì dúró de owó náà kí ó dé.
+
+Fún rail push, "collect" túmọ̀ sí: fi ìtọ́sọ́nà ìsanwó hàn, kí o sì ṣe settlement nígbà tí event
+tí ó wọlé, tí a sì ti fọwọ́ sí i, bá jẹ́rìí sí owó náà — kì í ṣe lórí ìfitónilétí lásán. Ìdí nìyí tí
+[owó tí a fi ránṣẹ́ tí kò bá invoice mu](/concepts/hard-parts/when-a-transfer-does-not-match-the-invoice)
+fi jẹ́ ọ̀ràn gidi tí o gbọ́dọ̀ pèsè sílẹ̀ fún, kì í ṣe ọ̀ràn ẹ̀gbẹ́ lásán.
+
+<Callout type="note" title="Ìṣàkópọ̀ rail">
+  Ojúlówó ẹ̀rọ náà kì í mọ orúkọ rail kankan rí. Interface kan ṣoṣo ni ó ń sọ, "collect fún ìtọ́kasí
+  yìí", ọ̀kọ̀ọ̀kan rail sì ń gbé e mú bí ó ti tọ́ fún ara rẹ̀. Ìyẹn ni ó jẹ́ kí subscription kan náà
+  lè ṣiṣẹ́ lórí card, mandate, tàbí transfer, pẹ̀lú ìyàtọ̀ push/pull tí a ti bójú tó nísàlẹ̀ rẹ.
+</Callout>
+
+Yí padà láàrin àwọn rail náà láti rí bí ọ̀rọ̀-ìṣe "collect" kan náà ṣe ń ṣiṣẹ́ lórí ọ̀kọ̀ọ̀kan wọn:
+
+<RailSwitcher />
+
+## Ìdí tí àìdọ́gba yìí fi ń pinnu ohun gbogbo
+
+Nítorí pé a kò lè fa transfer, àwòṣe "gba charge ní ọjọ́ billing kí o sì sàmì sí i pé a ti san án" kò
+ní ibi kankan tí ó ti bá a mu. Nomba One ni a kọ́ yí àìdọ́gba yìí ká dípò kí a fi í pamọ́: àwọn rail
+push máa ń ṣe settlement lọ́nà asynchronous, balance tínrín túmọ̀ sí pé pull tí ó kùnà jẹ́ *"kò tíì
+tó"* kì í ṣe *"rárá"*, [dunning](/concepts/hard-parts/dunning-for-thin-balances) sì wà ní ṣíṣàtúnṣe
+fún ìgbàpadà owó, kì í ṣe fún ìgbìyànjú léraléra nìkan.

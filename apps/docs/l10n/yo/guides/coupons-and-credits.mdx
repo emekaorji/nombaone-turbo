@@ -1,0 +1,103 @@
+---
+title: Coupon àti credit
+description: "Ọ̀nà méjì láti dín iye tí customer yóò san kù: coupon máa ń dín invoice kù ní ìdá ọgọ́rùn-ún tàbí ní iye tí a ti pinnu, credit grant sì jẹ́ balance tí a máa ń ná kí a tó ṣe charge."
+section: guides
+order: 7
+---
+
+Irinṣẹ́ ọ̀tọ̀ọ̀tọ̀ méjì ló wà fún gbígba owó tí ó dín kù lọ́wọ́ customer, ọ̀nà tí wọ́n
+sì ń gbà ṣiṣẹ́ lórí invoice yàtọ̀ síra. **Coupon** jẹ́ òfin ìdínkù (ìdá ọgọ́rùn-ún
+tàbí iye tí a ti pinnu) tí o so mọ́ customer tàbí subscription. **Credit** jẹ́
+balance tí a fi pamọ́, tí a sì máa ń ná kí a tó ṣe charge kankan. Àwọn méjèèjì ni
+wọ́n ń wọlé sínú [ledger](/concepts/the-ledger) gẹ́gẹ́ bí ìlà tí ó hàn kedere,
+nítorí náà invoice máa ń fi hàn ní pàtó ìdí tí àpapọ̀ owó fi rí bí ó ti rí.
+
+## Ṣẹ̀dá coupon
+
+Coupon ní `code`, iye ìdínkù (ìdá ọgọ́rùn-ún **tàbí** iye kobo tí a ti pinnu), àti
+`duration` tí ó ń darí bí ó ṣe máa pẹ́ tó:
+
+```bash
+# 20% off for the first 3 cycles
+curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "code": "LAUNCH20", "percentOff": 20, "duration": "repeating", "durationInCycles": 3 }'
+```
+
+```bash
+# ₦500 off, once
+curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "code": "SAVE500", "amountOffInKobo": 50000, "duration": "once" }'
+```
+
+`duration` lè jẹ́ `once` (invoice tí ó tẹ̀lé e nìkan), `repeating` (fún iye cycle
+tí `durationInCycles` sọ), tàbí `forever`. Bí o bá fẹ́, o lè fi `maxRedemptions`
+àti `redeemBy` gbé ààlà lé e.
+
+## Lo coupon
+
+So ó mọ́ customer lápapọ̀ tàbí mọ́ subscription kan ṣoṣo:
+
+```bash
+# To a subscription
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/discount \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "coupon": "LAUNCH20" }'
+```
+
+```bash
+# To a customer (applies to all their subscriptions)
+curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/discount \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "coupon": "LAUNCH20" }'
+```
+
+`DELETE` sí ọ̀nà kan náà yóò mú ìdínkù náà kúrò.
+
+## Fún customer ní credit
+
+Credit jẹ́ owó tí ó wà nínú account customer, tí a máa ń ná kí a tó ṣe charge
+kankan; ó wúlò fún refund tí a fẹ́ fi sílẹ̀ gẹ́gẹ́ bí credit, fún ìfẹ́ inú rere,
+tàbí fún balance tí a ti san tẹ́lẹ̀:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "amountInKobo": 100000, "source": "goodwill" }'
+```
+
+<Callout type="note" title="Credit tí ó dàgbà jù ni a ń kọ́kọ́ ná">
+  Nígbà tí a bá ń gba owó invoice, a máa ń lo credit tí ó wà kí a tó ṣe charge
+  lórí rail, bẹ̀rẹ̀ láti ara credit grant tí ó dàgbà jù. Invoice máa ń fi ìlà
+  credit náà hàn àti iye tí a gbà gan-an lẹ́yìn ìdínkù — gbogbo kobo ni a ṣírò rẹ̀
+  sínú ledger.
+</Callout>
+
+## Coupon àti credit: èwo ni kí o lò
+
+- **Coupon**: *òfin* tí ó ń dín iye owó kù (ìpolówó, tàbí ìpele tí a dín owó rẹ̀
+  kù). A máa ń ṣírò rẹ̀ padà ní cycle kọ̀ọ̀kan fún gbogbo àkókò tí ó fi máa wà.
+- **Credit**: *balance* tí a ń ná lẹ́ẹ̀kan, tí yóò sì tán. Lò ó fún refund tí o fẹ́
+  kí ó wà lórí pẹpẹ rẹ, tàbí fún owó tí a ti san tẹ́lẹ̀ sí account.
+
+<Callout type="tip" title="Wọ́n ń tòletòle ní ọ̀nà tí a ti pinnu">
+  Lórí invoice kan náà, credit àti coupon lè jọ ṣiṣẹ́: ìdínkù náà á kọ́kọ́ dín iye
+  owó tí a gbọ́dọ̀ san kù, lẹ́yìn náà credit yóò ná ìyókù. Ètò tí wọ́n fi ń tò ti
+  dúró ṣinṣin, ó sì hàn lórí invoice, nítorí náà kò sí àníàní nípa ohun tí yóò
+  jáde.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Ledger náà" href="/concepts/the-ledger">
+    Bí ìdínkù àti credit ṣe ń wọlé gẹ́gẹ́ bí ìlà tí a lè ṣàyẹ̀wò.
+  </Card>
+  <Card title="Bẹ̀rẹ̀ subscription" href="/guides/start-a-subscription">
+    Ibi tí subscription tí a dín owó rẹ̀ kù ti ń bẹ̀rẹ̀.
+  </Card>
+</CardGroup>

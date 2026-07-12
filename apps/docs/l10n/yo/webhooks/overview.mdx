@@ -1,0 +1,79 @@
+---
+title: Àkópọ̀ webhooks
+description: "Bí àwọn event tí ń jáde ṣe ń dé àwọn endpoint rẹ: bí delivery ṣe rí, bí o ṣe lè forúkọsílẹ̀, àti òfin mẹ́rin tí ń mú kí handler rẹ tọ̀nà."
+section: webhooks
+order: 1
+---
+
+Webhook ni ọ̀nà tí nombaone fi ń sọ fún server rẹ ohun tí ó ṣẹlẹ̀ láìjẹ́ pé o máa
+béèrè léraléra. Nígbà tí a bá san invoice kan, tí charge kan bá kùnà, tàbí tí
+card kan bá nílò OTP, a máa ń `POST` event tí a fọwọ́sí sí endpoint tí o
+forúkọsílẹ̀. Gbogbo ohun tí ó jẹ mọ́ ìhà tí ń jáde wà nínú apá yìí; ìlànà handler
+wà nínú [ìṣàkóso webhooks](/guides/handle-webhooks).
+
+## Bí delivery ṣe rí
+
+Delivery kọ̀ọ̀kan jẹ́ HTTP `POST` pẹ̀lú body JSON àti header ìfọwọ́sí:
+
+```http
+POST /your/endpoint HTTP/1.1
+Content-Type: application/json
+X-Nombaone-Signature: t=1719920092,v1=8f3c…
+X-Nombaone-Delivery-Guarantee: at-least-once
+
+{
+  "id": "evt_2a7e1b0d8c3a",
+  "type": "invoice.paid",
+  "reference": "nbo749201835566inv",
+  "createdAt": "2026-07-02T10:14:52.004Z",
+  "data": { "reference": "nbo749201835566inv" }
+}
+```
+
+`type` ni ó ń dárúkọ event náà, `reference` ni id gbangba ti resource náà, `id`
+sì ni id event aláìlẹ́gbẹ́ tí o máa fi ṣe dedupe.
+
+## Forúkọ endpoint kan sílẹ̀
+
+Ta webhook sí URL tí ó wà lábẹ́ ìdarí rẹ, kí o sì yan àwọn event tí ó gbọ́dọ̀ gbà:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/nomba",
+    "enabledEvents": ["invoice.paid", "invoice.payment_failed", "invoice.action_required"]
+  }'
+```
+
+Wàá gba **àṣírí ìfọwọ́sí** (`whsec_…`) padà, èyí tí a ó fi hàn ẹ́ lẹ́ẹ̀kan ṣoṣo.
+Endpoint jẹ́ ti mode kọ̀ọ̀kan: event sandbox kì í dé ibòmíràn bí kò ṣe endpoint
+sandbox rẹ.
+
+## Àwọn òfin mẹ́rin
+
+Handler tí ó tọ̀nà máa ń ṣe nǹkan mẹ́rin wọ̀nyí ní ọ̀wọ̀ọ̀wọ́:
+
+1. **[Ṣàyẹ̀wò ìfọwọ́sí náà](/webhooks/signing-and-verification)** lórí body
+   àìtọ́jú (raw), kí o tó parse rẹ̀.
+2. **[Ṣe dedupe lórí id event náà](/webhooks/delivery-guarantee)**: delivery jẹ́
+   at-least-once.
+3. **Dáhùn `2xx` kíákíá**, kí o wá ṣe iṣẹ́ náà lọ́nà asynchronous.
+4. **Pèsè ọ̀nà fún àwọn event tí kò dùn mọ́ni**, kì í ṣe `invoice.paid` nìkan.
+
+<Callout type="tip" title="Rí i kí o tó kọ́ ọ">
+  Sandbox kì í rán webhooks jáde fúnra rẹ̀, nítorí náà
+  [ṣàyẹ̀wò wa nínú devtools rẹ](/getting-started/verify-in-your-devtools) yóò fún
+  ọ ní event gidi tí a fọwọ́sí, kí o lè ta á sí endpoint tìrẹ, kí o sì rí i pé
+  ìjẹ́rìísí náà kọjá.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Àkójọ event" href="/webhooks/event-catalog">
+    Gbogbo event, ìgbà tí ó ń ṣẹlẹ̀, àti payload rẹ̀.
+  </Card>
+  <Card title="Ìfọwọ́sí àti ìjẹ́rìísí" href="/webhooks/signing-and-verification">
+    Ìlànà ìfọwọ́sí gan-an àti àpẹẹrẹ ìmúṣẹ rẹ̀.
+  </Card>
+</CardGroup>

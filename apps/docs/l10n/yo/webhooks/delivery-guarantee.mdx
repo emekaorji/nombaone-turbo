@@ -1,0 +1,60 @@
+---
+title: Ìdánilójú delivery
+description: Delivery jẹ́ ẹ̀ẹ̀kan-tàbí-jù, kì í ṣe ẹ̀ẹ̀kan-ṣoṣo pérépéré. Event kan náà lè dé lẹ́ẹ̀mejì. Fi event id ṣàyẹ̀wò ẹ̀dà méjì, kí o sì mú kí gbogbo handler jẹ́ idempotent.
+section: webhooks
+order: 4
+---
+
+nombaone ṣe ìdánilójú delivery **ẹ̀ẹ̀kan-tàbí-jù** (at-least-once), ó sì sọ bẹ́ẹ̀ lórí
+gbogbo delivery nínú header `X-Nombaone-Delivery-Guarantee`. Ìpinnu tí a mọ̀ọ́mọ̀ ṣe
+ni, tí ó sì jẹ́ òtítọ́: delivery ẹ̀ẹ̀kan-ṣoṣo pérépéré lórí nẹ́tíwọ́ọ̀kì tí a kò lè
+gbẹ́kẹ̀lé kò ṣeéṣe, API tí ó bá sì sọ pé òun ń ṣe é ń purọ́. Ohun tí a fún ọ dípò rẹ̀
+ni ìdánilójú tí o lè kọ́lé lé, pẹ̀lú ohun èlò kan ṣoṣo tí ó mú kí ó ní ààbò: event id
+tí kì í yípadà tí o lè fi ṣàyẹ̀wò ẹ̀dà méjì.
+
+## Ohun tí ẹ̀ẹ̀kan-tàbí-jù túmọ̀ sí fún ọ
+
+Event kan náà **lè** dé ju ẹ̀ẹ̀kan lọ: retry lẹ́yìn ìdáhùn tí ó lọ́ra, ìdíwọ́ nẹ́tíwọ́ọ̀kì,
+tàbí ìtúnfiránṣẹ́. Handler rẹ gbọ́dọ̀ mú ẹ̀dà kejì gẹ́gẹ́ bí ohun tí kò ní ṣe ohunkóhun.
+
+<Callout type="warning" title="Fi event id ṣàyẹ̀wò ẹ̀dà méjì, lẹ́yìn ìfẹ̀rí">
+  Kọ gbogbo `event.id` tí o ti ṣe sílẹ̀, kí o sì fo àwọn ẹ̀dà kejì. Ṣe èyí **lẹ́yìn**
+  ìfẹ̀rí signature, kí body tí a kò ì tíì fẹ̀rí má bàa ba ibi ìpamọ́ dedupe rẹ jẹ́.
+</Callout>
+
+```ts
+if (await seen(event.id)) return respond(200); // already handled, no-op
+await markSeen(event.id);
+await handle(event);
+```
+
+## Ìdí tí idempotency fi gbọ́dọ̀ lọ dé ìsàlẹ̀ pátápátá
+
+Ṣíṣàyẹ̀wò ẹ̀dà méjì ní ẹnu-ọ̀nà nìkan kò tó fúnra rẹ̀: iṣẹ́ tí handler bá bẹ̀rẹ̀ náà
+gbọ́dọ̀ jẹ́ idempotent, nítorí pé
+[retry webhook kì í ṣe retry charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge).
+Bí ẹ̀dà kejì ti `invoice.paid` bá yọ́ kọjá, fífi owó kún balance lẹ́ẹ̀mejì jẹ́ àṣìṣe
+gidi. [Ledger](/concepts/the-ledger) ń fipá mú èyí ní ìsàlẹ̀ pátápátá: a ń gba ìṣíkiri
+owó kan ní ẹ̀ẹ̀kan ṣoṣo, nítorí náà kódà event tí a bá ṣe lẹ́ẹ̀mejì yóò yọrí sí posting
+kan ṣoṣo.
+
+## Retry àti ìtẹ̀léra
+
+- **Retry.** Delivery tí kò bá gba `2xx` ní àsìkò ni a máa ń tún fi ránṣẹ́ lórí ètò
+  backoff. Dá `2xx` padà kíákíá, kí o sì ṣe iṣẹ́ náà ní async kí handler tí ó lọ́ra
+  má bàa fa retry tí kò yẹ kó wáyé.
+- **A kò ṣe ìdánilójú ìtẹ̀léra.** Àwọn event lè dé láìtẹ̀léra. Má ṣe rò pé
+  `invoice.paid` yóò dé ṣáájú `subscription.activated`. Fi resource náà (`GET`) ṣe
+  ìfìwéra nígbà tí ìtẹ̀léra bá ṣe pàtàkì, dípò kí o máa fi ọ̀wọ̀ọ̀wọ́ event dá ipò mọ̀.
+- **Replay.** O lè tún béèrè fún delivery tí ó ti kọjá pẹ̀lú
+  `POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`: event id kan náà ni,
+  nítorí náà dedupe rẹ yóò kà á sí ohun tí a ti rí tẹ́lẹ̀ bí ó ti yẹ.
+
+<CardGroup cols={2}>
+  <Card title="Mímú webhook" href="/guides/handle-webhooks">
+    Àṣà pípé náà: gbígbà → ìfẹ̀rí → dedupe → ṣíṣe.
+  </Card>
+  <Card title="Retry ≠ charge lẹ́ẹ̀kejì" href="/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge">
+    Ìdí tí idempotency fi wà nínú ledger, kì í ṣe ní ẹnu-ọ̀nà nìkan.
+  </Card>
+</CardGroup>

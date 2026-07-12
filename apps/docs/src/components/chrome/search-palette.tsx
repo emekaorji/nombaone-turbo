@@ -14,6 +14,8 @@ import {
 } from "@nombaone/ui/components/ui/dialog";
 
 import { cn } from "@/lib/cn";
+import { useL10n } from "@/lib/l10n/context";
+import { formatNodes } from "@/lib/l10n/format-nodes";
 
 import type { SearchDoc } from "@/lib/search-types";
 
@@ -27,6 +29,7 @@ import type { SearchDoc } from "@/lib/search-types";
  * own filter, so MiniSearch owns the ranking and grouping.
  */
 export function SearchPalette({ open, onOpenChange }: SearchPaletteProps) {
+  const { t } = useL10n();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -46,6 +49,11 @@ export function SearchPalette({ open, onOpenChange }: SearchPaletteProps) {
         const ms = new MiniSearch<SearchDoc>({
           fields: ["title", "heading", "text", "section"],
           storeFields: ["title", "heading", "section", "url"],
+          // MiniSearch's default tokenizer is already Unicode-aware, but it does
+          // no normalization — so an NFD-composed `ṣíṣe` in the index would never
+          // match an NFC-composed `ṣíṣe` typed in the box. The indexer writes NFC
+          // (build-search-index.ts); this makes queries agree.
+          processTerm: (term) => term.normalize("NFC").toLowerCase(),
           searchOptions: {
             boost: { title: 3, heading: 2, section: 1 },
             prefix: true,
@@ -118,10 +126,8 @@ export function SearchPalette({ open, onOpenChange }: SearchPaletteProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="top-[12%] max-w-xl translate-y-0 gap-0 overflow-hidden p-0">
 
-        <DialogTitle className="sr-only">Search the docs</DialogTitle>
-        <DialogDescription className="sr-only">
-          Search Nombaone documentation by page or section.
-        </DialogDescription>
+        <DialogTitle className="sr-only">{t("search.title")}</DialogTitle>
+        <DialogDescription className="sr-only">{t("search.description")}</DialogDescription>
 
         <div className="flex items-center gap-3 border-b border-border px-4">
           <Search size={18} className="shrink-0 text-muted-foreground" aria-hidden />
@@ -133,7 +139,7 @@ export function SearchPalette({ open, onOpenChange }: SearchPaletteProps) {
               setActive(0);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Search the docs…"
+            placeholder={t("search.placeholder")}
             autoFocus
             className="h-12 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
@@ -194,11 +200,11 @@ export function SearchPalette({ open, onOpenChange }: SearchPaletteProps) {
         </div>
 
         <div className="hidden items-center gap-3 border-t border-border px-4 py-2 text-[11px] text-muted-foreground/70 sm:flex">
-          <span>Esc to close</span>
+          <span>{t("search.hintEsc")}</span>
           <span className="text-muted-foreground/40">·</span>
-          <span>↑↓ navigate</span>
+          <span>{t("search.hintNavigate")}</span>
           <span className="text-muted-foreground/40">·</span>
-          <span>⏎ open</span>
+          <span>{t("search.hintOpen")}</span>
         </div>
       </DialogContent>
     </Dialog>
@@ -210,35 +216,44 @@ interface SearchPaletteProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Example queries. Do-not-translate: these are the words a reader actually types
+ * into the box, and there is no Yorùbá or Hausa term for `idempotency`.
+ */
+const EXAMPLE_TERMS = ["idempotency", "withdrawals", "fees"];
+
 function EmptyHint() {
+  const { t } = useL10n();
+
+  const terms = EXAMPLE_TERMS.map((term, index) => (
+    <span key={term}>
+      {index > 0 && ", "}
+      <span className="font-mono text-accent">{term}</span>
+    </span>
+  ));
+
   return (
     <div className="px-3 py-10 text-center">
       <Search size={22} className="mx-auto text-muted-foreground/60" aria-hidden />
-      <p className="mt-3 text-sm text-muted-foreground">
-        Search guides, concepts, and the API reference.
-      </p>
+      <p className="mt-3 text-sm text-muted-foreground">{t("search.empty")}</p>
       <p className="mt-1 text-xs text-muted-foreground/70">
-        Try <span className="font-mono text-accent dark:text-accent">idempotency</span>,{" "}
-        <span className="font-mono text-accent dark:text-accent">withdrawals</span>, or{" "}
-        <span className="font-mono text-accent dark:text-accent">fees</span>.
+        {formatNodes(t("search.emptyHint"), { terms })}
       </p>
     </div>
   );
 }
 
 function NoResults({ query }: { query: string }) {
+  const { t } = useL10n();
+
   return (
     <div className="px-3 py-10 text-center">
       <p className="text-sm text-foreground">
-        No matches for{" "}
-        <span className="font-medium text-accent dark:text-accent">
-          &ldquo;{query}&rdquo;
-        </span>
-        .
+        {formatNodes(t("search.noMatches"), {
+          query: <span className="font-medium text-accent">{query}</span>,
+        })}
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Check the spelling, or browse the sidebar.
-      </p>
+      <p className="mt-1 text-xs text-muted-foreground">{t("search.noMatchesHint")}</p>
     </div>
   );
 }

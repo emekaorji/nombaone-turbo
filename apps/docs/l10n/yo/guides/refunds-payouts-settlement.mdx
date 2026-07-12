@@ -1,0 +1,87 @@
+---
+title: Refunds, payouts àti settlement
+description: "Bí owó ṣe ń jáde padà: ṣe refund fún charge tí a ti settle (ẹsẹ̀ tenant nìkan), ka escrow lock, kí o sì san net ti organization sí àkáǹtì báǹkì."
+section: guides
+order: 5
+---
+
+Nígbà tí a bá gba charge, tí a sì ti fọwọ́ sí i, owó náà **pín ní àkókò gbígbà**:
+owó ọ̀yà platform rẹ àti net ti organization, ọ̀kọ̀ọ̀kan wọn ni a ń kọ sínú
+[ledger](/concepts/the-ledger) gẹ́gẹ́ bí ẹsẹ̀ tí ó dọ́gba. Ìtọ́sọ́nà yìí sọ bí owó
+ṣe ń jáde padà: refund, escrow lock tí ó ń ṣọ́ wọn, àti payout. A ti ṣàlàyé
+àwòṣe náà nínú [settlement & sub-accounts](/concepts/settlement-and-sub-accounts);
+èyí ni bí o ṣe lè lò ó.
+
+## Ṣe refund fún settlement kan
+
+Refund a máa dá charge tí a ti settle padà sí ọ̀dọ̀ ẹni tí ó san owó náà. Ní
+àbùdá, ó ń dá net kíkún padà; fi `amountInKobo` ránṣẹ́ bí o bá fẹ́ dá apá kan padà:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/{id}/refund \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "amountInKobo": 250000 }'
+```
+
+<Callout type="note" title="A kì í dá owó ọ̀yà platform padà">
+  Refund ń yí **ẹsẹ̀ ti organization nìkan** padà: ó ń dín settlement balance ti
+  organization kù, ó sì ń dá owó padà fún ẹni tí ó san án. A kì í dá owó ọ̀yà
+  platform padà, a kò sì fọwọ́ kàn án rárá. Èyí ni ó ń jẹ́ kí ledger jẹ́
+  olóòótọ́: refund ń kọ transaction tuntun tí ó ń yí ọ̀rọ̀ padà, kò yí charge
+  ìpilẹ̀ṣẹ̀ padà.
+</Callout>
+
+Refund apá kan a máa kóra jọ: dá ₦1,000 padà nínú charge ₦2,500, lẹ́yìn náà kí o
+dá ₦1,500 padà, settlement náà yóò sì yípadà sí `refunded` pátápátá. O kò lè dá
+owó tí ó ju net lọ padà láéláé. API yóò kọ̀ ọ́, `Idempotency-Key` sì ń mú kí
+refund tí a tún gbìdánwò rẹ̀ wà láìséwu.
+
+## Ka escrow lock
+
+Owó tí a ti settle kò ṣeé mú jáde lẹ́sẹ̀kẹsẹ̀. **Escrow lock** fún settlement
+tuntun ni ó ń dì wọ́n mú fún sáà kan, kí a bàa lè fa refund padà kí owó náà tó
+jáde. Yẹ ohun tí a dì mú wò àti èyí tí ó wà ní àyè:
+
+```bash
+curl https://sandbox.api.nombaone.xyz/v1/settlements/escrow \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+Ìdáhùn náà ń fi iye owó tí a dì mú hàn àti ìgbà tí yóò tú sílẹ̀. Balance tí ó wà
+fún payout ni net tí a ti settle yọ escrow lock kúrò (àti ìfipamọ́ tí ó kéré jùlọ
+tí ó bá wà).
+
+## San owó jáde sí àkáǹtì báǹkì
+
+Mú balance tí ó wà lọ́wọ́ organization jáde sí báǹkì:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/payout \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "amountInKobo": 500000, "bankCode": "058", "accountNumber": "0123456789" }'
+```
+
+Ààbò méjì ni ó ń ṣọ́ owó náà:
+
+- **`ESCROW_LOCKED`**: o gbìyànjú láti mú owó tí ó ṣì wà nínú sáà escrow jáde.
+  Dúró de ìtúsílẹ̀, tàbí kí o mú apá tí ó wà ní àyè nìkan jáde.
+- **`PAYOUT_EXCEEDS_AVAILABLE`**: iye owó náà ju balance tí ó wà lọ.
+
+<Callout type="warning" title="Òtítọ́ ledger ni àkọ́kọ́, gbígbé owó sì tẹ̀lé e">
+  Payout ń kọ debit sínú ledger kí a tó gbìyànjú bank transfer, bí transfer náà
+  bá sì kùnà, ó ń kọ ìyípadà ìsanpadà sílẹ̀. A kì í ṣe irọ́ pé a ti fi owó
+  ránṣẹ́, owó kì í sì í dá dúró síbì kankan: ledger àti báǹkì máa ń bára wọn mu.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Settlement & sub-accounts" href="/concepts/settlement-and-sub-accounts">
+    Bí àwòṣe pínpín àti escrow ṣe ń ṣiṣẹ́.
+  </Card>
+  <Card title="Settlement láìsí spreadsheet" href="/concepts/hard-parts/settlement-without-spreadsheets">
+    Bíbá owó mu pẹ̀lú organization ní ìwọ̀n ńlá.
+  </Card>
+</CardGroup>

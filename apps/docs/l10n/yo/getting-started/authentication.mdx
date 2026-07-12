@@ -1,0 +1,78 @@
+---
+title: Ìjẹ́rìísí
+description: "Gbogbo ìbéèrè ni a ń jẹ́rìísí pẹ̀lú kọ́kọ́rọ́ àṣírí organization rẹ, tí a fi ránṣẹ́ gẹ́gẹ́ bí Bearer token. Ìbẹ̀rẹ̀ kọ́kọ́rọ́ náà ló so ó mọ́ mode kan: sandbox tàbí live."
+section: get-started
+---
+
+nombaone API ń lo **kọ́kọ́rọ́ àṣírí kan ṣoṣo fún organization kọ̀ọ̀kan** fún ìjẹ́rìísí.
+O máa ń fi ránṣẹ́ gẹ́gẹ́ bí Bearer token nínú gbogbo ìbéèrè:
+
+```http
+Authorization: Bearer nbo_sandbox_…
+```
+
+Kò sí client id ọ̀tọ̀ tàbí ìgbésẹ̀ ìfọwọ́sí lọ́tọ̀: kọ́kọ́rọ́ àṣírí náà ni ó ń dá
+organization rẹ mọ̀, ó sì ń fi hàn pé ìbéèrè náà jẹ́ tìrẹ — nítorí náà ó gbọ́dọ̀ máa wà lórí server nìkan.
+
+## Ìrísí kọ́kọ́rọ́
+
+Kọ́kọ́rọ́ àṣírí ní ìbẹ̀rẹ̀ tí ó ń fi mode hàn, tí 256 bits ti àwọn àmì àìròtẹ́lẹ̀ sì tẹ̀lé e:
+
+| Ìbẹ̀rẹ̀ | Mode | Àpẹẹrẹ |
+|---|---|---|
+| `nbo_sandbox_` | Sandbox | `nbo_sandbox_a1b2c3d4…` |
+| `nbo_live_` | Live | `nbo_live_x9y8z7w6…` |
+
+A ó fi kọ́kọ́rọ́ àṣírí kíkún hàn ọ́ **lẹ́ẹ̀kan ṣoṣo**, nígbà tí a bá ṣẹ̀dá rẹ̀, kò sì ní
+ṣeé rí padà mọ́ lẹ́yìn náà: hash nìkan ni API ń fi pamọ́. Bí ó bá sọnù lọ́wọ́ rẹ, yí
+kọ́kọ́rọ́ náà padà kí o sì ṣàtúnṣe àwọn server rẹ.
+
+<Callout type="danger" title="Fi kọ́kọ́rọ́ àṣírí ṣe bí ọ̀rọ̀ ìgbaniwọlé">
+  Kọ́kọ́rọ́ àṣírí lè gbé owó nínú live mode. Má ṣe commit rẹ̀ rí, má ṣe fi sínú
+  kóòdù tí ó ń ṣiṣẹ́ ní ọ̀dọ̀ oníbàárà tàbí nínú ohun èlò alágbèéká, má sì ṣe kọ ọ́
+  sínú log. Ka a láti inú environment variable tàbí láti inú secrets manager.
+</Callout>
+
+## Kọ́kọ́rọ́ ni ó so mode mọ́
+
+Mode kì í ṣe parameter ọ̀tọ̀: **láti inú ìbẹ̀rẹ̀ kọ́kọ́rọ́ ni a ti ń mọ̀ ọ́n**, a sì ń
+ṣàyẹ̀wò rẹ̀ nínú gbogbo ìbéèrè. Kọ́kọ́rọ́ `nbo_sandbox_` kò lè fọwọ́ kan ohunkóhun
+àyàfi dátà sandbox; kọ́kọ́rọ́ `nbo_live_` kò sì lè fọwọ́ kan ohunkóhun àyàfi dátà live.
+Kò sí ọ̀nà kankan tí ìbéèrè kan fi lè kọjá ààlà náà, ìdí nìyí tí o fi lè fi àwọn
+kọ́kọ́rọ́ méjèèjì sí ẹ̀gbẹ́ ara wọn láìbẹ̀rù pé ìpè sandbox kan yóò kan live.
+
+Wo [àwọn environment](/getting-started/environments) fún ohun tí ìsopọ̀ yìí túmọ̀ sí
+ní ṣíṣe gidi.
+
+## Ìjẹ́rìísí ìbéèrè
+
+Ìbéèrè kan náà tí a ti jẹ́rìísí, ní èdè ìtòlẹ́sẹẹsẹ tìrẹ. Yí tab náà padà:
+
+<Snippet method="GET" path="/v1/customers" />
+
+Kọ́kọ́rọ́ tí kò sí, tí ìrísí rẹ̀ bà jẹ́, tàbí tí a ti fagilé yóò dá `401 Unauthorized`
+padà. Wo [`API_KEY_INVALID`](/errors#API_KEY_INVALID) fún àtúnṣe rẹ̀. Àpò àṣìṣe náà:
+
+```json
+{
+  "success": false,
+  "statusCode": 401,
+  "error": {
+    "code": "API_KEY_INVALID",
+    "message": "Invalid or missing API key."
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+## Yíyí kọ́kọ́rọ́ padà
+
+Yíyí kọ́kọ́rọ́ padà máa ń pèsè àṣírí tuntun, ó sì ń sọ èyí àtijọ́ di aláìṣiṣẹ́. Nítorí
+pé kọ́kọ́rọ́ náà ń ṣe ìjẹ́rìísí ó sì ń so mode mọ́, kọ́kọ́rọ́ tí a yípadà yóò dúró nínú
+mode kan náà: kọ́kọ́rọ́ sandbox tí a yípadà ṣì jẹ́ kọ́kọ́rọ́ sandbox.
+
+<Callout type="tip">
+  Máa yí àwọn kọ́kọ́rọ́ padà ní àkókò tí o ti yàn, àti nígbàkúgbà tí o bá fura pé wọ́n
+  ti jáde sí ìta. Ṣàtúnṣe gbogbo server tí ó ní àṣírí àtijọ́ ṣáájú kí a tó fagilé
+  kọ́kọ́rọ́ àtijọ́ náà, kí àlàfo má bàa wà.
+</Callout>

@@ -1,0 +1,67 @@
+---
+title: "Abin da za ka duba kafin ka amince wa billing layer da kuɗin shigarka"
+description: "Demo koyaushe yana aiki. Tambayoyin da suke tantance ko za ka riƙe kuɗinka su ne waɗanda demo ke ɓoyewa."
+---
+
+## Yanayin
+
+Kana zaɓen wani subscription layer, ko kana yanke shawara ko za ka ci gaba da gina naka. Kowane zaɓi yana yin
+demo mai kyau: plan, checkout, da alamar nasara kore. Demo ba shi ne abin da zai tashe ka da ƙarfe biyu na
+dare ba. Waɗannan tambayoyin ne za su yi haka.
+
+## Hanyar da ba ta da zurfi
+
+Ka auna shi da yadda komai ke tafiya daidai. Ka kalli charge da ya yi nasara, ka yaba wa dashboard, ka tabbatar
+SDK ɗin yana da daɗin amfani, sannan ka wuce. Idan zai iya yin bill ga card a cikin demo, tabbas zai iya
+gudanar da kuɗin shigarka.
+
+## Dalilin da ya sa yake karyewa
+
+Gazawarsa, ba nasarorinsa ba, ita ce ke bayyana billing. Layer da ba a taɓa kashe shi tsakiyar aiki ba, wanda
+bai taɓa haɗuwa da account mai ƙarancin kuɗi ba, wanda bai taɓa yin reconciliation kan bank transfer da bai
+cika adadin da ake tsammani ba, yana kama da wanda ya sha waɗannan duka — har sai watan da ya ci ka kuɗi na
+gaske da kuma amana ta gaske. Giɓin da ke tsakanin “ya taɓa yin charge kan card sau ɗaya” da “ba zai ɓatar da
+kuɗinka ba kuma ba zai karɓe su sau biyu ba a lokacin da aiki ya yi yawa” shi ne dukkan samfurin.
+
+## Abin da ya kamata ka duba da gaske
+
+Ka yi kowace tambaya daga cikin waɗannan, kuma ka nemi tsari na gaske, ba kwarjinin magana ba.
+
+- **Kariya daga charge sau biyu.** Idan aikin billing ya mutu bayan ya kai kashi biyu bisa uku sannan ya sake
+  farawa, za a iya yin charge kan period ɗaya sau biyu? Amsar ya kamata ta zama wani constraint na database
+  da za ka iya ambata da suna, ba “muna kula ne” ba.
+- **Rasa customer ba da nufinsu ba.** Idan charge ya gaza, shin retry ɗin ya san dalilin gazawar da kuma ranar
+  da customer ke karɓar albashinsa? Matakan retry marasa sassauci a kasuwar da account ke ƙarancin kuɗi kuɗi
+  ne da aka ɓata tun daga ƙira.
+- **Push rail.** Zai iya yin bill ga customer wanda bank transfer kaɗai zai iya biya da shi, kuma yana tabbatar
+  da cewa kuɗin ya sauka da gaske kafin ya sa alamar cewa an biya invoice, ko kuwa yana dogaro da saƙon
+  sanarwa kawai?
+- **Ledger.** Shin kuɗi lamba ce cikakkiya kuma ledger ba ya sauyawa, ko akwai float da sabuntawa a wuri ɗaya
+  da ke jiran su karkata kobo bayan kobo?
+- **Webhook.** An sa musu sa hannu, ana sake gwada su, ana kuma iya sake kunna su, tare da bayyana isar da su
+  cikin gaskiya a matsayin “aƙalla sau ɗaya” domin ɓangarenka ya iya cire kwafi? Duk wanda ya yi alkawarin
+  “sau ɗaya kacal” yana yin alkawarin abin da hanyar sadarwa ba za ta iya ba shi ba.
+- **Warewa.** Shin warewar organization wani hali ne na tsarin bayanai kansa, wanda ake tilastawa a kowace
+  query, ko kuwa dubawar middleware ce da route guda da aka manta zai iya tsallakewa?
+
+## Yadda Nomba One ke amsawa, a fili
+
+Kariya daga charge sau biyu unique constraint ne kan subscription da period, ba code mai cike da fata ba.
+Dunning yana sa ranar albashi a gaba kuma yana rarraba gazawa bisa nauʼinta, saboda haka ana sake gwada
+account mai ƙarancin kuɗi sai kuɗi ya shigo, ba a kuma sake gwada card da ya ƙare ba ko kaɗan. Bank transfer
+suna tabbatarwa sannan su sake tambayar provider, suna kuma daidaita ainihin adadin kafin settlement. Ledger
+kobo ne cikakke, ba ya sauyawa, ƙari kawai ake yi masa. Ana sa hannu kan webhook, ana isar da su aƙalla sau
+ɗaya, ana cire kwafi, ana sake gwadawa, ana kuma iya sake kunna su — ba sau ɗaya kacal ba. Warewa ita ce
+`organization_id` da `environment` kan kowane layi, ana tilasta ta daga key da aka amince da shi, ba tunanin
+da aka ƙara wa middleware daga baya ba.
+
+Sannan gaskiyar magana: direct debit mandate, payout, refund, da escrow an gina su amma har yanzu ba a buɗe su
+a live ba saboda payment provider. Muna kwatanta su a matsayin iyawar da muka aiwatar, ba a matsayin abubuwan
+da muka tabbatar a aikin gaske kan babban sikeli ba. Billing layer da ba zai gaya maka waɗanne fasalolinsa ne
+suka riga suka yi live ba, ba shi ne wanda za ka amince masa da kuɗin shigarka ba.
+
+## Ka gan shi
+
+Karanta ƙaʼidojin ƙarshe da muke auna kanmu da su, ko ka gudanar da simulator ɗin ka gwada ka lalata shi.
+
+Duba [ledger](/concepts/the-ledger), tushen gaskiya, da kuma [abin da za ka duba kafin ka amince wa billing layer](/concepts/hard-parts/what-to-check-before-you-trust-a-billing-layer).

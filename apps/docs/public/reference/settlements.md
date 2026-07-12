@@ -1,21 +1,16 @@
 ---
 title: "Settlements"
 type: reference
-summary: "Refunds, payouts, and escrow: read settlements, refund the tenant leg, check the escrow lock, and pay out to a bank. Generated from the live schema."
+summary: "Settlements — every operation on the resource."
 canonical: https://docs.nombaone.xyz/reference/settlements
 ---
 
 # Settlements
 
-A **settlement** records collected funds splitting into your platform fee and an
-organization's net, landing in its sub-account. This resource is how money moves
-back out: refund a settlement's tenant leg, read the escrow lock, and pay out an
-available balance. See [refunds, payouts & settlement](/guides/refunds-payouts-settlement).
+Every operation on the settlements resource.
 
-> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/settlements
-
-> **The platform fee is non-refundable**
->
-> A refund reverses only the organization's leg; the platform fee is never
-> touched. Payouts respect the escrow lock and reject
-> `PAYOUT_EXCEEDS_AVAILABLE`. See the [settlement concept](/concepts/settlement-and-sub-accounts).
+- [`GET /v1/settlements`](https://docs.nombaone.xyz/reference/settlements/list.md) — List settlements
+- [`GET /v1/settlements/{id}`](https://docs.nombaone.xyz/reference/settlements/retrieve.md) — Retrieve a settlement
+- [`GET /v1/settlements/escrow`](https://docs.nombaone.xyz/reference/settlements/escrow.md) — Retrieve the escrow balance
+- [`POST /v1/settlements/payout`](https://docs.nombaone.xyz/reference/settlements/create-payout.md) — Create a payout
+- [`POST /v1/settlements/{id}/refund`](https://docs.nombaone.xyz/reference/settlements/refund.md) — Refund a settlement

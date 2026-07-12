@@ -1,0 +1,80 @@
+---
+title: Bayani kan webhooks
+description: "Yadda events masu fita ke isa endpoints ɗinka: yadda delivery yake, yadda ake yin rijista, da dokoki huɗu da ke sa handler ɗinka ya yi daidai."
+section: webhooks
+order: 1
+---
+
+Webhook shi ne yadda nombaone ke gaya wa server ɗinka abin da ya faru ba tare da
+ka riƙa tambaya kullum ba. Lokacin da aka biya invoice, ko charge ya faɗi, ko
+card ya buƙaci OTP, muna `POST` ɗin event mai sa hannu zuwa endpoint ɗin da ka yi
+rijista da shi. Duk abin da ya shafi ɓangaren fita yana cikin wannan sashe;
+tsarin handler kuwa yana cikin [sarrafa webhooks](/guides/handle-webhooks).
+
+## Yadda delivery yake
+
+Kowace delivery HTTP `POST` ce mai body na JSON da header na sa hannu:
+
+```http
+POST /your/endpoint HTTP/1.1
+Content-Type: application/json
+X-Nombaone-Signature: t=1719920092,v1=8f3c…
+X-Nombaone-Delivery-Guarantee: at-least-once
+
+{
+  "id": "evt_2a7e1b0d8c3a",
+  "type": "invoice.paid",
+  "reference": "nbo749201835566inv",
+  "createdAt": "2026-07-02T10:14:52.004Z",
+  "data": { "reference": "nbo749201835566inv" }
+}
+```
+
+`type` shi ne sunan event ɗin, `reference` shi ne id na bainar jamaʼa na resource
+ɗin, `id` kuwa shi ne id na musamman na event da za ka yi dedupe da shi.
+
+## Yin rijistar endpoint
+
+Ka nuna webhook zuwa URL da kake sarrafawa, sannan ka zaɓi waɗanne events zai
+riƙa karɓa:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/nomba",
+    "enabledEvents": ["invoice.paid", "invoice.payment_failed", "invoice.action_required"]
+  }'
+```
+
+Za ka karɓi **sirrin sa hannu** (`whsec_…`), wanda ake nunawa sau ɗaya kawai.
+Endpoints suna aiki bisa mode: event na sandbox zai isa endpoint ɗin sandbox
+ɗinka kaɗai.
+
+## Dokoki huɗu
+
+Handler mai kyau kullum yana yin waɗannan abubuwa huɗu, bi da bi:
+
+1. **[Tabbatar da sa hannun](/webhooks/signing-and-verification)** a kan raw body,
+   kafin ka yi parsing.
+2. **[Yi dedupe bisa id ɗin event](/webhooks/delivery-guarantee)**: delivery yana
+   at-least-once.
+3. **Ka amsa `2xx` da sauri**, sannan ka yi aikin a hanyar asynchronous.
+4. **Ka shirya wa events marasa daɗi**, ba `invoice.paid` kaɗai ba.
+
+<Callout type="tip" title="Ka gan shi kafin ka gina shi">
+  Sandbox ba ya aika webhooks da kansa, don haka
+  [tabbatar da mu a cikin devtools ɗinka](/getting-started/verify-in-your-devtools)
+  yana ba ka event na gaske mai sa hannu, don ka harba shi zuwa endpoint ɗinka ka
+  kuma ga tabbatarwar ta yi nasara.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Jerin events" href="/webhooks/event-catalog">
+    Kowane event, lokacin da yake faruwa, da payload ɗinsa.
+  </Card>
+  <Card title="Sa hannu da tabbatarwa" href="/webhooks/signing-and-verification">
+    Cikakken tsarin sa hannu da misalin aiwatarwa.
+  </Card>
+</CardGroup>

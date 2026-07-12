@@ -18,6 +18,27 @@ OpenAPI snapshot between releases, so it can't silently omit a change.
 > **Added**. Anything that could break an integration waits for a new major version
 > and is called out explicitly.
 
+## 2026-07-12: v1
+
+### Added
+
+- **Create a plan and its prices in one call**: [`POST /v1/plans`](/reference/plans)
+now takes an optional `prices` array, so the product and every cadence it sells
+on (monthly, annual, …) are created in a single **atomic** request. Either the
+plan and all of its prices land, or none of them do — a rejected price no longer
+leaves behind a plan with no price that cannot be billed. The response carries
+`data.prices` in the order you sent them.
+
+Embedding prices also requires the `prices:write` scope; a key holding only
+`plans:write` can still create a bare plan. At most 10 prices per call, and no
+two on the same cadence (`interval` + `intervalCount`).
+
+This is additive: `POST /v1/plans` without a `prices` array behaves exactly as
+before (`data.prices` is then `[]`), and the nested
+[`POST /v1/plans/{id}/prices`](/reference/prices) is unchanged — it is still how
+you add a cadence, or a new amount, to a plan that already exists. See
+[create plans and prices](/guides/create-plans-and-prices).
+
 ## 2026-07-01: v1
 
 The initial public release. The full subscription-billing surface over Nigerian

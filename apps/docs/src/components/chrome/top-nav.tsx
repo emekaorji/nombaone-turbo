@@ -14,6 +14,9 @@ import {
 } from "@nombaone/ui/components/ui/dropdown-menu";
 
 import { cn } from "@/lib/cn";
+import { useL10n } from "@/lib/l10n/context";
+
+import type { DictKey } from "@/lib/l10n/t";
 
 /**
  * Primary docs nav — plain links (Anthropic-style), replacing the old Docs/API
@@ -40,9 +43,9 @@ function isResourcesActive(p: string): boolean {
   return RESOURCE_HREFS.some((href) => p === href || p.startsWith(`${href}/`));
 }
 
-const PRIMARY: { label: string; href: string; isActive: (p: string) => boolean }[] = [
+const PRIMARY: { labelKey: DictKey; href: string; isActive: (p: string) => boolean }[] = [
   {
-    label: "Docs",
+    labelKey: "nav.docs",
     href: "/",
     // Docs is the catch-all, minus the sections that own a top-nav entry (API,
     // SDKs, AI) or live under the Resources menu — so only one pill is ever active.
@@ -52,9 +55,9 @@ const PRIMARY: { label: string; href: string; isActive: (p: string) => boolean }
       !p.startsWith("/agents") &&
       !isResourcesActive(p),
   },
-  { label: "API Reference", href: "/reference", isActive: (p) => p.startsWith("/reference") },
-  { label: "SDKs", href: "/sdks", isActive: (p) => p.startsWith("/sdks") },
-  { label: "AI", href: "/agents", isActive: (p) => p.startsWith("/agents") },
+  { labelKey: "nav.apiReference", href: "/reference", isActive: (p) => p.startsWith("/reference") },
+  { labelKey: "nav.sdks", href: "/sdks", isActive: (p) => p.startsWith("/sdks") },
+  { labelKey: "nav.ai", href: "/agents", isActive: (p) => p.startsWith("/agents") },
 ];
 
 function pillClass(active: boolean) {
@@ -104,10 +107,11 @@ export function TopNav({
 
 /** Desktop: horizontal pills + a Resources dropdown. */
 function NavBar({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useL10n();
   const pathname = usePathname() ?? "/";
 
   return (
-    <nav aria-label="Primary" className="flex flex-wrap items-center gap-1">
+    <nav aria-label={t("nav.primary")} className="flex flex-wrap items-center gap-1">
       {PRIMARY.map((item) => (
         <Link
           key={item.href}
@@ -116,7 +120,7 @@ function NavBar({ onNavigate }: { onNavigate?: () => void }) {
           aria-current={item.isActive(pathname) ? "page" : undefined}
           className={pillClass(item.isActive(pathname))}
         >
-          {item.label}
+          {t(item.labelKey)}
         </Link>
       ))}
 
@@ -125,7 +129,7 @@ function NavBar({ onNavigate }: { onNavigate?: () => void }) {
           aria-current={isResourcesActive(pathname) ? "page" : undefined}
           className={cn("group", pillClass(isResourcesActive(pathname)), "inline-flex items-center gap-1 data-[state=open]:text-foreground")}
         >
-          Resources
+          {t("nav.resources")}
           <ChevronDown size={14} aria-hidden className="opacity-70 transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center" sideOffset={8} className="w-56">
@@ -140,10 +144,11 @@ function NavBar({ onNavigate }: { onNavigate?: () => void }) {
 
 /** Mobile: every link collapsed into one dropdown, labelled by the active section. */
 function NavDropdown({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useL10n();
   const pathname = usePathname() ?? "/";
   const current = isResourcesActive(pathname)
-    ? "Resources"
-    : (PRIMARY.find((item) => item.isActive(pathname))?.label ?? "Docs");
+    ? t("nav.resources")
+    : t(PRIMARY.find((item) => item.isActive(pathname))?.labelKey ?? "nav.docs");
 
   return (
     <DropdownMenu>
@@ -159,13 +164,13 @@ function NavDropdown({ onNavigate }: { onNavigate?: () => void }) {
               onClick={onNavigate}
               className={cn(item.isActive(pathname) && "font-semibold text-foreground")}
             >
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Resources
+          {t("nav.resources")}
         </DropdownMenuLabel>
         {RESOURCES.map((item) => (
           <ResourceItem key={item.href} item={item} onNavigate={onNavigate} />

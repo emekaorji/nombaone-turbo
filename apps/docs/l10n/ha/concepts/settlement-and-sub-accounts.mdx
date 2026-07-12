@@ -1,0 +1,47 @@
+---
+title: Settlement da sub-accounts
+description: Yadda kuɗin da aka tabbatar ke rabuwa zuwa kuɗin sabis na dandali da net na ɗan kasuwa, ya settle zuwa sub-account na Nomba, kuma ya tsira daga claw-back ta hanyar escrow lock.
+---
+
+Lokacin da aka karɓi charge na subscription aka kuma tabbatar da shi, kuɗin ba ya zauna a
+tafki guda ɗaya kawai. Yana **rabuwa a lokacin karɓa**, sannan ya settle zuwa inda ya dace.
+An gina Nomba One a matsayin multi-tenant tun daga tushe: kuɗin kowace organization nata ne kaɗai.
+
+## Rabuwa a lokacin karɓa
+
+Ana raba kuɗin da aka tabbatar zuwa sassa biyu, waɗanda ake rubutawa a cikin [ledger](/concepts/the-ledger):
+
+- **Kuɗin sabis na dandali**: kuɗin da dandalin ku ke karɓa, wanda injin lissafin kuɗin sabis ke ƙidayawa.
+- **Net na organization**: abin da ya rage, wanda mallakin ɗan kasuwa ne.
+
+Net ɗin yana settle zuwa **sub-account na Nomba** na wannan organization. Ana rubuta rabon a
+matsayin sassan ledger masu daidaita juna, don haka gross koyaushe yana daidai da kuɗin sabis
+tare da net, har zuwa kobo ɗaya tak.
+
+## Sub-accounts
+
+**Sub-account** shi ne asusun organization a kan Nomba inda net ɗin da aka settle ke saukowa.
+Multi-tenancy na nufin integration guda ɗaya na iya gudanar da ʼyan kasuwa da yawa, kowanne da
+sub-account nasa, customer nasa, da kuɗinsa da aka ware shi kaɗai. Duba
+[warewa dukiya ce ta tsarin bayanai](/concepts/hard-parts/isolation-is-a-data-model-property).
+
+## Escrow, refund, da payout
+
+Kuɗin da aka settle ba za a iya cire su nan take ba. **Escrow lock** na settlement na kwanan
+nan yana riƙe su na wani ɗan lokaci, domin a iya janye kuɗi ta refund kafin kuɗin ya fita:
+
+- **Refund**: yana juyar da **sashen organization kaɗai** zuwa ga wanda ya biya; ba a mayar da
+  kuɗin sabis na dandali, kuma ba a taɓa shi ko kaɗan. Refund yana rubuta sabuwar muʼamala mai
+  juyarwa, don haka ledger ya kasance cikakke.
+- **Payout**: yana cire balance ɗin organization da ake da shi (net ɗin da aka settle, ban da
+  escrow lock da duk wani ƙaramin buffer) zuwa asusun banki.
+
+<Callout type="note" title="Ba a ƙaga, ba a kuma bar kuɗi a tsaka">
+  Ana tsare sassan provider na refund da payout: koyaushe ana rubuta gaskiyar ledger, sannan
+  canja wurin kuɗi na gaske a Nomba yana aiki ne kawai bayan an tabbatar da shi kai tsaye, tare
+  da juyawa ta ramawa idan canja wuri ya gaza, don haka ba a taɓa ƙaga cewa an aika kuɗi ba,
+  ba a kuma taɓa barin kuɗi a tsaka.
+</Callout>
+
+Domin sanin yadda ake daidaita kuɗi da ʼyan kasuwa a aikace ba tare da spreadsheet ba, duba
+[settlement ba tare da spreadsheet ba](/concepts/hard-parts/settlement-without-spreadsheets).

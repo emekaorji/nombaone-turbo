@@ -1,0 +1,90 @@
+---
+title: Muhallai
+description: "Ginshiƙai biyu masu zaman kansu: muhallin turawa (development ko production) na kayan aikinmu ne, mode na asusu kuwa (sandbox ko live) daga farkon maɓallinka yake, kuma shi ke raba bayananka."
+section: get-started
+---
+
+Yawancin API suna haɗa raʼayoyi biyu marasa alaƙa cikin maɓallin "test/live"
+guda ɗaya. nombaone yana raba su, saboda suna amsa tambayoyi daban-daban:
+
+- **Muhallin turawa**: *inda* kod ɗin ke gudana. Alʼamarin kayan aikinmu ne.
+- **Mode na asusu**: *waɗanne* bayanai buƙata ke taɓawa. Naka ne, maɓallinka ke zaɓarsa.
+
+| Ginshiƙi | Ƙimomi | Wa ke saitawa | Kana ganinsa? |
+|---|---|---|---|
+| Muhallin turawa | `development` · `production` | Kayan aikinmu (`INFRA_ENVIRONMENT`) | Aʼa, namu ne |
+| Mode na asusu | `sandbox` · `live` | Farkon API key ɗinka | Eh, kai ke zaɓar maɓallin |
+
+## Mode na asusu shi ne wanda kake zaɓa
+
+Mode **yana fitowa ne daga farkon maɓallinka na sirri**, kuma ana tantance shi a
+kan kowace buƙata. Ba ka taɓa tura wani parameter na mode ba:
+
+- `nbo_sandbox_…` → mode **sandbox**. Bayanai keɓaɓɓu, babu kuɗi na gaske. Za ka
+  iya gwaji cikin aminci.
+- `nbo_live_…` → mode **live**. Organization na gaske, motsin kuɗi na gaske.
+
+An raba su biyun gaba ɗaya (bayanai daban, balance daban, webhook endpoint
+daban), don haka za ka iya riƙe maɓallan biyu a lokaci guda, kuma buƙata ba za ta
+taɓa ƙetarawa daga wannan mode zuwa ɗayan ba.
+
+```bash
+# Sandbox: isolated data, no real money
+curl https://sandbox.api.nombaone.xyz/v1/examples \
+  -H "Authorization: Bearer nbo_sandbox_…"
+
+# Live: real money movement
+curl https://api.nombaone.xyz/v1/examples \
+  -H "Authorization: Bearer nbo_live_…"
+```
+
+<Callout type="note" title="Kowane resource yana ɗauke da mode ɗinsa">
+  Duk wani resource da API ke mayarwa yana ɗauke da mode ɗin da yake ciki, don
+  haka koyaushe za ka iya tabbatar da gefen da wani rikodi yake.
+</Callout>
+
+## Muhallin turawa na kayan aiki ne
+
+Muhallin turawa shi ne *inda* nombaone kanta ke gudana, kuma ba abin da kake
+saitawa ba ne:
+
+- **`development`** na gida kaɗai ne: naʼurar da injiniya ke gudanar da sabis ɗin a kanta.
+- **`production`** ita ce turawa guda ɗaya da ake yi wa kowane ɗan kasuwa hidima da ita.
+
+Turawar production guda ɗaya tana hidima ga **mode biyun a lokaci guda**. Mode
+yana zuwa ne daga maɓallin da ke kan kowace buƙata, ba daga wata turawa ta daban
+ba. Babu "sandbox server" da "live server" da za ka nuna. Maɓallin `sandbox` yana
+aiki koʼina; maɓallin `live` yana aiki ne kawai a kan turawar production.
+
+<Callout type="warning" title="Live yana buƙatar production">
+  Kuɗi na gaske yana motsi ne kawai a kan turawar `production`. Ana ƙin maɓallin
+  `live` a ko wane wuri banda haka, don haka ba za ka taɓa yin kuskuren motsa
+  kuɗi daga naʼurar dev ta gida ba.
+</Callout>
+
+## Aiki tsakanin mode-mode
+
+Haɗin kai mai tsafta yana raba mode biyun sarai:
+
+- **Saiti**: ɗauko maɓallin daga environment variable (`NOMBAONE_API_KEY`) don
+  kod guda ɗaya ya yi aiki da sandbox a staging da live a production ba tare da
+  canza kod ba.
+- **Bayanai**: reference na sandbox da na live sun bambanta; id da aka ƙirƙira a
+  sandbox ba zai taɓa aiki a live ba.
+- **Webhooks**: yi rijistar endpoint ga kowane mode. Ana kai event na sandbox
+  zuwa endpoint ɗinka na sandbox kaɗai.
+
+<Callout type="tip" title="Yi ƙaura da gangan">
+  Ka gina ka kuma tantance a sandbox, sannan ka canza maɓallin zuwa `nbo_live_`
+  don fara live. Sake gudanar da gwaje-gwajenka na end-to-end bayan canjin: live
+  yana da nasa bayanai, nasa balance, kuma yana motsa kuɗi na gaske.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Tantancewa" href="/getting-started/authentication">
+    Yadda farkon maɓallin ke tabbatar da mode, da yadda za ka kiyaye shi.
+  </Card>
+  <Card title="Fara live" href="/guides/going-live">
+    Jerin abubuwan da za a duba kafin canjawa daga maɓallin sandbox zuwa kuɗi na gaske.
+  </Card>
+</CardGroup>

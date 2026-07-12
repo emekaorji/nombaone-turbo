@@ -1,0 +1,140 @@
+---
+title: Tabbatar da mu a cikin devtools ɗinka
+description: "Sandbox ba ya aika webhook da kansa, don haka muna ba ka event na gaskiya mai sa hannu: yi rijistar endpoint, ka harba shi, sannan ka ga yadda ake tabbatar da signature a cikin log naka."
+section: get-started
+order: 5
+---
+
+Ga gaskiyar da yawancin takardun biyan kuɗi ba sa faɗa maka: Nomba sandbox **ba
+ya** tura webhook da kansa. Don haka, maimakon mu yi kamar yana yi, muna ba ka
+**event na gaskiya mai sa hannu**, iri ɗaya baiti-da-baiti da na production,
+wanda kake harbawa duk lokacin da ka ga dama sannan ka gan shi ya sauka a cikin
+tunnel naka. Wannan shafin yana tabbatar da bututun daga farko zuwa ƙarshe:
+rijista → harbawa → tabbatarwa.
+
+<Callout type="note" title="Na gaskiya kuma mai sa hannu, ba na ƙirƙira ba">
+  Event ɗin da za ka harba a ƙasa payload ne na gaskiya mai sa hannu daga sandbox
+  instrument, mai siffa ɗaya da tsarin signature ɗaya da na event na live. Babu
+  wani abu da aka ƙaga a nan ko aka yi da `setTimeout`. `simulate` shi ne madadin
+  na gaskiya ga isar da sandbox ta asali. Yana aiki a sandbox mode kaɗai, kuma
+  isarwa aƙalla sau ɗaya ce (ka yi dedupe bisa event id).
+</Callout>
+
+## 1 · Yi rijistar endpoint
+
+Ka nuna webhook zuwa URL da kake sarrafawa. A lokacin haɓakawa, ka buɗe sabar da
+ke kwamfutarka ta hanyar tunnel (ngrok, Cloudflare Tunnel) sannan ka yi rijistar
+URL ɗin jamaʼa:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-tunnel.ngrok.app/webhooks/nomba",
+    "enabledEvents": ["invoice.paid", "invoice.action_required"]
+  }'
+```
+
+Amsar ta ƙunshi **signing secret** na endpoint (`whsec_…`), wanda ake nunawa sau
+ɗaya kacal. Ka adana shi a gefen sabar. Kana buƙatarsa domin tabbatar da kowace
+delivery.
+
+## 2 · Harba event na gaskiya mai sa hannu
+
+Ka nemi sandbox instrument ya aika event mai sa hannu zuwa endpoint da ka yi
+rijista. Ka harba na nasara da kuma na gazawa:
+
+<CodeGroup>
+  <Tab label="invoice.paid">
+    ```bash
+    curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+      -H "Authorization: Bearer nbo_sandbox_…" \
+      -H "Content-Type: application/json" \
+      -d '{ "type": "invoice.paid" }'
+    ```
+  </Tab>
+  <Tab label="invoice.action_required">
+    ```bash
+    curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/webhooks/simulate \
+      -H "Authorization: Bearer nbo_sandbox_…" \
+      -H "Content-Type: application/json" \
+      -d '{ "type": "invoice.action_required" }'
+    ```
+  </Tab>
+</CodeGroup>
+
+Ka duba tunnel naka ko log na sabarka: `POST` na gaskiya zai iso endpoint ɗinka,
+ɗauke da jikin event da signature header. Wannan shi ne ainihin zirga-zirgar da
+production take aikawa.
+
+## 3 · Tabbatar da signature
+
+Kada ka taɓa amincewa da webhook da ba ka tabbatar da shi ba. Ana sa hannu kan
+kowace delivery da `HMAC_SHA256(` `${timestamp}.${rawBody}` `, secret)` bisa
+jikin buƙatar da yake **raw**. Ka tabbatar kafin ka yi parse. Ka yi kwatanci a
+lokaci mai tsayayye.
+
+<Callout type="warning" title="Tabbatar da baitocin raw, kafin parsing">
+  Ka lissafa HMAC bisa ainihin baitocin da ka karɓa, ba bisa abin da aka sake
+  tattarawa ba: `JSON.parse` sannan `JSON.stringify` na iya sauya jerin maɓallai
+  su canza baitocin, sai signature ya daina daidaita. Ka fara karanta jikin raw.
+</Callout>
+
+Ga mai tabbatarwa, yana gudanar da ainihin tsarin a cikin burauzarka da Web
+Crypto. Ka manna jiki, timestamp, da secret sannan ka kalli yadda yake lissafa
+signature ɗin da sabar take tsammani:
+
+<WebhookVerifier />
+
+Yadda ake aiwatar da shi a sabarka:
+
+<CodeGroup>
+  <Tab label="TypeScript">
+    ```ts
+    import { createHmac, timingSafeEqual } from "node:crypto";
+
+    export function verify(rawBody: string, header: string, secret: string) {
+      const [ts, sig] = parseHeader(header); // "t=…,v1=…"
+      const expected = createHmac("sha256", secret)
+        .update(`${ts}.${rawBody}`)
+        .digest("hex");
+      const ok =
+        sig.length === expected.length &&
+        timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+      if (!ok) throw new Error("bad signature");
+    }
+    ```
+  </Tab>
+  <Tab label="Python">
+    ```python
+    import hmac, hashlib
+
+    def verify(raw_body: bytes, header: str, secret: str) -> None:
+        ts, sig = parse_header(header)  # "t=…,v1=…"
+        expected = hmac.new(
+            secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            raise ValueError("bad signature")
+    ```
+  </Tab>
+</CodeGroup>
+
+## Sannan ka amsa da sauri, ka kuma yi dedupe
+
+Ka mayar da `2xx` da sauri sannan ka yi aikin ta hanyar asynchronous. Mai
+sarrafawa mai jinkiri yana kama da gazawa, kuma za a sake gwada shi. Tunda
+isarwa aƙalla sau ɗaya ce, **ka yi dedupe bisa event id**: event guda ɗaya na
+iya iso sau biyu, kuma
+[sake gwada webhook ba shi ne sake gwada charge ba](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge).
+
+<CardGroup cols={2}>
+  <Card title="Sarrafa webhook (jagora)" href="/guides/handle-webhooks">
+    Cikakken tsarin karɓa → tabbatarwa → dedupe → aiki, don samun balance guda
+    ɗaya daidai.
+  </Card>
+  <Card title="Katalogin event" href="/webhooks/event-catalog">
+    Kowane irin event, lokacin da yake tashi, da siffar payload ɗinsa.
+  </Card>
+</CardGroup>

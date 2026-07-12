@@ -1,0 +1,92 @@
+---
+title: Lílọ sí live
+description: "Àkọsílẹ̀ ìṣàyẹ̀wò láti kúrò ní key sandbox sí owó gidi: pààrọ̀ key àti host, tún forúkọsílẹ̀ webhook, ṣàyẹ̀wò signature ní live, kí o sì fìdí idempotency àti ìwọ̀n owó múlẹ̀ kí o tó gba charge àkọ́kọ́."
+section: guides
+order: 8
+---
+
+Lílọ sí live kéré lọ́nà tí a mọ̀ọ́mọ̀ ṣe é: pààrọ̀ key `nbo_sandbox_` rẹ sí `nbo_live_`, kí o sì
+pààrọ̀ host rẹ láti `sandbox.api.nombaone.xyz` sí `api.nombaone.xyz`. Ṣùgbọ́n mode
+méjèèjì kò pín ohunkóhun (data, balance, àti webhook endpoint ọ̀tọ̀ọ̀tọ̀ ni wọ́n ní), nítorí náà
+ṣe àkọsílẹ̀ ìṣàyẹ̀wò yìí kí o tó gba charge gidi àkọ́kọ́.
+
+## Ìpààrọ̀ náà
+
+Àmì ìbẹ̀rẹ̀ key ni ó pinnu gbogbo rẹ̀. Kò sí parameter mode kankan: key `nbo_live_`
+a máa dé live nìkan, key `nbo_sandbox_` a sì máa dé sandbox nìkan. Wo
+[àwọn environment](/getting-started/environments).
+
+```bash
+# Sandbox
+https://sandbox.api.nombaone.xyz/v1   +   nbo_sandbox_…
+
+# Live
+https://api.nombaone.xyz/v1           +   nbo_live_…
+```
+
+Mú key náà láti inú environment variable kí kóòdù kan náà lè ṣiṣẹ́ lórí àwọn méjèèjì:
+
+```ts
+const base = process.env.NOMBAONE_BASE_URL;   // sandbox vs prod
+const key  = process.env.NOMBAONE_API_KEY; // nbo_sandbox_ vs nbo_live_
+```
+
+## Àkọsílẹ̀ ìṣàyẹ̀wò ṣáájú ìfilọ́lẹ̀
+
+<Steps>
+  <Step title="Tún ṣẹ̀dá àwọn plan àti price rẹ ní live">
+    Data sandbox àti ti live yà sọ́tọ̀ pátápátá: id plan tí a dá ní sandbox kò sí ní
+    live rárá. Tún ṣẹ̀dá àwọn plan, price, àti coupon rẹ pẹ̀lú key live
+    (tàbí kí o ṣiṣẹ́ seed script rẹ tí o darí sí base live).
+  </Step>
+  <Step title="Forúkọsílẹ̀ àwọn webhook endpoint live">
+    Webhook wà lọ́tọ̀ọ̀tọ̀ fún mode kọ̀ọ̀kan. Forúkọsílẹ̀ endpoint production rẹ pẹ̀lú key
+    live, kí o sì tọ́jú secret `whsec_…` tuntun náà. Ó yàtọ̀ sí secret sandbox
+    rẹ. Fi secret live ṣàyẹ̀wò àwọn signature.
+  </Step>
+  <Step title="Fìdí rẹ̀ múlẹ̀ pé ìṣàyẹ̀wò signature ń ṣiṣẹ́ pẹ̀lú secret live">
+    Rán event gidi kan jáde, kí o sì rí i dájú pé handler rẹ ṣàyẹ̀wò rẹ̀: HMAC lórí raw
+    body, ìfiwéra tí àkókò rẹ̀ dúró ṣinṣin. Handler tí ó ṣàṣeyọrí ní sandbox pẹ̀lú secret
+    sandbox yóò kọ àwọn event live sílẹ̀ títí tí o fi darí rẹ̀ sí secret live. Wo
+    [bí a ṣe ń mú webhook](/guides/handle-webhooks).
+  </Step>
+  <Step title="Ṣàyẹ̀wò ìwọ̀n owó náà láti ìbẹ̀rẹ̀ dé òpin">
+    Gbogbo iye owó jẹ́ **kobo tí ó jẹ́ nọ́ḿbà odidi**. Kí o tó gba charge àkọ́kọ́, rí i dájú pé
+    price tí o mọ̀ ń fi iye náírà tí ó tọ́ hàn nínú UI rẹ (`250000` → ₦2,500.00). Ìṣàyẹ̀wò
+    yìí ni ó ń dènà gbígba owó ní ìlọ́po 100. Wo
+    [owó jẹ́ kobo odidi](/concepts/money-is-integer-kobo).
+  </Step>
+  <Step title="Fi Idempotency-Key sí gbogbo ìpè tí ó ń gbé owó">
+    Ìtúnpè nítorí nẹ́tíwọ́ọ̀kì kò ṣeé yàgò fún ní production. Rí i dájú pé gbogbo `POST` tí ó ń
+    gbé owó ń fi `Idempotency-Key` aláìlẹ́gbẹ́ ránṣẹ́, kí ìtúnpè má bàa gba owó lẹ́ẹ̀mejì.
+  </Step>
+  <Step title="Mú àwọn ọ̀nà tí kò gún régé">
+    Rí i dájú pé handler webhook rẹ ní ẹ̀ka fún `invoice.payment_failed`,
+    `invoice.action_required`, àti `invoice.payment_recovered`, kì í ṣe
+    `invoice.paid` nìkan. Ní Nàìjíríà, àwọn ọ̀nà tí kò gún régé ni ọ̀nà tí ó wọ́pọ̀ jù.
+  </Step>
+</Steps>
+
+<Callout type="warning" title="Live ń gbé owó gidi láti charge àkọ́kọ́">
+  Kò sí ìdánwò àìlówó nínú live. Subscription live àkọ́kọ́ rẹ yóò gba owó gidi
+  lórí rail gidi. Ṣe ìdúnàdúrà kan láti ìbẹ̀rẹ̀ dé òpin pẹ̀lú iye owó kékeré àti payment
+  method gidi tí ó wà lábẹ́ ìkáwọ́ rẹ kí o tó gba àwọn customer wọlé.
+</Callout>
+
+## Lẹ́yìn ìfilọ́lẹ̀
+
+- **Ṣe reconciliation.** [Ledger](/concepts/the-ledger) ni orísun òtítọ́; bí webhook kan bá
+  sọnù, tún gba resource náà wá dípò kí o tún ipò rẹ̀ kọ́ látìbẹ̀rẹ̀.
+- **Ṣọ́ dunning.** Balance gidi máa ń fẹ́rẹ̀ẹ́ ṣófo: retí `past_due`, kí o sì jẹ́ kí
+  [dunning](/guides/dunning-and-recovery) gba owó náà padà kí o tó gé wọn kúrò nínú iṣẹ́.
+- **Payout.** Owó tí ó ti settle yóò dé inú sub-account organization náà lábẹ́ ìtìpa
+  escrow; yọ ọ́ jáde pẹ̀lú [payout](/guides/refunds-payouts-settlement).
+
+<CardGroup cols={2}>
+  <Card title="Bí a ṣe ń mú webhook" href="/guides/handle-webhooks">
+    Ìlànà gbà → ṣàyẹ̀wò → yọ àdàkọ kúrò → gbé ìgbésẹ̀, ní live.
+  </Card>
+  <Card title="Dunning àti ìgbàpadà owó" href="/guides/dunning-and-recovery">
+    Ohun tí "past_due" túmọ̀ sí ní tòótọ́ lórí balance tí ó fẹ́rẹ̀ẹ́ ṣófo.
+  </Card>
+</CardGroup>

@@ -1,0 +1,104 @@
+---
+title: Bẹ̀rẹ̀ subscription kan
+description: "Fi customer kan sí price lórí rail èyíkéyìí: card, direct debit, tàbí bank transfer. Subscription náà jẹ́ ọ̀kan náà; ọ̀nà tí owó fi ń dé nìkan ló yàtọ̀."
+section: guides
+order: 2
+---
+
+Subscription kan ń fi **customer** kan sí orí **price** kan, ó sì ń kówó rẹ̀ ní
+cycle kọ̀ọ̀kan. Subscription resource kò kàn ún rail kan pàtó: `POST /v1/subscriptions`
+kan náà ni ó ń bẹ̀rẹ̀ subscription card, subscription direct debit, tàbí subscription
+bank transfer. Ohun tí ó yàtọ̀ ni **payment method** tí o so mọ́ ọn, nítorí pé àwọn
+rail ń gba owó ní ọ̀nà tí ó yàtọ̀ síra: card àti mandate ni a ń *fà* wọlé, bank
+transfer ni a ń *tì* wá. Wo
+[multi-rail: push àti pull](/concepts/multi-rail-push-and-pull) fún ìdí tí ìyàtọ̀
+yìí fi ṣe pàtàkì.
+
+## Ṣàgbékalẹ̀ payment method
+
+Àwọn pull rail nílò ohun èlò tí a ti fọwọ́ sí, tí ó sì wà nínú àkọsílẹ̀. Bẹ̀rẹ̀ setup
+kan: customer yóò fọwọ́ sí i (fún card, ó sì lè ní láti parí ìgbésẹ̀ OTP bánkì) ní
+ọ̀nà ìjápọ̀ tí a dá padà:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/setup \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerRef": "{customerId}",
+    "amountInKobo": 250000,
+    "callbackUrl": "https://yourapp.com/billing/return"
+  }'
+```
+
+A ó rán customer náà lọ láti parí ìfọwọ́sí, lẹ́yìn náà a ó dá a padà sí
+`callbackUrl` rẹ. Payment method tí ó jáde níbẹ̀ ni ohun tí o máa gbà owó lé lórí ní
+cycle kọ̀ọ̀kan.
+
+Fún subscription **bank transfer**, dípò bẹ́ẹ̀, ṣẹ̀dá virtual account kan: customer
+yóò máa tì owó sí i ní ọjọ́ ìdíyelé kọ̀ọ̀kan:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/payment-methods/virtual-account \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "customerRef": "{customerId}", "expectedAmount": 250000 }'
+```
+
+<Callout type="note" title="Ṣe ìdánrawò tí ìyọrísí rẹ̀ dájú nínú sandbox">
+  Nínú sandbox, fo ìgbésẹ̀ ojú ìwé tí a gbàlejò: `POST /v1/sandbox/payment-methods`
+  pẹ̀lú `behavior` kan (`success`, `requires_otp`, `decline_insufficient_funds`)
+  yóò fún ọ ní method kan tí ìyọrísí rẹ̀ ti dájú, kí o lè ṣe ìdánrawò ọ̀nà tí ó dára
+  àti èyí tí kò dára kí owó gidi tó wọlé.
+</Callout>
+
+## Bẹ̀rẹ̀ subscription náà
+
+Fi customer náà sí price náà pẹ̀lú method náà:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "customerId": "{customerId}",
+    "priceId": "{priceId}",
+    "paymentMethodId": "{paymentMethodId}",
+    "collectionMethod": "charge_automatically"
+  }'
+```
+
+`status` tí ó dá padà yóò sọ ibi tí cycle àkọ́kọ́ dé fún ọ:
+
+- **`active`**: a ti gba invoice àkọ́kọ́. O ti ń kówó.
+- **`trialing`**: price náà ní àkókò ìdánwò; kò tíì sí charge kankan.
+- **`past_due`**: charge àkọ́kọ́ kùnà; [dunning](/guides/dunning-and-recovery)
+  ló ni iṣẹ́ ìgbàpadà báyìí. Lórí balance tí kò lágbára, èyí sábà máa ń túmọ̀ sí "kò tíì ṣeé ṣe", kì í ṣe "kò ṣeé ṣe rárá".
+- **`incomplete`**: charge náà nílò kí customer ṣe nǹkan kan (ìgbésẹ̀ OTP card);
+  event `invoice.action_required` yóò gbé ọ̀nà ìjápọ̀ checkout tuntun wá.
+
+<Callout type="warning" title="Má ṣe rò pé charge àkọ́kọ́ yóò yege">
+  Ní Nàìjíríà, pull àkọ́kọ́ lè nílò OTP, tàbí kí ó bá balance tí kò lágbára pàdé. Ṣe
+  ìtọ́jú `past_due` àti `incomplete` láti ọjọ́ kìíní: pín ọ̀nà rẹ lórí webhook, kì í
+  ṣe lórí `201` nìkan. Èyí ni ìyàtọ̀ láàrin ohun ìṣeré àti ètò ìdíyelé gidi.
+</Callout>
+
+## Àṣàyàn: àkókò ìdánwò àti quantity
+
+- **`trialDays`** nínú ìpè ìṣẹ̀dá ń bẹ̀rẹ̀ àkókò ìdánwò kan, kódà bí price náà kò bá ní ọ̀kan.
+- **`quantity`** ń bí price orí ẹnì kọ̀ọ̀kan ní ìlọ́po.
+- **`Idempotency-Key`** jẹ́ kí ìṣẹ̀dá náà wà ní ààbò fún ìgbìyànjú léraléra: ìpè
+  tuntun pẹ̀lú key kan náà yóò dá subscription kan náà padà, kì í ṣe èkejì.
+
+## Lẹ́yìn tí ó ti bẹ̀rẹ̀ sí í ṣiṣẹ́
+
+<CardGroup cols={2}>
+  <Card title="Ṣàkóso àwọn webhook" href="/guides/handle-webhooks">
+    Gbogbo ìyípadà ipò ń tú event kan jáde. Gbà wọ́n, kí o sì ṣàyẹ̀wò wọn, kí balance
+    rẹ lè jẹ́ ọ̀kan tí ó tọ̀nà.
+  </Card>
+  <Card title="Yí payment method padà" href="/guides/refunds-payouts-settlement">
+    Pààrọ̀ card, tún rail tí ó kùnà gbìyànjú, tàbí gbé customer kan lọ sí direct debit.
+  </Card>
+</CardGroup>

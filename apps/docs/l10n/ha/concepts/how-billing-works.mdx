@@ -1,0 +1,87 @@
+---
+title: Yadda billing ke aiki
+description: "Cycle, invoice, tattara kuɗi, da injin matakai da ke ƙarƙashin subscription: siffar dukkan injin a shafi ɗaya."
+---
+
+Subscription shi ne customer da ke kan price, wanda ake caji a kan cycle mai maimaituwa.
+Duk abin da Nomba One ke yi yana hidimar madauwari guda ɗaya: **buɗe cycle, samar da
+invoice, tattara kuɗinsa, sannan a rubuta gaskiyar a cikin ledger**, sai a sake yin haka
+a lokaci na gaba.
+
+## Madauwarin
+
+Kowane cycle yana tafiya haka:
+
+1. **Cycle yana buɗewa.** A ranar billing, injin yana lissafa lokacin da adadin da ya
+   kamata a biya bisa price ɗin da subscription ke kai a yanzu (yana haɗa duk wani canji
+   da aka tsara, proration, ko trial da ya faɗo kan wannan iyakar).
+2. **Ana kammala invoice.** Layukan kayayyaki, rangwame, credit, da jimlar duka an kulle
+   su. Invoice mai adadin sifili yana daidaituwa ba tare da wani kiran rail ko kaɗan ba.
+3. **Ana gwada tattara kuɗi** ta rail ɗin payment method na subscription: ana janyo card
+   ko mandate; transfer kuwa yana nuna inda za a biya sannan ya jira. Sakamakon zai zama
+   ɗaya daga cikin waɗannan: **an biya**, **past due** (ainihin dalilin faɗuwa da za ka
+   rarraba aikinka a kai), ko **pending** (kuɗin na kan hanya: transfer, ko card da ke
+   buƙatar customer ya kammala OTP).
+4. **Ledger yana rubuta shi.** Ana shigar da kowane motsin kuɗi a matsayin ƙafafu biyu
+   masu daidaituwa. Invoice, shigarwarsa, da webhook ɗinsa duk suna raba reference guda
+   ɗaya na jamaʼa.
+5. **Lokacin yana ci gaba**, sannan a tsara cycle na gaba.
+
+<Callout type="note" title="Idempotent tun daga tushe">
+  Gaba ɗayan madauwarin idempotent ne a kan `(subscription, period)`. Ka sake gudanar da
+  shi, ka bar shi ya faɗi a tsakiya, ka sake gwadawa. Yana ƙarewa da invoice guda ɗaya
+  kacal kuma charge ɗaya a mafi yawa. Wannan shi ne mafi ƙarancin da ake buƙata: injin
+  billing da yake caji sau biyu lokaci-lokaci ba shi da wani amfani.
+</Callout>
+
+## Injin matakan subscription
+
+Subscription yana wucewa ta ƙananan matakai bayyanannu, kuma matakan da ba sa faranta rai
+ana kula da su da muhimmanci, ba wai an ƙara su daga baya ba:
+
+- **`trialing`**: trial na gudana; babu charge tukuna.
+- **`active`**: ana billing yadda ya kamata a kowane cycle.
+- **`past_due`**: charge ya faɗi; [dunning](/concepts/hard-parts/dunning-for-thin-balances)
+  ne ke jagorantar farfaɗowa.
+- **`paused`**: an dakatar da billing da gangan.
+- **`canceled`**: ya ƙare; babu sauran cycle.
+
+Canje-canjen da dole ka magance su (charge da ya faɗi, customer da ke buƙatar OTP,
+farfaɗowa, ko rasa customer) kowanne yana tayar da webhook event da za ka rarraba aikinka
+a kai. Ka rubuta handler ɗinka don `invoice.payment_failed`, `invoice.action_required`, da
+`invoice.payment_recovered`, ba wai `invoice.paid` kaɗai ba.
+
+Ka danna wani mataki don ganin abin da ke fitar da subscription daga cikinsa, da kuma
+webhook ɗin da ke tashi:
+
+<LifecycleStateMachine
+  resource="subscription"
+  states={[
+    { id: "trialing", label: "trialing", tone: "active", initial: true, description: "Trial na gudana; babu charge tukuna." },
+    { id: "active", label: "active", tone: "success", initial: true, description: "Ana billing yadda ya kamata a kowane cycle. Subscription mara trial yana farawa daga nan." },
+    { id: "past_due", label: "past_due", tone: "warning", description: "Charge ya faɗi; dunning ne ke jagorantar farfaɗowa. A kan balance mai ƙaranci wannan yana nufin ba yanzu ba, ba aʼa ba." },
+    { id: "paused", label: "paused", tone: "neutral", description: "An dakatar da billing da gangan." },
+    { id: "canceled", label: "canceled", tone: "danger", terminal: true, description: "Ya ƙare; babu sauran cycle." },
+  ]}
+  transitions={[
+    { from: "trialing", to: "active", trigger: "Trial ya ƙare kuma charge na farko ya yi nasara", webhook: "subscription.activated" },
+    { from: "trialing", to: "canceled", trigger: "An soke shi a lokacin trial", webhook: "subscription.canceled" },
+    { from: "active", to: "past_due", trigger: "Charge na wani cycle ya faɗi", webhook: "invoice.payment_failed" },
+    { from: "past_due", to: "active", trigger: "Sake gwadawa na dunning (ko OTP da aka kammala) ya dawo da charge", webhook: "invoice.payment_recovered" },
+    { from: "past_due", to: "canceled", trigger: "Dunning ya ƙare: rasa customer ba da son rai ba", webhook: "subscription.churned" },
+    { from: "active", to: "paused", trigger: "An dakatar da billing da gangan", webhook: "subscription.paused" },
+    { from: "paused", to: "active", trigger: "Billing ya ci gaba", webhook: "subscription.resumed" },
+    { from: "active", to: "canceled", trigger: "An soke shi da son rai", webhook: "subscription.canceled" },
+  ]}
+/>
+
+## Abin da ya sa wannan ke da wuya a nan
+
+Injinan billing daga wasu ƙasashe suna ɗauka cewa akwai card a ajiye kuma balance cike.
+Babu ɗayan waɗannan da yake gaskiya a Najeriya: kuɗi yana zuwa ta transfer, balance ɗin
+sun yi ƙaranci, kuma charge da ya faɗi galibi yana nufin *"ba yanzu ba,"* ba *"aʼa"* ba.
+Sauran waɗannan shafukan tushen ilimi suna magana ne a kan sassan da suka biyo bayan
+wannan gaskiyar: [ledger](/concepts/the-ledger),
+[kobo a matsayin cikakken lamba](/concepts/money-is-integer-kobo),
+[tura da janyo ta rail daban-daban](/concepts/multi-rail-push-and-pull), da
+[settlement](/concepts/settlement-and-sub-accounts).

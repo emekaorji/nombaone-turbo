@@ -1,0 +1,84 @@
+---
+title: Proration àti àwọn ìyípadà plan
+description: "Gbé sókè, sọ̀ kalẹ̀, tàbí yí interval padà láàárín cycle: ìpè kan ṣoṣo, pẹ̀lú proration tí a ṣírò gẹ́gẹ́ bí àwọn ẹsẹ̀ ledger tí ó dọ́gba, kí a lè gba owó ìyàtọ̀ gan-an lọ́wọ́ customer."
+section: guides
+order: 6
+---
+
+Kò sí customer tí yóò dúró sórí price kan ṣoṣo títí láé. Wọ́n máa ń gbé e sókè,
+wọ́n máa ń sọ̀ ọ́ kalẹ̀, wọ́n máa ń fi ìjókòó kún un, tàbí wọ́n máa ń yí padà láti
+oṣooṣù sí ọdọọdún — ó sì sábà máa ń ṣẹlẹ̀ **láàárín cycle**, nígbà tí wọ́n ti san
+owó apá kan àkókò náà tán. Ìyípadà plan yóò gbé subscription lọ sí price tuntun,
+yóò sì yanjú ìyàtọ̀ owó náà; nítorí pé
+[proration jẹ́ ìṣòro ledger](/concepts/hard-parts/proration-is-a-ledger-problem),
+a ó ṣírò rẹ̀ ní àwọn ẹsẹ̀ kobo tí ó dọ́gba, kì í ṣe àfojúsùn floating-point.
+
+## Yí price padà
+
+Fi subscription náà sí price mìíràn. Ìpè kan ṣoṣo ni yóò ṣe ìyípadà náà àti
+proration rẹ̀:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "priceId": "{newPriceId}", "prorationBehavior": "create_prorations" }'
+```
+
+Ẹ̀rọ náà yóò dá owó apá price àtijọ́ tí a kò lò padà, yóò sì gba owó apá price
+tuntun tí a ti lò, dé kobo gan-an. Nígbà **ìgbésókè**, customer yóò san ìyàtọ̀ náà
+lẹ́sẹ̀kẹsẹ̀; nígbà **ìsọ̀kalẹ̀**, credit náà yóò wọ inú invoice tí ó ń bọ̀.
+
+## Wòye rẹ̀ kí o tó pinnu
+
+Fi iye owó gangan tí ìyípadà kan yóò ná customer hàn án kí o tó ṣe é:
+
+```bash
+curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/upcoming-invoice \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+Invoice tí ó ń bọ̀ yóò fi àwọn ìlà proration hàn, kí ohunkóhun má bàa yà ẹnikẹ́ni
+lẹ́nu nígbà tí owó tí ó kàn bá dé.
+
+## Yí àwọn interval padà
+
+Yíyí padà láti oṣooṣù → ọdọọdún jẹ́ ìyípadà sí price tí `interval` rẹ̀ yàtọ̀ lórí
+plan kan náà. Ṣètò `intervalSwitch: true` kí ẹ̀rọ náà lè ṣàtúntò billing anchor bí
+ó ti yẹ:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "priceId": "{yearlyPriceId}", "intervalSwitch": true }'
+```
+
+## Ṣàkóso ìwà proration
+
+- **`create_prorations`**: ṣírò ìyàtọ̀ náà kí o sì lò ó (èyí ni ìpìlẹ̀ fún àwọn
+  ìgbésókè).
+- **`none`**: yí price padà láìsí proration kankan; iye tuntun yóò bẹ̀rẹ̀ sí í ṣiṣẹ́
+  láti cycle tí ó ń bọ̀.
+
+<Callout type="note" title="Ìyípadà iye náà ń prorate pẹ̀lú">
+  Fífi ìjókòó kún un tàbí yíyọ ìjókòó kúrò láàárín cycle jẹ́ ọ̀nà kan náà: fi
+  `quantity` ránṣẹ́ sí `change`, ìyàtọ̀ tí ó wà lórí ìjókòó kọ̀ọ̀kan yóò sì prorate
+  gẹ́lẹ́ bí ìyípadà price.
+</Callout>
+
+<Callout type="tip" title="Ṣètò ìyípadà fún ìsọdọ̀tun tí ó ń bọ̀">
+  Láti yẹra fún proration láàárín cycle pátápátá, ṣètò kí ìyípadà náà bẹ̀rẹ̀ ní ààlà
+  àkókò tí ó ń bọ̀ pẹ̀lú `POST /v1/subscriptions/{id}/schedule`. Customer yóò parí
+  àkókò tí ó ti san owó rẹ̀, yóò sì tún subscription rẹ̀ ṣe lórí price tuntun.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Ìdí tí proration fi jẹ́ ìṣòro ledger" href="/concepts/hard-parts/proration-is-a-ledger-problem">
+    Bí àwọn kobo tí kò pé ṣe ń yanjú ara wọn kí àwọn ẹsẹ̀ lè dọ́gba nígbà gbogbo.
+  </Card>
+  <Card title="Ṣẹ̀dá àwọn plan àti price" href="/guides/create-plans-and-prices">
+    Ṣàgbékalẹ̀ àwọn price tí customer máa ń yí padà láàárín wọn.
+  </Card>
+</CardGroup>

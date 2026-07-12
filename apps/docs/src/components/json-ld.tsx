@@ -1,8 +1,10 @@
+import { DEFAULT_LOCALE, LOCALE_TAGS, type Locale } from '@/lib/l10n/config';
+
 const SITE = 'https://docs.nombaone.xyz';
 const ORG = 'https://nombaone.xyz/#organization';
 
 /** Organization + WebSite structured data for the docs site. */
-export function JsonLd() {
+export function JsonLd({ locale = DEFAULT_LOCALE }: { locale?: Locale }) {
   const graph = [
     {
       '@type': 'Organization',
@@ -17,7 +19,7 @@ export function JsonLd() {
       name: 'Nomba One Docs',
       url: SITE,
       publisher: { '@id': ORG },
-      inLanguage: 'en',
+      inLanguage: LOCALE_TAGS[locale],
     },
   ];
   const json = { '@context': 'https://schema.org', '@graph': graph };

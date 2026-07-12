@@ -1,0 +1,55 @@
+---
+title: Owó jẹ́ odidi kobo
+description: Ìdí tí gbogbo iye owó nínú API fi jẹ́ odidi nọ́ḿbà ní kobo, bí ààlà náírà ṣe ń ṣiṣẹ́, àti bí a ṣe mú ìdẹkùn ìgbà-owó-lọ́pọ̀-100× kúrò.
+---
+
+Gbogbo iye owó nínú API Nomba One jẹ́ **odidi nọ́ḿbà ní kobo**. Kò sí float, kò sí ọ̀rọ̀
+dẹ́sìmà, kò sì sí àìdánilójú: `₦1 = 100 kobo`, nítorí náà `250000` jẹ́ ₦2,500.00.
+
+## Ìdí tí í ṣe kobo, àti ìdí tí í ṣe odidi nọ́ḿbà
+
+Owó tí a bá ń kà ní float jẹ́ àṣìṣe tí ó kàn ń dúró de àkókò rẹ̀: `0.1 + 0.2` kì í ṣe `0.3`,
+àwọn àṣìṣe ìyíká nọ́ḿbà sì ń kóra jọ ní gbogbo ìgbà ayé subscription kan. Odidi nọ́ḿbà ní
+ẹ̀ka kékeré owó jẹ́ kí ìṣirò péye kí ó sì ṣeé ṣàyẹ̀wò. [Ledger](/concepts/the-ledger) ń fi
+odidi kobo pamọ́, API ń sọ odidi kobo, àwọn méjèèjì kò sì lè ta ko ara wọn láé.
+
+## Gbogbo pápá owó ni ó ń sọ ẹ̀ka rẹ̀
+
+Kí ẹ̀ka náà má bàa ṣeé ṣì mọ̀ rárá, **orúkọ gbogbo pápá owó ni ó ń parí sí `InKobo`**:
+`amountInKobo`, `unitAmountInKobo`, `totalInKobo`, `amountDueInKobo`, àti bẹ́ẹ̀ bẹ́ẹ̀ lọ. Bí pápá
+kan bá gbé owó, orúkọ rẹ̀ ni yóò sọ ẹ̀ka fún ọ. Ìwọ kì yóò ní láti fojú díwọ̀n láé.
+
+```json
+// A ₦5,000/month price
+{
+  "unitAmountInKobo": 500000,
+  "currency": "NGN",
+  "interval": "month"
+}
+```
+
+## Ààlà náírà
+
+Ibí kan ṣoṣo nìyí tí ẹ̀ka ti ń yípadà, a sì ń bójú tó o kí ìwọ má bàa ní láti ṣe é. Ojú-ìwé
+checkout ti Nomba fúnra rẹ̀ ń ròyìn iye owó ní **náírà**, nígbà tí ẹ̀rọ wa àti ledger wa jẹ́
+odidi **kobo**. Bí àwọn méjèèjì bá dàrú lọ́wọ́ ara wọn, charge kan yóò yapa ní ìlọ́po 100.
+
+Nomba One ń ṣe ìyípadà **ní ààlà Nomba nìkan** (kobo → náírà ní ìjáde lọ sí Nomba, náírà →
+kobo ní ìpadàbọ̀), kò sì ṣe é níbòmíràn rárá. Nínú ìsopọ̀ tìrẹ, àti níbi gbogbo nínú API yìí,
+odidi kobo ni ó máa ń jẹ́ nígbà gbogbo.
+
+<Callout type="warning" title="Ìdẹkùn ìlọ́po 100×">
+  Bí o bá ṣírò iye owó ní náírà tí o sì fi ránṣẹ́ síbi tí a ti ń retí kobo, ìwọ yóò gba owó
+  ní ìlọ́po 100. Fi odidi kobo ránṣẹ́. `₦2,500` jẹ́ `250000`, kì í ṣe `2500`. Bí ọ̀rọ̀ bá dà ọ́
+  láàmú, di iye náírà náà ní ìlọ́po 100 kí o sì fi ìyẹn ránṣẹ́.
+</Callout>
+
+Gbìyànjú rẹ̀. Tẹ iye náírà kan sílẹ̀ kí o sì rí odidi kobo gangan tí o gbọ́dọ̀ fi ránṣẹ́:
+
+<MoneyUnit />
+
+## Ìyíká nọ́ḿbà
+
+Proration àti ẹ̀dínwó ìdá ọgọ́rùn-ún lè mú kobo tí kò péye jáde. Nomba One ń yanjú àwọn wọ̀nyí
+nínú ledger pẹ̀lú ètò tí a ti fìdí rẹ̀ múlẹ̀, tí a sì kọ sílẹ̀, kí àwọn ẹsẹ̀ náà lè bára mu ní
+kobo gangan. Wo [proration jẹ́ ìṣòro ledger](/concepts/hard-parts/proration-is-a-ledger-problem).

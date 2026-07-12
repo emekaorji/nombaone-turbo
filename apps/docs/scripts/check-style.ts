@@ -16,20 +16,75 @@ import path from "node:path";
 import matter from "gray-matter";
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
+const L10N_DIR = path.join(process.cwd(), "l10n");
 
 interface Rule {
   re: RegExp;
   message: string;
   level: "error" | "warn";
+  /** `en` = English prose only. `all` = every language. */
+  scope: "en" | "all";
 }
 
+/**
+ * WORD BOUNDARIES AND NON-ASCII TEXT — read before editing a rule.
+ *
+ * JS `\b` is defined against `IsWordChar` = `[A-Za-z0-9_]`, ASCII only. Every
+ * Yorùbá and Hausa diacritic is therefore a NON-word character, which means `\b`
+ * manufactures a word boundary in the middle of a word. Concretely:
+ *
+ *     /\bteh\b/.test("ọ̀tehìn")    → true      ← the build dies on correct Yorùbá
+ *     /\bkobos\b/i.test("kobosí")  → true
+ *
+ * Adding the `/u` flag does NOT fix this — `u` does not change `\b`'s ASCII
+ * `IsWordChar`. The fix is an explicit Unicode boundary: a lookaround asserting
+ * the neighbour is not a letter, a combining mark, or a digit in ANY script.
+ */
+const B0 = String.raw`(?<![\p{L}\p{M}\p{N}_])`;
+const B1 = String.raw`(?![\p{L}\p{M}\p{N}_])`;
+
 const RULES: Rule[] = [
-  { re: /\bkobos\b/gi, message: '"kobos" — kobo is invariant; write "kobo"', level: "error" },
-  { re: /\b(TODO|FIXME|XXX)\b/g, message: "leftover TODO/FIXME/XXX marker in published prose", level: "error" },
-  { re: /\[(click here|here|read more|link)\]\(/gi, message: 'non-descriptive link text (a11y) — name the destination', level: "error" },
-  { re: /\bteh\b/g, message: 'likely typo "teh"', level: "error" },
-  { re: /\brecieve\b/gi, message: 'likely typo "recieve" → "receive"', level: "error" },
-  { re: /\btenants?\b/gi, message: '"tenant" — prefer "organization" for API-surface language', level: "warn" },
+  // `kobo` is a do-not-translate term, invariant in every language — so this one
+  // is worth enforcing everywhere. With the Unicode boundary, `kobosí` no longer
+  // false-fires.
+  {
+    re: new RegExp(`${B0}kobos${B1}`, "giu"),
+    message: '"kobos" — kobo is invariant; write "kobo"',
+    level: "error",
+    scope: "all",
+  },
+  // Locale-neutral, and MORE valuable on translations than on English: it is how
+  // a half-finished machine-drafted page gets caught.
+  {
+    re: new RegExp(`${B0}(TODO|FIXME|XXX)${B1}`, "gu"),
+    message: "leftover TODO/FIXME/XXX marker in published prose",
+    level: "error",
+    scope: "all",
+  },
+  // The a11y intent is universal but the vocabulary is English, so on a Yorùbá
+  // page this is a no-op — `[tẹ ibí](…)` sails through. Scoping it to `en` states
+  // that gap rather than pretending to coverage we do not have.
+  {
+    re: /\[(click here|here|read more|link)\]\(/gi,
+    message: "non-descriptive link text (a11y) — name the destination",
+    level: "error",
+    scope: "en",
+  },
+  // English typos. A Yorùbá page has no business being linted for them, and with
+  // the ASCII `\b` they actively false-failed the deploy.
+  { re: new RegExp(`${B0}teh${B1}`, "gu"), message: 'likely typo "teh"', level: "error", scope: "en" },
+  {
+    re: new RegExp(`${B0}recieve${B1}`, "giu"),
+    message: 'likely typo "recieve" → "receive"',
+    level: "error",
+    scope: "en",
+  },
+  {
+    re: new RegExp(`${B0}tenants?${B1}`, "giu"),
+    message: '"tenant" — prefer "organization" for API-surface language',
+    level: "warn",
+    scope: "en",
+  },
 ];
 
 /** Strip fenced code blocks + inline code so rules only see prose. */
@@ -51,20 +106,41 @@ async function listMdx(dir: string): Promise<string[]> {
 }
 
 async function main() {
-  const files = await listMdx(CONTENT_DIR);
   const errors: string[] = [];
   const warnings: string[] = [];
+  let checked = 0;
 
-  for (const file of files) {
-    const rel = path.relative(CONTENT_DIR, file);
-    const { content } = matter(await fs.readFile(file, "utf8"));
-    const prose = proseOnly(content);
+  // English prose gets every rule. Translations get only the locale-neutral ones
+  // — `proseOnly()` (fences/inline-code/JSX stripped) is language-agnostic, so it
+  // is reused as-is for both.
+  const targets: { root: string; scope: "en" | "all" }[] = [
+    { root: CONTENT_DIR, scope: "en" },
+    { root: L10N_DIR, scope: "all" },
+  ];
 
-    for (const rule of RULES) {
-      const matches = prose.match(rule.re);
-      if (matches) {
-        const line = `${rel}: ${rule.message} (${matches.length}×)`;
-        (rule.level === "error" ? errors : warnings).push(line);
+  for (const target of targets) {
+    let files: string[];
+    try {
+      files = await listMdx(target.root);
+    } catch {
+      continue; // no translations yet — not an error
+    }
+
+    for (const file of files) {
+      checked += 1;
+      const rel = path.relative(process.cwd(), file);
+      const { content } = matter(await fs.readFile(file, "utf8"));
+      const prose = proseOnly(content);
+
+      for (const rule of RULES) {
+        // On a translation, run only the rules that mean something in any language.
+        if (target.scope === "all" && rule.scope === "en") continue;
+
+        const matches = prose.match(rule.re);
+        if (matches) {
+          const line = `${rel}: ${rule.message} (${matches.length}×)`;
+          (rule.level === "error" ? errors : warnings).push(line);
+        }
       }
     }
   }
@@ -81,7 +157,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`[check-style] OK — ${files.length} pages, prose clean${warnings.length ? ` (${warnings.length} warnings)` : ""}`);
+  console.log(`[check-style] OK — ${checked} pages, prose clean${warnings.length ? ` (${warnings.length} warnings)` : ""}`);
 }
 
 main().catch((err) => {

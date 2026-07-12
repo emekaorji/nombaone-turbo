@@ -1,0 +1,48 @@
+---
+title: Ledger ìkọsílẹ̀ ẹ̀ẹ̀méjì
+description: "Orísun òtítọ́ tí ó wà lábẹ́ gbogbo invoice, charge, refund, àti settlement: bí ìkọsílẹ̀ ẹ̀ẹ̀méjì ṣe ń jẹ́ kí owó jẹ́ èyí tí a lè fi ẹ̀rí hàn pé ó tọ̀nà."
+---
+
+Lábẹ́ gbogbo subscription, invoice, àti payout ni **ledger ìkọsílẹ̀ ẹ̀ẹ̀méjì** wà. Òun ni
+orísun òtítọ́: kì í ṣe ipò invoice, kì í ṣe balance tí a fi pamọ́ sínú cache, kì í ṣe webhook.
+Ledger náà. Gbogbo nọ́ḿbà mìíràn tí API bá dá padà, láti inú rẹ̀ ni ó ti wá.
+
+## Debit àti credit, kì í ṣe àmì
+
+Gbogbo ìṣíkiri owó ni a ń kọ sílẹ̀ gẹ́gẹ́ bí **transaction** tí a fi **legs** tí ó dọ́gba
+mọ. Gbogbo leg jẹ́ iye kobo odidi tí ó jẹ́ rere, pẹ̀lú **ìtọ́sọ́nà** (debit tàbí credit) sí
+**account** kan. Ìtọ́sọ́nà náà, kì í ṣe àmì àfikún tàbí àyọkúrò, ni ó gbé ìtumọ̀ náà. Transaction
+kan wúlò kìkì bí àwọn debit rẹ̀ bá dọ́gba pẹ̀lú àwọn credit rẹ̀: ìwé ìṣirò máa ń dọ́gba nígbà
+gbogbo, láti ìpìlẹ̀ ìṣẹ̀dá rẹ̀.
+
+Bí àpẹẹrẹ, invoice ₦5,000 tí a ti san yóò fi transaction `charge` sílẹ̀ tí ó ń debit owó tí
+ó wọlé, tí ó sì ń credit èrè tí ó jẹ́wọ́: gbogbo kobo ni a ṣírò fún, ní ìhà méjèèjì.
+
+## Ìdí tí èyí fi ṣe pàtàkì
+
+- **Kò sí ohun tí ń yẹ̀ ní ìdákẹ́jẹ́ẹ́.** Balance tí a fi pamọ́ sínú cache lè ṣìṣe; ledger tí
+  ó gbọ́dọ̀ dọ́gba kò lè fi kobo tí ó sọnù pamọ́. Láti inú ledger ni a ti ń ka àwọn balance, kì
+  í ṣe láti ibi tí a tọ́jú wọn sí lẹ́gbẹ̀ẹ́ rẹ̀.
+- **A lè ṣàyẹ̀wò gbogbo ìṣíkiri.** Refund, credit grant, settlement, payout: ọ̀kọ̀ọ̀kan wọn jẹ́
+  transaction tí o lè tọpasẹ̀, pẹ̀lú legs tí ó ń sọ ohun tí ó ṣí àti ibi tí ó lọ ní pàtó.
+- **Ìyípadà-sẹ́yìn jẹ́ ohun tí a kọ́ sínú ètò náà.** Refund kì í "pa" charge rẹ́ nípa yíyí i
+  padà; ó ń fi transaction tuntun tí ó dọ́gba, tí ó sì ń yí ìṣíkiri náà padà, sílẹ̀, kí ìtàn
+  náà lè wà ní pípé àti ní òtítọ́.
+
+<Callout type="note" title="Reference kan ṣoṣo ló so gbogbo rẹ̀ pọ̀">
+  Resource kan, àwọn ìkọsílẹ̀ ledger rẹ̀, àti àwọn webhook rẹ̀ gbogbo wọn ní reference gbangba kan náà (`nbo…`).
+  Bí o bá ní reference invoice kan, o lè rí charge rẹ̀, settlement rẹ̀, àti àwọn event rẹ̀: èrò
+  kan, orúkọ kan, [níbi gbogbo](/reference/glossary).
+</Callout>
+
+## Idempotency náà ń gbé níbí
+
+Nítorí pé ledger ni orísun òtítọ́, orí rẹ̀ ni a ti ń fi ipá mú idempotency ṣiṣẹ́: ìṣíkiri owó
+máa ń gba ipa rẹ̀ ní ẹ̀ẹ̀kan ṣoṣo tí a kò lè pín, nítorí náà ìbéèrè tí a tún gbìyànjú tàbí tí
+a tún fi ránṣẹ́ yóò yọrí sí ìkọsílẹ̀ ọ̀kan péré. Báyìí ni "[àtúngbìyànjú webhook kì í ṣe àtúngbìyànjú charge](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge)"
+ṣe ń jẹ́ òtítọ́: ẹ̀ẹ̀kan ṣoṣo ni ledger ń kọ ìṣíkiri náà sílẹ̀.
+
+Fi `Idempotency-Key` kan náà ránṣẹ́ lẹ́ẹ̀mejì, subscription kan ṣoṣo ni wàá gbà padà; yí kọ́kọ́rọ́
+náà padà, wàá sì rí tuntun kan. Gbìyànjú rẹ̀:
+
+<IdempotencyLab />

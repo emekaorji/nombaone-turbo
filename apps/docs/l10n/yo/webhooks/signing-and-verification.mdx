@@ -1,0 +1,98 @@
+---
+title: Ìfọwọ́sí àti ìjẹ́rìísí
+description: Gbogbo delivery ni a fọwọ́sí pẹ̀lú HMAC-SHA256 lórí àmì-àkókò àti raw body. Jẹ́rìísí kí o tó parse rẹ̀, ṣàfiwé ní àkókò dédé, kí o sì kọ àwọn àmì-àkókò tí ó ti pẹ́.
+section: webhooks
+order: 3
+---
+
+Má ṣe gbẹ́kẹ̀lé webhook tí o kò tíì jẹ́rìísí rí: URL náà wà ní gbangba, torí náà ẹnikẹ́ni
+lè `POST` sí i. Gbogbo delivery tòótọ́ ni ó ru header `X-Nombaone-Signature` tí o máa fi
+ṣàyẹ̀wò lòdì sí signing secret ti endpoint rẹ.
+
+## Àmì ìfọwọ́sí náà
+
+Header náà jẹ́ `t=<unix>,v1=<hex>`, níbi tí `v1` ti jẹ́:
+
+```
+HMAC_SHA256( `${t}.${rawBody}`, whsec )   // hex
+```
+
+`t` ni àmì-àkókò delivery náà, `rawBody` sì ni **àwọn bytes gangan** ti body ìbéèrè
+náà. Jẹ́rìísí nípa ṣíṣe àtúnṣírò `v1` kí o sì ṣàfiwé wọn.
+
+<Callout type="warning" title="Fọwọ́sí àwọn bytes gangan: má ṣe tún un serialize láé">
+  Ṣírò HMAC náà lórí body gẹ́gẹ́ bí o ṣe gbà á gan-an. `JSON.parse` tí `JSON.stringify`
+  tẹ̀lé e lè ṣàtúntò àwọn key kó sì yí àwọn bytes padà, nítorí náà àmì ìfọwọ́sí kò ní
+  bá a mu. Kó raw body náà sílẹ̀ kí framework kankan tó parse rẹ̀.
+</Callout>
+
+## Àpẹẹrẹ ìmúṣẹ
+
+<CodeGroup>
+  <Tab label="TypeScript">
+    ```ts
+    import { createHmac, timingSafeEqual } from "node:crypto";
+
+    export function verify(rawBody: string, header: string, secret: string) {
+      const parts = Object.fromEntries(header.split(",").map((kv) => kv.split("=")));
+      const { t, v1 } = parts;
+
+      // Reject stale deliveries (replay protection).
+      const age = Math.abs(Date.now() / 1000 - Number(t));
+      if (age > 300) throw new Error("timestamp too old");
+
+      const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+      const ok =
+        v1.length === expected.length &&
+        timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+      if (!ok) throw new Error("invalid signature");
+    }
+    ```
+  </Tab>
+  <Tab label="Python">
+    ```python
+    import hmac, hashlib, time
+
+    def verify(raw_body: bytes, header: str, secret: str) -> None:
+        parts = dict(kv.split("=") for kv in header.split(","))
+        t, v1 = parts["t"], parts["v1"]
+
+        if abs(time.time() - int(t)) > 300:
+            raise ValueError("timestamp too old")
+
+        expected = hmac.new(
+            secret.encode(), f"{t}.".encode() + raw_body, hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(v1, expected):
+            raise ValueError("invalid signature")
+    ```
+  </Tab>
+</CodeGroup>
+
+## Òfin méjì tí ó ṣe pàtàkì
+
+- **Ṣàfiwé ní àkókò dédé.** Lo `timingSafeEqual` / `compare_digest`, kì í ṣe `===`
+  láé. Àfiwé lásán máa ń tú àṣírí náà jáde ní byte kọ̀ọ̀kan lábẹ́ ìkọlù ìdíwọ̀n-àkókò.
+- **Kọ àwọn àmì-àkókò tí ó ti pẹ́.** Dì `t` mọ́ ìṣẹ́jú díẹ̀ kí delivery tí a kó lọ́wọ́ má
+  bàa ṣeé tún-lò lòdì sí ọ lọ́jọ́ iwájú.
+
+## Dán an wò nínú browser
+
+Lẹ̀ body, àmì-àkókò, àti secret kan mọ́ ọn, kí o sì wo bí àmì ìfọwọ́sí gangan ṣe ń ṣírò
+— ọ̀nà gidi náà — nínú browser rẹ pẹ̀lú Web Crypto:
+
+<WebhookVerifier />
+
+<Callout type="tip" title="Yí i padà láìsí ìdálẹ́kun iṣẹ́">
+  `POST /v1/webhooks/{id}/rotate-secret` yóò pèsè secret tuntun kí ó sì máa gba ti
+  àtijọ́ fún ìgbà díẹ̀, kí o baà lè yí i padà láìsọ àwọn delivery tí ó ṣì wà lọ́nà nù.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Ìdánilójú delivery" href="/webhooks/delivery-guarantee">
+    Ó kéré tán lẹ́ẹ̀kan: ìdí tí o fi ń dedupe lẹ́yìn tí o bá ti jẹ́rìísí.
+  </Card>
+  <Card title="Jẹ́rìísí wa nínú devtools rẹ" href="/getting-started/verify-in-your-devtools">
+    Ta event gidi kan tí a fọwọ́sí, kí o sì wò ó bí ó ṣe ń jẹ́rìísí.
+  </Card>
+</CardGroup>

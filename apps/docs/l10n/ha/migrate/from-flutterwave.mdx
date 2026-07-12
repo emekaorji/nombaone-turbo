@@ -1,0 +1,52 @@
+---
+title: Ƙaura daga Flutterwave
+description: Danganta rabuwar tx_ref / flw_ref da samfurin payment plan na Flutterwave da makamantansu a Nomba One — reference guda ɗaya, kobo cikakke.
+section: migrate
+order: 4
+---
+
+Idan ka taɓa haɗa Flutterwave, babban canjin da zai gamsar da kai shi ne:
+**reference guda ɗaya maimakon biyu**. Inda Flutterwave ke ba ka `tx_ref` da kai
+kake ƙirƙira da kuma `flw_ref` da shi yake ƙirƙira (sai ka riƙa daidaita su da
+juna), Nomba One yana ba kowane resource ID guda ɗaya na `nbo…` da ledger
+postings ɗinsa da webhooks ɗinsa duk suke amfani da shi.
+
+## Taswirar maʼanoni
+
+| Flutterwave | Nomba One | Lura |
+|---|---|---|
+| Payment Plan | [Plan](/reference/plans) + [Price](/reference/prices) | Adadin kuɗi da tsakanin lokaci suna zaune kan price. |
+| `tx_ref` (naka) + `flw_ref` (nasa) | reference `nbo…` guda ɗaya | ID guda ɗaya ga kowane resource, ko ina. Duba [ledger](/concepts/the-ledger). |
+| Subscriptions kan plan | [Subscriptions](/reference/subscriptions) | Tunani iri ɗaya, amma da tsarin rayuwa mai wadata. |
+| `amount` (naira, float) | `unitAmountInKobo` (kobo cikakke) | Babu float: `250000` = ₦2,500.00. |
+| Webhook `event` | [Katalogin events](/webhooks/event-catalog) | An bayyana nauʼinsu, an rubuta su, an kuma sa musu sa hannu. |
+
+## Abubuwa uku da suka canja
+
+- **Reference guda ɗaya.** Ka daina daidaita `tx_ref` da `flw_ref`. Da kowane ID
+  na `nbo…` za ka iya samun resource ɗin, ledger postings ɗinsa, da events
+  ɗinsa. Wannan yana kawar da dukan nauʼin kurakuran nan na “wane ID zan ajiye?”.
+- **Kobo cikakke, babu float.** Adadin kuɗin Flutterwave yana zuwa da naira,
+  kuma sau da yawa float ne. Nomba One kobo cikakke ne kullum. Duba
+  [kuɗi kobo cikakke ne](/concepts/money-is-integer-kobo) ka kuma yi hankali da
+  [tarkon 100×](/concepts/money-is-integer-kobo) saʼad da kake mayar da adadin kuɗi.
+- **Tabbatar da webhooks ta HMAC kan raw body.** Ka maye gurbin duban header na
+  `verif-hash` da [tsarin sa hannu](/webhooks/signing-and-verification):
+  HMAC-SHA256 kan `timestamp.rawBody`, sannan ka kwatanta da hanyar da lokacinta
+  ba ya sauyawa.
+
+<Callout type="tip" title="Bank transfer hanya ce ta gaske, ba mafita ta gefe ba">
+  Flutterwave yana ɗaukar transfer a matsayin charge na lokaci ɗaya da za ka
+  ɗinke cikin plan. A Nomba One kuwa transfer rail ne na gaskiya na subscription.
+  Injin yana nuna inda za a biya, yana kuma yin settlement da zarar kuɗin ya iso.
+  Duba [multi-rail: turawa da jawowa](/concepts/multi-rail-push-and-pull).
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Daga kowane processor" href="/migrate/generic">
+    Jagorar gudanar da tsarin biyu tare ba tare da tsayawa ba.
+  </Card>
+  <Card title="Subscription ɗinka na farko" href="/getting-started/your-first-subscription">
+    Gina irin wannan tsarin daga farko har ƙarshe.
+  </Card>
+</CardGroup>

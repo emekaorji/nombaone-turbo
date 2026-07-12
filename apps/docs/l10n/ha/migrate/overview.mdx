@@ -1,0 +1,58 @@
+---
+title: Matsa zuwa Nomba One
+description: Kana zuwa daga wani processor? Daidaita abin da ka riga ka sani da madaidaitan tsarin Nomba One masu tsafta, sannan ka matsa ba tare da tsayawar aiki ba ta hanyar tafiyar da su biyu tare.
+section: migrate
+order: 1
+---
+
+Idan ka riga kana karɓar kuɗin subscription a kan Paystack, Stripe, ko
+Flutterwave, ba za ka fara daga sifili ba: yawancin kaʼidoji suna daidaita kai
+tsaye, kuma waɗanda ba sa daidaita, galibi Nomba One ne ya cire wani tarko da ka
+koyi rayuwa da shi. Wannan sashe yana daidaita yadda kake tunani a yanzu da namu,
+kuma yana ba ka hanya mai aminci ta sauyawa ba tare da tsayawar aiki ba.
+
+## Zaɓi inda za ka fara
+
+<CardGroup cols={2}>
+  <Card title="Kana zuwa daga Paystack" href="/migrate/from-paystack">
+    Daidaita tarkunan subscription na Paystack da madaidaitan tsarinmu masu tsafta.
+  </Card>
+  <Card title="Kana zuwa daga Stripe Billing" href="/migrate/from-stripe">
+    Matsar da haɗin Stripe Billing, kaʼida bayan kaʼida.
+  </Card>
+  <Card title="Kana zuwa daga Flutterwave" href="/migrate/from-flutterwave">
+    Warware tx_ref / flw_ref zuwa ishara guda ɗaya.
+  </Card>
+  <Card title="Daga kowane processor" href="/migrate/generic">
+    Jagorar tafiyar da tsarin biyu tare ba tare da tsayawar aiki ba.
+  </Card>
+</CardGroup>
+
+## Abin da yake iri ɗaya a koʼina
+
+Duk inda kake fitowa, waɗannan suna daidaita a fili:
+
+- **Plan da price**: samfurin da adadin kuɗin da ake maimaitawa.
+- **Customer**: wanda kake karɓar kuɗi a wurinsa.
+- **Subscription**: customer a kan wani price, ana caji a kowane cycle.
+- **Webhook**: event ɗin da ke gaya wa server ɗinka abin da ya faru.
+
+## Abin da Nomba One ke yi daban (da gangan)
+
+- **Ishara guda ɗaya, a koʼina.** Wani resource, ledger postings ɗinsa, da webhook
+  ɗinsa duk suna raba id `nbo…` guda ɗaya, babu rikicewar `tx_ref` da `flw_ref` da
+  `id`. Duba [ledger](/concepts/the-ledger).
+- **Kobo a matsayin cikakken lamba, kullum.** Babu float, babu decimal string mai
+  shakku: kowane field na kuɗi yana ƙarewa da `InKobo`. Duba
+  [kuɗi cikakken kobo ne](/concepts/money-is-integer-kobo).
+- **Gaskiya game da sassa masu wahala.** Balance mara isashe, OTP na card, da rails
+  na push-vs-pull duk suna cikin manyan abubuwan da muka tsara, ba wasu ƙananan
+  matsalolin da za ka gano bayan ka shiga production ba. Duba
+  [kaʼidojin](/concepts/how-billing-works).
+
+<Callout type="tip" title="Matsa ba tare da sauyi kwatsam ba">
+  Ba lallai sai ka matsar da kowa a lokaci ɗaya ba.
+  [Jagorar tafiyar da tsarin biyu tare](/migrate/generic) tana barin tsohon
+  processor ɗinka yana aiki yayin da sabbin subscription ke farawa a Nomba One,
+  don kada komai ya lalace a tsakiyar ƙaura.
+</Callout>

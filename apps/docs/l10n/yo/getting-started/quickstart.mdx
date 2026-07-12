@@ -1,0 +1,83 @@
+---
+title: Quickstart
+description: Gba kọ́kọ́rọ́ àṣírí sandbox kí o sì ṣe ìpè àkọ́kọ́ tí a fọwọ́sí sí API nombaone.
+section: get-started
+---
+
+Ohun kan ṣoṣo ni o nílò láti pe API nombaone: kọ́kọ́rọ́ àṣírí fún organization
+rẹ. Ojú-ìwé yìí yóò mú ọ láti ibi òdo dé ìbéèrè àkọ́kọ́ tí a fọwọ́sí nínú sandbox
+mode.
+
+<Steps>
+  <Step title="Ṣẹ̀dá organization kí o sì gba kọ́kọ́rọ́ sandbox">
+    Forúkọsílẹ̀, a ó sì pèsè kọ́kọ́rọ́ àṣírí **sandbox** fún organization rẹ, èyí tí
+    ó rí bí `nbo_sandbox_…`. Kọ́kọ́rọ́ yìí wà lábẹ́ organization rẹ nìkan, a sì tì í
+    mọ́ sandbox mode: dátà sandbox nìkan ni ó lè fọwọ́ kàn. Fi í pamọ́ sí ìhà
+    server; má ṣe fi ránṣẹ́ sí browser tàbí ohun-èlò fóònù láé.
+  </Step>
+  <Step title="Fi ìbéèrè àkọ́kọ́ rẹ ránṣẹ́">
+    Fọwọ́sí ìwọlé pẹ̀lú header `Authorization: Bearer`. Gbogbo `POST` tí ó bá ń gbé
+    owó ń gba `Idempotency-Key` pẹ̀lú, kí ìgbìyànjú àtúnpè má bàa ṣiṣẹ́ lẹ́ẹ̀mejì.
+
+    ```bash
+    # Create an example (the worked money-path endpoint), ₦150.00 = 15000 kobo
+    curl -X POST https://sandbox.api.nombaone.xyz/v1/examples \
+      -H "Authorization: Bearer nbo_sandbox_…" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: 1c4e7a90-2b3d-4f56-8a9b-0c1d2e3f4a5b" \
+      -d '{ "kind": "standard", "amount": 15000 }'
+    ```
+  </Step>
+  <Step title="Ka ìdáhùn náà">
+    Àṣeyọrí máa ń dá àpò-ìdáhùn àfẹnusọ padà: `success`, `statusCode`, ohun-àmúlò
+    náà nínú `data`, àti `meta.requestId` tí o lè tọ́ka sí nígbà tí o bá ń béèrè
+    ìrànlọ́wọ́. `id` ohun-àmúlò náà ni **ìtọ́kasí** rẹ̀: id gbogbogbò tí kì í yípadà,
+    tí ó tún so àwọn ìfìwéránṣẹ́ ledger àti webhooks rẹ̀ pọ̀.
+
+    ```json
+    {
+      "success": true,
+      "statusCode": 201,
+      "data": {
+        "id": "nbo749201835566exa",
+        "kind": "standard",
+        "status": "pending",
+        "amount": 15000,
+        "currency": "NGN",
+        "mode": "sandbox",
+        "createdAt": "2026-06-29T10:14:52.004Z"
+      },
+      "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+    }
+    ```
+  </Step>
+</Steps>
+
+<Callout type="tip" title="Iye owó jẹ́ kobo ní òǹkà odidi">
+  `15000` túmọ̀ sí ₦150.00. API kì í lo floats tàbí ọ̀rọ̀ decimal fún owó láé.
+</Callout>
+
+## Yan stack rẹ
+
+Ọ̀nà pípé tí ó dúró fúnra rẹ̀ ni ọ̀kọ̀ọ̀kan wọn, tí yóò mú ọ dé `201` gidi ní èdè tirẹ.
+Kò sí ìdánilẹ́kọ̀ọ́ gígùn kan ṣoṣo nínú stack tí o kò lò.
+
+<QuickstartGrid />
+
+## Ní èdè tirẹ
+
+Ìpè àkọ́kọ́ kan náà (ṣíṣẹ̀dá plan) nínú cURL, Node, Python, Go, PHP, tàbí Ruby.
+Yan tab rẹ; a ó rántí rẹ̀ káàkiri àwọn ìwé àkọsílẹ̀ wọ̀nyí.
+
+<Snippet method="POST" path="/v1/plans" body={{ name: "Pro" }} idempotent />
+
+## Àwọn ìgbésẹ̀ tó kàn
+
+<CardGroup cols={2}>
+  <Card title="Ìfọwọ́sí ìwọlé" href="/getting-started/authentication">
+    Àwọn òfin kíkún fún kọ́kọ́rọ́ àṣírí ti organization kọ̀ọ̀kan.
+  </Card>
+  <Card title="Endpoint àpẹẹrẹ náà" href="/reference/examples">
+    Ìtọ́kasí kíkún: gbogbo pápá ìbéèrè àti ìdáhùn.
+  </Card>
+</CardGroup>

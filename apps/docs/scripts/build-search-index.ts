@@ -11,6 +11,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
+import GithubSlugger from "github-slugger";
 import matter from "gray-matter";
 
 import { MANIFEST, findNavItem, findSection } from "../content/manifest";
@@ -38,18 +39,12 @@ function fileToSlug(file: string): string {
   return rel === "index" ? "" : `/${rel}`;
 }
 
-/** github-slugger-compatible (matches rehype-slug + the content layer). */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-");
-}
-
 /**
  * Reduce MDX/markdown to readable plain text for full-text matching: drop code
  * fences, JSX tags, import/export lines, link syntax, and inline markers.
+ *
+ * NFC-normalized: the index and the query must agree on composition, or a
+ * search for `ṣíṣe` typed one way misses a record stored the other way.
  */
 function toPlainText(mdx: string): string {
   return mdx
@@ -62,7 +57,8 @@ function toPlainText(mdx: string): string {
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // links → text
     .replace(/[#>*_~|-]/g, " ")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    .normalize("NFC");
 }
 
 async function build() {
@@ -74,15 +70,21 @@ async function build() {
     const raw = await fs.readFile(file, "utf8");
     const { content, data } = matter(raw);
 
+    // One slugger per document — the same way `rehype-slug` mints the real DOM
+    // ids — so a repeated h2 gets `#request`, `#request-1` here too, and the
+    // search result actually lands on the heading it claims.
+    const slugger = new GithubSlugger();
+
     const navItem = findNavItem(slug);
     const section = findSection(slug);
     const sectionLabel =
       section?.title ?? (slug === "" ? "Home" : "Docs");
-    const title =
+    const title = (
       (typeof data.title === "string" ? data.title : undefined) ??
       navItem?.title ??
       slug ??
-      "Home";
+      "Home"
+    ).normalize("NFC");
     const description =
       typeof data.description === "string" ? data.description : "";
     const url = slug === "" ? "/" : slug;
@@ -105,12 +107,12 @@ async function build() {
 
     const flush = () => {
       if (currentHeading) {
-        const id = slugify(currentHeading);
+        const id = slugger.slug(currentHeading);
         docs.push({
           id: `${url}#${id}`,
           title,
           section: sectionLabel,
-          heading: currentHeading,
+          heading: currentHeading.normalize("NFC"),
           text: toPlainText(buffer.join("\n")).slice(0, 400),
           url: `${url === "/" ? "" : url}#${id}`,
         });

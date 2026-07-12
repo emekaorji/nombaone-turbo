@@ -1,0 +1,89 @@
+---
+title: Àwọn Àyíká
+description: "Ọ̀nà ọ̀tọ̀ọ̀tọ̀ méjì: àyíká ìṣàmúlò (development tàbí production) jẹ́ ti ohun èlò ìpìlẹ̀ wa, mode àkáǹtì (sandbox tàbí live) sì jẹ́ èyí tí àmì ìbẹ̀rẹ̀ kọ́kọ́rọ́ rẹ ń pinnu, ó sì ń pín dátà rẹ níyà."
+section: get-started
+---
+
+Ọ̀pọ̀ API ni wọ́n máa ń ta èrò méjì tí kò jọra pọ̀ mọ́ ìyípadà "test/live" kan
+ṣoṣo. nombaone pa wọ́n mọ́ ní ọ̀tọ̀ọ̀tọ̀, nítorí ìbéèrè ọ̀tọ̀ọ̀tọ̀ ni wọ́n ń dáhùn:
+
+- **Àyíká ìṣàmúlò**: *ibi tí* kóòdù náà ti ń ṣiṣẹ́. Ọ̀rọ̀ ohun èlò ìpìlẹ̀ wa ni.
+- **Mode àkáǹtì**: *dátà wo* ni ìbéèrè kan fọwọ́ kàn. Tìrẹ ni, kọ́kọ́rọ́ rẹ ló yàn án.
+
+| Ìlà | Àwọn iye | Ta ló ṣètò rẹ̀ | Ṣé o rí i? |
+|---|---|---|---|
+| Àyíká ìṣàmúlò | `development` · `production` | Ohun èlò ìpìlẹ̀ wa (`INFRA_ENVIRONMENT`) | Bẹ́ẹ̀ kọ́, tiwa ni |
+| Mode àkáǹtì | `sandbox` · `live` | Àmì ìbẹ̀rẹ̀ API key rẹ | Bẹ́ẹ̀ ni, ìwọ ló yan kọ́kọ́rọ́ náà |
+
+## Mode àkáǹtì ni èyí tí o ń yàn
+
+Mode **ń wá láti inú àmì ìbẹ̀rẹ̀ kọ́kọ́rọ́ àṣírí rẹ**, a sì ń ṣàyẹ̀wò rẹ̀ lórí
+gbogbo ìbéèrè. O kì í fi mode ránṣẹ́ gẹ́gẹ́ bí parameter rárá:
+
+- `nbo_sandbox_…` → mode **sandbox**. Dátà tí a yà sọ́tọ̀, kò sí owó gidi. Ó ṣe é
+  ṣàdánwò láìséwu.
+- `nbo_live_…` → mode **live**. Organization gidi, ìṣíkiri owó gidi.
+
+A ya àwọn méjèèjì sọ́tọ̀ pátápátá (dátà ọ̀tọ̀ọ̀tọ̀, balance ọ̀tọ̀ọ̀tọ̀, webhook
+endpoint ọ̀tọ̀ọ̀tọ̀), nítorí náà o lè ní kọ́kọ́rọ́ méjèèjì lẹ́ẹ̀kan náà, ìbéèrè
+kan kò sì lè rékọjá láti mode kan sí èkejì láé.
+
+```bash
+# Sandbox: isolated data, no real money
+curl https://sandbox.api.nombaone.xyz/v1/examples \
+  -H "Authorization: Bearer nbo_sandbox_…"
+
+# Live: real money movement
+curl https://api.nombaone.xyz/v1/examples \
+  -H "Authorization: Bearer nbo_live_…"
+```
+
+<Callout type="note" title="Àwọn resource ń gbé mode wọn dání">
+  Gbogbo resource tí API bá dá padà máa ń gbé mode tí ó jẹ́ tirẹ̀ dání, nítorí
+  náà o lè mọ̀ dájú nígbà gbogbo apá tí àkọsílẹ̀ kan wà.
+</Callout>
+
+## Àyíká ìṣàmúlò jẹ́ ọ̀rọ̀ ohun èlò ìpìlẹ̀
+
+Àyíká ìṣàmúlò ni *ibi tí* nombaone fúnra rẹ̀ ti ń ṣiṣẹ́, kì í sì í ṣe nǹkan tí
+ìwọ ń ṣètò:
+
+- **`development`** jẹ́ ti agbègbè ilé nìkan: ẹ̀rọ tí ẹnjinnia kan fi ń ṣiṣẹ́ náà.
+- **`production`** ni ìṣàmúlò kan ṣoṣo tí a gbé sórí ayélujára tí ń sìn gbogbo oníṣòwò.
+
+Ìṣàmúlò production kan ń sìn **mode méjèèjì lẹ́ẹ̀kan náà**. Kọ́kọ́rọ́ tí ó wà lórí
+ìbéèrè kọ̀ọ̀kan ni mode ti ń wá, kì í ṣe ìṣàmúlò ọ̀tọ̀. Kò sí "sandbox server" àti
+"live server" tí wàá tọ́ka sí. Kọ́kọ́rọ́ `sandbox` ń ṣiṣẹ́ níbi gbogbo; kọ́kọ́rọ́
+`live` ń ṣiṣẹ́ lórí ìṣàmúlò production nìkan.
+
+<Callout type="warning" title="Live nílò production">
+  Owó gidi kì í rìn àyàfi lórí ìṣàmúlò `production`. A ó kọ kọ́kọ́rọ́ `live`
+  sílẹ̀ ní ibòmíràn, nítorí náà o kò lè fi àṣìṣe gbé owó jáde láti ẹ̀rọ dev ilé.
+</Callout>
+
+## Ṣíṣiṣẹ́ láàrin àwọn mode
+
+Ìsopọ̀ tí ó mọ́ máa ń pa mode méjèèjì mọ́ ní ọ̀tọ̀ọ̀tọ̀ pátápátá:
+
+- **Ìṣètò**: mú kọ́kọ́rọ́ náà wá láti inú environment variable
+  (`NOMBAONE_API_KEY`) kí kóòdù kan náà lè ṣiṣẹ́ pẹ̀lú sandbox nínú staging àti
+  live nínú production láìsí ìyípadà kóòdù kankan.
+- **Dátà**: àwọn reference sandbox àti àwọn reference live yàtọ̀ pátápátá; id tí
+  a dá nínú sandbox kò ní í ṣiṣẹ́ láé nínú live.
+- **Webhooks**: forúkọ endpoint sílẹ̀ fún mode kọ̀ọ̀kan. A ó fi event sandbox
+  ránṣẹ́ sí endpoint sandbox rẹ nìkan.
+
+<Callout type="tip" title="Gbé e lọ sí live pẹ̀lú ìmọ̀ọ́mọ̀">
+  Kọ́ ọ, kí o sì ṣàyẹ̀wò rẹ̀ nínú sandbox, lẹ́yìn náà pààrọ̀ kọ́kọ́rọ́ náà sí
+  `nbo_live_` láti bẹ̀rẹ̀ live. Tún ṣe àwọn àyẹ̀wò end-to-end rẹ lẹ́yìn ìpààrọ̀
+  náà: live ní dátà tirẹ̀, balance tirẹ̀, ó sì ń gbé owó gidi kiri.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Ìjẹ́rìí ìdánimọ̀" href="/getting-started/authentication">
+    Bí àmì ìbẹ̀rẹ̀ kọ́kọ́rọ́ ṣe ń pinnu mode, àti bí o ṣe lè pa á mọ́ láìséwu.
+  </Card>
+  <Card title="Bíbẹ̀rẹ̀ live" href="/guides/going-live">
+    Àtòjọ àyẹ̀wò láti kúrò ní kọ́kọ́rọ́ sandbox lọ sí owó gidi.
+  </Card>
+</CardGroup>

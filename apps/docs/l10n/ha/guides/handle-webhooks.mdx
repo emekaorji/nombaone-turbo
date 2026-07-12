@@ -1,0 +1,116 @@
+---
+title: Sarrafa webhooks
+description: "Karɓi event, tabbatar da signature, cire kwafi bisa event id, sannan ka ɗauki mataki: tsarin matakai huɗu da ke kiyaye balance guda daidai, ko sau nawa event ya iso."
+section: guides
+order: 3
+---
+
+Webhooks su ne hanyar da nombaone ke gaya wa server ɗinka abin da ya faru: an biya
+invoice, charge ya faɗi, card yana buƙatar OTP, wani transfer ya iso. Sarrafa su
+yadda ya kamata matakai huɗu ne (**karɓa, tabbatarwa, cire kwafi, ɗaukar mataki**),
+kuma kuskure a ɗaya daga cikinsu shi ne dalilin da balance ke karkacewa. Wannan
+jagorar ita ce tsarin; domin ka fara ganin event suna sauka a cikin log ɗinka, ka
+je [ka tabbatar da mu a cikin devtools ɗinka](/getting-started/verify-in-your-devtools).
+
+## 1 · Yi rajistar endpoint
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/nomba",
+    "enabledEvents": ["invoice.paid", "invoice.payment_failed", "invoice.action_required"]
+  }'
+```
+
+Amsar tana dawo da **signing secret** (`whsec_…`), wanda ake nunawa sau ɗaya kacal.
+Ka ajiye shi a gefen server. Ka yi rajistar endpoint ga kowane mode: event na
+sandbox yana kaiwa endpoint ɗin sandbox ɗinka kaɗai.
+
+## 2 · Tabbatar da signature: a kan raw body
+
+Kowane delivery yana ɗauke da signature a kan `` `${timestamp}.${rawBody}` ``. Ka
+tabbatar **kafin ka yi parse**: ka lissafa HMAC a kan ainihin bytes ɗin da ka
+karɓa, sannan ka kwatanta a lokaci mai daidaituwa.
+
+```ts
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+export function verifyWebhook(rawBody: string, header: string, secret: string) {
+  const { t, v1 } = parseHeader(header); // "t=…,v1=…"
+  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+  const ok =
+    v1.length === expected.length &&
+    timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+  if (!ok) throw new Error("invalid signature");
+}
+```
+
+<Callout type="warning" title="Kada ka sake serialize kafin ka tabbatar">
+  Ka karanta raw body ɗin request ɗin, ka kuma yi HMAC a kan ainihin waɗannan bytes.
+  `JSON.parse` sannan `JSON.stringify` na iya sauya tsarin keys, wanda ke canza
+  bytes har signature ɗin ba zai sake dacewa ba. Frameworks da ke parse body ta
+  atomatik za su lalata tabbatarwar. Ka fara ɗaukar raw body tukuna.
+</Callout>
+
+## 3 · Cire kwafi bisa event id
+
+Delivery yana faruwa **aƙalla sau ɗaya**: event guda yana iya iso fiye da sau ɗaya
+(sake gwadawa, ko wata matsala a network). Ka rubuta kowane `event.id` da ka riga
+ka sarrafa, ka kuma tsallake waɗanda suka maimaitu. Dole handler ɗin ya zama
+idempotent, saboda [sake gwada webhook ba shi ne sake gwada charge ba](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge):
+amsa sau biyu ga `invoice.paid` guda bai kamata ya ƙara kuɗi a balance sau biyu ba.
+
+```ts
+if (await seen(event.id)) return respond(200); // already handled
+await markSeen(event.id);
+```
+
+## 4 · Ka amsa da sauri, ka yi aiki a async
+
+Ka dawo da `2xx` nan take, sannan ka yi aikin. Handler mai jinkiri ana ɗauka a
+matsayin kasawa, a kuma sake gwada shi — hakan ba shi da laifi (kana cire kwafi),
+amma amsa da sauri yana hana taruwar aiki.
+
+```ts
+export async function POST(req: Request) {
+  const raw = await req.text();
+  verifyWebhook(raw, req.headers.get("x-nomba-signature")!, SECRET);
+  const event = JSON.parse(raw);
+  if (await seen(event.id)) return new Response(null, { status: 200 });
+  await markSeen(event.id);
+  await enqueue(event);              // do the real work off the request path
+  return new Response(null, { status: 200 });
+}
+```
+
+## Event ɗin da suka fi muhimmanci
+
+Ka sarrafa hanyoyin da ba su da daɗi, ba `invoice.paid` kaɗai ba:
+
+- **`invoice.paid`**: an tara kuɗin cycle. Ka ba da damar shiga, ka tsawaita lokacin.
+- **`invoice.payment_failed`**: charge ya faɗi; subscription ɗin yana `past_due`,
+  [dunning](/guides/dunning-and-recovery) kuma yana ci gaba da sake gwadawa. Kada
+  ka soke damar shiga tukuna: a kan balance mai ƙarancin kuɗi, maʼanar wannan ita
+  ce “ba yanzu ba.”
+- **`invoice.action_required`**: card yana buƙatar OTP; payload ɗin yana ɗauke da
+  sabon checkout link da za ka aika wa customer.
+- **`invoice.payment_recovered`**: dunning (ko kuma customer ɗin da ya kammala OTP)
+  ya yi nasara; ka mayar da yanayin yadda yake a kullum.
+
+<Callout type="tip" title="Ka rasa ɗaya? Sake ɗauko shi, kada ka yi zato">
+  Idan endpoint ɗinka ya faɗi, kada ka sake gina yanayin daga webhooks ɗin da ka
+  rasa. Ka karanta resource ɗin (`GET /v1/subscriptions/{id}`) ko ka sake buga wani
+  delivery (`POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`). API ce tushen
+  gaskiya; webhooks sanarwa ne, ba ledger ba.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Jerin event" href="/webhooks/event-catalog">
+    Kowane irin event, lokacin da yake tashi, da payload ɗinsa.
+  </Card>
+  <Card title="Dunning da farfaɗowa" href="/guides/dunning-and-recovery">
+    Abin da ke faruwa tsakanin payment_failed da payment_recovered.
+  </Card>
+</CardGroup>

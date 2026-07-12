@@ -1,0 +1,112 @@
+---
+title: Ƙirƙirar plan da price
+description: "Tsara farashinka: plan yana riƙe da samfurin, price yana riƙe da kuɗin. Saita interval, trial, da price da yawa a kan plan guda."
+section: guides
+order: 1
+---
+
+Farashi a nombaone abubuwa biyu ne: **plan** shi ne samfurin da customer ke yin
+subscription a kansa, **price** kuwa shi ne nawa da sau nawa. Raba su biyu yana
+nufin plan guda (misali, "Pro") na iya ɗaukar price na wata-wata da na
+shekara-shekara a lokaci guda, customer kuma zai iya sauyawa tsakaninsu ba tare
+da ka sake tsara samfurin ba.
+
+## Ƙirƙirar plan
+
+Plan yana buƙatar suna kawai. Bayani da metadata na zaɓi ne.
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "name": "Pro",
+    "description": "Everything in the Pro tier",
+    "prices": [
+      { "unitAmountInKobo": 500000, "interval": "month" },
+      { "unitAmountInKobo": 5000000, "interval": "year" }
+    ]
+  }'
+```
+
+`data.id` shi ne ishara ta plan ɗin: a kansa kake tura price.
+
+## Ƙara price
+
+Price yana saita adadin kuɗi (**kobo cikakke**) da `interval` na biyan kuɗi. Ka
+tura shi ƙarƙashin plan ɗin:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "unitAmountInKobo": 250000,
+    "interval": "month",
+    "intervalCount": 1
+  }'
+```
+
+`250000` shi ne ₦2,500.00.
+
+Zagayen biya shi ne **maʼaunin lokaci ninki adadi**. `interval` yana ɗaya daga
+cikin `minute`, `day`, `week`, `month` ko `year`; `intervalCount` kuma yana ninka
+shi. Don haka `interval: "month"` tare da `intervalCount: 3` yana biya duk wata
+uku, `interval: "minute"` tare da `intervalCount: 10` kuma yana biya duk minti
+goma. Babu `quarterly` ko `ten_minutely` na daban — adadin ya riga ya rufe duk
+ninkin maʼaunin da muke da shi.
+
+<Callout type="warning" title="Kuɗi kobo ne cikakke">
+  Duk filin kuɗi yana ƙarewa da `InKobo`. Ka tura `250000` don ₦2,500, kada ka
+  taɓa tura `2500`. Wannan ita ce [tarkon ninki 100](/concepts/money-is-integer-kobo).
+</Callout>
+
+<Callout type="note" title="Zagaye da bai kai yini ba yana biya bisa agogo">
+  `day`, `week`, `month` da `year` zagayen **kalanda** ne: iyaka tana faɗuwa a kan
+  ranar kalanda da ƙarfe 02:00 (Africa/Lagos), wata da shekara kuma suna daidaita
+  ƙarshen wata da ranar anchor ɗinka — anchor na Jan-31 zai yi biya a Feb-28,
+  sannan Mar-31. `minute` kuwa zagaye ne na **agogo kai tsaye**: yana biya daidai
+  gwargwadon lokacin da subscription ɗin ya fara aiki, don haka subscription na
+  minti goma da aka fara da ƙarfe 14:37 zai sabunta da 14:47. Ya fi amfani wajen
+  kallon zagayen sabuntawa na gaske yana gudana cikin lokacin da kake da shi,
+  maimakon [tura agogo gaba](/sandbox-toolkit/clock) da hannu — amma zagaye ne na
+  gaske, kuma yana aiki a sandbox da live duka.
+</Callout>
+
+## Ƙara trial
+
+Ka saita `trialPeriodDays` a kan price. Subscription da aka fara da shi yana shiga
+`trialing`: babu charge sai trial ɗin ya ƙare, sannan a karɓi invoice na farko.
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "unitAmountInKobo": 250000, "interval": "month", "trialPeriodDays": 14 }'
+```
+
+## Price da yawa a kan plan guda
+
+Ka ƙirƙiri price gwargwadon yadda kake sayar da plan ɗin: na wata-wata da na
+shekara-shekara, matakan NGN, farashin tallatawa. Subscription yana nuni ga
+**price**, ba plan ba, don haka mayar da customer daga wata-wata zuwa
+shekara-shekara [canjin plan](/guides/proration-and-plan-changes) ne zuwa wani
+price daban a kan plan ɗin guda, mu kuma za mu kula da proration.
+
+## Adanawa
+
+Ana adana plan (`POST /v1/plans/{id}/archive`) ana kuma kashe price
+(`POST /v1/prices/{id}/deactivate`) domin ka daina karɓar sabbin subscription a
+kansu ba tare da taɓa waɗanda tuni suke biya ba. Subscription ɗin da suke nan za
+su riƙe price ɗinsu; adanawa yana hana sabon amfani ne kawai.
+
+<CardGroup cols={2}>
+  <Card title="Fara subscription" href="/guides/start-a-subscription">
+    Sa customer a kan price, ta kowane rail.
+  </Card>
+  <Card title="Proration da canjin plan" href="/guides/proration-and-plan-changes">
+    Matsar da customer tsakanin price a tsakiyar cycle, yadda ya dace.
+  </Card>
+</CardGroup>

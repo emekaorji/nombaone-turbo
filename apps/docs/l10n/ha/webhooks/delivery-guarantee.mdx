@@ -1,0 +1,65 @@
+---
+title: Tabbacin delivery
+description: Delivery aƙalla sau ɗaya ce, ba daidai sau ɗaya kacal ba. Event guda na iya iso sau biyu. Ka tace kwafi bisa event id, ka mai da kowane handler idempotent.
+section: webhooks
+order: 4
+---
+
+nombaone yana tabbatar da delivery **aƙalla sau ɗaya** (at-least-once), kuma yana
+faɗin haka a kan kowace delivery cikin header `X-Nombaone-Delivery-Guarantee`. Zaɓi
+ne da muka yi da gangan kuma cikin gaskiya: delivery na daidai sau ɗaya kacal a kan
+hanyar sadarwa marar tabbas ba abu ne mai yiwuwa ba, kuma duk API da ke iƙirarin
+hakan ƙarya yake yi. Abin da muke ba ka a maimakon haka shi ne tabbaci da za ka iya
+gina aiki a kansa, tare da kayan aiki guda ɗaya da ke sa ya zama mai aminci: event
+id tsayayye da za ka tace kwafi da shi.
+
+## Maʼanar aƙalla sau ɗaya a gare ka
+
+Event guda **na iya** iso fiye da sau ɗaya: retry bayan amsa mai jinkiri, matsalar
+hanyar sadarwa, ko sake aikawa. Dole handler ɗinka ya ɗauki maimaici a matsayin abin
+da ba ya yin komai.
+
+<Callout type="warning" title="Ka tace kwafi bisa event id, bayan tantancewa">
+  Ka adana kowane `event.id` da ka riga ka sarrafa, ka kuma tsallake maimaici. Ka yi
+  wannan **bayan** tantance signature, don kada body da ba a tantance ba ya taɓa
+  gurɓata ajiyar dedupe ɗinka.
+</Callout>
+
+```ts
+if (await seen(event.id)) return respond(200); // already handled, no-op
+await markSeen(event.id);
+await handle(event);
+```
+
+## Dalilin da ya sa idempotency dole ta kai har ƙasa
+
+Tace kwafi a gefe kaɗai bai isa ba: aikin da handler ɗin ke jawowa shi kansa dole ya
+zama idempotent, saboda
+[retry na webhook ba retry na charge ba ne](/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge).
+Idan kwafin `invoice.paid` ya kuɓuce, ƙara kuɗi cikin balance sau biyu babbar matsala
+ce ta gaske. [Ledger](/concepts/the-ledger) yana tilasta wannan tun daga ƙasa: ana
+neman motsin kuɗi sau ɗaya kacal, don haka ko da an sarrafa event sau biyu, posting
+guda ɗaya ne kawai zai fito.
+
+## Retry da tsari
+
+- **Retry.** Delivery da ba ta samu `2xx` a kan lokaci ba, ana sake gwada ta bisa
+  jadawalin backoff. Ka mayar da `2xx` da sauri, ka yi aikin a async don kada handler
+  mai jinkiri ya jawo retry da ba lallai ba ne.
+- **Ba a tabbatar da tsari ba.** Event na iya iso ba bisa jeri ba. Kada ka ɗauka cewa
+  `invoice.paid` zai iso kafin `subscription.activated`. Ka duba resource ɗin kai
+  tsaye (`GET`) idan tsari yana da muhimmanci, maimakon ka yanke yanayin daga jerin
+  event.
+- **Replay.** Za ka iya sake neman delivery da ta wuce da
+  `POST /v1/webhooks/{id}/deliveries/{deliveryId}/replay`: event id ɗin guda ne, don
+  haka dedupe ɗinka zai ɗauke ta a matsayin wadda aka riga aka gani, kamar yadda ya
+  kamata.
+
+<CardGroup cols={2}>
+  <Card title="Sarrafa webhook" href="/guides/handle-webhooks">
+    Cikakken tsarin: karɓa → tantancewa → dedupe → aiwatarwa.
+  </Card>
+  <Card title="Retry ≠ sake charge" href="/concepts/hard-parts/retry-the-webhook-is-not-retry-the-charge">
+    Dalilin da ya sa idempotency ke zama a cikin ledger, ba a gefe kaɗai ba.
+  </Card>
+</CardGroup>

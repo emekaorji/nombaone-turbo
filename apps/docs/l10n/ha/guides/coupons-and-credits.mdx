@@ -1,0 +1,104 @@
+---
+title: Coupon da credit
+description: "Hanyoyi biyu na rage abin da customer ke biya: coupon yana rage invoice da kashi ko da adadin da aka kayyade, credit grant kuwa balance ne da ake fara cirewa kafin kowane charge."
+section: guides
+order: 7
+---
+
+Akwai kayan aiki biyu daban-daban da za ka rage abin da customer ke biya, kuma
+suna aiki ta hanyoyi mabambanta a kan invoice. **Coupon** doka ce ta rangwame
+(kashi ko adadin da aka kayyade) da kake haɗawa da customer ko da subscription.
+**Credit** kuwa balance ne da aka ajiye wanda ake cirewa kafin a yi kowane
+charge. Duk biyun suna shiga [ledger](/concepts/the-ledger) a matsayin layuka
+bayyanannu, don haka invoice kullum yana nuna daidai dalilin da ya sa jimillar ta
+kai haka.
+
+## Ƙirƙiri coupon
+
+Coupon yana da `code`, adadin rangwame (kashi **ko** adadin kobo da aka kayyade),
+da kuma `duration` da ke sarrafa tsawon lokacin da zai yi aiki:
+
+```bash
+# 20% off for the first 3 cycles
+curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "code": "LAUNCH20", "percentOff": 20, "duration": "repeating", "durationInCycles": 3 }'
+```
+
+```bash
+# ₦500 off, once
+curl -X POST https://sandbox.api.nombaone.xyz/v1/coupons \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "code": "SAVE500", "amountOffInKobo": 50000, "duration": "once" }'
+```
+
+`duration` na iya zama `once` (invoice na gaba kaɗai), `repeating` (na tsawon
+cycle nawa da `durationInCycles` ya faɗa), ko kuma `forever`. Idan kana so, za ka
+iya sanya iyaka da `maxRedemptions` da `redeemBy`.
+
+## Yi amfani da coupon
+
+Haɗa shi da customer gaba ɗaya ko kuma da subscription guda:
+
+```bash
+# To a subscription
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/discount \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "coupon": "LAUNCH20" }'
+```
+
+```bash
+# To a customer (applies to all their subscriptions)
+curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/discount \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "coupon": "LAUNCH20" }'
+```
+
+`DELETE` a kan hanya ɗaya yana cire rangwamen.
+
+## Bayar da credit
+
+Credit kuɗi ne da ke cikin account ɗin customer wanda ake cirewa kafin a yi
+kowane charge; yana da amfani ga refund da kake son a bar shi a matsayin credit,
+ga nuna kirki, ko kuma ga balance da aka riga aka biya:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/customers/{id}/credit \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "amountInKobo": 100000, "source": "goodwill" }'
+```
+
+<Callout type="note" title="Ana fara cire credit da ya fi tsufa">
+  Lokacin da ake karɓar kuɗin invoice, ana fara amfani da credit ɗin da yake nan
+  kafin a yi charge a kan rail, tun daga credit grant ɗin da ya fi tsufa. Invoice
+  yana nuna layin credit da adadin da aka karɓa a zahiri bayan rangwame — kowane
+  kobo an lissafa shi a cikin ledger.
+</Callout>
+
+## Coupon ko credit: wanne za ka yi amfani da shi
+
+- **Coupon**: *doka* ce da ke rage farashi (talla, ko mataki mai rangwame). Ana
+  sake lissafa shi a kowane cycle a duk tsawon lokacin da aka ba shi.
+- **Credit**: *balance* ne da ake kashewa sau ɗaya, sannan ya ƙare. Yi amfani da
+  shi ga refund da kake son ya ci gaba da kasancewa a dandalinka, ko kuma ga
+  kuɗin da aka riga aka saka a account.
+
+<Callout type="tip" title="Suna bin juna a tsarin da aka kayyade">
+  A kan invoice guda, credit da coupon duk suna aiki: rangwamen yana rage adadin
+  da ya kamata a biya, sannan credit ya cire sauran. Tsarin ya tabbata kuma ana
+  nuna shi a kan invoice, don haka sakamakon ba ya taɓa zama mai shakku.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Ledger" href="/concepts/the-ledger">
+    Yadda rangwame da credit ke shiga a matsayin layuka masu tantancewa.
+  </Card>
+  <Card title="Fara subscription" href="/guides/start-a-subscription">
+    Inda subscription mai rangwame ke farawa.
+  </Card>
+</CardGroup>

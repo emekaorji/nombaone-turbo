@@ -1,22 +1,17 @@
 ---
 title: "Payment methods"
 type: reference
-summary: "Cards, mandates, and virtual accounts: set up an instrument, mint a virtual account, list, delete, and set the default. Generated from the live schema."
+summary: "Payment methods — every operation on the resource."
 canonical: https://docs.nombaone.xyz/reference/payment-methods
 ---
 
 # Payment methods
 
-A **payment method** is how a customer pays: a tokenized card, a direct-debit
-[mandate](/reference/mandates), or a virtual account for bank transfers. The rail
-determines whether a charge is *pulled* or *pushed*. See
-[multi-rail: push and pull](/concepts/multi-rail-push-and-pull).
+Every operation on the payment methods resource.
 
-> **Interactive: `<ApiReference>`.** View and run it live at https://docs.nombaone.xyz/reference/payment-methods
-
-> **Setting up vs charging**
->
-> `setup` and `virtual-account` create the instrument (the customer authorizes at
-> the returned link); a [subscription](/guides/start-a-subscription) then charges
-> it each cycle. On the sandbox, `POST /v1/sandbox/payment-methods` mints a
-> deterministic method for rehearsing outcomes.
+- [`GET /v1/payment-methods`](https://docs.nombaone.xyz/reference/payment-methods/list.md) — List payment methods
+- [`GET /v1/payment-methods/{id}`](https://docs.nombaone.xyz/reference/payment-methods/retrieve.md) — Retrieve a payment method
+- [`DELETE /v1/payment-methods/{id}`](https://docs.nombaone.xyz/reference/payment-methods/delete.md) — Delete a payment method
+- [`POST /v1/payment-methods/setup`](https://docs.nombaone.xyz/reference/payment-methods/setup.md) — Set up a payment method
+- [`POST /v1/payment-methods/{id}/default`](https://docs.nombaone.xyz/reference/payment-methods/set-default.md) — Set the default method
+- [`POST /v1/payment-methods/virtual-account`](https://docs.nombaone.xyz/reference/payment-methods/virtual-account.md) — Create a virtual account

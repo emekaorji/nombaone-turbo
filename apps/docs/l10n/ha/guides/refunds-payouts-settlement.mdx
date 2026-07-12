@@ -1,0 +1,88 @@
+---
+title: Refunds, payouts da settlement
+description: "Fitar da kuɗi waje: yi refund kan charge da aka settle (ƙafar tenant kaɗai), karanta escrow lock, sannan a biya net na organization zuwa asusun banki."
+section: guides
+order: 5
+---
+
+Idan aka karɓi charge aka kuma tabbatar da shi, kuɗin yana **rabuwa a lokacin
+karɓa**: kuɗin platform naka da net na organization, kowanne a matsayin ƙafafun
+[ledger](/concepts/the-ledger) masu daidaito. Wannan jagora yana nuna yadda kuɗi
+ke sake fita waje: refund, escrow lock da ke tsare shi, da payout. An bayyana
+tsarin a [settlement & sub-accounts](/concepts/settlement-and-sub-accounts); ga
+yadda ake sarrafa shi.
+
+## Yi refund kan settlement
+
+Refund yana mayar da charge da aka settle zuwa ga wanda ya biya. Ta tsohuwa yana
+mayar da cikakken net; ka tura `amountInKobo` idan kana son mayar da ɓangare:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/{id}/refund \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "amountInKobo": 250000 }'
+```
+
+<Callout type="note" title="Ba a mayar da kuɗin platform">
+  Refund yana juya **ƙafar organization kaɗai**: yana rage settlement balance na
+  organization sannan ya mayar da kuɗin ga mai biya. Ba a mayar da kuɗin
+  platform, ba a kuma taɓa shi ko kaɗan. Wannan shi ke sa ledger ya ci gaba da
+  zama na gaskiya: refund yana shigar da sabon transaction mai juyawa, ba ya
+  sauya charge na asali.
+</Callout>
+
+Refund na ɓangare yana taruwa: ka mayar da ₦1,000 daga charge na ₦2,500, sannan
+daga baya ka mayar da ₦1,500, settlement ɗin kuwa sai ya juya zuwa `refunded`
+gaba ɗaya. Ba za ka taɓa iya mayar da fiye da net ba. API zai ƙi hakan, kuma
+`Idempotency-Key` yana sa sake gwada refund ya zama mai aminci.
+
+## Karanta escrow lock
+
+Kuɗin da aka settle ba a iya cire su nan take. **Escrow lock** na settlement na
+kwanan nan yana riƙe su na wani ɗan lokaci domin a iya janye refund kafin kuɗin
+ya fita. Duba abin da aka kulle da abin da ake da shi a hannu:
+
+```bash
+curl https://sandbox.api.nombaone.xyz/v1/settlements/escrow \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+Amsar tana nuna adadin da aka kulle da lokacin da za a sake shi. Balance da ake
+da shi domin payout shi ne net da aka settle bayan an cire escrow lock (da duk
+wani mafi ƙarancin ajiya).
+
+## Biya zuwa asusun banki
+
+Cire balance da organization ke da shi zuwa banki:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/settlements/payout \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "amountInKobo": 500000, "bankCode": "058", "accountNumber": "0123456789" }'
+```
+
+Masu tsaro biyu suna kare kuɗin:
+
+- **`ESCROW_LOCKED`**: ka yi ƙoƙarin cire kuɗin da har yanzu yake cikin lokacin
+  escrow. Ka jira a sake shi, ko ka cire ɓangaren da ake da shi kawai.
+- **`PAYOUT_EXCEEDS_AVAILABLE`**: adadin ya fi balance da ake da shi.
+
+<Callout type="warning" title="Gaskiyar ledger da farko, turawa daga baya">
+  Payout yana shigar da debit a ledger kafin a gwada tura kuɗi zuwa banki, kuma
+  idan turawar ta gaza sai ya shigar da juyawa ta ramuwa. Ba a taɓa yin ƙarya
+  cewa an tura kuɗi ba, kuma ba a bar kuɗi a rataye: ledger da banki suna ci
+  gaba da daidaita.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Settlement & sub-accounts" href="/concepts/settlement-and-sub-accounts">
+    Yadda tsarin rabo da escrow ke aiki.
+  </Card>
+  <Card title="Settlement ba tare da spreadsheet ba" href="/concepts/hard-parts/settlement-without-spreadsheets">
+    Daidaita kuɗi da organization a babban sikeli.
+  </Card>
+</CardGroup>

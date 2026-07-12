@@ -1,0 +1,55 @@
+---
+title: Ka settlement kan
+description: "Mọ̀ ohun tí payout jẹ́, kí o sì rí ibi gan-an tí owó rẹ wà: ohun tí ó settle, owó iṣẹ́ tí a mú, ohun tí ó wà ní àyè báyìí, àti èyí tí a dì mú fún ìgbà díẹ̀ kí o tó lè yọ ọ́."
+section: merchants
+order: 5
+---
+
+Nígbà tí customer bá san owó, owó náà kì í parẹ́ sínú àpótí dúdú. **Settlement**
+ni àkọsílẹ̀ tí ó fi hàn pé owó tí a gbà ti di owó *tìrẹ*: ohun tí a gbà, owó iṣẹ́ tí a
+mú, àti ohun tí ó kù fún ọ. Láti inú console, o lè rí ibi tí gbogbo náírà kan ṣoṣo wà nígbà gbogbo.
+
+## Ohun tí settlement fi hàn
+
+- **Owó tí a gbà**: ohun tí customer san.
+- **Owó iṣẹ́**: owó iṣẹ́ pẹpẹ tí a mú kúrò nínú owó yẹn.
+- **Owó rẹ tí ó kù**: ohun tí ó ṣẹ́kù, tí í ṣe tìrẹ.
+- **Ipò**: settled (ó ti di tìrẹ), tàbí refunded.
+
+Owó rẹ tí ó kù yóò settle sí account Nomba rẹ, tí ó sì ti ṣetán fún payout sí báǹkì rẹ.
+
+## Ibi tí owó rẹ wà
+
+Ní àkókò yòówù kí ó jẹ́, balance rẹ wà ní ọ̀kan lára àwọn ibi mẹ́ta:
+
+- **Tí ó wà ní àyè (available)**: ó ti settle, ó sì ti ṣetán láti yọ sí báǹkì rẹ báyìí.
+- **Tí a dì mú (escrow)**: owó láti inú àwọn ìsanwó tí a ṣẹ̀ṣẹ̀ gbà, tí a dì mú fún ìgbà
+  kúkúrú kí a lè bójú tó refund ní ọ̀nà tí ó mọ́ kí ó tó jáde. Kò ní pẹ́ kí ó wà ní àyè.
+- **Tí a ti san jáde (paid out)**: ó ti wọ báǹkì rẹ tẹ́lẹ̀.
+
+<Callout type="note" title="Ìdí tí a fi ń dì díẹ̀ nínú owó náà mú fún ìgbà díẹ̀">
+  Owó tí a ṣẹ̀ṣẹ̀ gbà ni a ń dì mú fún ìgbà kúkúrú nínú escrow kí ó lè jẹ́ pé bí refund bá
+  pọn dandan, a lè mú un láti inú ìsanwó yẹn kí o tó yọ ọ́. Ààbò ni: owó náà ṣì jẹ́ tìrẹ,
+  yóò sì di available láìpẹ́.
+</Callout>
+
+## Refund àti payout
+
+- **Refund**: o lè da owó tí customer san padà fún un. A kì í da owó iṣẹ́ pẹpẹ tí ó wà
+  lórí rẹ̀ padà; ìyókù ni ó ń padà sọ́dọ̀ customer.
+- **Payout**: yọ balance rẹ tí ó wà ní àyè sí account báǹkì rẹ. Ohun tí o lè yọ ni owó
+  tí ó ti settle tí ó kù fún ọ, láìka ohunkóhun tí a ṣì dì mú nínú escrow.
+
+<Callout type="tip" title="Nọ́ńbà kọ̀ọ̀kan ni ìsanwó kan wà lẹ́yìn rẹ̀">
+  Settlement kọ̀ọ̀kan so mọ́ subscription àti invoice gan-an tí ó ti wá, nítorí náà payout
+  kì í ṣe nọ́ńbà àṣírí: o lè tọpasẹ̀ rẹ̀ dé ọ̀dọ̀ customer àti cycle tí ó mú un jáde.
+</Callout>
+
+<CardGroup cols={2}>
+  <Card title="Ṣẹ̀dá plan" href="/merchants/create-a-plan">
+    Ibi tí owó ti bẹ̀rẹ̀.
+  </Card>
+  <Card title="Àkópọ̀" href="/merchants/overview">
+    Gbogbo ìlànà tí kò nílò kóòdù, láti ìbẹ̀rẹ̀ dé òpin.
+  </Card>
+</CardGroup>
