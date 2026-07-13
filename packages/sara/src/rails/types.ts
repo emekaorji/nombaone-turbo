@@ -15,11 +15,70 @@ import type { Kobo } from '../money';
  */
 export type RailDirection = 'pull' | 'push';
 
+/**
+ * Everything a rail may need beyond the amount — TYPED, not a bag.
+ *
+ * This used to be `Record<string, unknown>`, and that is exactly how the money
+ * path shipped broken: the primary collect site passed `{ invoice,
+ * paymentMethod }` and nothing else, so every live card charge failed
+ * `no_token_on_method` and every mandate `no_mandate_on_method`, silently —
+ * the sandbox simulator short-circuits before the rail, so no test saw it.
+ * With the common fields REQUIRED, that literal no longer compiles, and both
+ * collect sites are forced through ONE builder
+ * (`billing/railMetadata.buildRailCollectMetadata`) that cannot drift.
+ */
+export interface RailCollectMetadata {
+  /**
+   * OUR invoice reference. NOT always the same as `input.reference` — dunning
+   * keys the rail call on the ATTEMPT reference, so the invoice must ride here.
+   */
+  invoice: string;
+  paymentMethod: string;
+  /**
+   * The `CUS…` public REFERENCE the card was tokenized under (Nomba's
+   * `order.customerId`). Never the internal UUID — the dunning path once sent
+   * the UUID and the two identities didn't match.
+   */
+  customerRef: string;
+  customerEmail: string;
+  /**
+   * The tenant's Nomba sub-account. Without it a charge lands in the PARENT
+   * pool and never fires the `payment_success` webhook (live-confirmed) — it
+   * can never settle. Optional only because a tenant may not be connected yet;
+   * the builder warns when it is missing.
+   */
+  accountId?: string;
+  callbackUrl?: string;
+  // card
+  tokenKey?: string;
+  // mandate
+  mandateId?: string;
+  maxAmountKobo?: Kobo;
+  /**
+   * transfer (push) — MUST be the invoice reference: the inbound
+   * `vact_transfer` webhook reconciles by `aliasAccountReference`, and the
+   * lookup key is the invoice. A "stable" per-customer NUBAN here would break
+   * settlement, not improve it.
+   */
+  accountRef?: string;
+  accountName?: string;
+}
+
+/** For push rails: where the payer should send money (a virtual NUBAN). */
+export interface RailPayInstructions {
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  amountKobo: Kobo;
+  reference?: string;
+  narration?: string;
+}
+
 export interface RailCollectInput extends DomainContext {
   /** OUR stable reference — the idempotency + reconciliation join key. */
   reference: string;
   amountKobo: Kobo;
-  metadata?: Record<string, unknown>;
+  metadata?: RailCollectMetadata;
 }
 
 export type RailCollectStatus = 'succeeded' | 'pending' | 'failed' | 'requires_action';
@@ -50,7 +109,7 @@ export interface RailCollectResult {
   /** Provider-side id, if any — informational only; never the join key. */
   providerReference?: string;
   /** For push rails: where the payer should send money (e.g. a virtual NUBAN). */
-  payInstructions?: Record<string, unknown>;
+  payInstructions?: RailPayInstructions;
   failureReason?: string;
   /**
    * A PULL rail that SHORT-collected (e.g. a NIBSS mandate debit that pulled only

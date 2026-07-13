@@ -35,11 +35,12 @@ tabbatar **kafin ka yi parse**: ka lissafa HMAC a kan ainihin bytes ɗin da ka
 karɓa, sannan ka kwatanta a lokaci mai daidaituwa.
 
 ```ts
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export function verifyWebhook(rawBody: string, header: string, secret: string) {
   const { t, v1 } = parseHeader(header); // "t=…,v1=…"
-  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+  const key = createHash("sha256").update(secret).digest("hex"); // key = sha256(whsec)
+  const expected = createHmac("sha256", key).update(`${t}.${rawBody}`).digest("hex");
   const ok =
     v1.length === expected.length &&
     timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
@@ -76,7 +77,7 @@ amma amsa da sauri yana hana taruwar aiki.
 ```ts
 export async function POST(req: Request) {
   const raw = await req.text();
-  verifyWebhook(raw, req.headers.get("x-nomba-signature")!, SECRET);
+  verifyWebhook(raw, req.headers.get("x-nombaone-signature")!, SECRET);
   const event = JSON.parse(raw);
   if (await seen(event.id)) return new Response(null, { status: 200 });
   await markSeen(event.id);

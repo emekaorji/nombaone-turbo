@@ -1,0 +1,36 @@
+{
+  "name": "@nombaone/example-gym",
+  "version": "0.1.0",
+  "private": true,
+  "//": [
+    "⚠️  LOUD DEPENDENCY NOTE — @nombaone/node is consumed via `file:` from the",
+    "sibling nombaone-node checkout because v0.1.5 is NOT yet published to npm.",
+    "Flip the dependency to \"^0.1.5\" the MOMENT it is published.",
+    "This example consumes the PUBLIC SDK only — never import from packages/*."
+  ],
+  "scripts": {
+    "dev": "next dev --port 8060",
+    "build": "next build",
+    "start": "next start --port 8060",
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "scenario": "node --env-file-if-exists=.env --import tsx scripts/scenario.ts"
+  },
+  "dependencies": {
+    "@nombaone/node": "file:../../../nombaone-node",
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

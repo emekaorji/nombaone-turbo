@@ -5,14 +5,23 @@ import { mintReference } from '../reference';
 import type { DomainContext, InfraTxDb } from '../context';
 
 /**
- * Idempotently map a tenant (org) to its Nomba account. Phase 02 records the
- * mapping only (parent / sub-account); Phase 08 extends the row with the
- * settlement split columns. One row per (org, environment, kind).
+ * Idempotently map a tenant (org) to its Nomba account — one row per
+ * (org, mode, kind). UPSERT semantics: a re-connect (a new provisioning attempt,
+ * a manual paste correcting a wrong id) REFRESHES the identifiers and status
+ * rather than being silently swallowed. The original version wrote neither
+ * `subAccountId` nor `status` and DO-NOTHING'd on conflict — which is one reason
+ * no merchant could ever become provisioned.
  */
 export async function ensureOrgNombaAccount(
   txDb: InfraTxDb,
   ctx: DomainContext,
-  input: { nombaAccountId: string; accountRef: string; kind: 'parent' | 'subaccount' }
+  input: {
+    nombaAccountId: string;
+    accountRef: string;
+    kind: 'parent' | 'subaccount';
+    subAccountId?: string | null;
+    status?: 'pending' | 'active' | 'suspended';
+  }
 ): Promise<void> {
   await txDb
     .insert(orgNombaAccountsTable)
@@ -23,12 +32,20 @@ export async function ensureOrgNombaAccount(
       nombaAccountId: input.nombaAccountId,
       accountRef: input.accountRef,
       kind: input.kind,
+      subAccountId: input.subAccountId ?? null,
+      status: input.status ?? 'pending',
     })
-    .onConflictDoNothing({
+    .onConflictDoUpdate({
       target: [
         orgNombaAccountsTable.organizationId,
         orgNombaAccountsTable.mode,
         orgNombaAccountsTable.kind,
       ],
+      set: {
+        nombaAccountId: input.nombaAccountId,
+        accountRef: input.accountRef,
+        subAccountId: input.subAccountId ?? null,
+        status: input.status ?? 'pending',
+      },
     });
 }

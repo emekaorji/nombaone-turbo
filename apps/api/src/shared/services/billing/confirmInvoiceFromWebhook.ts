@@ -1,7 +1,9 @@
 
 import { ensureSystemAccounts } from '@nombaone/sara/config';
-import { claimInvoicePaid, linkInvoiceLedgerTransaction, loadInvoiceRow } from '../invoices';
 import { ensureAccount, postTransaction } from '@nombaone/sara/ledger';
+
+import { claimInvoicePaid, linkInvoiceLedgerTransaction, loadInvoiceRow } from '../invoices';
+import { settleInvoicePayment } from '../settlement';
 import { reconcilePaidSubEffects } from './effects';
 
 import type { InvoiceRow } from '@nombaone/core-db/schema';
@@ -71,5 +73,22 @@ export async function confirmInvoiceFromWebhook(
 
   const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
   await reconcilePaidSubEffects(txDb, ctx, linked);
+
+  // ⚠ THE MERCHANT'S MONEY. Without this the posting above leaves the whole gross
+  // sitting in `platform_revenue` (a suspense account) and `tenant_settlement` is
+  // never credited — the merchant's balance stays ₦0 forever and there is nothing
+  // to pay out.
+  //
+  // This is THE production path, not an edge case: on live the card rail returns
+  // `pending` (the charge settles asynchronously), and hosted checkout, the transfer
+  // rail and OTP-completion all confirm here too. `collectForInvoice`'s synchronous
+  // "succeeded" branch — the other place settlement is recorded — effectively only
+  // runs under the sandbox simulator. So for real money, this call is the only one
+  // that ever fires.
+  //
+  // Idempotent on the invoice reference (`settlements.merchant_tx_ref` unique +
+  // claim-before-post), so a redelivered webhook credits nothing twice.
+  await settleInvoicePayment(txDb, ctx, linked);
+
   return { settled: true, invoice: linked };
 }

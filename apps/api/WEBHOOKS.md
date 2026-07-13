@@ -30,7 +30,7 @@ spoofed apart from the signature. **Dedupe on `event.id`.**
 
 | Header | Meaning |
 |---|---|
-| `x-nombaone-signature` | `HMAC-SHA256(key, rawBody)` in lowercase hex |
+| `x-nombaone-signature` | `t=<unix>,v1=<hex>` — `v1 = HMAC-SHA256(key, `` `${t}.${rawBody}` ``)` in lowercase hex; multiple `v1` entries are legal during rotation |
 | `x-nombaone-event-type` | the event type (also in the body) |
 | `x-nombaone-delivery` | the delivery reference (also in the body `id`) |
 | `x-nombaone-delivery-guarantee` | `at-least-once` |
@@ -39,16 +39,22 @@ spoofed apart from the signature. **Dedupe on `event.id`.**
 
 The signing **key is the sha256 of your plaintext signing secret** (we store only
 that hash; the plaintext is shown once at endpoint creation / rotation). Recompute
-it once, then verify every delivery against the **exact raw bytes** you received:
+it once, then verify every delivery's `t=<unix>,v1=<hex>` header against the
+**exact raw bytes** you received — the timestamp is bound into the signed message,
+so also reject stale `t` (replay protection). The Node SDK
+(`nombaone.webhooks.constructEvent`) does all of this from the plaintext secret:
 
 ```ts
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
+const [, t, v1] = /^t=(\d+),v1=([0-9a-f]{64})/.exec(signatureHeader)!; // multiple v1 legal on rotation
+if (Math.abs(Date.now() / 1000 - Number(t)) > 300) throw new Error('stale timestamp');
+
 const key = createHash('sha256').update(plaintextSecret).digest('hex');
-const expected = createHmac('sha256', key).update(rawBody, 'utf8').digest('hex');
+const expected = createHmac('sha256', key).update(`${t}.${rawBody}`, 'utf8').digest('hex');
 const ok =
-  expected.length === signatureHeader.length &&
-  timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader));
+  expected.length === v1.length &&
+  timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
 ```
 
 On **rotation** you receive a new plaintext once; keep the prior key briefly (or

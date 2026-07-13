@@ -8,7 +8,7 @@ import { can, type OrgUserRole } from '@nombaone/sara/auth';
 import { EmptyState } from '@/components/console/empty-state';
 import { RefundButton, WithdrawButton } from '@/components/console/settlements/settlement-buttons';
 import { getSession } from '@/lib/auth';
-import { getSettlementsView, type SettlementStatus, type PayoutStatus } from '@/lib/settlements';
+import { getBanks, getSettlementsView, type SettlementStatus, type PayoutStatus } from '@/lib/settlements';
 
 const STATUS: Record<SettlementStatus, { label: string; text: string; bg: string; dot: string }> = {
   settled: { label: 'Settled', text: 'text-success', bg: 'bg-success-bg', dot: 'bg-success' },
@@ -28,7 +28,11 @@ const PAYOUT_STATUS: Record<PayoutStatus, { label: string; text: string; bg: str
 export default async function SettlementsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const sp = await searchParams;
   const tab: 'settlements' | 'payouts' = sp.tab === 'payouts' ? 'payouts' : 'settlements';
-  const [{ escrow, settlements, payouts }, session] = await Promise.all([getSettlementsView(), getSession()]);
+  const [{ escrow, settlements, payouts, payoutAccount }, session, banks] = await Promise.all([
+    getSettlementsView(),
+    getSession(),
+    getBanks(),
+  ]);
   const canManage = session ? can(session.user.role as OrgUserRole, 'money:write') : false;
 
   const escrowRows = [
@@ -47,7 +51,12 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
             <span className="font-mono text-[11px] tracking-[0.4px] text-subtle-foreground">AVAILABLE TO WITHDRAW</span>
             <span className="text-[38px] font-semibold leading-none tracking-[-1px] text-accent">{escrow.availableShort}</span>
           </div>
-          <WithdrawButton availableShort={escrow.availableShort} canManage={canManage} />
+          <WithdrawButton
+            availableShort={escrow.availableShort}
+            canManage={canManage}
+            banks={banks}
+            payoutAccount={payoutAccount}
+          />
         </div>
 
         <div className="hidden h-[120px] w-px shrink-0 bg-border lg:block" />

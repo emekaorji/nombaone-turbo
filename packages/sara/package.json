@@ -16,6 +16,7 @@
     "./org": "./src/org/index.ts",
     "./idempotency": "./src/idempotency/index.ts",
     "./webhooks": "./src/webhooks/index.ts",
+    "./actions": "./src/actions/index.ts",
     "./nomba": "./src/nomba/index.ts",
     "./nomba/*": "./src/nomba/*.ts",
     "./org/*": "./src/org/*.ts",
@@ -28,7 +29,8 @@
     "./config/*": "./src/config/*.ts",
     "./ledger/*": "./src/ledger/*.ts",
     "./events/*": "./src/events/*.ts",
-    "./example/*": "./src/example/*.ts"
+    "./example/*": "./src/example/*.ts",
+    "./mail": "./src/mail/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

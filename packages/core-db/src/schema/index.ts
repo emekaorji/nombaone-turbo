@@ -20,6 +20,7 @@ export * from './prices';
 export * from './payment-methods';
 export * from './nomba-webhook-events';
 export * from './org-nomba-accounts';
+export * from './org-payout-accounts';
 export * from './subscriptions';
 export * from './subscription-items';
 export * from './subscription-periods';

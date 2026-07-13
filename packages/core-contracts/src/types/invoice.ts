@@ -23,6 +23,20 @@ export interface InvoiceLineItemData {
 }
 
 /**
+ * Where the payer should push money for an open PUSH-rail (bank transfer)
+ * invoice: the dedicated virtual NUBAN issued for THIS invoice. Present only
+ * after a transfer collect ran; `null` on pull-rail invoices. The account is
+ * per-invoice on purpose — its alias is the inbound reconciliation key.
+ */
+export interface InvoicePayInstructionsData {
+  bankName: string | null;
+  accountNumber: string | null;
+  accountName: string | null;
+  amountInKobo: number;
+  reference: string | null;
+}
+
+/**
  * INVOICE DTO. `status` is DERIVED (never a stored money column). Money fields are
  * integer kobo; line `amount`s are signed.
  */
@@ -44,6 +58,7 @@ export interface InvoiceResponseData {
   periodStart: string | null;
   periodEnd: string | null;
   dueDate: string | null;
+  payInstructions: InvoicePayInstructionsData | null;
   lineItems: InvoiceLineItemData[];
   finalizedAt: string | null;
   paidAt: string | null;

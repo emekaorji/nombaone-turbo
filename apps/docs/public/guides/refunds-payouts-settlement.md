@@ -11,7 +11,7 @@ When a charge is collected and verified, the money **splits at collection**: you
 platform fee and the organization's net, each posted as balanced
 [ledger](/concepts/the-ledger) legs. This guide is how money moves back out:
 refunds, the escrow lock that guards them, and payouts. The model is explained in
-[settlement & sub-accounts](/concepts/settlement-and-sub-accounts); here is how to
+[settlement & payouts](/concepts/settlement-and-sub-accounts); here is how to
 operate it.
 
 ## Refund a settlement
@@ -76,7 +76,7 @@ window. Wait for release, or withdraw only the available portion.
 > the transfer fails it posts a compensating reversal. Funds are never faked as
 > sent and never stranded: the ledger and the bank stay reconciled.
 
-- **[Settlement & sub-accounts](/concepts/settlement-and-sub-accounts)**: 
-How the split and escrow model works.
+- **[Settlement & payouts](/concepts/settlement-and-sub-accounts)**: 
+How the split, the balance, and the escrow hold work.
 - **[Settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets)**: 
 Matching money to organizations at scale.

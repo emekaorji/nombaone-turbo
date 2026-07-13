@@ -16,11 +16,15 @@ check against your endpoint's signing secret.
 The header is `t=<unix>,v1=<hex>`, where `v1` is:
 
 ```
-HMAC_SHA256( `${t}.${rawBody}`, whsec )   // hex
+key = SHA256( whsec )                       // hex — derive once from your secret
+v1  = HMAC_SHA256( `${t}.${rawBody}`, key ) // hex
 ```
 
-`t` is the delivery timestamp and `rawBody` is the **exact bytes** of the request
-body. Verify by recomputing `v1` and comparing.
+The HMAC key is the **SHA-256 of your plaintext signing secret** (the
+`nbo_whsec_…` shown once at endpoint creation), hex-encoded — derive it once and
+cache it. `t` is the delivery timestamp and `rawBody` is the **exact bytes** of
+the request body. Verify by recomputing `v1` and comparing. (The official SDKs
+do the hashing internally: pass them the plaintext secret.)
 
 > **Sign the raw bytes: never re-serialize**
 >
@@ -33,7 +37,7 @@ body. Verify by recomputing `v1` and comparing.
 **TypeScript**
 
 ```ts
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export function verify(rawBody: string, header: string, secret: string) {
   const parts = Object.fromEntries(header.split(",").map((kv) => kv.split("=")));
@@ -43,7 +47,9 @@ export function verify(rawBody: string, header: string, secret: string) {
   const age = Math.abs(Date.now() / 1000 - Number(t));
   if (age > 300) throw new Error("timestamp too old");
 
-  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+  // The HMAC key is the sha256 (hex) of your plaintext whsec.
+  const key = createHash("sha256").update(secret).digest("hex");
+  const expected = createHmac("sha256", key).update(`${t}.${rawBody}`).digest("hex");
   const ok =
     v1.length === expected.length &&
     timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
@@ -63,8 +69,10 @@ def verify(raw_body: bytes, header: str, secret: str) -> None:
     if abs(time.time() - int(t)) > 300:
         raise ValueError("timestamp too old")
 
+    # The HMAC key is the sha256 (hex) of your plaintext whsec.
+    key = hashlib.sha256(secret.encode()).hexdigest()
     expected = hmac.new(
-        secret.encode(), f"{t}.".encode() + raw_body, hashlib.sha256
+        key.encode(), f"{t}.".encode() + raw_body, hashlib.sha256
     ).hexdigest()
     if not hmac.compare_digest(v1, expected):
         raise ValueError("invalid signature")

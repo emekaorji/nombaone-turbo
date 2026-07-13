@@ -3,11 +3,12 @@
 // the money unit + shows the transaction shape / reference fields.
 //   npx tsx scripts/tx-list.ts
 import { env } from '../src/shared/config/env';
+import { scriptSubAccountId } from './_subaccount';
 import { getNombaClient } from '../src/shared/config/nomba';
 
 async function main(): Promise<void> {
   const client = getNombaClient('live');
-  const sub = env.NOMBA_LIVE_SUBACCOUNT_ID ?? '';
+  const sub = scriptSubAccountId ?? '';
   const res = await client.request<{ data?: { results?: Record<string, unknown>[] } }>({
     method: 'GET',
     endpoint: `/v1/transactions/accounts/${sub}`,

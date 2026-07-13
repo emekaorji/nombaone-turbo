@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/*
+ * Iron Republic — dark, minimal, honest. Self-contained theme (this example
+ * consumes the public SDK only; it deliberately does not import the
+ * monorepo's UI package).
+ */
+@theme {
+  --color-coal: #040404;
+  --color-panel: #0d0d0d;
+  --color-panel-2: #121212;
+  --color-line: #1f1f1f;
+  --color-chalk: #fafafa;
+  --color-fog: #a1a1aa;
+  --color-dim: #6b6b74;
+  --color-ember: #ff5c1f;
+  --color-mint: #34d399;
+  --color-amberish: #fbbf24;
+  --color-blood: #f87171;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  background: var(--color-coal);
+  color: var(--color-chalk);
+}

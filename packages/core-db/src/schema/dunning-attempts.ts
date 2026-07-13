@@ -25,11 +25,14 @@ export const dunningAttemptStatusEnum = pgEnum('dunning_attempt_status', [
   'exhausted',
 ]);
 
-/** The branch a failure reason resolves to (the heart of D3/D4). */
+/** The branch a failure reason resolves to (the heart of D3/D4). APPEND-ONLY
+ *  (Postgres enum): `payment_reminder` is the PUSH-rail branch — no card to
+ *  retry, so each attempt re-sends the payment link instead of charging. */
 export const dunningBranchEnum = pgEnum('dunning_branch', [
   'reschedule',
   'card_update_required',
   'short_path',
+  'payment_reminder',
 ]);
 
 /**

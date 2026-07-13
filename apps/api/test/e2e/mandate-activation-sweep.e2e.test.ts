@@ -15,9 +15,9 @@ const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
   async request<T = unknown>(req: NombaRequest) {
     if (req.endpoint.includes('direct-debits/status')) {
-      return { status: 200, ok: true, data: { status: 'ACTIVE', adviceStatus: 'ADVICE_SENT' } as T };
+      return { status: 200, ok: true, pending: false, data: { mandateStatus: 'Active', mandateAdviceStatus: 'Advice Sent' } as T };
     }
-    return { status: 200, ok: true, data: {} as T };
+    return { status: 200, ok: true, pending: false, data: {} as T };
   },
   requeryTransaction: async () => ({ found: true, succeeded: true, amount: 0 }),
 };

@@ -43,7 +43,7 @@ const UNIT = 500_000; // ₦5,000/mo
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
   async request<T = unknown>() {
-    return { status: 200, ok: true, data: {} as T };
+    return { status: 200, ok: true, pending: false, data: {} as T };
   },
   requeryTransaction: async () => ({ found: true, succeeded: true, amount: UNIT }),
 };
@@ -207,12 +207,7 @@ describe.skipIf(!RUN)('billing load — 10k due subscriptions (item 2)', () => {
     const billStart = Date.now();
     let paid = 0;
     await pool(jobs, CONCURRENCY, async (job) => {
-      const res = await runCycle(
-        harness.db,
-        { organizationId: job.organizationId, mode: 'sandbox' },
-        job.subscriptionReference,
-        { maxCatchUpPeriods: 36 }
-      );
+      const res = await runCycle(harness.db, { organizationId: job.organizationId, mode: 'sandbox' }, job.subscriptionReference);
       if (res.outcome === 'paid') paid += 1;
     });
     const elapsed = Date.now() - billStart;

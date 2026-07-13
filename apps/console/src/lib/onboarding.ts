@@ -2,6 +2,7 @@ import {
   customersTable,
   invoicesTable,
   organizationsTable,
+  orgPayoutAccountsTable,
   paymentMethodsTable,
   pricesTable,
   subscriptionsTable,
@@ -37,6 +38,19 @@ export type OnboardingState = {
   showRail: boolean;
 };
 
+/**
+ * The merchant's guided path: bill someone, then get paid.
+ *
+ * ⚠ Step 1 used to be "Connect Nomba", satisfied by an `org_nomba_accounts` row — a row
+ * that could only be created by pasting a Nomba sub-account id, which Nomba does not let
+ * anyone obtain. So the count was ALWAYS zero: every merchant was permanently pinned at
+ * 0%, no later step could ever become "current", and the CTA pointed at a settings page
+ * that has now been deleted. Nothing about the merchant's account needs connecting —
+ * they have a settlement balance from the moment they sign up.
+ *
+ * The bank account is the LAST step, not the first. It is the only thing they genuinely
+ * have to give us, and it is worth nothing until there is money to send to it.
+ */
 export async function getOnboardingState(): Promise<OnboardingState | null> {
   const session = await getSession();
   if (!session) return null;
@@ -44,12 +58,13 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
   const mode = session.mode;
   const first = <T extends { c: number }>(rows: T[]): number => rows[0]?.c ?? 0;
 
-  const [customers, prices, methods, subs, invoices, orgRows] = await Promise.all([
+  const [customers, prices, methods, subs, invoices, payoutAccounts, orgRows] = await Promise.all([
     db.select({ c: count() }).from(customersTable).where(and(eq(customersTable.organizationId, org), eq(customersTable.mode, mode))).then(first),
     db.select({ c: count() }).from(pricesTable).where(and(eq(pricesTable.organizationId, org), eq(pricesTable.mode, mode))).then(first),
     db.select({ c: count() }).from(paymentMethodsTable).where(and(eq(paymentMethodsTable.organizationId, org), eq(paymentMethodsTable.mode, mode))).then(first),
     db.select({ c: count() }).from(subscriptionsTable).where(and(eq(subscriptionsTable.organizationId, org), eq(subscriptionsTable.mode, mode))).then(first),
     db.select({ c: count() }).from(invoicesTable).where(and(eq(invoicesTable.organizationId, org), eq(invoicesTable.mode, mode))).then(first),
+    db.select({ c: count() }).from(orgPayoutAccountsTable).where(and(eq(orgPayoutAccountsTable.organizationId, org), eq(orgPayoutAccountsTable.mode, mode))).then(first),
     db
       .select({ startedAt: organizationsTable.onboardingStartedAt, dismissedAt: organizationsTable.onboardingDismissedAt })
       .from(organizationsTable)
@@ -57,7 +72,7 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
       .limit(1),
   ]);
 
-  const done = [customers > 0, prices > 0, methods > 0, subs > 0, invoices > 0];
+  const done = [customers > 0, prices > 0, methods > 0, subs > 0, invoices > 0, payoutAccounts > 0];
   // First not-done step is "current"; the rest pending.
   const currentIdx = done.findIndex((d) => !d);
   const stateFor = (i: number): StepState => (done[i] ? 'done' : i === currentIdx ? 'current' : 'pending');
@@ -93,9 +108,19 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
     },
     {
       n: 5,
-      title: 'Watch it bill in sandbox mode',
+      title: 'Watch it bill',
       desc: 'Advance the clock and see the invoice, the charge, and a recovery, on real API calls.',
       state: stateFor(4),
+    },
+    {
+      n: 6,
+      title: 'Get paid',
+      desc:
+        payoutAccounts > 0
+          ? 'Your bank account is verified. Revenue settles to your balance and pays out daily.'
+          : 'Tell us which bank account to pay your revenue into. We confirm it with your bank first.',
+      state: stateFor(5),
+      ...(done[5] ? {} : { cta: { label: 'Add your bank account', href: '/settlements' } }),
     },
   ];
 

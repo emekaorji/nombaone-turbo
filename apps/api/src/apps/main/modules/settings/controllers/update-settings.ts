@@ -1,6 +1,6 @@
 import { AppError } from '@nombaone/errors';
-import { updateTenantSettings } from '@shared/services/tenant-config';
 
+import { updateTenantSettings } from '@shared/services/tenant-config';
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';
 

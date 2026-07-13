@@ -1,7 +1,8 @@
-import { customersTable, invoicesTable, payoutsTable, settlementsTable } from '@nombaone/core-db';
+import { customersTable, invoicesTable, ledgerAccountsTable, organizationsTable, orgPayoutAccountsTable, payoutsTable, settlementsTable } from '@nombaone/core-db';
 import { db } from '@nombaone/core-db/serverless';
 import { and, desc, eq } from 'drizzle-orm';
 
+import { callApi } from '@/lib/api-client';
 import { getSession } from '@/lib/auth';
 import { naira, nairaShort } from '@/lib/money';
 
@@ -27,7 +28,16 @@ export type PayoutRow = {
   created: string;
 };
 
+/** The bank account this merchant's revenue is paid into. `null` until they add one. */
+export type PayoutAccount = {
+  bankName: string;
+  accountNumber: string;
+  /** Bank-confirmed holder name (name enquiry). Never typed by the merchant. */
+  accountName: string;
+};
+
 export type SettlementsView = {
+  payoutAccount: PayoutAccount | null;
   escrow: {
     balanceKobo: number;
     lockedKobo: number;
@@ -84,7 +94,7 @@ export async function getSettlementsView(): Promise<SettlementsView> {
     available: naira(0),
     bar: [{ grow: 0, c: 'bg-accent' }, { grow: 0, c: 'bg-warning' }],
   };
-  if (!session) return { escrow: emptyEscrow, settlements: [], payouts: [] };
+  if (!session) return { payoutAccount: null, escrow: emptyEscrow, settlements: [], payouts: [] };
 
   const [settlements, payouts] = await Promise.all([
     db
@@ -119,18 +129,60 @@ export async function getSettlementsView(): Promise<SettlementsView> {
       .orderBy(desc(payoutsTable.createdAt)),
   ]);
 
-  // Escrow model (from the payout doc): withdrawable = balance − lockedLast3h.
-  const threeHoursAgo = new Date(Date.now() - 3 * 3_600_000);
-  let balanceKobo = 0;
+  // ⚠ THE BALANCE IS THE LEDGER'S, not a re-derivation.
+  //
+  // This used to re-add every settlement and subtract every payout to compute the
+  // merchant's balance itself — a SECOND source of truth for the one number that matters.
+  // The payout path spends the ledger's `tenant_settlement:{ref}` balance, so any drift
+  // between the two shows the merchant a figure they cannot actually withdraw (or hides
+  // money they can). One number, one place: read the ledger account the payout debits.
+  const [org] = await db
+    .select({ reference: organizationsTable.reference })
+    .from(organizationsTable)
+    .where(eq(organizationsTable.id, session.organizationId))
+    .limit(1);
+
+  const [ledgerAccount] = org
+    ? await db
+        .select({ balance: ledgerAccountsTable.balance })
+        .from(ledgerAccountsTable)
+        .where(
+          and(
+            eq(ledgerAccountsTable.organizationId, session.organizationId),
+            eq(ledgerAccountsTable.mode, session.mode),
+            eq(ledgerAccountsTable.key, `tenant_settlement:NBO-${org.reference}`)
+          )
+        )
+        .limit(1)
+    : [];
+
+  const balanceKobo = ledgerAccount?.balance ?? 0;
+
+  const [payoutAccountRow] = await db
+    .select({
+      bankName: orgPayoutAccountsTable.bankName,
+      accountNumber: orgPayoutAccountsTable.accountNumber,
+      accountName: orgPayoutAccountsTable.accountName,
+    })
+    .from(orgPayoutAccountsTable)
+    .where(
+      and(
+        eq(orgPayoutAccountsTable.organizationId, session.organizationId),
+        eq(orgPayoutAccountsTable.mode, session.mode),
+        eq(orgPayoutAccountsTable.isDefault, true),
+        eq(orgPayoutAccountsTable.status, 'active')
+      )
+    )
+    .limit(1);
+
+  // The rolling refund hold: revenue collected inside the window can't be withdrawn yet,
+  // so a refund can still be clawed back before the merchant drains the balance.
+  const holdSince = new Date(Date.now() - 3 * 3_600_000);
   let lockedKobo = 0;
   for (const s of settlements) {
-    if (s.status === 'settled' || s.status === 'reconciled') {
-      balanceKobo += s.netToTenantKobo;
-      if (s.createdAt > threeHoursAgo) lockedKobo += s.netToTenantKobo;
+    if ((s.status === 'settled' || s.status === 'reconciled') && s.createdAt > holdSince) {
+      lockedKobo += s.netToTenantKobo;
     }
-  }
-  for (const p of payouts) {
-    if (p.status === 'ledger_posted' || p.status === 'succeeded') balanceKobo -= p.amountKobo;
   }
   const availableKobo = Math.max(0, balanceKobo - lockedKobo);
 
@@ -155,6 +207,7 @@ export async function getSettlementsView(): Promise<SettlementsView> {
   }));
 
   return {
+    payoutAccount: payoutAccountRow ?? null,
     escrow: {
       balanceKobo,
       lockedKobo,
@@ -171,4 +224,25 @@ export async function getSettlementsView(): Promise<SettlementsView> {
     settlements: settlementRows,
     payouts: payoutRows,
   };
+}
+
+/**
+ * The NIBSS bank list, from Nomba via our API (`GET /v1/banks`).
+ *
+ * The withdraw form used to have a free-text "Bank code" input with the placeholder
+ * `000013` — a 6-digit NIBSS code that no merchant knows about their own bank, and which
+ * silently sends money to the wrong institution when fat-fingered. A dropdown removes
+ * the entire class of mistake.
+ */
+export async function getBanks(): Promise<{ code: string; name: string }[]> {
+  const session = await getSession();
+  if (!session) return [];
+  try {
+    const res = await callApi<{ banks: { code: string; name: string }[] }>(session, '/banks');
+    return [...res.banks].sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    // A bank-list outage must not take the whole settlements page down — the merchant can
+    // still see their balance and their history; only adding a NEW account is blocked.
+    return [];
+  }
 }

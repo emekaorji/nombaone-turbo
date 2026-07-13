@@ -67,7 +67,7 @@ export const SDKS: SdkMeta[] = [
     package: "@nombaone/node",
     registry: "npm",
     registryUrl: "https://www.npmjs.com/package/@nombaone/node",
-    version: "0.1.3",
+    version: "0.1.5",
     languageFloor: "Node.js 22+",
     install: "npm install @nombaone/node",
     clientClass: "Nombaone",

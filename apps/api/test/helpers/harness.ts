@@ -76,6 +76,11 @@ export const startHarness = async (): Promise<Harness> => {
   // A `development` deployment serves BOTH modes; tests mint sandbox keys (which
   // authenticate here) and assert that live keys are refused off production.
   process.env.INFRA_ENVIRONMENT = 'development';
+  // Tests must NEVER reach a real mail vendor. `.env` now carries a live RESEND_API_KEY,
+  // so if it were ever loaded into the test process the suite would email real people at
+  // whatever addresses the fixtures invent. Pin the transport explicitly.
+  process.env.COMMS_TRANSPORT = 'log';
+  delete process.env.RESEND_API_KEY;
   process.env.INFRA_DATABASE_URL = databaseUrl;
   process.env.REDIS_URL = redisUrl;
   process.env.INFRA_PII_ENCRYPTION_KEY =
@@ -90,7 +95,6 @@ export const startHarness = async (): Promise<Harness> => {
   // Pin these OFF so tests are deterministic regardless of a developer's `.env`:
   // debug mode would bypass signature REJECTION, and the payout flag would fire the
   // (unconfirmed) provider bankTransfer. Set before dotenv (override:false keeps them).
-  process.env.NOMBA_WEBHOOK_DEBUG = 'false';
   process.env.NOMBA_PAYOUT_ENABLED = 'false';
   // Keep the limiter on by default so its tests are meaningful; specs can flip it.
   delete process.env.DISABLE_API_RATE_LIMIT;

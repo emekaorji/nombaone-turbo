@@ -92,11 +92,12 @@ Yadda ake aiwatar da shi a sabarka:
 <CodeGroup>
   <Tab label="TypeScript">
     ```ts
-    import { createHmac, timingSafeEqual } from "node:crypto";
+    import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
     export function verify(rawBody: string, header: string, secret: string) {
       const [ts, sig] = parseHeader(header); // "t=…,v1=…"
-      const expected = createHmac("sha256", secret)
+      const key = createHash("sha256").update(secret).digest("hex"); // key = sha256(whsec)
+      const expected = createHmac("sha256", key)
         .update(`${ts}.${rawBody}`)
         .digest("hex");
       const ok =
@@ -112,8 +113,9 @@ Yadda ake aiwatar da shi a sabarka:
 
     def verify(raw_body: bytes, header: str, secret: str) -> None:
         ts, sig = parse_header(header)  # "t=…,v1=…"
+        key = hashlib.sha256(secret.encode()).hexdigest()  # key = sha256(whsec)
         expected = hmac.new(
-            secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
+            key.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
         ).hexdigest()
         if not hmac.compare_digest(sig, expected):
             raise ValueError("bad signature")

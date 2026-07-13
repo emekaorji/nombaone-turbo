@@ -4,6 +4,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { env } from '../src/shared/config/env';
+import { scriptSubAccountId } from './_subaccount';
 import { db } from '../src/shared/config/db';
 import { getNombaClient } from '../src/shared/config/nomba';
 import { customersTable, invoicesTable, organizationsTable } from '@nombaone/core-db/schema';
@@ -41,7 +42,7 @@ async function main(): Promise<void> {
         customerEmail: TOKEN_EMAIL,
         callbackUrl: 'https://tunnel.nombaone.xyz/callback',
         orderReference: invRef,
-        accountId: env.NOMBA_LIVE_SUBACCOUNT_ID,
+        accountId: scriptSubAccountId,
       },
     },
   });

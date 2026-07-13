@@ -21,6 +21,8 @@ export interface CreateSubscriptionInput {
   collectionMethod: CollectionMethod;
   trialDays?: number;
   quantity: number;
+  /** Hosted-checkout entry only: where the Nomba page returns the payer. */
+  callbackUrl?: string;
   metadata?: Record<string, unknown>;
 }
 

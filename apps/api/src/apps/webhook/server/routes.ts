@@ -19,8 +19,9 @@ import { nombaWebhookRouter } from '@/apps/webhook/modules/nomba/routes';
  *
  * Each provider is a module mounted under `/v1` (so `nomba` → `/v1/nomba`). The
  * `nomba` provider uses its OWN scheme (see the nomba module). The generic
- * raw-body-hex path (`/v1/:provider`) covers other providers and is distinct
- * from the OUTBOUND `verifyWebhookSignature` (our deliveries TO tenants).
+ * raw-body-hex path (`/v1/:provider`, `verifyWebhookSignature`) covers other
+ * providers and is distinct from the OUTBOUND `t=<unix>,v1=<hex>` scheme
+ * (`buildSignatureHeader`, our deliveries TO tenants).
  */
 export const webhookRouter: Router = Router();
 const API_VERSION = '/v1';

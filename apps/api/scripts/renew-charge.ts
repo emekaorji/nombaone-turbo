@@ -5,7 +5,6 @@
 //   npx tsx scripts/renew-charge.ts
 import { randomUUID } from 'node:crypto';
 
-import { env } from '../src/shared/config/env';
 import { db } from '../src/shared/config/db';
 import { getNombaClient } from '../src/shared/config/nomba';
 import { createCardRail } from '@nombaone/sara/rails';
@@ -21,9 +20,10 @@ async function main(): Promise<void> {
   const orgId = randomUUID();
   await db.insert(organizationsTable).values({ id: orgId, reference: mintReference('ORG'), name: 'Renewal Test' });
   const custId = randomUUID();
+  const custRef = mintReference('CUS');
   await db.insert(customersTable).values({
     id: custId,
-    reference: mintReference('CUS'),
+    reference: custRef,
     organizationId: orgId,
     mode,
     email: TOKEN_EMAIL,
@@ -43,6 +43,16 @@ async function main(): Promise<void> {
   });
 
   // Merchant-initiated recharge of the saved card — the actual renewal path.
+  // Metadata mirrors buildRailCollectMetadata's shape: the CUS reference (never
+  // the UUID), and a sub-account id from the CLI (env-coded sub-accounts are
+  // gone — they are minted per merchant into org_nomba_accounts).
+  //   npx tsx scripts/renew-charge.ts <subAccountId>
+  const subAccountId = process.argv[2];
+  if (!subAccountId) {
+    console.error('usage: npx tsx scripts/renew-charge.ts <subAccountId>');
+    console.error('(without sub-account scoping the payment_success webhook never fires)');
+    process.exit(1);
+  }
   const rail = createCardRail(getNombaClient);
   const res = await rail.collect({
     organizationId: orgId,
@@ -50,11 +60,13 @@ async function main(): Promise<void> {
     reference: invRef,
     amountKobo: AMOUNT_KOBO,
     metadata: {
+      invoice: invRef,
+      paymentMethod: 'script-renew-charge',
       tokenKey: TOKEN_KEY,
-      customerId: custId,
+      customerRef: custRef,
       customerEmail: TOKEN_EMAIL,
       callbackUrl: 'https://tunnel.nombaone.xyz/callback',
-      accountId: env.NOMBA_LIVE_SUBACCOUNT_ID, // sub-account scope → webhook fires + funds land here
+      accountId: subAccountId, // sub-account scope → webhook fires + funds land here
     },
   });
   console.log('RENEWAL_INVOICE_REF=', invRef);

@@ -16,6 +16,7 @@ import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 import { getDefaultForCustomer } from '../payment-methods';
 import { activateSubscription, recoverFromPastDue } from '../subscriptions';
 import { advancePeriod } from './period';
+import { periodBounds, reanchorForIntervalSwitch } from './scheduling';
 
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
 
@@ -145,7 +146,14 @@ export async function applyPaidSubEffects(
 ): Promise<void> {
   if (!invoice.subscriptionId) return;
   let sub = await loadSubscriptionRowById(txDb, ctx, invoice.subscriptionId);
-  if (sub.status === 'incomplete' || sub.status === 'trialing') {
+  const wasPastDue = sub.status === 'past_due';
+  if (
+    sub.status === 'incomplete' ||
+    // A LATE checkout payment on an expired sub — resurrect; we never keep the
+    // money AND the expiry (fsm edge incomplete_expired → active).
+    sub.status === 'incomplete_expired' ||
+    sub.status === 'trialing'
+  ) {
     sub = await activateSubscription(txDb, ctx, sub);
   } else if (sub.status === 'past_due') {
     sub = await recoverFromPastDue(txDb, ctx, sub);
@@ -153,6 +161,45 @@ export async function applyPaidSubEffects(
   if (invoice.periodStart && invoice.periodEnd && sub.currentPeriodIndex === invoice.periodIndex) {
     await advancePeriod(txDb, ctx, sub, invoice.periodStart, invoice.periodEnd);
   }
+  if (wasPastDue) {
+    await forgiveElapsedUnservedPeriods(txDb, ctx, invoice.subscriptionId);
+  }
+}
+
+/**
+ * RECOVERY FORGIVENESS (money-safety). A `past_due` subscription is invisible to
+ * the renewal sweep, so real time passes while dunning runs — on a 10-minute
+ * plan with the default 24h first retry that is ~144 whole periods. Without
+ * this, the drain loop BACK-BILLED every one of them the moment the customer
+ * recovered: paying one failed invoice bought a stack of invoices for service
+ * never rendered. The deal is: pay the failed period once, service resumes NOW —
+ * so after recovery the anchor is shifted forward until the CURRENT period
+ * contains this instant (`reanchorForIntervalSwitch` keeps `current_period_index`
+ * monotonic, so the invoice-per-period uniqueness cannot collide). A no-op when
+ * the sub is not actually behind (a fast recovery inside one period).
+ */
+async function forgiveElapsedUnservedPeriods(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  subscriptionId: string
+): Promise<void> {
+  const sub = await loadSubscriptionRowById(txDb, ctx, subscriptionId);
+  if (sub.status !== 'active') return;
+  if (!sub.nextBillingAt || sub.nextBillingAt.getTime() > Date.now()) return; // not behind
+
+  const price = await loadPriceById(txDb, ctx, sub.priceId);
+  const cadence = { interval: price.interval, intervalCount: price.intervalCount };
+  const re = reanchorForIntervalSwitch(new Date(), sub.currentPeriodIndex, cadence);
+  const bounds = periodBounds(re.anchor, cadence, sub.currentPeriodIndex);
+  await txDb
+    .update(subscriptionsTable)
+    .set({
+      billingCycleAnchor: re.anchor,
+      currentPeriodStart: re.currentPeriodStart,
+      currentPeriodEnd: bounds.start,
+      nextBillingAt: bounds.start,
+    })
+    .where(and(eq(subscriptionsTable.id, sub.id), eq(subscriptionsTable.version, sub.version)));
 }
 
 /**

@@ -1,6 +1,6 @@
 import { AppError } from '@nombaone/errors';
-import { startSubscription } from '@shared/services/billing';
 
+import { startSubscription } from '@shared/services/billing';
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';
 
@@ -32,6 +32,7 @@ export const createSubscriptionController: RequestHandler = jsonHandler<Subscrip
       collectionMethod: body.collectionMethod,
       trialDays: body.trialDays,
       quantity: body.quantity,
+      callbackUrl: body.callbackUrl,
       metadata: body.metadata,
     });
 

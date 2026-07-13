@@ -7,9 +7,8 @@ import {
   type PaymentMethodRow,
 } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { emitEvent } from '@nombaone/sara/events';
-import { mintReference } from '@nombaone/sara/reference';
+
 import { loadSubscriptionRow } from '../subscriptions';
 import { triggerReattemptNow } from './attempt';
 import { getDunningStateBySubscriptionRef } from './queries';
@@ -18,8 +17,7 @@ import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
 
 export interface UpdateCardInput {
   subscriptionRef: string;
-  paymentMethodReference?: string;
-  checkoutToken?: string;
+  paymentMethodReference: string;
 }
 
 export interface UpdateCardResult {
@@ -28,9 +26,13 @@ export interface UpdateCardResult {
 }
 
 /**
- * Swap the card on a subscription mid-dunning (D10 / E6 ★). Either promote an
- * existing active `payment_methods` row, or attach a freshly-tokenized card (the
- * captured `checkoutToken` becomes the new `tokenKey`). The default swap happens in
+ * Swap the card on a subscription mid-dunning (D10 / E6 ★) by promoting an
+ * already-captured `payment_methods` row (it must belong to the subscription's
+ * customer). There is deliberately NO raw-token path here: the removed
+ * `checkoutToken` variant inserted an attacker-suppliable string verbatim as an
+ * active default card's `tokenKey` — an unverified string became a chargeable
+ * credential. Fresh cards are captured only by the hosted checkout, whose
+ * provider webhook attaches the row server-side. The default swap happens in
  * ONE transaction — the OLD token stays valid until the new one commits, so there is
  * **never a zero-valid-token-but-billable window** (E6). The superseded card is
  * marked `removed`. After commit, if the sub is mid-dunning (`card_update_required`),
@@ -49,44 +51,27 @@ export async function updateCardOnSubscription(
     .limit(1);
 
   const newMethod = await txDb.transaction(async (tx) => {
-    // Resolve (or attach) the replacement method.
-    let replacement: PaymentMethodRow;
-    if (input.paymentMethodReference) {
-      const [existing] = await tx
-        .select()
-        .from(paymentMethodsTable)
-        .where(
-          and(
-            eq(paymentMethodsTable.organizationId, ctx.organizationId),
-            eq(paymentMethodsTable.mode, ctx.mode),
-            eq(paymentMethodsTable.reference, input.paymentMethodReference),
-            eq(paymentMethodsTable.customerId, sub.customerId)
-          )
+    // Resolve the replacement method — an existing captured row only.
+    const [existing] = await tx
+      .select()
+      .from(paymentMethodsTable)
+      .where(
+        and(
+          eq(paymentMethodsTable.organizationId, ctx.organizationId),
+          eq(paymentMethodsTable.mode, ctx.mode),
+          eq(paymentMethodsTable.reference, input.paymentMethodReference),
+          eq(paymentMethodsTable.customerId, sub.customerId)
         )
-        .limit(1);
-      if (!existing) {
-        throw AppError.NotFound(
-          'payment method not found for this subscription customer',
-          { reference: input.paymentMethodReference },
-          NOMBAONE_ERROR_CODES.SUBSCRIPTION_PAYMENT_METHOD_REQUIRED
-        );
-      }
-      replacement = existing;
-    } else {
-      const [attached] = await tx
-        .insert(paymentMethodsTable)
-        .values({
-          reference: mintReference('PMT'),
-          organizationId: ctx.organizationId,
-          mode: ctx.mode,
-          customerId: sub.customerId,
-          kind: 'card',
-          status: 'active',
-          tokenKey: input.checkoutToken,
-        })
-        .returning();
-      replacement = attached!;
+      )
+      .limit(1);
+    if (!existing) {
+      throw AppError.NotFound(
+        'payment method not found for this subscription customer',
+        { reference: input.paymentMethodReference },
+        NOMBAONE_ERROR_CODES.SUBSCRIPTION_PAYMENT_METHOD_REQUIRED
+      );
     }
+    const replacement: PaymentMethodRow = existing;
 
     // Clear the old default (partial-unique on is_default) then set the new one.
     if (sub.defaultPaymentMethodId && sub.defaultPaymentMethodId !== replacement.id) {

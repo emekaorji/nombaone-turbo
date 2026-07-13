@@ -1,6 +1,6 @@
 import { AppError } from '@nombaone/errors';
-import { removeDiscount } from '@shared/services/discounts';
 
+import { removeDiscount } from '@shared/services/discounts';
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';
 

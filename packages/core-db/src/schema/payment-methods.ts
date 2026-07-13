@@ -75,6 +75,11 @@ export const paymentMethodsTable = pgTable(
     defaultUnique: uniqueIndex('payment_methods_default_unique')
       .on(table.customerId, table.mode)
       .where(sql`${table.isDefault}`),
+    // One row per (customer, card token): the invoice-branch token capture is
+    // idempotent under webhook replays because the second insert conflicts here.
+    customerTokenUnique: uniqueIndex('payment_methods_customer_token_unique')
+      .on(table.customerId, table.tokenKey)
+      .where(sql`${table.tokenKey} IS NOT NULL`),
     customerIdx: index('payment_methods_customer_idx').on(
       table.organizationId,
       table.mode,

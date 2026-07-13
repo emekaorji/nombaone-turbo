@@ -29,16 +29,19 @@ sandbox endpoint.
 
 ## 2 · Verify the signature: on the raw body
 
-Every delivery carries a signature over `` `${timestamp}.${rawBody}` ``. Verify
-**before you parse**: compute the HMAC over the exact bytes received, and compare
-in constant time.
+Every delivery carries a signature over `` `${timestamp}.${rawBody}` ``, keyed by
+the **SHA-256 of your plaintext signing secret** (hex). Verify **before you
+parse**: derive the key once, compute the HMAC over the exact bytes received, and
+compare in constant time. (The official SDKs hash the secret internally: pass
+them the plaintext `whsec_…`.)
 
 ```ts
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export function verifyWebhook(rawBody: string, header: string, secret: string) {
   const { t, v1 } = parseHeader(header); // "t=…,v1=…"
-  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+  const key = createHash("sha256").update(secret).digest("hex"); // key = sha256(whsec)
+  const expected = createHmac("sha256", key).update(`${t}.${rawBody}`).digest("hex");
   const ok =
     v1.length === expected.length &&
     timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
@@ -75,7 +78,7 @@ pile-ups.
 ```ts
 export async function POST(req: Request) {
   const raw = await req.text();
-  verifyWebhook(raw, req.headers.get("x-nomba-signature")!, SECRET);
+  verifyWebhook(raw, req.headers.get("x-nombaone-signature")!, SECRET);
   const event = JSON.parse(raw);
   if (await seen(event.id)) return new Response(null, { status: 200 });
   await markSeen(event.id);
@@ -94,6 +97,8 @@ Handle the unhappy paths, not just `invoice.paid`:
   yet: on a thin balance this is "not yet."
 - **`invoice.action_required`**: a card needs OTP; the payload carries a fresh
   checkout link to send the customer.
+- **`invoice.payment_instructions`**: a bank-transfer invoice is awaiting the
+  payer; the payload carries the virtual account dedicated to that invoice.
 - **`invoice.payment_recovered`**: dunning (or the customer completing OTP)
   succeeded; restore normal state.
 

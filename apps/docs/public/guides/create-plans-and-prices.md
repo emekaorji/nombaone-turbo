@@ -88,6 +88,132 @@ with `intervalCount: 3` bills quarterly, and `interval: "minute"` with
 > in the time you have, rather than [advancing the clock](/sandbox-toolkit/clock)
 > by hand — but it is a real cadence, valid in both sandbox and live.
 
+## Change what a plan costs
+
+Raising the monthly price is an edit to the **plan** — not a scavenger hunt
+through its price rows. `PATCH /v1/plans/{id}` takes the same `prices` array the
+create call takes, and reconciles it against what the plan already costs. Send
+what you want the plan to cost:
+
+```bash
+curl -X PATCH https://sandbox.api.nombaone.xyz/v1/plans/{planId} \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "prices": [
+      { "unitAmountInKobo": 600000, "interval": "month" },
+      { "unitAmountInKobo": 5000000, "interval": "year" }
+    ]
+  }'
+```
+
+Per cadence (`interval` + `intervalCount`), the engine works out what changed:
+
+- **Nothing priced on that cadence yet** → the price is **created**, and
+`price.created` fires.
+- **The amount is the same** → **nothing happens**. No row is written, no event is
+emitted. Resending your current catalog is a no-op, which is what makes a "save"
+button on a pricing form safe to press twice.
+- **The amount is different** → a **new price is created**, and every other active
+price on that cadence is **deactivated**. You get a `price.created` and a
+`price.deactivated`.
+
+A cadence you **don't** send is left completely alone. In the call above the yearly
+price was resent unchanged, so it keeps its `id`; the monthly one moved from ₦5,000
+to ₦6,000, so it comes back with a new one:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "domain": "plan",
+    "id": "nbo481920374615pln",
+    "name": "Pro",
+    "status": "active",
+    "prices": [
+      {
+        "domain": "price",
+        "id": "nbo903117254480prc",
+        "planId": "nbo481920374615pln",
+        "unitAmountInKobo": 600000,
+        "currency": "NGN",
+        "interval": "month",
+        "intervalCount": 1,
+        "active": true
+      },
+      {
+        "domain": "price",
+        "id": "nbo225864019773prc",
+        "planId": "nbo481920374615pln",
+        "unitAmountInKobo": 5000000,
+        "currency": "NGN",
+        "interval": "year",
+        "intervalCount": 1,
+        "active": true
+      }
+    ]
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+`data.prices` is the plan's **active** prices after the update, and it is always
+there — the shape doesn't depend on whether you sent any. Omitting `prices`
+entirely still edits only `name`, `description` and `metadata`, exactly as before.
+
+### Why a change is a new price, not an edit
+
+A price is **immutable**: its `unitAmountInKobo` is never rewritten in place. A
+subscription pins a `priceId`, and that pinned row is the only reason an existing
+subscriber's bill cannot move under them. Rewriting the amount on the row would
+re-price every subscriber holding it — retroactively, including invoices already
+issued against it. So a change mints a **new** row and retires the old one, which
+stays exactly as it was, still saying what your existing subscribers agreed to pay.
+
+Grandfathering is a property of the data model, not a feature someone remembered to
+build. New subscribers reach the new price; the ones already billing keep theirs
+until you deliberately move them, which is a
+[plan change](/guides/proration-and-plan-changes).
+
+> **Sending `prices` needs `prices:write`**
+>
+> Same guard as `POST /v1/plans`. A `plans:write` key can rename a plan or edit its
+> description, but the moment `prices` is present the key must **also** hold
+> `prices:write` — that array mints and retires price rows. Without it the call is
+> rejected with `API_KEY_SCOPE_FORBIDDEN`, before any write.
+
+## Watch a subscription bill
+
+A monthly subscription takes a month to prove it renews. `interval: "minute"` with
+`intervalCount: 10` proves it over lunch:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "unitAmountInKobo": 50000, "interval": "minute", "intervalCount": 10 }'
+```
+
+Put a customer on that price and ten minutes later the renewal happens on its own,
+with nothing stubbed: `invoice.created`, `invoice.finalized`, the charge, then
+`invoice.paid`, ledger postings, and the subscription's period rolls forward. It
+runs through the **same** engine `month` runs through — the cadence is the only
+thing that differs, and nothing in the billing path special-cases it. So what you
+watch work in ten minutes is what will work in thirty days.
+
+It is a first-class cadence: valid in live, not just sandbox. Sell a ten-minute
+subscription if you have a use for one.
+
+> **It needs a per-minute billing sweep**
+>
+> Renewals land when the billing sweep runs, so a minute cadence only bills on time
+> if the sweep ticks every minute — `BILLING_SWEEP_CRON=* * * * *`, which is now
+> the default. On a slower sweep a ten-minute subscription still bills every period
+> it owes, in a burst, when the sweep next runs: a backlog **drains**, it never
+> parks. It just stops being a live demo.
+
 ## Add a trial
 
 Set `trialPeriodDays` on the price. A subscription started on it enters

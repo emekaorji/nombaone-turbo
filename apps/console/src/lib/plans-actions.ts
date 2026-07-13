@@ -1,14 +1,15 @@
 'use server';
 
-import { intervalLabel, isWallClockInterval, PRICE_INTERVALS } from '@nombaone/core-contracts/billing';
+import { intervalLabel, PRICE_INTERVALS } from '@nombaone/core-contracts/billing';
 import { plansTable, pricesTable } from '@nombaone/core-db';
 import { db as poolDb } from '@nombaone/core-db/pool';
 import { db } from '@nombaone/core-db/serverless';
 import { mintReference } from '@nombaone/sara/reference';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 import { getSession } from '@/lib/auth';
+import { cadenceOrder, parseCadenceKey, type Cadence } from '@/lib/cadences';
 import { toKobo } from '@/lib/money';
 
 import type { PriceInterval } from '@nombaone/core-contracts/types';
@@ -21,6 +22,50 @@ const canWrite = (role: string): boolean => role !== 'viewer';
  * than casting, so a value the engine does not know can never reach the insert. */
 function toInterval(raw: string): PriceInterval | null {
   return (PRICE_INTERVALS as readonly string[]).includes(raw) ? (raw as PriceInterval) : null;
+}
+
+/** One cadence, and what the merchant says it costs. */
+type PricedCadence = { cadence: Cadence; kobo: number };
+
+/**
+ * Every `amount_<interval>_<count>` field the form posted, parsed into cadences.
+ *
+ * The key carries the COUNT as well as the unit, so `minute × 10` — the cadence that lets a
+ * developer watch a subscription renew while they are still building — is expressible in the
+ * same breath as `month`. The old fields were keyed by the unit alone, which silently pinned
+ * every price the form could create to a count of 1.
+ *
+ * Empty fields are SKIPPED, not zeroed: on the edit form that means "this cadence was not
+ * submitted", and an unsubmitted cadence is left exactly as it is.
+ */
+function readSubmittedPrices(formData: FormData): Result<{ priced: PricedCadence[] }> {
+  const priced: PricedCadence[] = [];
+  const seen = new Set<string>();
+
+  for (const [field, value] of formData.entries()) {
+    if (!field.startsWith('amount_')) continue;
+    const cadence = parseCadenceKey(field.slice('amount_'.length));
+    // Validated against the engine's own enum, never cast: a hand-crafted post cannot smuggle
+    // a unit the billing engine does not know into an insert.
+    if (!cadence) return { status: 'error', message: 'That is not a billing cadence we can charge on.' };
+
+    const raw = String(value ?? '').trim();
+    if (!raw) continue;
+
+    const kobo = toKobo(raw);
+    if (kobo === null || kobo <= 0) {
+      return { status: 'error', message: `Enter a valid ${cadence.label} amount in naira.` };
+    }
+    if (seen.has(cadence.key)) {
+      return { status: 'error', message: `Two ${cadence.label} prices were submitted; a plan bills once per cadence.` };
+    }
+    seen.add(cadence.key);
+    priced.push({ cadence, kobo });
+  }
+
+  // Deterministic order → deterministic lock order → two concurrent edits of one plan cannot deadlock.
+  priced.sort((a, b) => cadenceOrder(a.cadence, b.cadence));
+  return { status: 'success', priced };
 }
 
 /**
@@ -41,30 +86,16 @@ export async function createPlanWithPricesAction(formData: FormData): Promise<Re
   const description = String(formData.get('description') ?? '').trim() || null;
   if (!name) return { status: 'error', message: 'Give the plan a name.' };
 
-  const baseInterval = toInterval(String(formData.get('baseInterval') ?? 'month'));
-  if (baseInterval === null || isWallClockInterval(baseInterval)) {
-    return { status: 'error', message: 'Choose a billing interval.' };
-  }
+  const baseCadence = parseCadenceKey(String(formData.get('baseCadence') ?? ''));
+  if (!baseCadence) return { status: 'error', message: 'Choose a billing cadence.' };
 
-  /**
-   * One amount per calendar cadence (`amount_month`, `amount_year`, …) — the base is simply the
-   * cadence named by `baseInterval`. A WALL-CLOCK cadence (`minute`) is an engine/test cadence, not
-   * something a customer is put on, so it is not offered and not accepted here; an exotic cadence
-   * (month × 3, minute × 10) is still reachable through "Add price" on the ladder.
-   */
-  const priced: { interval: PriceInterval; kobo: number }[] = [];
-  for (const iv of PRICE_INTERVALS) {
-    if (isWallClockInterval(iv)) continue;
-    const raw = String(formData.get(`amount_${iv}`) ?? '').trim();
-    if (!raw) continue;
-    const kobo = toKobo(raw);
-    if (kobo === null) return { status: 'error', message: `Enter a valid ${intervalLabel(iv)} amount in naira.` };
-    priced.push({ interval: iv, kobo });
-  }
+  const submitted = readSubmittedPrices(formData);
+  if (submitted.status === 'error') return submitted;
+  const { priced } = submitted;
 
-  // The form cannot submit two amounts for one cadence, so the (interval, count) uniqueness this
-  // action enforces elsewhere holds here by construction. What it CAN do is submit none.
-  if (!priced.some((p) => p.interval === baseInterval)) {
+  // The form cannot submit two amounts for one cadence (`readSubmittedPrices` rejects it anyway).
+  // What it CAN do is submit none — and a plan with no price is a plan nobody can subscribe to.
+  if (!priced.some((p) => p.cadence.key === baseCadence.key)) {
     return { status: 'error', message: 'Set what the plan costs — a plan with no price cannot be billed.' };
   }
 
@@ -90,8 +121,8 @@ export async function createPlanWithPricesAction(formData: FormData): Promise<Re
           mode: session.mode,
           planId: plan.id,
           unitAmount: p.kobo,
-          interval: p.interval,
-          intervalCount: 1,
+          interval: p.cadence.interval,
+          intervalCount: p.cadence.intervalCount,
           active: true,
         })),
       );
@@ -102,6 +133,166 @@ export async function createPlanWithPricesAction(formData: FormData): Promise<Re
 
   revalidatePath('/plans');
   return { status: 'success', reference };
+}
+
+/**
+ * ── Edit a plan, prices and all — THE RECONCILE ───────────────────────────────
+ *
+ * The merchant edits the plan the way they created it: a name, and what it costs on each
+ * cadence. Underneath, a price row stays IMMUTABLE — its money is never rewritten — because a
+ * subscription pins a `price_id`, and that pinned row is the entire reason an existing
+ * subscriber's bill cannot move under them. So "changing a price" is: mint a new row, retire the
+ * old one. This function makes that the merchant's outcome instead of the merchant's problem.
+ *
+ * Per SUBMITTED cadence, inside one transaction:
+ *
+ *   no active price     → INSERT           (the merchant switched this cadence on)
+ *   amount unchanged    → NOTHING          (one active row) — a no-op edit writes nothing at all
+ *                       → deactivate dups  (several active rows: heal a legacy plan down to one)
+ *   amount changed      → INSERT new + deactivate EVERY other active row on that cadence
+ *
+ * A cadence that is NOT submitted is left completely alone — it stays active, untouched. That is
+ * what makes a partial edit safe: omission can never silently retire a price.
+ *
+ * The plan row is locked FOR UPDATE first. Two merchants editing the same plan at once would
+ * otherwise both find a cadence empty and both mint a price for it — and a FOR UPDATE on the
+ * price rows cannot prevent that, because you cannot lock a row that does not exist yet.
+ */
+export async function updatePlanWithPricesAction(
+  planRef: string,
+  formData: FormData,
+): Promise<Result<{ created: number; retired: number }>> {
+  const session = await getSession();
+  if (!session) return { status: 'error', message: 'Your session expired. Sign in again.' };
+  if (!canWrite(session.user.role)) return { status: 'error', message: 'Viewers cannot edit plans.' };
+
+  const name = String(formData.get('name') ?? '').trim();
+  if (!name) return { status: 'error', message: 'Give the plan a name.' };
+  const description = String(formData.get('description') ?? '').trim() || null;
+
+  const submitted = readSubmittedPrices(formData);
+  if (submitted.status === 'error') return submitted;
+  const { priced } = submitted;
+
+  let created = 0;
+  let retired = 0;
+
+  try {
+    await poolDb.transaction(async (tx) => {
+      const [plan] = await tx
+        .select({ id: plansTable.id, status: plansTable.status })
+        .from(plansTable)
+        .where(
+          and(
+            eq(plansTable.organizationId, session.organizationId),
+            eq(plansTable.mode, session.mode),
+            eq(plansTable.reference, planRef),
+          ),
+        )
+        .for('update');
+
+      if (!plan) throw new Error('plan_missing');
+      if (plan.status === 'archived') throw new Error('plan_archived');
+
+      await tx.update(plansTable).set({ name, description }).where(eq(plansTable.id, plan.id));
+
+      for (const { cadence, kobo } of priced) {
+        // Newest first: the newest active row is the canonical one for this cadence. A legacy plan
+        // can carry two live monthly prices, and which one a new subscriber gets would otherwise be
+        // decided by row order — a coin toss over money.
+        const actives = await tx
+          .select()
+          .from(pricesTable)
+          .where(
+            and(
+              eq(pricesTable.planId, plan.id),
+              eq(pricesTable.interval, cadence.interval),
+              eq(pricesTable.intervalCount, cadence.intervalCount),
+              eq(pricesTable.active, true),
+            ),
+          )
+          .orderBy(desc(pricesTable.createdAt))
+          .for('update');
+
+        const canonical = actives[0];
+
+        // The merchant switched a cadence on. Nothing to retire.
+        if (!canonical) {
+          await tx.insert(pricesTable).values({
+            reference: mintReference('PRC'),
+            organizationId: session.organizationId,
+            mode: session.mode,
+            planId: plan.id,
+            unitAmount: kobo,
+            interval: cadence.interval,
+            intervalCount: cadence.intervalCount,
+            active: true,
+          });
+          created += 1;
+          continue;
+        }
+
+        // Untouched. Write NOTHING — an edit that changed only the name must not silently
+        // recreate every price on the plan and hand each subscriber-facing row a new id.
+        if (canonical.unitAmount === kobo) {
+          const stale = actives.slice(1).map((p) => p.id);
+          if (stale.length > 0) {
+            await tx.update(pricesTable).set({ active: false }).where(inArray(pricesTable.id, stale));
+            retired += stale.length;
+          }
+          continue;
+        }
+
+        // Changed. The replacement inherits everything but the money — same cadence, same billing
+        // semantics, same trial — so only the amount moves.
+        const [fresh] = await tx
+          .insert(pricesTable)
+          .values({
+            reference: mintReference('PRC'),
+            organizationId: canonical.organizationId,
+            mode: canonical.mode,
+            planId: canonical.planId,
+            unitAmount: kobo,
+            currency: canonical.currency,
+            interval: canonical.interval,
+            intervalCount: canonical.intervalCount,
+            usageType: canonical.usageType,
+            billingScheme: canonical.billingScheme,
+            trialPeriodDays: canonical.trialPeriodDays,
+            metadata: canonical.metadata,
+            active: true,
+          })
+          .returning({ id: pricesTable.id });
+        if (!fresh) throw new Error('price_insert_failed');
+        created += 1;
+
+        // Retire every OTHER active row on this cadence — not just the canonical one. The new row is
+        // excluded by id, so the plan is never left with nothing to bill on.
+        const flipped = await tx
+          .update(pricesTable)
+          .set({ active: false })
+          .where(
+            and(
+              eq(pricesTable.planId, plan.id),
+              eq(pricesTable.interval, cadence.interval),
+              eq(pricesTable.intervalCount, cadence.intervalCount),
+              eq(pricesTable.active, true),
+              ne(pricesTable.id, fresh.id),
+            ),
+          )
+          .returning({ id: pricesTable.id });
+        retired += flipped.length;
+      }
+    });
+  } catch (err) {
+    const code = err instanceof Error ? err.message : '';
+    if (code === 'plan_missing') return { status: 'error', message: 'That plan no longer exists.' };
+    if (code === 'plan_archived') return { status: 'error', message: 'An archived plan cannot be edited.' };
+    return { status: 'error', message: 'Could not save the plan. Nothing was changed — try again.' };
+  }
+
+  revalidatePath('/plans');
+  return { status: 'success', created, retired };
 }
 
 /**
@@ -245,22 +436,6 @@ export async function changePriceAction(priceRef: string, formData: FormData): P
 
   revalidatePath('/plans');
   return { status: 'success', reference };
-}
-
-/** Edit a plan's display fields (name/description). Prices are immutable and unaffected. */
-export async function updatePlanAction(planRef: string, formData: FormData): Promise<{ ok: boolean; message?: string }> {
-  const session = await getSession();
-  if (!session) return { ok: false, message: 'Your session expired.' };
-  if (!canWrite(session.user.role)) return { ok: false, message: 'Viewers cannot edit plans.' };
-  const name = String(formData.get('name') ?? '').trim();
-  if (!name) return { ok: false, message: 'Name cannot be empty.' };
-  const description = String(formData.get('description') ?? '').trim() || null;
-  await db
-    .update(plansTable)
-    .set({ name, description })
-    .where(and(eq(plansTable.organizationId, session.organizationId), eq(plansTable.mode, session.mode), eq(plansTable.reference, planRef)));
-  revalidatePath('/plans');
-  return { ok: true };
 }
 
 /** Prices are immutable — the only mutation is the `active` flip (a deactivation). */

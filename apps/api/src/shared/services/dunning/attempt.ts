@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, or } from 'drizzle-orm';
 
 import {
   dunningAttemptsTable,
@@ -8,17 +8,26 @@ import {
   type PaymentMethodRow,
   type SubscriptionRow,
 } from '@nombaone/core-db/schema';
-
 import { ensureSystemAccounts } from '@nombaone/sara/config';
 import { emitEvent } from '@nombaone/sara/events';
-import { claimInvoicePaid, linkInvoiceLedgerTransaction, markInvoiceUncollectible } from '../invoices';
 import { ensureAccount, postTransaction } from '@nombaone/sara/ledger';
 import { coerceFailureReason, type PaymentFailureReason } from '@nombaone/sara/nomba/failure-taxonomy';
 import { getRail, maybeSimulateTestCollect } from '@nombaone/sara/rails';
 import { mintReference } from '@nombaone/sara/reference';
+import { cadenceApproxMs, isWallClockInterval } from '@nombaone/core-contracts/billing';
+
 import { churnFromPastDue, recoverFromPastDue } from '../subscriptions';
-import { mintInvoiceCheckoutLink } from '../billing/actionLink';
+import { claimInvoicePaid, linkInvoiceLedgerTransaction, markInvoiceUncollectible } from '../invoices';
+import { settleInvoicePayment } from '../settlement';
+import { ensureInvoiceCheckoutLink, mintInvoiceCheckoutLink } from '../billing/actionLink';
+import { buildRailCollectMetadata } from '../billing/railMetadata';
 import {
+  buildUpdatePaymentMethodUrl,
+  enqueueCustomerEmail,
+  loadCommsContext,
+} from '../comms';
+import {
+  loadPriceById,
   loadSubscriptionRowById,
   railKeyForMethod,
   reconcilePaidSubEffects,
@@ -47,8 +56,40 @@ const nextAttemptInstant = (
 ): Date | null => {
   if (branch === 'card_update_required') return null; // D4 — never a blind charge retry
   if (branch === 'short_path') return rawNextAttemptAt(base, attemptIndex, policy); // no payday bias
+  // A payment reminder is a nudge, not a debit — payday timing is meaningless for
+  // a push payer, and the ladder must track the (possibly sub-day) cadence.
+  if (branch === 'payment_reminder') return rawNextAttemptAt(base, attemptIndex, policy);
   return nextPaydayBiasedAttemptAt(base, attemptIndex, policy); // D12
 };
+
+/**
+ * The tenant's dunning policy, made CADENCE-AWARE for the subscription at hand.
+ * `schedule.ts` is deliberately price-blind (org-level policy has no cadence), so
+ * the decision lives here, where the subscription — and through it the price —
+ * is in hand. For a WALL-CLOCK cadence (`minute × N`):
+ *   • payday bias OFF — snapping a retry forward to 02:00 on the 26th would park
+ *     a ten-minute plan for weeks;
+ *   • each ladder rung is clamped to one period length — a ladder longer than
+ *     the cadence freezes renewals (the sweep skips `past_due`) for multiples of
+ *     the service period the customer actually bought.
+ * Calendar cadences pass through untouched.
+ */
+async function resolveCadenceAwarePolicy(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  sub: SubscriptionRow
+): Promise<ResolvedDunningPolicy> {
+  const policy = await resolveBillingSettings(txDb, ctx);
+  const price = await loadPriceById(txDb, ctx, sub.priceId);
+  if (!isWallClockInterval(price.interval)) return policy;
+
+  const periodHours = cadenceApproxMs(price.interval, price.intervalCount) / 3_600_000;
+  return {
+    ...policy,
+    paydayBiasEnabled: false,
+    dunningIntervalsHours: policy.dunningIntervalsHours.map((h) => Math.min(h, periodHours)),
+  };
+}
 
 const commsEventFor = (branch: DunningBranch): string =>
   branch === 'card_update_required' ? 'payment_method.expiring' : 'invoice.payment_failed';
@@ -106,7 +147,7 @@ export async function scheduleFirstAttempt(
   ctx: DomainContext,
   input: ScheduleFirstAttemptInput
 ): Promise<DunningAttemptRow | null> {
-  const policy = await resolveBillingSettings(txDb, ctx);
+  const policy = await resolveCadenceAwarePolicy(txDb, ctx, input.subscription);
   const branch = classifyDunningBranch(input.reason);
   const now = new Date();
   const status = branch === 'card_update_required' ? 'card_update_required' : 'scheduled';
@@ -198,19 +239,21 @@ async function chargeDunningAttempt(
   const platformRevenue = await ensureAccount(txDb, ctx, { key: 'platform_revenue', kind: 'revenue' });
 
   // TEST-MODE ONLY: a seeded test method short-circuits to a deterministic outcome
-  // (null on live ⇒ the real rail runs, unchanged).
+  // (null on live ⇒ the real rail runs, unchanged). Metadata comes from the ONE
+  // shared builder — this site used to hand-roll a bag that carried `tokenKey`
+  // but neither `mandateId` nor `accountId` (so mandate retries failed closed and
+  // card retries charged the un-webhooked parent pool), and sent our internal
+  // UUID as Nomba's customerId. The rail's idempotency key stays the ATTEMPT ref
+  // (fresh per retry — Nomba dedupes a replay of the SAME attempt only); the
+  // metadata still names the invoice for reconciliation.
+  const simulated = maybeSimulateTestCollect(ctx.mode, method, outstanding);
   const result =
-    maybeSimulateTestCollect(ctx.mode, method, outstanding) ??
+    simulated ??
     (await getRail(railKeyForMethod(method.kind)).collect({
       ...ctx,
       reference: attemptRef,
       amountKobo: outstanding,
-      metadata: {
-        invoice: invoice.reference,
-        paymentMethod: method.reference,
-        tokenKey: method.tokenKey ?? undefined,
-        customerId: method.customerId,
-      },
+      metadata: await buildRailCollectMetadata(txDb, ctx, { invoice, method }),
     }));
 
   if (result.status === 'succeeded') {
@@ -225,6 +268,13 @@ async function chargeDunningAttempt(
       ],
     });
     const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
+
+    // 🔴 A RECOVERED PAYMENT IS STILL THE MERCHANT'S MONEY. This posted the charge and
+    // stopped — so the whole gross of every successful recovery sat in `platform_revenue`
+    // and the merchant was credited nothing. Recovering a failed payment is the entire
+    // point of dunning; it must pay the merchant exactly like any other payment.
+    await settleInvoicePayment(txDb, ctx, linked);
+
     return { outcome: 'succeeded', invoice: linked };
   }
 
@@ -284,13 +334,90 @@ export async function executeDueAttempt(
 
   const method = await resolveCollectionMethod(txDb, ctx, sub);
   if (!method) {
-    // No usable payment method → cannot charge; hold for a card update (D4-shaped).
-    await toCardUpdateRequired(txDb, ctx, claimed, invoice, 'no_payment_method');
+    if (sub.collectionMethod === 'send_invoice' || claimed.branch === 'payment_reminder') {
+      // PUSH-rail dunning: there is nothing to charge — the "attempt" is a nudge.
+      // The old behavior parked these on `card_update_required` with
+      // `nextAttemptAt: null`, so a send_invoice subscription could NEVER churn:
+      // it accrued unpaid invoices forever while reading `active`.
+      await runPaymentReminderAttempt(txDb, ctx, claimed, sub, invoice);
+    } else {
+      // charge_automatically with a vanished/removed method → a card problem.
+      await toCardUpdateRequired(txDb, ctx, claimed, invoice, 'no_payment_method');
+    }
     return;
   }
 
   const charge = await chargeDunningAttempt(txDb, ctx, invoice, method, claimed.reference);
   await recordOutcome(txDb, ctx, { attempt: { ...claimed, railKey: railKeyForMethod(method.kind) }, sub, invoice, charge });
+}
+
+/**
+ * One PUSH-rail dunning attempt: re-send the payment link (email + the
+ * `invoice.payment_instructions`-adjacent nudge), then reschedule on the
+ * cadence-aware ladder — or churn when the ladder is spent. No rail call ever
+ * happens on this branch; the invoice settles via the inbound webhook when the
+ * customer finally pays.
+ */
+async function runPaymentReminderAttempt(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  attempt: DunningAttemptRow,
+  sub: SubscriptionRow,
+  invoice: InvoiceRow
+): Promise<void> {
+  const policy = await resolveCadenceAwarePolicy(txDb, ctx, sub);
+  const now = new Date();
+  const firstFailedAt = await firstFailureInstant(txDb, ctx, invoice.id);
+
+  if (isDunningExhausted(attempt.attemptNumber, firstFailedAt, now, policy)) {
+    await finishAttempt(txDb, ctx, attempt, 'exhausted', 'payment_overdue');
+    await churnSubscription(txDb, ctx, sub, invoice);
+    return;
+  }
+
+  // The nudge: same link the issue-time email carried (stamped on the invoice,
+  // so no Nomba round-trip), re-sent with a per-attempt dedupe key.
+  const { invoice: withLink, checkoutLink } = await ensureInvoiceCheckoutLink(txDb, ctx, invoice);
+  const pi = (withLink.metadata as Record<string, unknown> | null)?.payInstructions as
+    | Record<string, unknown>
+    | undefined;
+  const comms = await loadCommsContext(txDb, ctx, invoice);
+  await enqueueCustomerEmail(txDb, ctx, {
+    template: 'invoice_payment_link',
+    to: comms.email,
+    dedupeKey: `${invoice.reference}:remind:${attempt.attemptNumber}`,
+    data: {
+      amountKobo: invoice.amountDue - invoice.amountPaid,
+      planName: comms.planName,
+      merchantName: comms.merchantName,
+      checkoutLink,
+      dueAt: invoice.dueDate ? new Date(invoice.dueDate).toISOString() : undefined,
+      bankName: pi?.bankName,
+      accountNumber: pi?.accountNumber,
+      accountName: pi?.accountName,
+    },
+  });
+
+  await finishAttempt(txDb, ctx, attempt, 'rescheduled', 'reminder_sent');
+  await txDb
+    .insert(dunningAttemptsTable)
+    .values({
+      reference: mintReference('DUN'),
+      organizationId: ctx.organizationId,
+      mode: ctx.mode,
+      subscriptionId: sub.id,
+      invoiceId: invoice.id,
+      attemptNumber: attempt.attemptNumber + 1,
+      status: 'scheduled',
+      branch: 'payment_reminder',
+      failureReason: 'invoice_overdue',
+      railKey: attempt.railKey,
+      scheduledAt: now,
+      nextAttemptAt: nextAttemptInstant('payment_reminder', now, attempt.attemptNumber, policy),
+    })
+    .onConflictDoNothing({
+      target: [dunningAttemptsTable.invoiceId, dunningAttemptsTable.attemptNumber],
+    });
 }
 
 interface RecordOutcomeInput {
@@ -313,6 +440,27 @@ export async function recordOutcome(
 ): Promise<void> {
   const { attempt, sub, invoice, charge } = input;
 
+  // CAS-claim the attempt before acting. recordOutcome is reached from TWO
+  // directions — the sweep's executor (attempt already `attempting`) and the
+  // inbound-webhook dunning bridge (an async `pending` re-armed as `scheduled`).
+  // Without this fence an inbound `payment_failed` landing on a HELD
+  // `card_update_required` attempt re-classified it (→ blind retry, or a churn
+  // nobody asked for), and a replayed webhook could double-drive a terminal row.
+  const [claimed] = await txDb
+    .update(dunningAttemptsTable)
+    .set({ status: 'attempting' })
+    .where(
+      and(
+        eq(dunningAttemptsTable.id, attempt.id),
+        or(
+          eq(dunningAttemptsTable.status, 'attempting'),
+          and(eq(dunningAttemptsTable.status, 'scheduled'), eq(dunningAttemptsTable.outcome, 'pending'))
+        )
+      )
+    )
+    .returning({ id: dunningAttemptsTable.id });
+  if (!claimed) return;
+
   if (charge.outcome === 'succeeded') {
     await finishAttempt(txDb, ctx, attempt, 'succeeded', 'recovered');
     await recoverSubscription(txDb, ctx, sub, charge.invoice);
@@ -324,7 +472,7 @@ export async function recordOutcome(
     // recheck; the invoice may settle via the inbound webhook meanwhile, which the
     // next tick's `invoice.paidAt` short-circuit recovers. No new charge until then
     // (the rail dedupes on the attempt reference).
-    const policy = await resolveBillingSettings(txDb, ctx);
+    const policy = await resolveCadenceAwarePolicy(txDb, ctx, sub);
     await txDb
       .update(dunningAttemptsTable)
       .set({
@@ -348,7 +496,7 @@ export async function recordOutcome(
   const reason = charge.reason ?? 'unknown';
   const branch = classifyDunningBranch(reason);
   const now = new Date();
-  const policy = await resolveBillingSettings(txDb, ctx);
+  const policy = await resolveCadenceAwarePolicy(txDb, ctx, sub);
 
   await txDb
     .update(dunningAttemptsTable)
@@ -438,6 +586,22 @@ async function toCardUpdateRequired(
       type: 'payment_method.expiring',
       payload: { reference: invoice.reference, reason: 'card_update_required' },
     });
+    // Mail the CUSTOMER too — the merchant webhook alone left the one person
+    // who can fix a dead card uninformed. The action URL (the /pm page) is
+    // attached by the comms layer when the checkout app is configured.
+    const comms = await loadCommsContext(txDb, ctx, invoice);
+    await enqueueCustomerEmail(txDb, ctx, {
+      template: 'payment_method_update',
+      to: comms.email,
+      dedupeKey: `${invoice.reference}:card-update`,
+      data: {
+        amountKobo: invoice.amountDue - invoice.amountPaid,
+        planName: comms.planName,
+        merchantName: comms.merchantName,
+        reasonLine: gatewayMessage || undefined,
+        actionUrl: await buildUpdatePaymentMethodUrl(txDb, ctx, invoice),
+      },
+    });
   }
 }
 
@@ -479,6 +643,18 @@ async function toActionRequired(
       type: 'invoice.action_required',
       payload: { reference: invoice.reference, reason: 'otp_required', checkoutLink },
     });
+    const comms = await loadCommsContext(txDb, ctx, invoice);
+    await enqueueCustomerEmail(txDb, ctx, {
+      template: 'payment_action_required',
+      to: comms.email,
+      dedupeKey: `${invoice.reference}:otp`,
+      data: {
+        amountKobo: invoice.amountDue - invoice.amountPaid,
+        planName: comms.planName,
+        merchantName: comms.merchantName,
+        checkoutLink,
+      },
+    });
   }
 }
 
@@ -498,6 +674,17 @@ export async function recoverSubscription(
     type: 'invoice.payment_recovered',
     payload: { reference: invoice.reference },
   });
+  const comms = await loadCommsContext(txDb, ctx, invoice);
+  await enqueueCustomerEmail(txDb, ctx, {
+    template: 'payment_recovered',
+    to: comms.email,
+    dedupeKey: `${invoice.reference}:recovered`,
+    data: {
+      amountKobo: invoice.amountDue,
+      planName: comms.planName,
+      merchantName: comms.merchantName,
+    },
+  });
 }
 
 /** Involuntary churn (D6/D13): mark the invoice uncollectible + churn the sub. */
@@ -511,6 +698,17 @@ export async function churnSubscription(
   if (sub.status === 'past_due') {
     await churnFromPastDue(txDb, ctx, sub);
   }
+  const comms = await loadCommsContext(txDb, ctx, invoice);
+  await enqueueCustomerEmail(txDb, ctx, {
+    template: 'subscription_churned',
+    to: comms.email,
+    dedupeKey: `${invoice.reference}:churned`,
+    data: {
+      amountKobo: invoice.amountDue - invoice.amountPaid,
+      planName: comms.planName,
+      merchantName: comms.merchantName,
+    },
+  });
 }
 
 /**

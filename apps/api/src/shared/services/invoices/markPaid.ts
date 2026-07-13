@@ -1,7 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { invoicesTable, type InvoiceRow } from '@nombaone/core-db/schema';
-
 import { emitEvent } from '@nombaone/sara/events';
 
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';

@@ -24,8 +24,8 @@ export function createCardRail(getClient: NombaClientFactory): RailAdapter {
     key: 'card',
     direction: 'pull',
     async collect(input: RailCollectInput): Promise<RailCollectResult> {
-      const meta = input.metadata ?? {};
-      const tokenKey = meta.tokenKey as string | undefined;
+      const meta = input.metadata;
+      const tokenKey = meta?.tokenKey;
       if (!tokenKey) {
         return { status: 'failed', failureReason: 'no_token_on_method' };
       }
@@ -42,7 +42,9 @@ export function createCardRail(getClient: NombaClientFactory): RailAdapter {
           order: {
             amount: koboToNombaAmount(input.amountKobo), // kobo → naira decimal string (D.1)
             currency: 'NGN',
-            customerId: meta.customerId,
+            // The CUS… reference the card was tokenized under — the same identity
+            // Nomba saw at setup time, never our internal UUID.
+            customerId: meta.customerRef,
             customerEmail: meta.customerEmail,
             callbackUrl: meta.callbackUrl,
             orderReference,

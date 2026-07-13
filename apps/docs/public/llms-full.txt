@@ -199,6 +199,43 @@ before (`data.prices` is then `[]`), and the nested
 you add a cadence, or a new amount, to a plan that already exists. See
 [create plans and prices](/guides/create-plans-and-prices).
 
+- **Change what a plan costs in one call**: [`PATCH /v1/plans/{id}`](/reference/plans)
+now takes the same `prices` array, reconciled against what the plan already costs.
+Per cadence (`interval` + `intervalCount`): an unpriced cadence is **created**, an
+unchanged amount is a **no-op** (no row, no event), and a changed amount **creates
+a new price** and deactivates every other active price on that cadence. A cadence
+you don't send is left alone, so a partial update never retires a price by
+omission.
+
+A price is never rewritten in place, which is the point: a subscription pins a
+`priceId`, so existing subscribers keep the price they signed up on and only new
+ones reach the new amount. Sending `prices` requires the `prices:write` scope, as
+it does on `POST /v1/plans`. The response now carries `data.prices` — the plan's
+active prices after the update — which is additive; a `PATCH` with no `prices`
+behaves exactly as before.
+
+- **The `minute` interval**: a first-class cadence, in live as well as sandbox.
+`interval: "minute"` with `intervalCount: 10` bills every ten minutes, through the
+same engine `month` bills through — so you can watch a renewal (invoice, charge,
+webhook, ledger) happen while you are still building, instead of waiting a month
+to find out it works. It bills on time only if the billing sweep runs every minute,
+which is now the default (`BILLING_SWEEP_CRON=* * * * *`).
+
+### Fixed
+
+- **A badly overdue subscription no longer parks forever.** When a subscription fell
+more than `BILLING_MAX_CATCH_UP_PERIODS` (36) periods behind, the catch-up guard
+**threw before billing anything**, and the worker gave up without advancing the
+period. `nextBillingAt` therefore never moved, so every later sweep hit the same
+wall and threw again: the subscription was stuck, silently, forever, and its
+invoices were never issued. That is real revenue lost — 36 periods is three years
+of `month`, but six hours of `minute` × 10.
+
+A backlog now **drains**. The billing loop bills the periods it owes, oldest first,
+reporting how many remain rather than refusing to start; 36 is a per-job rate limit,
+not a wall, and the next sweep continues the remainder until the subscription is
+caught up. `BILLING_CATCH_UP_LIMIT_EXCEEDED` is no longer raised.
+
 ## 2026-07-01: v1
 
 The initial public release. The full subscription-billing surface over Nigerian
@@ -921,17 +958,17 @@ just retries.
 ---
 
 ---
-title: "Settlement & sub-accounts"
+title: "Settlement & payouts"
 type: explanation
-summary: "How a verified collection splits into the platform fee and the merchant's net, settles to their Nomba sub-account, and stays claw-back-safe with an escrow lock."
+summary: "How a verified collection splits into the platform fee and the merchant's net, accrues to a balance they own, and reaches their bank account."
 canonical: https://docs.nombaone.xyz/concepts/settlement-and-sub-accounts
 ---
 
-# Settlement & sub-accounts
+# Settlement & payouts
 
 When a subscription charge is collected and verified, the money doesn't just sit in one
-pool. It **splits at collection** and settles to the right place. Nomba One is multi-tenant
-by design: each organization's money is its own.
+pool. It **splits at collection**, and each organization's share becomes a balance that
+belongs to them.
 
 ## Split at collection
 
@@ -940,32 +977,59 @@ A verified collection is split into two legs, recorded in the [ledger](/concepts
 - **The platform fee**: the fee your platform charges, computed by the fee engine.
 - **The organization's net**: what's left, which belongs to the merchant.
 
-The net settles to that organization's **Nomba sub-account**. The split is posted as
-balanced ledger legs, so gross always equals fee plus net, to the exact kobo.
+The split is posted as balanced ledger legs, so gross always equals fee plus net, to the
+exact kobo. A single kobo cannot be invented or lost between them.
 
-## Sub-accounts
+## Where a merchant's money lives
 
-A **sub-account** is the organization's account on Nomba where its settled net lands.
-Multi-tenancy means one integration can run many merchants, each with their own sub-account,
-their own customers, and their own isolated money. See
+An organization's money is a **balance in the ledger** — a liability we owe them, credited
+the moment a payment settles. It exists from the day they sign up. There is nothing to
+connect, provision, or verify before billing works, and no way for an organization to be
+half-onboarded into a state where it collects money it cannot see.
+
+Multi-tenancy is a property of that ledger: one integration can run many merchants, each
+with their own customers and their own isolated money. See
 [isolation is a data-model property](/concepts/hard-parts/isolation-is-a-data-model-property).
 
-## Escrow, refunds, and payouts
+> **One number, one place**
+>
+> The balance a merchant is shown is the same ledger account a payout debits. It is never
+> re-derived somewhere else, because two sources of truth for "how much money do I have"
+> is how a merchant ends up seeing a figure they cannot actually withdraw.
 
-Settled funds are not instantly withdrawable. A recent-settlement **escrow lock** holds
+## Getting paid
+
+A merchant tells you one thing, and only when they want money out: **the bank account to
+pay it into**.
+
+You never ask for it at signup — a bank account is worth nothing until there is money to
+send to it. When they first withdraw, they pick their bank from `GET /v1/banks` and enter
+their account number; `POST /v1/payout-accounts/resolve` asks the bank who owns it, and
+they confirm the bank's answer. The holder's name comes from the bank, never from a form
+field, so a mistyped digit is caught before any money moves rather than after.
+
+From then on, the balance sweeps to that account **once a day, automatically**. A merchant
+who wants it sooner calls `POST /v1/settlements/payout` — which takes **no destination**,
+because the money can only ever go to the account their bank already confirmed.
+
+## Escrow and refunds
+
+Settled funds are not instantly withdrawable. A recent-settlement **escrow hold** keeps
 them for a window so a refund can be clawed back before the money leaves:
 
 - **Refund**: reverses **only the organization's leg** back toward the payer; the platform
-fee is non-refundable and is never touched. A refund posts a new reversing transaction, so
-the ledger stays complete.
-- **Payout**: withdraws the organization's available balance (settled net, minus the
-escrow lock and any minimum buffer) to a bank account.
+fee is non-refundable and is never touched. A refund posts a new reversing transaction,
+so the ledger stays complete.
+- **Payout**: withdraws the organization's available balance (settled net, minus the escrow
+hold and any minimum buffer).
 
 > **Never faked, never stranded**
 >
-> The provider legs of refunds and payouts are guarded: the ledger truth is always posted,
-> and the real Nomba transfer flips on only after live confirmation, with a compensating
-> reversal if a transfer fails, so funds are never faked as sent and never stranded.
+> A payout's ledger debit is committed **before** the bank transfer is attempted, so a crash
+> mid-transfer can never roll back the record of money that is already moving. A transfer the
+> bank *rejects* returns the funds to the merchant's balance; a transfer that is merely still
+> *in flight* does not — pending is not failure, and treating it as one would pay the merchant
+> twice.
 
 For the operational reality of matching money to merchants without a spreadsheet, see
 [settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets).
@@ -1033,14 +1097,405 @@ canonical: https://docs.nombaone.xyz/cookbook
 
 # Cookbook
 
-## Recipes are on the way
+## The first recipe is here
 
-We are still writing the first batch. Until they land, two places already cover the ground a recipe would:
+- **[Bill a gym membership](/cookbook/bill-a-gym-membership)**: 
+The flagship end-to-end recipe: connect your Nomba account, one plan with
+three prices, members joining through hosted checkout, silent card renewals
+with an honest OTP fallback, transfer memberships on the invoice lane, and
+dunning that recovers before it churns.
+
+More are on the way. Until they land, two places already cover the ground a recipe would:
 
 - The [guides](/guides/create-plans-and-prices) walk through the core flows, from creating a plan to going live, end to end.
 - The [API reference](/reference/customers) documents every endpoint a recipe would call, with a runnable request builder on each resource.
 
-Have a recipe you want first? Tell us on the [changelog](/changelog) thread, and we will prioritise it.
+Have a recipe you want next? Tell us on the [changelog](/changelog) thread, and we will prioritise it.
+
+---
+
+---
+title: "Bill a gym membership"
+type: reference
+summary: "Iron Republic gym, end to end: connect your Nomba account, one plan with three prices, members joining through hosted checkout, silent card renewals with an honest OTP fallback, transfer memberships on the invoice lane, and dunning that recovers before it churns."
+canonical: https://docs.nombaone.xyz/cookbook/bill-a-gym-membership
+---
+
+# Bill a gym membership
+
+**Iron Republic** is a gym in Surulere. Members pay monthly or yearly; they join
+at the front desk or from the website; some pay by card, plenty pay by bank
+transfer. Nobody at the gym wants to store card details, chase renewals over
+WhatsApp, or reconcile transfers against a spreadsheet.
+
+This recipe wires the whole membership lifecycle:
+
+1. connect the gym's **Nomba account**, so collections settle,
+2. one **plan** with three prices (monthly, yearly, and a ten-minute rehearsal
+cadence for the sandbox),
+3. a member joining through **hosted checkout** — no card details touch your code,
+4. **silent card renewals**, with the honest OTP fallback when a bank steps in,
+5. the **invoice lane** for members who pay by transfer,
+6. **dunning** that recovers a missed renewal before it churns the member.
+
+Every call runs against the sandbox with an `nbo_sandbox_…` key; swap in an
+`nbo_live_…` key and the same code collects real money. The Node samples use
+[`@nombaone/node`](/sdks/node) 0.1.5 or later.
+
+## 0 · Where the money goes
+
+There is nothing to connect. Your organization has a settlement balance from the
+moment you sign up: every payment a member makes is split into our platform fee
+and **your share**, and your share accrues to a balance you own.
+
+You only have to tell us one thing, and only when you want the money out — the
+bank account to pay it into. We confirm it with your bank before we save it, so
+the name on the account comes from the bank rather than from a form:
+
+```bash
+# what does the bank say this account number belongs to?
+curl -X POST https://sandbox.api.nombaone.xyz/v1/payout-accounts/resolve \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "bankCode": "000013", "bankName": "GTBank", "accountNumber": "0123456789" }'
+
+# → { "accountName": "IRON REPUBLIC GYM LTD" }  ← confirm this is you, then save it
+curl -X POST https://sandbox.api.nombaone.xyz/v1/payout-accounts \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "bankCode": "000013", "bankName": "GTBank", "accountNumber": "0123456789" }'
+```
+
+Pick the bank from `GET /v1/banks` rather than typing a code from memory.
+
+From then on your balance sweeps to that account **once a day, automatically**.
+If you want it sooner, `POST /v1/settlements/payout` pays out on demand — note
+that it takes no destination, because the money can only ever go to the account
+your bank already confirmed.
+
+You can skip this section entirely and come back to it. Billing works without a
+payout account; you simply can't withdraw yet, and nothing is lost in the
+meantime.
+
+## 1 · One plan, three prices
+
+Iron Republic sells one membership at two real cadences, plus a **rehearsal
+price** that renews every ten minutes — `interval: "minute"` is a first-class
+wall-clock cadence, and it is how you will watch a whole renewal cycle happen
+during this recipe instead of waiting a month. Amounts are
+**integer kobo**: ₦25,000.00 is `2500000`.
+
+**cURL**
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "name": "Iron Republic membership",
+    "prices": [
+      { "unitAmountInKobo": 2500000,  "interval": "month" },
+      { "unitAmountInKobo": 25000000, "interval": "year" },
+      { "unitAmountInKobo": 50000,    "interval": "minute", "intervalCount": 10 }
+    ]
+  }'
+```
+
+**Node.js**
+
+```ts
+import Nombaone from '@nombaone/node';
+
+const nombaone = new Nombaone(process.env.NOMBAONE_API_KEY);
+
+const plan = await nombaone.plans.create({ name: 'Iron Republic membership' });
+
+const monthly = await nombaone.plans.prices.create(plan.id, {
+  unitAmountInKobo: 2_500_000, // ₦25,000.00
+  interval: 'month',
+});
+const yearly = await nombaone.plans.prices.create(plan.id, {
+  unitAmountInKobo: 25_000_000, // ₦250,000.00
+  interval: 'year',
+});
+// Sandbox rehearsal cadence: a real renewal every ten minutes.
+const rehearsal = await nombaone.plans.prices.create(plan.id, {
+  unitAmountInKobo: 50_000, // ₦500.00
+  interval: 'minute',
+  intervalCount: 10,
+});
+```
+
+The API accepts up to ten inline `prices` on the plan create; the SDK adds them
+one call at a time. Either way you end with one plan and three price ids — see
+[create plans and prices](/guides/create-plans-and-prices) for trials, tiers,
+and the cadence rules.
+
+## 2 · A member walks in
+
+A **customer** is the member. Email and name are enough — the email is where
+renewal reminders and payment links land later.
+
+**cURL**
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/customers \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{ "email": "tobi@example.com", "name": "Tobi Adeyemi" }'
+```
+
+**Node.js**
+
+```ts
+const member = await nombaone.customers.create({
+  email: 'tobi@example.com',
+  name: 'Tobi Adeyemi',
+});
+```
+
+## 3 · They join through hosted checkout
+
+Here is the move this recipe is built around: create the subscription with
+**no `paymentMethodId`**. On a `charge_automatically` create with no trial,
+that is the hosted-checkout entry — the subscription starts `incomplete` and
+the response carries a `checkoutLink`, a Nomba-hosted payment page where the
+member pays by **card or bank transfer**, their choice. Card details never
+touch your code.
+
+**cURL**
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "customerId": "{customerId}",
+    "priceId": "{monthlyPriceId}",
+    "callbackUrl": "https://ironrepublic.example/joined"
+  }'
+```
+
+**Node.js**
+
+```ts
+const subscription = await nombaone.subscriptions.create({
+  customerId: member.id,
+  priceId: monthly.id,
+  callbackUrl: 'https://ironrepublic.example/joined',
+});
+
+// subscription.status → "incomplete"
+if (subscription.checkoutLink) redirect(subscription.checkoutLink);
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "nbo…sub",
+    "status": "incomplete",
+    "collectionMethod": "charge_automatically",
+    "checkoutLink": "https://checkout…"
+  }
+}
+```
+
+Redirect the member to `checkoutLink`; after paying they return to your
+`callbackUrl`. What paying does depends on how they paid:
+
+- **Card** — the membership activates and the engine captures a reusable card
+token, so future renewals can charge silently.
+- **Bank transfer** — the money is real but a transfer leaves no token to
+charge later, so the engine flips the subscription to `send_invoice`: every
+future cycle issues an invoice with a payment link instead of pulling. That
+member lives on the [invoice lane](#6--the-transfer-member-the-invoice-lane)
+below, automatically.
+- **Nobody pays** — the subscription expires to `incomplete_expired`. Nothing
+is owed, nothing retries.
+
+> **When there is no checkoutLink**
+>
+> The hosted-checkout entry is specifically the *pay-now* path: a
+> `charge_automatically` create with no trial and no payment method. A trial
+> create or a `send_invoice` create has nothing to pay at creation, so it
+> returns no `checkoutLink`. If you already hold an authorized payment method,
+> pass `paymentMethodId` and skip checkout entirely — see
+> [start a subscription](/guides/start-a-subscription).
+
+## 4 · Know the moment they're in
+
+Don't poll for the activation — receive it. Register a webhook endpoint for
+the events this lifecycle emits:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/webhooks \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://ironrepublic.example/webhooks/nombaone",
+    "enabledEvents": [
+      "subscription.activated",
+      "invoice.paid",
+      "invoice.payment_failed",
+      "invoice.action_required",
+      "invoice.payment_instructions",
+      "invoice.payment_recovered",
+      "subscription.churned"
+    ]
+  }'
+```
+
+Verify the signature, dedupe on the event id, and branch — the SDK's
+[webhook helper](/webhooks/signing-and-verification) does the cryptography:
+
+```ts
+import { webhooks, WebhookVerificationError } from '@nombaone/node';
+
+export async function POST(req: Request) {
+  let event;
+  try {
+    event = webhooks.constructEvent(
+      await req.text(), // the RAW body, never re-serialized
+      req.headers.get('x-nombaone-signature') ?? '',
+      process.env.NOMBAONE_WEBHOOK_SECRET!,
+    );
+  } catch (err) {
+    if (err instanceof WebhookVerificationError) return new Response(null, { status: 400 });
+    throw err;
+  }
+
+  switch (event.type) {
+    case 'subscription.activated':      grantGymAccess(event.data.reference); break;
+    case 'invoice.action_required':     sendMember(event.data.checkoutLink);  break;
+    case 'invoice.payment_instructions': noteTransferPending(event.data);     break;
+    case 'subscription.churned':        revokeGymAccess(event.data.reference); break;
+  }
+  return new Response(null, { status: 200 });
+}
+```
+
+`subscription.activated` is your "unlock the turnstile" moment.
+`subscription.churned` — much later, only after dunning has genuinely given
+up — is the moment to lock it again.
+
+## 5 · Renewals, honestly
+
+For a card member, each cycle the engine invoices and charges the captured
+token — the member does nothing, you receive `invoice.paid`, access continues.
+Before each renewal the engine can also email the member a heads-up (the
+`renewalReminderLeadHours` billing setting, capped at one period; all member
+emails are gated by the `commsEnabled` billing setting).
+
+The honest part: **a Nigerian bank can refuse to be silent.** Some banks
+step in on a recurring card charge and demand a fresh OTP from the cardholder,
+and no billing engine can type it for them. When that happens the engine does
+not fail the membership — it emits `invoice.action_required` carrying a fresh
+hosted-checkout link (and emails it to the member). The member taps the link,
+completes the OTP, the invoice settles, and the subscription recovers. Forward
+that link the moment you see the event; it is the difference between a renewal
+and a churn.
+
+## 6 · The transfer member: the invoice lane
+
+The member who paid their first cycle by transfer is now on
+`collectionMethod: "send_invoice"`. Each cycle the engine issues an invoice
+that knows how to get itself paid:
+
+- a real `dueDate` (your grace period, capped at one billing period),
+- a stamped hosted-checkout link, emailed to the member,
+- and `payInstructions` — a virtual account (NUBAN) dedicated to **this
+invoice**, so a plain bank transfer reconciles itself to the right member
+with no spreadsheet,
+- plus an `invoice.payment_instructions` webhook so your own app can show the
+same details.
+
+```bash
+curl "https://sandbox.api.nombaone.xyz/v1/invoices?subscriptionId={subscriptionId}&status=open" \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+```json
+{
+  "id": "nbo…inv",
+  "status": "open",
+  "amountDueInKobo": 2500000,
+  "dueDate": "2026-08-12T09:00:00.000Z",
+  "payInstructions": {
+    "bankName": "Amucha MFB",
+    "accountNumber": "1214847596",
+    "accountName": "Iron Republic / Tobi A.",
+    "amountInKobo": 2500000,
+    "reference": "nbo…inv"
+  }
+}
+```
+
+## 7 · When they don't pay
+
+A card renewal that fails, or an invoice that passes its `dueDate`, moves the
+subscription to `past_due` and hands it to
+[dunning](/guides/dunning-and-recovery). The two lanes recover differently:
+
+- **Card (pull)** — the engine retries the charge on a cadence biased toward
+Nigerian paydays, because a failed gym debit usually means "not yet," not
+"no."
+- **Transfer (push)** — there is nothing to retry-charge, so dunning runs
+`payment_reminder`: it re-sends the payment link and transfer details on the
+same ladder instead. The member pays when the balance lands.
+
+When the money arrives — either lane — `invoice.payment_recovered` fires and
+the subscription re-anchors: **the next period starts from the recovery**, so
+a member who was locked out for a week is not billed for the week they never
+trained. No back-billing, no double charge, no awkward front-desk argument.
+
+If every attempt exhausts, the engine emits `subscription.churned` — the
+involuntary-churn signal, distinct from a member who deliberately canceled
+(`subscription.canceled`). Only then do you revoke access. Watch the loop run:
+
+```bash
+curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+## 8 · Rehearse the whole loop before launch day
+
+You already created the rehearsal price. Put a member on it and a full
+renewal happens, for real, every ten minutes — invoice, collection, webhook,
+email. Too slow? Skip the wait entirely:
+
+**cURL**
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/sandbox/subscriptions/{id}/advance-cycle \
+  -H "Authorization: Bearer nbo_sandbox_…"
+```
+
+**Node.js**
+
+```ts
+await nombaone.sandbox.advanceCycle(subscription.id);
+```
+
+To rehearse the unhappy paths, mint a deterministic
+[sandbox payment method](/sandbox-toolkit/payment-methods) —
+`decline_insufficient_funds` walks you through dunning to
+`subscription.churned`; `requires_otp` fires the `invoice.action_required`
+branch — before a single real member is involved.
+
+## Where to go next
+
+- **[Dunning and recovery](/guides/dunning-and-recovery)**: 
+Operate the recovery loop: policies, the payday bias, and the events.
+- **[Handle webhooks](/guides/handle-webhooks)**: 
+Verify, dedupe, and branch on events without double-crediting.
+- **[Start a subscription](/guides/start-a-subscription)**: 
+Every entry path: hosted checkout, card on file, mandate, transfer.
+- **[Event catalog](/webhooks/event-catalog)**: 
+Every event this recipe mentioned, with its exact payload.
 
 ---
 
@@ -1619,8 +2074,11 @@ production sends.
 ## 3 · Verify the signature
 
 Never trust a webhook you haven't verified. Every delivery is signed
-`HMAC_SHA256(` `${timestamp}.${rawBody}` `, secret)` over the **raw** request
-body. Verify before you parse. Compare in constant time.
+`HMAC_SHA256(` `${timestamp}.${rawBody}` `, key)` over the **raw** request
+body, where `key = SHA256(secret)` hex — the SHA-256 of the plaintext signing
+secret you were shown at endpoint creation. Verify before you parse. Compare in
+constant time. (The official SDKs derive the key internally: pass them the
+plaintext secret.)
 
 > **Verify the raw bytes, before parsing**
 >
@@ -1639,11 +2097,12 @@ The reference implementation for your server:
 **TypeScript**
 
 ```ts
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export function verify(rawBody: string, header: string, secret: string) {
   const [ts, sig] = parseHeader(header); // "t=…,v1=…"
-  const expected = createHmac("sha256", secret)
+  const key = createHash("sha256").update(secret).digest("hex"); // key = sha256(whsec)
+  const expected = createHmac("sha256", key)
     .update(`${ts}.${rawBody}`)
     .digest("hex");
   const ok =
@@ -1660,8 +2119,9 @@ import hmac, hashlib
 
 def verify(raw_body: bytes, header: str, secret: str) -> None:
     ts, sig = parse_header(header)  # "t=…,v1=…"
+    key = hashlib.sha256(secret.encode()).hexdigest()  # key = sha256(whsec)
     expected = hmac.new(
-        secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
+        key.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
     ).hexdigest()
     if not hmac.compare_digest(sig, expected):
         raise ValueError("bad signature")
@@ -2110,6 +2570,132 @@ with `intervalCount: 3` bills quarterly, and `interval: "minute"` with
 > in the time you have, rather than [advancing the clock](/sandbox-toolkit/clock)
 > by hand — but it is a real cadence, valid in both sandbox and live.
 
+## Change what a plan costs
+
+Raising the monthly price is an edit to the **plan** — not a scavenger hunt
+through its price rows. `PATCH /v1/plans/{id}` takes the same `prices` array the
+create call takes, and reconciles it against what the plan already costs. Send
+what you want the plan to cost:
+
+```bash
+curl -X PATCH https://sandbox.api.nombaone.xyz/v1/plans/{planId} \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "prices": [
+      { "unitAmountInKobo": 600000, "interval": "month" },
+      { "unitAmountInKobo": 5000000, "interval": "year" }
+    ]
+  }'
+```
+
+Per cadence (`interval` + `intervalCount`), the engine works out what changed:
+
+- **Nothing priced on that cadence yet** → the price is **created**, and
+`price.created` fires.
+- **The amount is the same** → **nothing happens**. No row is written, no event is
+emitted. Resending your current catalog is a no-op, which is what makes a "save"
+button on a pricing form safe to press twice.
+- **The amount is different** → a **new price is created**, and every other active
+price on that cadence is **deactivated**. You get a `price.created` and a
+`price.deactivated`.
+
+A cadence you **don't** send is left completely alone. In the call above the yearly
+price was resent unchanged, so it keeps its `id`; the monthly one moved from ₦5,000
+to ₦6,000, so it comes back with a new one:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "domain": "plan",
+    "id": "nbo481920374615pln",
+    "name": "Pro",
+    "status": "active",
+    "prices": [
+      {
+        "domain": "price",
+        "id": "nbo903117254480prc",
+        "planId": "nbo481920374615pln",
+        "unitAmountInKobo": 600000,
+        "currency": "NGN",
+        "interval": "month",
+        "intervalCount": 1,
+        "active": true
+      },
+      {
+        "domain": "price",
+        "id": "nbo225864019773prc",
+        "planId": "nbo481920374615pln",
+        "unitAmountInKobo": 5000000,
+        "currency": "NGN",
+        "interval": "year",
+        "intervalCount": 1,
+        "active": true
+      }
+    ]
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+`data.prices` is the plan's **active** prices after the update, and it is always
+there — the shape doesn't depend on whether you sent any. Omitting `prices`
+entirely still edits only `name`, `description` and `metadata`, exactly as before.
+
+### Why a change is a new price, not an edit
+
+A price is **immutable**: its `unitAmountInKobo` is never rewritten in place. A
+subscription pins a `priceId`, and that pinned row is the only reason an existing
+subscriber's bill cannot move under them. Rewriting the amount on the row would
+re-price every subscriber holding it — retroactively, including invoices already
+issued against it. So a change mints a **new** row and retires the old one, which
+stays exactly as it was, still saying what your existing subscribers agreed to pay.
+
+Grandfathering is a property of the data model, not a feature someone remembered to
+build. New subscribers reach the new price; the ones already billing keep theirs
+until you deliberately move them, which is a
+[plan change](/guides/proration-and-plan-changes).
+
+> **Sending `prices` needs `prices:write`**
+>
+> Same guard as `POST /v1/plans`. A `plans:write` key can rename a plan or edit its
+> description, but the moment `prices` is present the key must **also** hold
+> `prices:write` — that array mints and retires price rows. Without it the call is
+> rejected with `API_KEY_SCOPE_FORBIDDEN`, before any write.
+
+## Watch a subscription bill
+
+A monthly subscription takes a month to prove it renews. `interval: "minute"` with
+`intervalCount: 10` proves it over lunch:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "unitAmountInKobo": 50000, "interval": "minute", "intervalCount": 10 }'
+```
+
+Put a customer on that price and ten minutes later the renewal happens on its own,
+with nothing stubbed: `invoice.created`, `invoice.finalized`, the charge, then
+`invoice.paid`, ledger postings, and the subscription's period rolls forward. It
+runs through the **same** engine `month` runs through — the cadence is the only
+thing that differs, and nothing in the billing path special-cases it. So what you
+watch work in ten minutes is what will work in thirty days.
+
+It is a first-class cadence: valid in live, not just sandbox. Sell a ten-minute
+subscription if you have a use for one.
+
+> **It needs a per-minute billing sweep**
+>
+> Renewals land when the billing sweep runs, so a minute cadence only bills on time
+> if the sweep ticks every minute — `BILLING_SWEEP_CRON=* * * * *`, which is now
+> the default. On a slower sweep a ten-minute subscription still bills every period
+> it owes, in a burst, when the sweep next runs: a backlog **drains**, it never
+> parks. It just stops being a live demo.
+
 ## Add a trial
 
 Set `trialPeriodDays` on the price. A subscription started on it enters
@@ -2188,6 +2774,36 @@ Send the customer to it; when they complete OTP there, the invoice settles and
 the subscription recovers. This is the product answer to a rail that can't be
 pulled silently. See [card tokens expire](/concepts/hard-parts/card-tokens-expire).
 
+## Push-rail dunning: `payment_reminder`
+
+Not every subscription can be retried at all. On the `send_invoice` lane —
+bank-transfer customers, and anyone hosted checkout flipped there — the money
+is *pushed*, so there is no instrument to charge again. When such an invoice
+passes its due date, the subscription still moves to `past_due`, but dunning
+runs the **`payment_reminder`** branch: on the same retry ladder it **re-sends
+the payment link and transfer details instead of charging**. The customer pays
+when the balance lands; the recovery and exhaustion mechanics are otherwise
+identical.
+
+## What your customer sees
+
+Dunning is not silent toward the person who owes the money. At each step the
+engine emails the customer directly — a renewal heads-up before the charge
+(the `renewalReminderLeadHours` billing setting), the OTP checkout link when a
+card needs authentication, the payment link on a reminder, a confirmation on
+recovery, and a final notice on churn. All of it is gated by the
+`commsEnabled` billing setting (`GET /v1/organization/billing`), so if you run
+your own messaging you can turn the engine's off — but a customer who never
+learns their membership is stuck is a customer you lose, so make sure exactly
+one of you is talking.
+
+## Recovery is forgiving
+
+When a `past_due` subscription recovers, the engine **re-anchors the cycle at
+the recovery**: the next period starts when the customer actually paid, and the
+unserved gap between failure and recovery is not back-billed. A customer who
+comes back after a week owes one period, not one period plus arrears.
+
 ## Inspect the dunning state
 
 Read where recovery stands for a subscription:
@@ -2221,8 +2837,11 @@ Use `requires_otp` to rehearse the checkout-link branch, and
 
 - **`invoice.payment_failed`**: entered dunning. Log it; don't churn yet.
 - **`invoice.action_required`**: send the customer the checkout link in the payload.
+- **`invoice.payment_instructions`**: a push-rail invoice is waiting on the payer;
+the payload carries this invoice's dedicated transfer details.
 - **`invoice.payment_recovered`**: restore normal access.
-- **`subscription.canceled`**: dunning exhausted (if your policy cancels). Now cut access.
+- **`subscription.churned`**: dunning exhausted; involuntary churn. Now cut access.
+(A deliberate cancellation fires `subscription.canceled` instead.)
 
 - **[Why thin balances change dunning](/concepts/hard-parts/dunning-for-thin-balances)**: 
 The reasoning behind the retry cadence.
@@ -2317,8 +2936,9 @@ Confirm your webhook handler branches on `invoice.payment_failed`,
 webhook is missed, re-fetch the resource rather than reconstructing state.
 - **Watch dunning.** Real balances are thin: expect `past_due` and let
 [dunning](/guides/dunning-and-recovery) recover before cutting access.
-- **Payouts.** Settled net lands in the organization's sub-account behind an
-escrow lock; withdraw with [payouts](/guides/refunds-payouts-settlement).
+- **Payouts.** Settled net accrues to the organization's balance behind an escrow
+hold, and sweeps to their bank account daily. Add that bank account before your
+first withdrawal — see [payouts](/guides/refunds-payouts-settlement).
 
 - **[Handle webhooks](/guides/handle-webhooks)**: 
 The receive → verify → dedupe → act pattern, live.
@@ -2360,16 +2980,19 @@ sandbox endpoint.
 
 ## 2 · Verify the signature: on the raw body
 
-Every delivery carries a signature over `` `${timestamp}.${rawBody}` ``. Verify
-**before you parse**: compute the HMAC over the exact bytes received, and compare
-in constant time.
+Every delivery carries a signature over `` `${timestamp}.${rawBody}` ``, keyed by
+the **SHA-256 of your plaintext signing secret** (hex). Verify **before you
+parse**: derive the key once, compute the HMAC over the exact bytes received, and
+compare in constant time. (The official SDKs hash the secret internally: pass
+them the plaintext `whsec_…`.)
 
 ```ts
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export function verifyWebhook(rawBody: string, header: string, secret: string) {
   const { t, v1 } = parseHeader(header); // "t=…,v1=…"
-  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+  const key = createHash("sha256").update(secret).digest("hex"); // key = sha256(whsec)
+  const expected = createHmac("sha256", key).update(`${t}.${rawBody}`).digest("hex");
   const ok =
     v1.length === expected.length &&
     timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
@@ -2406,7 +3029,7 @@ pile-ups.
 ```ts
 export async function POST(req: Request) {
   const raw = await req.text();
-  verifyWebhook(raw, req.headers.get("x-nomba-signature")!, SECRET);
+  verifyWebhook(raw, req.headers.get("x-nombaone-signature")!, SECRET);
   const event = JSON.parse(raw);
   if (await seen(event.id)) return new Response(null, { status: 200 });
   await markSeen(event.id);
@@ -2425,6 +3048,8 @@ and [dunning](/guides/dunning-and-recovery) is retrying. Don't cancel access
 yet: on a thin balance this is "not yet."
 - **`invoice.action_required`**: a card needs OTP; the payload carries a fresh
 checkout link to send the customer.
+- **`invoice.payment_instructions`**: a bank-transfer invoice is awaiting the
+payer; the payload carries the virtual account dedicated to that invoice.
 - **`invoice.payment_recovered`**: dunning (or the customer completing OTP)
 succeeded; restore normal state.
 
@@ -2537,7 +3162,7 @@ When a charge is collected and verified, the money **splits at collection**: you
 platform fee and the organization's net, each posted as balanced
 [ledger](/concepts/the-ledger) legs. This guide is how money moves back out:
 refunds, the escrow lock that guards them, and payouts. The model is explained in
-[settlement & sub-accounts](/concepts/settlement-and-sub-accounts); here is how to
+[settlement & payouts](/concepts/settlement-and-sub-accounts); here is how to
 operate it.
 
 ## Refund a settlement
@@ -2602,8 +3227,8 @@ window. Wait for release, or withdraw only the available portion.
 > the transfer fails it posts a compensating reversal. Funds are never faked as
 > sent and never stranded: the ledger and the bank stay reconciled.
 
-- **[Settlement & sub-accounts](/concepts/settlement-and-sub-accounts)**: 
-How the split and escrow model works.
+- **[Settlement & payouts](/concepts/settlement-and-sub-accounts)**: 
+How the split, the balance, and the escrow hold work.
 - **[Settlement without spreadsheets](/concepts/hard-parts/settlement-without-spreadsheets)**: 
 Matching money to organizations at scale.
 
@@ -2625,6 +3250,38 @@ differs is the **payment method** you attach, because rails collect differently:
 card and mandate are *pulled*, a bank transfer is *pushed*. See
 [multi-rail: push and pull](/concepts/multi-rail-push-and-pull) for why that
 asymmetry matters.
+
+## No payment method yet? Hosted checkout
+
+The storefront "subscribe" button rarely holds an authorized instrument. For
+that case, **omit `paymentMethodId` entirely** on a `charge_automatically`
+create with no trial:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "customerId": "{customerId}",
+    "priceId": "{priceId}",
+    "callbackUrl": "https://yourapp.com/billing/return"
+  }'
+```
+
+The subscription starts `incomplete` and the response carries a
+**`checkoutLink`** — a Nomba-hosted payment page (card or bank transfer).
+Redirect the customer there; the optional `callbackUrl` is where they return
+after paying. Paying activates the subscription; a **card** payment also
+captures a reusable token so renewals charge silently, while a **transfer**
+payment (which leaves no token to pull) flips the subscription to
+`send_invoice`, so each future cycle issues an invoice with a payment link
+instead. If nobody pays, the subscription expires to `incomplete_expired` and
+nothing is owed. The
+[gym membership recipe](/cookbook/bill-a-gym-membership) runs this entry end
+to end.
+
+Already hold an authorized method? Set one up and pass it explicitly:
 
 ## Set up a payment method
 
@@ -2685,8 +3342,10 @@ The response `status` tells you where the first cycle landed:
 - **`trialing`**: the price has a trial; no charge yet.
 - **`past_due`**: the first charge failed; [dunning](/guides/dunning-and-recovery)
 now owns recovery. On a thin balance this usually means "not yet," not "no."
-- **`incomplete`**: the charge needs the customer to act (a card OTP step); an
-`invoice.action_required` event carries a fresh checkout link.
+- **`incomplete`**: the customer still has to act — either you used the
+hosted-checkout entry (redirect them to the response's `checkoutLink`), or a
+card charge hit an OTP step and an `invoice.action_required` event carries a
+fresh checkout link.
 
 > **Don't assume the first charge succeeds**
 >
@@ -4665,9 +5324,11 @@ yet." Read `Subscriptions.Dunning.Retrieve` and honor `GraceAccessUntil` before
 you cut access. Involuntary churn ends as `Status canceled` with
 `CancellationReason involuntary` — there is no `churned` status (there is a
 `subscription.churned` event).
-- **Sandbox settlements.** The sandbox organization has no settlement subaccount,
-so escrow and payout return a typed `SETTLEMENT_SUBACCOUNT_NOT_FOUND` — a real
-business state whose `Hint` explains itself, not an SDK fault.
+- **Withdrawing needs a bank account.** Every organization has a settlement balance
+from day one, but a payout has nowhere to go until you add the bank account you
+want to be paid into. Until then, escrow and payout return a typed
+`PAYOUT_ACCOUNT_MISSING` — a real business state whose `Hint` explains itself, not
+an SDK fault. Your balance is safe in the meantime.
 - **Prices are immutable, plans archive.** To change pricing, deactivate the
 price and create a new one; plans archive rather than delete.
 
@@ -5344,9 +6005,10 @@ passes. Involuntary churn ends as `canceled` with `cancellationReason:
 event).
 - **Prices are immutable, plans archive.** To change pricing, deactivate the price
 and create a new one; plans archive rather than delete.
-- **Sandbox settlements.** The sandbox organization has no settlement subaccount,
-so escrow and payout return a typed `SETTLEMENT_SUBACCOUNT_NOT_FOUND` — a real
-business state whose `hint` explains itself.
+- **Withdrawing needs a bank account.** Every organization has a settlement balance
+from day one, but a payout has nowhere to go until you add the bank account you want
+to be paid into. Until then, escrow and payout return a typed `PAYOUT_ACCOUNT_MISSING`
+— a real business state whose `hint` explains itself.
 
 ## Next
 
@@ -6740,9 +7402,10 @@ and create a new one; plans archive rather than delete.
 - **The invoice list filter omits `partially_paid`.** `InvoiceListStatus` has no
 `partially_paid` variant, even though an `Invoice` object can carry that status —
 filter on `Open` and inspect the amounts.
-- **Sandbox settlements.** An organization without a settlement sub-account gets a
-typed `SETTLEMENT_SUBACCOUNT_NOT_FOUND` on escrow and payout — a real business
-state whose `hint` explains itself.
+- **Withdrawing needs a bank account.** An organization that has not yet added the
+bank account it wants to be paid into gets a typed `PAYOUT_ACCOUNT_MISSING` on
+escrow and payout — a real business state whose `hint` explains itself. The
+settlement balance itself exists from day one.
 
 ## Next
 
@@ -7036,11 +7699,15 @@ check against your endpoint's signing secret.
 The header is `t=<unix>,v1=<hex>`, where `v1` is:
 
 ```
-HMAC_SHA256( `${t}.${rawBody}`, whsec )   // hex
+key = SHA256( whsec )                       // hex — derive once from your secret
+v1  = HMAC_SHA256( `${t}.${rawBody}`, key ) // hex
 ```
 
-`t` is the delivery timestamp and `rawBody` is the **exact bytes** of the request
-body. Verify by recomputing `v1` and comparing.
+The HMAC key is the **SHA-256 of your plaintext signing secret** (the
+`nbo_whsec_…` shown once at endpoint creation), hex-encoded — derive it once and
+cache it. `t` is the delivery timestamp and `rawBody` is the **exact bytes** of
+the request body. Verify by recomputing `v1` and comparing. (The official SDKs
+do the hashing internally: pass them the plaintext secret.)
 
 > **Sign the raw bytes: never re-serialize**
 >
@@ -7053,7 +7720,7 @@ body. Verify by recomputing `v1` and comparing.
 **TypeScript**
 
 ```ts
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export function verify(rawBody: string, header: string, secret: string) {
   const parts = Object.fromEntries(header.split(",").map((kv) => kv.split("=")));
@@ -7063,7 +7730,9 @@ export function verify(rawBody: string, header: string, secret: string) {
   const age = Math.abs(Date.now() / 1000 - Number(t));
   if (age > 300) throw new Error("timestamp too old");
 
-  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+  // The HMAC key is the sha256 (hex) of your plaintext whsec.
+  const key = createHash("sha256").update(secret).digest("hex");
+  const expected = createHmac("sha256", key).update(`${t}.${rawBody}`).digest("hex");
   const ok =
     v1.length === expected.length &&
     timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
@@ -7083,8 +7752,10 @@ def verify(raw_body: bytes, header: str, secret: str) -> None:
     if abs(time.time() - int(t)) > 300:
         raise ValueError("timestamp too old")
 
+    # The HMAC key is the sha256 (hex) of your plaintext whsec.
+    key = hashlib.sha256(secret.encode()).hexdigest()
     expected = hmac.new(
-        secret.encode(), f"{t}.".encode() + raw_body, hashlib.sha256
+        key.encode(), f"{t}.".encode() + raw_body, hashlib.sha256
     ).hexdigest()
     if not hmac.compare_digest(v1, expected):
         raise ValueError("invalid signature")
@@ -7267,6 +7938,10 @@ The interactive fire-and-verify flow.
 - `GET /v1/events/{id}` — GET /v1/events/{id} (params: id*)
 - `GET /v1/settlements/escrow` — GET /v1/settlements/escrow
 - `POST /v1/settlements/payout` — POST /v1/settlements/payout (params: Idempotency-Key*)
+- `GET /v1/banks` — GET /v1/banks
+- `GET /v1/payout-accounts` — GET /v1/payout-accounts
+- `POST /v1/payout-accounts` — POST /v1/payout-accounts (params: Idempotency-Key*)
+- `POST /v1/payout-accounts/resolve` — POST /v1/payout-accounts/resolve (params: Idempotency-Key*)
 - `GET /v1/settlements` — GET /v1/settlements (params: limit, cursor, status)
 - `GET /v1/settlements/{id}` — GET /v1/settlements/{id} (params: id*)
 - `POST /v1/settlements/{id}/refund` — POST /v1/settlements/{id}/refund (params: id*, Idempotency-Key*)
@@ -7350,7 +8025,7 @@ All money fields are integer kobo (e.g. `250000` = ₦2,500.00).
 - `DUNNING_CARD_UPDATE_REQUIRED` — The card needs customer action (such as OTP/3DS) that cannot be completed headlessly. Send the customer the hosted payment/checkout link to update or re-authorize their card.
 - `DUNNING_ALREADY_TERMINAL` — This dunning process has already ended (recovered or exhausted) and cannot be advanced. Start a new billing attempt if the invoice is still unpaid.
 - `SETTLEMENT_NOT_FOUND` — No settlement exists with that id in this environment. Verify the id, and that your key matches the environment it belongs to.
-- `SETTLEMENT_SUBACCOUNT_NOT_FOUND` — No settlement subaccount is configured for this organization. Create and verify the subaccount before recording splits or payouts.
+- `PAYOUT_ACCOUNT_MISSING` — Add the bank account you want to be paid into, then withdraw. Your balance is safe until you do — nothing is lost by adding it now.
 - `REFUND_ALREADY_REFUNDED` — This charge has already been fully refunded. Inspect the existing refund; there is nothing left to refund.
 - `REFUND_AMOUNT_EXCEEDS_NET` — The refund is larger than the remaining refundable (net) amount on the charge. Refund at most the remaining balance shown on the charge.
 - `ESCROW_LOCKED` — These funds are held in escrow and cannot be paid out or refunded yet. Wait for the escrow hold to release, then retry.

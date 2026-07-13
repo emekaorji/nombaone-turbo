@@ -465,7 +465,7 @@ export default function HomePage() {
             pain="Termly fees in installments, chased and reconciled automatically."
           />
           <UseCaseCard
-            href="/use-cases"
+            href="/use-cases/gyms"
             icon={<Dumbbell className="size-[22px]" strokeWidth={1.75} />}
             label="Gyms & memberships"
             pain="Monthly plans that survive a failed card with payday retries."

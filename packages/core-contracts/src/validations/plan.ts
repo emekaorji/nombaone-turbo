@@ -70,6 +70,31 @@ export const updatePlanBody = z
     name: z.string().min(1).max(200).optional(),
     description: z.string().max(2000).nullable().optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
+    /**
+     * What the plan costs, RECONCILED against what it already costs. Same element schema as
+     * `createPlanBody.prices`, so the two entry points cannot drift.
+     *
+     * Per cadence (`interval` + `intervalCount`):
+     *
+     *   not priced yet   → the price is CREATED
+     *   same amount      → NOTHING happens (a no-op update writes nothing, emits nothing)
+     *   amount changed   → a NEW price is created and every other active price on that
+     *                      cadence is deactivated
+     *
+     * A cadence you DON'T send is left completely alone — it stays active. Omission never
+     * retires a price, so a partial update is always safe.
+     *
+     * A price is immutable: its `unitAmountInKobo` is never rewritten in place. That is what
+     * makes an existing subscriber's bill safe — a subscription pins a `priceId`, and that
+     * row keeps saying exactly what they agreed to pay. Only new subscribers reach the new
+     * price. Sending `prices` also requires the `prices:write` scope.
+     */
+    prices: z
+      .array(createPriceBody)
+      .min(1)
+      .max(MAX_EMBEDDED_PRICES)
+      .superRefine(rejectDuplicateCadence)
+      .optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'at least one field must be provided',

@@ -25,7 +25,6 @@ export const updateSubscriptionCardController: RequestHandler =
     const { method, customerRef } = await updateCardOnSubscription(db, ctx, {
       subscriptionRef: req.params.id ?? '',
       paymentMethodReference: body.paymentMethodReference,
-      checkoutToken: body.checkoutToken,
     });
     return { data: serializePaymentMethod(method, customerRef) };
   });

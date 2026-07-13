@@ -38,6 +38,12 @@ const BRIDGE_SCOPES = [
   'webhooks:read',
   'webhooks:write',
   'metrics:read',
+  // The Nomba connect + settings surface. NOTE: bridge keys minted BEFORE these
+  // scopes existed lack them — a 403 from /organization/* means the org's
+  // org_bridge_credentials row predates this list; delete the row and the next
+  // call re-mints a key with the full set.
+  'organizations:read',
+  'organizations:write',
 ];
 
 /** A typed failure carrying the API's own error envelope, for honest UI messages. */

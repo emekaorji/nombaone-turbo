@@ -35,7 +35,7 @@ const COLUMNS: FooterColumn[] = [
     links: [
       { label: "SaaS", href: "/use-cases" },
       { label: "School fees", href: "/use-cases/school-fees" },
-      { label: "Gyms & memberships", href: "/use-cases" },
+      { label: "Gyms & memberships", href: "/use-cases/gyms" },
       { label: "Lending repayment", href: "/use-cases" },
       { label: "Platforms", href: "/use-cases" },
     ],

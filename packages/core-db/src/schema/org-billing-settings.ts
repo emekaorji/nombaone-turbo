@@ -1,4 +1,4 @@
-import { bigint, boolean, integer, jsonb, pgEnum, pgTable, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, integer, jsonb, numeric, pgEnum, pgTable, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { organizationsTable } from './organizations';
 import { createdAt, modeEnum, idPk, updatedAt } from './shared';
@@ -53,6 +53,9 @@ export const orgBillingSettingsTable = pgTable(
       .notNull()
       .default('charge_automatically'),
     commsEnabled: boolean('comms_enabled').notNull().default(true),
+    // Renewal-reminder lead time (fractional hours; capped at one period length at
+    // use-time so a minute-cadence plan self-shrinks it). numeric → drizzle string.
+    renewalReminderLeadHours: numeric('renewal_reminder_lead_hours').notNull().default('24'),
     // ── 08 limits / settlement / branding (additive; still 05's sole CREATE) ────
     rateLimitPerMinute: integer('rate_limit_per_minute'), // null ⇒ platform default (floor)
     monthlyRequestQuota: bigint('monthly_request_quota', { mode: 'number' }), // null ⇒ unlimited
@@ -62,6 +65,14 @@ export const orgBillingSettingsTable = pgTable(
     platformFeeMaxKobo: bigint('platform_fee_max_kobo', { mode: 'number' }),
     // Minimum a tenant may withdraw / that stays as a buffer on payout. null ⇒ 0.
     minWithdrawableKobo: bigint('min_withdrawable_kobo', { mode: 'number' }),
+    /**
+     * The rolling ESCROW HOLD: funds collected within this many hours cannot be
+     * withdrawn, so a refund can still be clawed back before the merchant drains the
+     * balance. Was hardcoded at 3h with no knob — which also meant a fresh merchant
+     * could not withdraw anything for three hours, with no way to opt out.
+     * Fractional (numeric) so it can be dialled to minutes for a demo, or to 0.
+     */
+    payoutHoldHours: numeric('payout_hold_hours').notNull().default('3'),
     branding: jsonb('branding')
       .$type<{ displayName?: string; supportEmail?: string; logoUrl?: string; primaryColorHex?: string }>()
       .notNull()

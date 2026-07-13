@@ -1,4 +1,4 @@
-import { intervalLabel, intervalShort, PRICE_INTERVALS, savingsPct, toMonthlyKobo } from '@nombaone/core-contracts/billing';
+import { cadenceApproxMs, intervalLabel, intervalShort, savingsPct, toMonthlyKobo } from '@nombaone/core-contracts/billing';
 import { plansTable, pricesTable, subscriptionsTable } from '@nombaone/core-db';
 import { db } from '@nombaone/core-db/serverless';
 import { and, desc, eq } from 'drizzle-orm';
@@ -64,8 +64,15 @@ export type PlansView = { cards: PlanCard[]; detail: PlanDetail | null };
  */
 const LIVE_STATUSES = new Set(['active', 'trialing', 'past_due']);
 
-/** Cadence order for the ladder: day → week → month → year (→ minute last, a legacy/test cadence). */
-const cadenceRank = (interval: PriceInterval): number => PRICE_INTERVALS.indexOf(interval);
+/**
+ * Cadence order for the ladder: shortest → longest, by real duration.
+ *
+ * NOT by `PRICE_INTERVALS.indexOf` — that list is pinned to the Postgres enum's physical order,
+ * which is append-only, so `minute` sits at the END of it and "every 10 minutes" would print
+ * after "annual". Duration is what a merchant reads a ladder by.
+ */
+const cadenceRank = (interval: PriceInterval, intervalCount: number): number =>
+  cadenceApproxMs(interval, intervalCount);
 
 /** `₦5,000/mo`. A count of 1 gets the compact suffix; anything else must spell the cadence out. */
 function priceShort(unitAmount: number, interval: PriceInterval, intervalCount: number): string {
@@ -145,7 +152,9 @@ export async function listPlans(selectedRef?: string): Promise<PlansView> {
 
   /** Active prices, cadence-ordered, as one line: `₦5,000/mo · ₦50,000/yr — save 17%`. */
   function ladderLine(planPrices: typeof prices): string {
-    const active = planPrices.filter((p) => p.active).sort((a, b) => cadenceRank(a.interval) - cadenceRank(b.interval) || a.intervalCount - b.intervalCount);
+    const active = planPrices
+      .filter((p) => p.active)
+      .sort((a, b) => cadenceRank(a.interval, a.intervalCount) - cadenceRank(b.interval, b.intervalCount));
     if (active.length === 0) return '';
     const baseline = baselineMonthly(planPrices);
     const best = active.reduce(
@@ -176,14 +185,13 @@ export async function listPlans(selectedRef?: string): Promise<PlansView> {
   for (const c of cards) c.selected = c.reference === selectedPlan.reference;
 
   const selPrices = pricesByPlan.get(selectedPlan.id) ?? [];
-  // The ladder: active first, then cadence-ordered (day → week → month → year), then by count.
+  // The ladder: active first, then shortest cadence → longest (every 10 minutes → annual).
   const ordered = selPrices
     .slice()
     .sort(
       (a, b) =>
         Number(b.active) - Number(a.active) ||
-        cadenceRank(a.interval) - cadenceRank(b.interval) ||
-        a.intervalCount - b.intervalCount,
+        cadenceRank(a.interval, a.intervalCount) - cadenceRank(b.interval, b.intervalCount),
     );
   const baseline = baselineMonthly(selPrices);
   const activePrice = ordered.find((p) => p.active);

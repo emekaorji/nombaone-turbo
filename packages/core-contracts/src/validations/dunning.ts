@@ -1,18 +1,17 @@
 import { z } from 'zod';
 
 /**
- * Drive a mid-dunning card update (D10/E6). Either point at an already-captured
- * `payment_methods` row, or supply a fresh hosted-checkout token to attach + swap
- * atomically — exactly one (XOR).
+ * Drive a mid-dunning card update (D10/E6) by pointing at an already-captured
+ * `payment_methods` row. There is deliberately NO raw-token field: the old
+ * `checkoutToken` path wrote an arbitrary caller-supplied string verbatim into
+ * `token_key` and made it an active default card — i.e. an unverified string
+ * became a chargeable credential. Fresh cards must be captured through the
+ * hosted checkout (which attaches the `payment_methods` row server-side from
+ * the provider webhook); this endpoint only promotes captured rows.
  */
-export const updateSubscriptionCardBody = z
-  .object({
-    paymentMethodReference: z.string().optional(),
-    checkoutToken: z.string().optional(),
-  })
-  .refine((d) => (d.paymentMethodReference == null) !== (d.checkoutToken == null), {
-    message: 'provide exactly one of paymentMethodReference or checkoutToken',
-  });
+export const updateSubscriptionCardBody = z.object({
+  paymentMethodReference: z.string().min(1),
+});
 export type UpdateSubscriptionCardBody = z.infer<typeof updateSubscriptionCardBody>;
 
 export const listDunningAttemptsQuery = z.object({

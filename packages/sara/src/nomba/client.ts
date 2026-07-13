@@ -34,8 +34,50 @@ export interface NombaRequest {
 
 export interface NombaResponse<T = unknown> {
   status: number;
+  /**
+   * True only when the HTTP status AND Nomba's body envelope both say success.
+   *
+   * ⚠ Nomba returns **HTTP 200 with a failure envelope** for validation errors —
+   * live-confirmed 2026-07-13: `POST /v1/accounts/virtual` with an `accountName`
+   * containing a digit answers `200 {"code":"400","status":false,"message":
+   * "Account name must not contain special characters."}`. Trusting `res.ok`
+   * alone made every caller's `if (!res.ok)` guard pass and then read an absent
+   * `data` — the transfer rail handed payers a NUBAN of `undefined`. So `ok`
+   * folds the envelope in: an explicit `status:false` is a failure, whatever the
+   * HTTP code said.
+   */
   ok: boolean;
+  /**
+   * Nomba ACCEPTED the request but has not finished it — the async lane. A payout
+   * answers `{code:"201", description:"PROCESSING", status:false}` for a transfer
+   * that IS in flight and WILL settle; the outcome arrives by webhook.
+   *
+   * 🔴 `pending` is NOT `failed`. Treating it as failure and compensating (e.g.
+   * crediting the merchant's ledger back) while Nomba sends the money is a
+   * DOUBLE-SPEND. Nomba's own doc: "Mark the transaction as pending and do not
+   * retry with a new reference."
+   */
+  pending: boolean;
   data: T;
+  /** Nomba's body `code` ("00" success, "201" processing, "400" rejected…). Branch on this, not on HTTP. */
+  providerCode?: string;
+  /** Nomba's human-readable reason, when it sent one. Log it; never show it raw to a payer. */
+  providerMessage?: string;
+}
+
+/**
+ * Does this envelope mean "accepted, still working on it" rather than "rejected"?
+ * Nomba signals both with `status:false`, so the ONLY discriminators are the body
+ * `code` (201) and the PROCESSING wording.
+ */
+function isPendingEnvelope(
+  code: string | undefined,
+  message: string | undefined,
+  description: unknown
+): boolean {
+  if (code === '201') return true;
+  const text = `${typeof description === 'string' ? description : ''} ${message ?? ''}`.toUpperCase();
+  return text.includes('PROCESSING') || text.includes('PENDING');
 }
 
 export interface RequeryResult {
@@ -173,7 +215,42 @@ export function createNombaClient(deps: NombaClientDeps): NombaClient {
     } catch {
       data = undefined;
     }
-    return { status: res.status, ok: res.ok, data: data as T };
+    // Fold Nomba's body envelope into `ok` — see NombaResponse.ok.
+    const envelope = (data ?? {}) as {
+      status?: unknown;
+      code?: unknown;
+      message?: unknown;
+      description?: unknown;
+    };
+    const providerCode = typeof envelope.code === 'string' ? envelope.code : undefined;
+    const providerMessage =
+      typeof envelope.message === 'string'
+        ? envelope.message
+        : typeof envelope.description === 'string'
+          ? envelope.description
+          : undefined;
+
+    // ⚠ Nomba overloads `status:false` for TWO opposite meanings:
+    //   REJECTED  — `{code:"400", status:false, message:"Account name must not…"}`
+    //   ACCEPTED, IN FLIGHT — a payout answers
+    //     `{code:"201", description:"PROCESSING", status:false,
+    //       message:"Unable to process response, please rely on web hook"}`
+    //     …for a transfer that IS being sent and WILL settle.
+    // Collapsing both to "failed" is a double-spend: the payout path reverses the
+    // merchant's ledger while Nomba is actually moving the money, so they receive
+    // the naira AND keep the balance. `pending` is NOT `failed` — never conflate
+    // them. Callers must branch on `providerCode`/`pending`, not on `ok` alone.
+    const pending = isPendingEnvelope(providerCode, providerMessage, envelope.description);
+    const bodySaysFailed = envelope.status === false && !pending;
+
+    return {
+      status: res.status,
+      ok: res.ok && !bodySaysFailed,
+      pending,
+      data: data as T,
+      ...(providerCode !== undefined && { providerCode }),
+      ...(providerMessage !== undefined && { providerMessage }),
+    };
   };
 
   const requeryTransaction = async (

@@ -21,6 +21,7 @@ Requires a secret API key.
 | `collectionMethod` | "charge_automatically" | "send_invoice" | no |  |
 | `trialDays` | integer | no |  |
 | `quantity` | integer | no |  |
+| `callbackUrl` | string | no |  |
 | `metadata` | object | no |  |
 
 ## Responses

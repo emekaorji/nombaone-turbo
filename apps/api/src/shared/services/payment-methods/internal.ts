@@ -11,6 +11,27 @@ export const nombaData = (res: { data: unknown }): Record<string, unknown> => {
   return (top.data ?? top) as Record<string, unknown>;
 };
 
+/** Resolve a customer by internal id within scope — `null` when absent. Shared by
+ *  the rail-metadata builder and the checkout-link minter (one query, no drift). */
+export async function loadCustomerById(
+  db: InfraReadScope,
+  ctx: DomainContext,
+  id: string
+): Promise<CustomerRow | null> {
+  const [row] = await db
+    .select()
+    .from(customersTable)
+    .where(
+      and(
+        eq(customersTable.organizationId, ctx.organizationId),
+        eq(customersTable.mode, ctx.mode),
+        eq(customersTable.id, id)
+      )
+    )
+    .limit(1);
+  return row ?? null;
+}
+
 /** Resolve a customer REFERENCE to its row within scope (404 if not this tenant's). */
 export async function resolveCustomer(
   db: InfraReadScope,

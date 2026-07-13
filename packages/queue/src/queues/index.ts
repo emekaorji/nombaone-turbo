@@ -4,3 +4,4 @@ export * from './outbound-webhook';
 export * from './inbound-webhook';
 export * from './scheduler';
 export * from './billing';
+export * from './comms';

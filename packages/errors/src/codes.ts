@@ -168,7 +168,6 @@ export const NOMBAONE_ERROR_CODES = {
   SUBSCRIPTION_SCHEDULE_NOT_FOUND: 'SUBSCRIPTION_SCHEDULE_NOT_FOUND',
   SUBSCRIPTION_SCHEDULE_CONFLICT: 'SUBSCRIPTION_SCHEDULE_CONFLICT',
   SUBSCRIPTION_SCHEDULE_INVALID_EFFECTIVE_AT: 'SUBSCRIPTION_SCHEDULE_INVALID_EFFECTIVE_AT',
-  BILLING_CATCH_UP_LIMIT_EXCEEDED: 'BILLING_CATCH_UP_LIMIT_EXCEEDED',
 
   // ---- Invoicing adjustments (05): proration / coupons / discounts / credits ----
   PRORATION_NOT_APPLICABLE: 'PRORATION_NOT_APPLICABLE',
@@ -188,7 +187,7 @@ export const NOMBAONE_ERROR_CODES = {
   INVOICE_NOT_BALANCED: 'INVOICE_NOT_BALANCED',
 
   // ---- Multi-tenancy & settlement (08) ----
-  SETTLEMENT_SUBACCOUNT_NOT_FOUND: 'SETTLEMENT_SUBACCOUNT_NOT_FOUND',
+  PAYOUT_ACCOUNT_MISSING: 'PAYOUT_ACCOUNT_MISSING',
   SETTLEMENT_SPLIT_UNBALANCED: 'SETTLEMENT_SPLIT_UNBALANCED',
   SETTLEMENT_ALREADY_RECORDED: 'SETTLEMENT_ALREADY_RECORDED',
   SETTLEMENT_NOT_FOUND: 'SETTLEMENT_NOT_FOUND',
@@ -321,7 +320,7 @@ export const PUBLIC_ERROR_CODES: ReadonlySet<NombaoneErrorCode> = new Set([
   NOMBAONE_ERROR_CODES.DUNNING_CARD_UPDATE_REQUIRED,
   NOMBAONE_ERROR_CODES.DUNNING_ALREADY_TERMINAL,
   NOMBAONE_ERROR_CODES.SETTLEMENT_NOT_FOUND,
-  NOMBAONE_ERROR_CODES.SETTLEMENT_SUBACCOUNT_NOT_FOUND,
+  NOMBAONE_ERROR_CODES.PAYOUT_ACCOUNT_MISSING,
   NOMBAONE_ERROR_CODES.REFUND_ALREADY_REFUNDED,
   NOMBAONE_ERROR_CODES.REFUND_AMOUNT_EXCEEDS_NET,
   NOMBAONE_ERROR_CODES.ESCROW_LOCKED,
@@ -708,10 +707,6 @@ export const ERROR_CODE_META: Record<NombaoneErrorCode, ErrorCodeMeta> = {
     hint: "The schedule's `effectiveAt` is invalid — it must be in the future and align with the billing cycle. Choose a valid future timestamp and retry.",
     docUrl: `${DOCS_ERRORS_BASE}#SUBSCRIPTION_SCHEDULE_INVALID_EFFECTIVE_AT`,
   },
-  BILLING_CATCH_UP_LIMIT_EXCEEDED: {
-    hint: 'Too many billing periods are overdue to catch up in one run (a safety cap against runaway backfills). Advance the subscription in smaller steps, or contact support with the `requestId`.',
-    docUrl: `${DOCS_ERRORS_BASE}#BILLING_CATCH_UP_LIMIT_EXCEEDED`,
-  },
 
   // ---- Invoicing adjustments (05): proration / coupons / discounts / credits ----
   PRORATION_NOT_APPLICABLE: {
@@ -776,9 +771,9 @@ export const ERROR_CODE_META: Record<NombaoneErrorCode, ErrorCodeMeta> = {
   },
 
   // ---- Multi-tenancy & settlement (08) ----
-  SETTLEMENT_SUBACCOUNT_NOT_FOUND: {
-    hint: 'No settlement subaccount is configured for this organization. Create and verify the subaccount before recording splits or payouts.',
-    docUrl: `${DOCS_ERRORS_BASE}#SETTLEMENT_SUBACCOUNT_NOT_FOUND`,
+  PAYOUT_ACCOUNT_MISSING: {
+    hint: 'Add the bank account you want to be paid into, then withdraw. Your balance is safe until you do — nothing is lost by adding it now.',
+    docUrl: `${DOCS_ERRORS_BASE}#PAYOUT_ACCOUNT_MISSING`,
   },
   SETTLEMENT_SPLIT_UNBALANCED: {
     hint: 'The settlement split amounts do not add up to the charge total. Adjust the split so the parts sum exactly to the total, then retry.',

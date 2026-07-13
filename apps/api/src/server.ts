@@ -7,6 +7,7 @@ import { createServer as createHttpServer, type Server } from 'node:http';
 import { connection as queueConnection } from '@nombaone/queue';
 
 import { pool } from './shared/config/db';
+import { registerRailsIfConfigured } from './shared/config/nomba';
 import { redis } from './shared/config/redis';
 import { logger } from './shared/observability/logger';
 import { initializeScheduler } from './services/cron';
@@ -63,6 +64,34 @@ const createSuperApp = (): Express => {
 export const createServer = (): Server => createHttpServer(createSuperApp());
 
 const start = (): void => {
+  // ── 🔴 WIRE THE MONEY. This must happen BEFORE anything can serve a request or
+  // run a sweep.
+  //
+  // `registerRailsIfConfigured()` is what swaps the mock rails (registered by an
+  // import side-effect in `@nombaone/sara/rails`) for the REAL Nomba card / mandate /
+  // transfer adapters, and installs the Nomba client factory that
+  // `mintInvoiceCheckoutLink` needs.
+  //
+  // It existed, and was correct, and was called from NOWHERE — its only caller in the
+  // entire repo was a single e2e test. So the deployed API booted with only `mock_pull`
+  // and `mock_push` registered, which meant, in production:
+  //   • `getRail('card')` threw `RAIL_NOT_REGISTERED` on every renewal charge;
+  //   • `getBillingNombaClient()` returned null, so `mintInvoiceCheckoutLink` returned
+  //     null and `POST /v1/subscriptions` handed the customer NO checkout link at all.
+  // The money path only ever worked under test, where the harness injects a client.
+  // Nothing else in this service matters if this line is missing.
+  const railsRegistered = registerRailsIfConfigured();
+  if (railsRegistered) {
+    logger.info('[api] Nomba rails registered (card, mandate, transfer)');
+  } else {
+    // Not fatal — a dev box with no creds should still boot and serve reads. But this is
+    // the difference between an API that can take money and one that cannot, so it must
+    // never be something you have to go looking for.
+    logger.error(
+      '[api] NO NOMBA CREDENTIALS — the mock rails are live. No charge, checkout link, or payout can work.'
+    );
+  }
+
   const server = createServer();
 
   server.listen(env.PORT, () => {

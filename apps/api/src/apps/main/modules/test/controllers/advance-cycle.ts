@@ -4,7 +4,6 @@ import { runCycle } from '@shared/services/billing';
 import { getInvoiceByReference } from '@shared/services/invoices';
 import { getSubscriptionByReference } from '@shared/services/subscriptions';
 import { db } from '@shared/config/db';
-import { env } from '@shared/config/env';
 import { jsonHandler } from '@shared/http';
 
 import type { AdvanceCycleResponseData } from '@nombaone/core-contracts/types';
@@ -49,9 +48,9 @@ export const advanceCycleController: RequestHandler = jsonHandler<AdvanceCycleRe
       );
     }
 
-    const result = await runCycle(db, ctx, subscriptionId, {
-      maxCatchUpPeriods: env.BILLING_MAX_CATCH_UP_PERIODS,
-    });
+    // The sandbox clock advances exactly ONE cycle per call — that is its contract. A
+    // backlog is drained by the billing worker, not here.
+    const result = await runCycle(db, ctx, subscriptionId);
     // No invoice when the cycle tripped cancel-at-period-end: the subscription ended at
     // the boundary rather than renewing, so there was nothing to bill.
     const invoice = result.invoice

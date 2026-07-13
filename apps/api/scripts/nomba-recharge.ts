@@ -4,6 +4,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { env } from '../src/shared/config/env';
+import { scriptSubAccountId } from './_subaccount';
 import { getNombaClient } from '../src/shared/config/nomba';
 import { koboToNombaAmount, NOMBA_ENDPOINTS } from '@nombaone/sara/nomba';
 import { mintReference } from '@nombaone/sara/reference';
@@ -27,7 +28,7 @@ async function main(): Promise<void> {
         customerEmail: email,
         callbackUrl: 'https://tunnel.nombaone.xyz/callback',
         orderReference: invRef,
-        accountId: env.NOMBA_LIVE_SUBACCOUNT_ID,
+        accountId: scriptSubAccountId,
       },
     },
   });

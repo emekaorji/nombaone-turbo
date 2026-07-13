@@ -59,12 +59,36 @@ export const NOMBA_ENDPOINTS = {
   // Virtual accounts (transfer/push rail) — confirmed live on sandbox.
   virtualAccountCreate: '/v1/accounts/virtual',
 
+  // Accounts — the platform's own account. There is deliberately NO sub-account
+  // family here: live-probed 2026-07-13, `POST /v1/accounts/sub-accounts` 500s for
+  // every body shape (including `{}`, and including a bogus sibling path — so it is
+  // a catch-all, not payload rejection) and `GET /v1/accounts/sub-accounts` 403s
+  // "Forbidden". Nomba will not mint a merchant an account, so we do not model one:
+  // a merchant's money is a balance in OUR ledger (settlement/accounts.ts).
+  accountsBalance: '/v1/accounts/balance', // GET — the platform's real naira balance (reconciler).
+
   // Verification / reconciliation — path confirmed live; ⚠ query param + join field.
   transactionRequery: '/v1/transactions/accounts/single', // ⚠ UNCONFIRMED (param: transactionRef?)
 
-  // Payouts (settlement/refunds in 08) — lookup confirmed live; transfer ⚠.
+  // ── Payouts. This is how a merchant's money leaves us. All three live-probed
+  // 2026-07-13 on api.nomba.com and ENTITLED on the parent account (no 403).
+  /**
+   * NIBSS name enquiry → `{accountName, accountNumber}`.
+   * ⚠ POST with a BODY. As a `GET …?accountNumber=&bankCode=` it answers **500** —
+   * which is how every payout used to die before it ever reached the transfer.
+   */
   bankLookup: '/v1/transfers/bank/lookup',
-  bankTransfer: '/v1/transfers/bank', // ⚠ UNCONFIRMED (payouts are 08)
+  /** The bank list (code + name). Feeds the console's bank picker so no one hand-types a NIBSS code. */
+  banks: '/v1/transfers/banks',
+  /**
+   * Outbound bank transfer. Required body (from its own 422):
+   *   `{ amount, bankCode, accountNumber, accountName, merchantTxRef }`
+   * `merchantTxRef` is BOTH our reference and Nomba's idempotency key — send the same
+   * one on a retry or you send the money twice.
+   * ⚠ Answers `{code:"201", description:"PROCESSING", status:false}` for a transfer
+   * that IS in flight — see `NombaResponse.pending`. `status:false` is NOT a failure here.
+   */
+  bankTransfer: '/v1/transfers/bank',
 } as const;
 
 export type NombaEndpointKey = keyof typeof NOMBA_ENDPOINTS;

@@ -71,6 +71,10 @@ export const subscriptionsTable = pgTable(
     // lifecycle sweep's trial-notice idempotency stamp.
     nextBillingAt: timestamp('next_billing_at', { withTimezone: true }),
     trialWillEndNotifiedAt: timestamp('trial_will_end_notified_at', { withTimezone: true }),
+    // Renewal-reminder idempotency: the highest period index the customer was
+    // already reminded for. Periods have no row before billing (claimPeriod), so
+    // the stamp lives here — one integer, compared to `current_period_index`.
+    reminderSentForIndex: integer('reminder_sent_for_index'),
     trialStart: timestamp('trial_start', { withTimezone: true }),
     trialEnd: timestamp('trial_end', { withTimezone: true }),
     cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),

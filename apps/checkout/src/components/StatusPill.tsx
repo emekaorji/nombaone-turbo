@@ -65,3 +65,33 @@ export function exampleStatusPill(status: string): { variant: StatusVariant; lab
     label: (STATUS_LABEL as Record<string, string>)[status] ?? status,
   };
 }
+
+/**
+ * Invoice status → pill descriptor for the end-customer pay page (`/i/<token>`).
+ * Status is DERIVED from the row's timestamp signals (see `lib/billing.ts`),
+ * same vocabulary as the console. Unknown values degrade to a neutral pill.
+ */
+const INVOICE_STATUS: Record<string, StatusVariant> = {
+  draft: 'neutral',
+  open: 'pending',
+  partially_paid: 'pending',
+  paid: 'success',
+  void: 'neutral',
+  uncollectible: 'error',
+};
+
+const INVOICE_STATUS_LABEL: Record<string, string> = {
+  draft: 'Draft',
+  open: 'Awaiting payment',
+  partially_paid: 'Partially paid',
+  paid: 'Paid',
+  void: 'Void',
+  uncollectible: 'Uncollectible',
+};
+
+export function invoiceStatusPill(status: string): { variant: StatusVariant; label: string } {
+  return {
+    variant: INVOICE_STATUS[status] ?? 'neutral',
+    label: INVOICE_STATUS_LABEL[status] ?? status,
+  };
+}

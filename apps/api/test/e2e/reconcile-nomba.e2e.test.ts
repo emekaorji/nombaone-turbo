@@ -28,7 +28,7 @@ describe('reconcile-nomba cron (item 6)', () => {
   const fakeNomba: NombaClient = {
     getToken: async () => 'tok',
     async request<T = unknown>() {
-      return { status: 200, ok: true, data: {} as T };
+      return { status: 200, ok: true, pending: false, data: {} as T };
     },
     requeryTransaction: async (_ctx, { reference }) =>
       requeryScript.get(reference) ?? { found: false, succeeded: false },

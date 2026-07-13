@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
   - "toolings/*"
+  - "examples/*"
 
 ignoredBuiltDependencies:
   - sharp

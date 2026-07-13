@@ -69,8 +69,11 @@ production sends.
 ## 3 · Verify the signature
 
 Never trust a webhook you haven't verified. Every delivery is signed
-`HMAC_SHA256(` `${timestamp}.${rawBody}` `, secret)` over the **raw** request
-body. Verify before you parse. Compare in constant time.
+`HMAC_SHA256(` `${timestamp}.${rawBody}` `, key)` over the **raw** request
+body, where `key = SHA256(secret)` hex — the SHA-256 of the plaintext signing
+secret you were shown at endpoint creation. Verify before you parse. Compare in
+constant time. (The official SDKs derive the key internally: pass them the
+plaintext secret.)
 
 > **Verify the raw bytes, before parsing**
 >
@@ -89,11 +92,12 @@ The reference implementation for your server:
 **TypeScript**
 
 ```ts
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export function verify(rawBody: string, header: string, secret: string) {
   const [ts, sig] = parseHeader(header); // "t=…,v1=…"
-  const expected = createHmac("sha256", secret)
+  const key = createHash("sha256").update(secret).digest("hex"); // key = sha256(whsec)
+  const expected = createHmac("sha256", key)
     .update(`${ts}.${rawBody}`)
     .digest("hex");
   const ok =
@@ -110,8 +114,9 @@ import hmac, hashlib
 
 def verify(raw_body: bytes, header: str, secret: str) -> None:
     ts, sig = parse_header(header)  # "t=…,v1=…"
+    key = hashlib.sha256(secret.encode()).hexdigest()  # key = sha256(whsec)
     expected = hmac.new(
-        secret.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
+        key.encode(), f"{ts}.".encode() + raw_body, hashlib.sha256
     ).hexdigest()
     if not hmac.compare_digest(sig, expected):
         raise ValueError("bad signature")

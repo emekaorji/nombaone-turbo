@@ -69,7 +69,7 @@ describe('subscriptions + billing e2e', () => {
   const fakeNomba: NombaClient = {
     getToken: async () => 'tok',
     async request<T = unknown>() {
-      return { status: 200, ok: true, data: {} as T };
+      return { status: 200, ok: true, pending: false, data: {} as T };
     },
     requeryTransaction: async () => ({ found: true, succeeded: true, amount: requeryAmount }),
   };
@@ -92,7 +92,7 @@ describe('subscriptions + billing e2e', () => {
     registerRail({
       key: 'transfer',
       direction: 'push',
-      collect: async () => ({ status: 'pending', payInstructions: { bank: 'Wema' } }),
+      collect: async () => ({ status: 'pending', payInstructions: { bankName: 'Wema', accountNumber: '0000000000', amountKobo: 0 } }),
     });
 
     const orgA = await harness.seedOrg('Sub A');

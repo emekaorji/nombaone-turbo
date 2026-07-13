@@ -24,6 +24,7 @@ Requires a secret API key.
 | `name` | string | no |  |
 | `description` | string | no |  |
 | `metadata` | object | no |  |
+| `prices` | object[] | no |  |
 
 ## Responses
 

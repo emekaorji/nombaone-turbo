@@ -1,27 +1,44 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertSplitBalances, buildSplitRequest } from '@shared/services/settlement';
+import { assertSplitBalances } from '@shared/services/settlement';
 
-const ctx = { organizationId: 'org', mode: 'sandbox' as const };
+/**
+ * The kobo-exact split invariant. Every settlement divides the gross into exactly two
+ * parts — our platform fee, and the merchant's share (credited to
+ * `tenant_settlement:{accountRef}`) — and this is what guarantees no kobo is invented
+ * or lost in between.
+ *
+ * (`buildSplitRequest` used to live here too. Deleted: Nomba's `splitRequest` routes
+ * each leg to a sub-account `accountId` we can never obtain, and it had ZERO production
+ * callers — no split was ever transmitted to Nomba. The split that actually decides who
+ * owns a naira is the one below, in our own ledger.)
+ */
+describe('settlement/split — kobo-exact split invariant', () => {
+  it('passes only when gross = fee + net, all non-negative integers', () => {
+    expect(() =>
+      assertSplitBalances({ grossKobo: 100000, platformFeeKobo: 1500, netToTenantKobo: 98500 })
+    ).not.toThrow();
 
-describe('settlement/split — kobo-exact split invariant (H5 ★ / L4)', () => {
-  it('assertSplitBalances passes only when gross = fee + net, non-negative integers', () => {
-    expect(() => assertSplitBalances({ grossKobo: 100000, platformFeeKobo: 1500, netToTenantKobo: 98500 })).not.toThrow();
-    expect(() => assertSplitBalances({ grossKobo: 100000, platformFeeKobo: 1500, netToTenantKobo: 98501 })).toThrow(); // 1-kobo leak
-    expect(() => assertSplitBalances({ grossKobo: 100000, platformFeeKobo: -1, netToTenantKobo: 100001 })).toThrow(); // negative fee
-    expect(() => assertSplitBalances({ grossKobo: 100000.5, platformFeeKobo: 1500, netToTenantKobo: 98500.5 })).toThrow(); // non-integer
+    // A single kobo appearing out of nowhere must be fatal.
+    expect(() =>
+      assertSplitBalances({ grossKobo: 100000, platformFeeKobo: 1500, netToTenantKobo: 98501 })
+    ).toThrow();
+
+    expect(() =>
+      assertSplitBalances({ grossKobo: 100000, platformFeeKobo: -1, netToTenantKobo: 100001 })
+    ).toThrow(); // negative fee
+
+    expect(() =>
+      assertSplitBalances({ grossKobo: 100000.5, platformFeeKobo: 1500, netToTenantKobo: 98500.5 })
+    ).toThrow(); // fractional kobo
   });
 
-  it('buildSplitRequest routes the tenant share (gross − fee) to the sub-account; fee is the parent remainder', () => {
-    const split = buildSplitRequest(ctx, { grossKobo: 500000, subAccountId: 'sub_123', platformFeeKobo: 7500 });
-    expect(split.splitType).toBe('AMOUNT');
-    expect(split.splitList).toEqual([{ accountId: 'sub_123', value: 492500 }]); // 500000 − 7500
-  });
-
-  it('handles a clamped-floor and clamped-ceiling fee (fee still balances)', () => {
-    const floor = buildSplitRequest(ctx, { grossKobo: 1000, subAccountId: 's', platformFeeKobo: 1000 });
-    expect(floor.splitList[0]!.value).toBe(0); // whole amount is fee → tenant share 0, still balances
-    const ceil = buildSplitRequest(ctx, { grossKobo: 100_000_000, subAccountId: 's', platformFeeKobo: 200_000 });
-    expect(ceil.splitList[0]!.value).toBe(99_800_000);
+  it('allows the degenerate ends of the split (all-fee, all-tenant)', () => {
+    expect(() =>
+      assertSplitBalances({ grossKobo: 1000, platformFeeKobo: 1000, netToTenantKobo: 0 })
+    ).not.toThrow();
+    expect(() =>
+      assertSplitBalances({ grossKobo: 1000, platformFeeKobo: 0, netToTenantKobo: 1000 })
+    ).not.toThrow();
   });
 });

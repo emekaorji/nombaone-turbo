@@ -14,6 +14,10 @@ const EDGES: ReadonlyArray<[SubscriptionStatus, SubscriptionStatus]> = [
   ['incomplete', 'incomplete_expired'],
   ['incomplete', 'active'],
   ['incomplete', 'canceled'],
+  // RESURRECTION: the hosted-checkout window expired but the customer's money
+  // arrived anyway (a Nomba link outlives our 24h expiry). Money in hand plus a
+  // refused activation would be theft — the settle path re-activates.
+  ['incomplete_expired', 'active'],
   ['trialing', 'active'],
   ['trialing', 'past_due'], // trial-end first charge failed → dunning
   ['trialing', 'canceled'],

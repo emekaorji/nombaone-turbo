@@ -1,4 +1,5 @@
 import { mapNombaEvent } from '@nombaone/sara/nomba/events';
+
 import { captureCardToken } from './capture';
 
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
@@ -17,6 +18,19 @@ export interface SettleResult {
   outcome: 'captured' | 'recorded' | 'ignored';
 }
 
+/**
+ * Nomba sends the LITERAL STRING "N/A" as `tokenizedCardData.tokenKey` on
+ * non-card payments (live-observed on bank-transfer checkouts). Accepting it
+ * used to mint an ACTIVE payment method whose "token" can never charge — the
+ * customer looks covered, every renewal declines. Reject sentinels before any
+ * capture. Shared with the invoice-branch capture (`captureFromInvoice`).
+ */
+export const isRealTokenKey = (tokenKey: string | undefined | null): tokenKey is string => {
+  if (!tokenKey) return false;
+  const t = tokenKey.trim();
+  return t !== '' && t.toUpperCase() !== 'N/A' && t.toLowerCase() !== 'null';
+};
+
 export async function settleInboundEvent(
   txDb: InfraTxDb,
   ctx: DomainContext,
@@ -31,8 +45,8 @@ export async function settleInboundEvent(
     const tcd = data.tokenizedCardData as TokenizedCardData | undefined;
     const order = (data.order ?? data) as Record<string, unknown>;
     const orderRef = String(data.orderReference ?? order.orderReference ?? data.merchantTxRef ?? '');
-    if (tcd?.tokenKey && orderRef) {
-      await captureCardToken(txDb, ctx, { reference: orderRef, tokenizedCardData: tcd });
+    if (isRealTokenKey(tcd?.tokenKey) && orderRef) {
+      await captureCardToken(txDb, ctx, { reference: orderRef, tokenizedCardData: tcd! });
       return { outcome: 'captured' };
     }
   }

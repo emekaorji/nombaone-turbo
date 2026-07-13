@@ -24,9 +24,11 @@ import type { DomainContext, InfraDb, InfraTxDb } from '../context';
  * The signing KEY used by `./deliver` is the stored sha256 hash itself — a
  * 32-byte value derived deterministically from the plaintext. A tenant verifying
  * a delivery recomputes `sha256(plaintextSecret)` once, then verifies every
- * payload with `HMAC-SHA256(thatHash, rawBody)`. This keeps the at-rest secret a
- * one-way hash (no reversible plaintext column) while still letting both sides
- * agree on the HMAC key. The prefix is for human display only.
+ * `t=<unix>,v1=<hex>` header with `HMAC-SHA256(thatHash, `${t}.${rawBody}`)`
+ * (see `./sign`; the Node SDK does this hashing internally from the plaintext).
+ * This keeps the at-rest secret a one-way hash (no reversible plaintext column)
+ * while still letting both sides agree on the HMAC key. The prefix is for human
+ * display only.
  *
  * Every read/write is pinned to `ctx.organizationId` AND `ctx.mode`; a
  * handler never passes a client-supplied scope.

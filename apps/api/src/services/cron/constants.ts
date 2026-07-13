@@ -26,3 +26,22 @@ export const MANDATE_ACTIVATION_SWEEP_JOB = 'mandate-activation-sweep';
 
 /** Prune API request logs older than the retention window (Developers → Logs). */
 export const REQUEST_LOG_RETENTION_JOB = 'request-log-retention';
+
+/** Renewal reminders: "you will be billed in <lead>" — lead capped at one period. */
+export const RENEWAL_REMINDER_JOB = 'renewal-reminder';
+
+/** send_invoice overdue sweep: unpaid past-due invoices → past_due + payment-reminder dunning. */
+export const OVERDUE_INVOICE_SWEEP_JOB = 'overdue-invoice-sweep';
+
+/**
+ * Daily settlement sweep: pay every merchant their available balance, once a day, to the
+ * bank account they registered. Deterministic `merchantTxRef` per (org, mode, Lagos day)
+ * makes a replayed tick a no-op.
+ */
+export const SETTLEMENT_SWEEP_JOB = 'settlement-sweep';
+
+/**
+ * Nightly ledger audit: zero-sum, suspense-zero (money attributed to nobody), and no
+ * negative tenant balance. The only job whose purpose is to tell us a money bug shipped.
+ */
+export const LEDGER_RECONCILE_JOB = 'ledger-reconcile';

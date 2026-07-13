@@ -2,6 +2,7 @@ import type {
   InvoiceBillingReason,
   InvoiceLineItemData,
   InvoiceLineKind,
+  InvoicePayInstructionsData,
   InvoiceResponseData,
   InvoiceStatus,
 } from '@nombaone/core-contracts/types';
@@ -10,6 +11,7 @@ export type {
   InvoiceBillingReason,
   InvoiceLineItemData,
   InvoiceLineKind,
+  InvoicePayInstructionsData,
   InvoiceResponseData,
   InvoiceStatus,
 };

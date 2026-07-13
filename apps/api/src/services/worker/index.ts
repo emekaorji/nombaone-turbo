@@ -1,6 +1,7 @@
 import { logger } from '@shared/observability/logger';
 
 import { createBillingWorker } from './modules/billing';
+import { createCommsWorker } from './modules/comms';
 import { createCronWorker } from './modules/cron';
 import { createInboundWebhookWorker } from './modules/inbound-webhook';
 import { createOutboundWebhookWorker } from './modules/outbound-webhook';
@@ -35,6 +36,7 @@ export const startWorkers = (): void => {
     createOutboundWebhookWorker(),
     createInboundWebhookWorker(),
     createBillingWorker(),
+    createCommsWorker(),
   ];
   logger.info(`[worker] started ${workers.length} workers`);
 };

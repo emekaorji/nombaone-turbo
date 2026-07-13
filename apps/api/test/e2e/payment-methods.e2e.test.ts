@@ -15,7 +15,7 @@ import { startHarness, type Harness } from '../helpers/harness';
 const NOMBA_SIG_KEY = 'test_nomba_signature_key'; // matches the harness env
 
 /** A fake Nomba client — canned responses by endpoint, no network. */
-const ok = <T>(data: T) => ({ status: 200, ok: true, data });
+const ok = <T>(data: T) => ({ status: 200, ok: true, pending: false, data });
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
   async request<T = unknown>(req: NombaRequest) {
@@ -23,7 +23,7 @@ const fakeNomba: NombaClient = {
     let data: unknown = {};
     if (ep.includes('tokenized-card-data') && req.method === 'DELETE') data = {};
     else if (ep.includes('checkout/order')) data = { checkoutLink: 'https://checkout.test/sess' };
-    else if (ep.includes('direct-debits/status')) data = { status: 'ACTIVE', adviceStatus: 'ADVICE_SENT' };
+    else if (ep.includes('direct-debits/status')) data = { mandateStatus: 'Active', mandateAdviceStatus: 'Advice Sent' };
     else if (ep.includes('direct-debits')) data = { mandateId: 'mandate_123', description: 'Pay ₦50 NIBSS validation' };
     else if (ep.includes('accounts/virtual'))
       data = { bankName: 'Wema', bankAccountNumber: '0000000000', bankAccountName: 'NombaOne' };

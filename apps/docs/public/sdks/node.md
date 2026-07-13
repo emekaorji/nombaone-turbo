@@ -274,9 +274,10 @@ passes. Involuntary churn ends as `canceled` with `cancellationReason:
 event).
 - **Prices are immutable, plans archive.** To change pricing, deactivate the price
 and create a new one; plans archive rather than delete.
-- **Sandbox settlements.** The sandbox organization has no settlement subaccount,
-so escrow and payout return a typed `SETTLEMENT_SUBACCOUNT_NOT_FOUND` — a real
-business state whose `hint` explains itself.
+- **Withdrawing needs a bank account.** Every organization has a settlement balance
+from day one, but a payout has nowhere to go until you add the bank account you want
+to be paid into. Until then, escrow and payout return a typed `PAYOUT_ACCOUNT_MISSING`
+— a real business state whose `hint` explains itself.
 
 ## Next
 

@@ -8,28 +8,32 @@ import {
 } from '@nombaone/core-contracts/types';
 import {
   backoffFor,
+  buildSignatureHeader,
   MAX_ATTEMPTS,
-  signWebhookPayload,
-  verifyWebhookSignature,
+  verifySignatureHeader,
 } from '@nombaone/sara/webhooks';
 
 describe('webhooks/sign — the frozen wire contract (G2/N3)', () => {
-  it('a tenant that recomputes key = sha256(secret) then HMAC-SHA256(key, rawBody) matches our signature', () => {
+  it('a tenant that recomputes key = sha256(secret) then HMAC-SHA256(key, `${t}.${rawBody}`) matches our v1', () => {
     const plaintextSecret = 'nbo_whsec_deadbeef';
     const rawBody = JSON.stringify({ id: 'nbo1whd', type: 'invoice.paid', data: {} });
+    const now = 1_752_300_000;
 
-    // Our sender signs with the AT-REST key (sha256 of the plaintext).
+    // Our sender signs with the AT-REST key (sha256 of the plaintext), header
+    // format `t=<unix>,v1=<hex>`.
     const key = createHash('sha256').update(plaintextSecret).digest('hex');
-    const ours = signWebhookPayload(key, rawBody);
+    const header = buildSignatureHeader(key, rawBody, now);
 
     // The documented tenant recipe, computed independently.
-    const tenant = createHmac('sha256', key).update(rawBody, 'utf8').digest('hex');
-    expect(tenant).toBe(ours);
-    expect(verifyWebhookSignature(key, rawBody, tenant)).toBe(true);
-    expect(verifyWebhookSignature(key, rawBody, 'deadbeef')).toBe(false);
+    const tenantV1 = createHmac('sha256', key).update(`${now}.${rawBody}`, 'utf8').digest('hex');
+    expect(header).toBe(`t=${now},v1=${tenantV1}`);
+    expect(verifySignatureHeader(key, rawBody, header, { nowSec: now })).toBe(true);
+    expect(verifySignatureHeader(key, rawBody, `t=${now},v1=deadbeef`, { nowSec: now })).toBe(
+      false
+    );
     // A different key (post-rotation) must NOT verify (rotation safety).
     const otherKey = createHash('sha256').update('nbo_whsec_other').digest('hex');
-    expect(verifyWebhookSignature(otherKey, rawBody, ours)).toBe(false);
+    expect(verifySignatureHeader(otherKey, rawBody, header, { nowSec: now })).toBe(false);
   });
 });
 

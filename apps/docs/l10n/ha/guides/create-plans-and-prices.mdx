@@ -11,9 +11,12 @@ nufin plan guda (misali, "Pro") na iya ɗaukar price na wata-wata da na
 shekara-shekara a lokaci guda, customer kuma zai iya sauyawa tsakaninsu ba tare
 da ka sake tsara samfurin ba.
 
-## Ƙirƙirar plan
+## Ƙirƙirar plan da price ɗinsa a kira guda
 
-Plan yana buƙatar suna kawai. Bayani da metadata na zaɓi ne.
+Ka tura plan ɗin tare da array na `prices`, za ka kuma sami cikakken shigarwar
+catalog a buƙata guda — samfurin da kowane zagayen da yake sayarwa a kansa.
+Kiran **atomic** ne: ko dai plan ɗin da kowane price su shiga, ko kuma babu
+abin da zai shiga.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
@@ -74,6 +77,119 @@ ninkin maʼaunin da muke da shi.
   maimakon [tura agogo gaba](/sandbox-toolkit/clock) da hannu — amma zagaye ne na
   gaske, kuma yana aiki a sandbox da live duka.
 </Callout>
+
+## Canja abin da plan ke ci
+
+Ɗaga price na wata-wata gyara ne ga **plan** ɗin — ba farauta ba ne a cikin
+layukan price ɗinsa. `PATCH /v1/plans/{id}` yana karɓar array na `prices` iri
+ɗaya da kiran ƙirƙira ke karɓa, sannan yana daidaita shi da abin da plan ɗin
+ya riga yake ci. Ka tura abin da kake son plan ɗin ya riƙa ci:
+
+```bash
+curl -X PATCH https://sandbox.api.nombaone.xyz/v1/plans/{planId} \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "prices": [
+      { "unitAmountInKobo": 600000, "interval": "month" },
+      { "unitAmountInKobo": 5000000, "interval": "year" }
+    ]
+  }'
+```
+
+Ga kowane zagaye (`interval` + `intervalCount`), engine ɗin yana gano abin da
+ya canja:
+
+- **Babu price a kan wannan zagayen tukuna** → za a **ƙirƙiri** price ɗin, kuma
+  `price.created` zai tashi.
+- **Adadin ɗaya ne** → **babu abin da zai faru**. Ba a rubuta wani layi ba,
+  babu event da zai fito. Sake tura catalog ɗinka na yanzu ba ya yin komai,
+  wanda shi ne ke sa maɓallin "save" a kan fom ɗin farashi ya zama lafiyayye
+  a danna shi sau biyu.
+- **Adadin ya bambanta** → za a ƙirƙiri **sabon price**, kuma duk wani price
+  mai aiki a kan wannan zagayen zai zama **kashacce**. Za ka sami
+  `price.created` da `price.deactivated`.
+
+Zagayen da **ba** ka tura ba za a bar shi gaba ɗaya. A kiran da ke sama, an
+sake tura price na shekara-shekara ba tare da canji ba, don haka ya riƙe `id`
+ɗinsa; na wata-wata ya tashi daga ₦5,000 zuwa ₦6,000, don haka ya dawo da
+sabo:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "domain": "plan",
+    "id": "nbo481920374615pln",
+    "name": "Pro",
+    "status": "active",
+    "prices": [
+      {
+        "domain": "price",
+        "id": "nbo903117254480prc",
+        "planId": "nbo481920374615pln",
+        "unitAmountInKobo": 600000,
+        "currency": "NGN",
+        "interval": "month",
+        "intervalCount": 1,
+        "active": true
+      },
+      {
+        "domain": "price",
+        "id": "nbo225864019773prc",
+        "planId": "nbo481920374615pln",
+        "unitAmountInKobo": 5000000,
+        "currency": "NGN",
+        "interval": "year",
+        "intervalCount": 1,
+        "active": true
+      }
+    ]
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+`data.prices` su ne price **masu aiki** na plan ɗin bayan gyaran, kuma koyaushe
+suna nan. Barin `prices` gaba ɗaya har yanzu yana gyara `name`, `description`
+da `metadata` kawai, kamar yadda yake a da.
+
+### Dalilin da ya sa canji sabon price ne, ba gyara ba
+
+Price **ba ya canjawa**: ba a taɓa sake rubuta `unitAmountInKobo` ɗinsa a
+wurinsa ba. Subscription yana riƙe da `priceId` guda, kuma wannan layin da aka
+riƙe shi ne kaɗai dalilin da ya sa kuɗin wanda ya riga ya yi rijista ba zai iya
+motsawa a ƙarƙashinsa ba. Don haka canji yana ƙirƙirar **sabon** layi ya kuma
+ajiye tsohon — wanda ya tsaya daidai yadda yake, yana faɗin abin da masu
+biyanka na yanzu suka yarda su biya. Grandfathering halayya ce ta tsarin data,
+ba wani abu da wani ya tuna ya gina ba. Sababbi suna kaiwa ga sabon price;
+waɗanda tuni suke biya suna riƙe da nasu har sai ka matsar da su da gangan,
+wanda shi ne [canjin plan](/guides/proration-and-plan-changes).
+
+## Kalli subscription yana biya
+
+Subscription na wata-wata yana ɗaukar wata guda kafin ya tabbatar yana
+sabuntawa. `interval: "minute"` tare da `intervalCount: 10` yana tabbatar da
+shi cikin lokacin abincin rana:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "unitAmountInKobo": 50000, "interval": "minute", "intervalCount": 10 }'
+```
+
+Ka sa customer a kan wannan price ɗin, bayan minti goma sabuntawar za ta faru
+da kanta, ba tare da wani abin ƙarya ba: `invoice.created`,
+`invoice.finalized`, cajin, sannan `invoice.paid`, rubuce-rubucen ledger, kuma
+lokacin subscription ɗin zai mirgina gaba. Engine **ɗaya** da `month` ke bi ne
+yake bi — zagayen ne kaɗai ya bambanta. Zagaye ne na gaske kuma: yana aiki a
+live, ba sandbox kaɗai ba. Lura: sabuntawa tana sauka ne lokacin da billing
+sweep ya gudana, don haka zagayen minti yana biya a kan lokaci ne kawai idan
+sweep ɗin yana bugawa kowane minti (`BILLING_SWEEP_CRON=* * * * *`, wanda
+yanzu shi ne tsoho).
 
 ## Ƙara trial
 

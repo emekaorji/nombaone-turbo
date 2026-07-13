@@ -1,13 +1,15 @@
 import { and, desc, eq, lt, or } from 'drizzle-orm';
 
-import { plansTable, type PlanRow } from '@nombaone/core-db/schema';
+import { plansTable, pricesTable, type PlanRow } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { buildPage, clampLimit, decodeCursor } from '@nombaone/sara/pagination';
+import { serializePrice } from '../prices/serialize';
 import { serializePlan } from './serialize';
 
 import type { DomainContext, InfraDb } from '@nombaone/sara/context';
 import type { Page } from '@nombaone/sara/pagination';
+import type { PriceResponseData } from '../prices/types';
 import type { ListPlansOptions, PlanResponseData } from './types';
 
 /** Resolve one plan by its public reference within the caller's scope. */
@@ -18,6 +20,39 @@ export async function getPlanByReference(
 ): Promise<PlanResponseData> {
   const { row } = await resolvePlanId(db, ctx, reference);
   return serializePlan(row);
+}
+
+/**
+ * What the plan costs RIGHT NOW: its ACTIVE prices, newest first.
+ *
+ * The answer to "what can someone subscribe to today", which is what a plan's `prices` array
+ * means on every write path (`POST /v1/plans`, `PATCH /v1/plans/{id}`). Retired prices are
+ * deliberately absent — they still exist, still bill the subscribers pinned to them, and are
+ * still readable at `GET /v1/plans/{id}/prices`, but they are not on offer.
+ *
+ * Takes the plan ID (not the reference) because every caller has already resolved it — and
+ * doing so is what proved the plan is in scope.
+ */
+export async function listActivePlanPrices(
+  db: InfraDb,
+  ctx: DomainContext,
+  planId: string,
+  planRef: string
+): Promise<PriceResponseData[]> {
+  const rows = await db
+    .select()
+    .from(pricesTable)
+    .where(
+      and(
+        eq(pricesTable.organizationId, ctx.organizationId),
+        eq(pricesTable.mode, ctx.mode),
+        eq(pricesTable.planId, planId),
+        eq(pricesTable.active, true)
+      )
+    )
+    .orderBy(desc(pricesTable.createdAt));
+
+  return rows.map((row) => serializePrice(row, planRef));
 }
 
 /** Keyset-paginated list, optionally filtered by `status`, within scope. */

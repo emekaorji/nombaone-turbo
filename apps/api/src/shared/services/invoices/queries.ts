@@ -8,8 +8,8 @@ import {
   type InvoiceRow,
 } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { buildPage, clampLimit, decodeCursor } from '@nombaone/sara/pagination';
+
 import { serializeInvoice, serializeInvoiceLine } from './serialize';
 
 import type { DomainContext, InfraDb, InfraReadScope } from '@nombaone/sara/context';
@@ -156,6 +156,13 @@ export interface ReconcilableInvoice {
   reference: string;
   amountDueKobo: number;
   paidLocally: boolean;
+  /**
+   * Nomba's own transaction id, stamped into `invoices.metadata` by the inbound
+   * webhook path. This is the ONLY key the live requery resolves — requerying by
+   * our reference 404s (live-confirmed) — so without it the reconcile backstop
+   * cannot verify an invoice at all.
+   */
+  providerTransactionId: string | null;
 }
 
 /**
@@ -175,6 +182,7 @@ export async function getReconcilableInvoicesSince(
       reference: invoicesTable.reference,
       amountDueKobo: invoicesTable.amountDue,
       paidAt: invoicesTable.paidAt,
+      metadata: invoicesTable.metadata,
     })
     .from(invoicesTable)
     .where(
@@ -186,12 +194,16 @@ export async function getReconcilableInvoicesSince(
         gte(invoicesTable.updatedAt, since)
       )
     );
-  return rows.map((r) => ({
-    organizationId: r.organizationId,
-    reference: r.reference,
-    amountDueKobo: r.amountDueKobo,
-    paidLocally: r.paidAt != null,
-  }));
+  return rows.map((r) => {
+    const providerTxn = (r.metadata as Record<string, unknown> | null)?.providerTransactionId;
+    return {
+      organizationId: r.organizationId,
+      reference: r.reference,
+      amountDueKobo: r.amountDueKobo,
+      paidLocally: r.paidAt != null,
+      providerTransactionId: typeof providerTxn === 'string' ? providerTxn : null,
+    };
+  });
 }
 
 export async function listInvoices(

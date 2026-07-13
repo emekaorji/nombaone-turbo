@@ -9,6 +9,7 @@ export * from './lifecycle-sweep';
 export * from './period';
 export * from './processInboundInvoiceEvent';
 export * from './queries';
+export * from './railMetadata';
 export * from './runCycle';
 export * from './scheduling';
 export * from './startSubscription';

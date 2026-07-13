@@ -21,8 +21,7 @@ Requires a secret API key.
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `paymentMethodReference` | string | no |  |
-| `checkoutToken` | string | no |  |
+| `paymentMethodReference` | string | yes |  |
 
 ## Responses
 

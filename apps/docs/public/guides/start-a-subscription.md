@@ -15,6 +15,38 @@ card and mandate are *pulled*, a bank transfer is *pushed*. See
 [multi-rail: push and pull](/concepts/multi-rail-push-and-pull) for why that
 asymmetry matters.
 
+## No payment method yet? Hosted checkout
+
+The storefront "subscribe" button rarely holds an authorized instrument. For
+that case, **omit `paymentMethodId` entirely** on a `charge_automatically`
+create with no trial:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "customerId": "{customerId}",
+    "priceId": "{priceId}",
+    "callbackUrl": "https://yourapp.com/billing/return"
+  }'
+```
+
+The subscription starts `incomplete` and the response carries a
+**`checkoutLink`** — a Nomba-hosted payment page (card or bank transfer).
+Redirect the customer there; the optional `callbackUrl` is where they return
+after paying. Paying activates the subscription; a **card** payment also
+captures a reusable token so renewals charge silently, while a **transfer**
+payment (which leaves no token to pull) flips the subscription to
+`send_invoice`, so each future cycle issues an invoice with a payment link
+instead. If nobody pays, the subscription expires to `incomplete_expired` and
+nothing is owed. The
+[gym membership recipe](/cookbook/bill-a-gym-membership) runs this entry end
+to end.
+
+Already hold an authorized method? Set one up and pass it explicitly:
+
 ## Set up a payment method
 
 Pull rails need an authorized instrument on file. Start a setup: the customer
@@ -74,8 +106,10 @@ The response `status` tells you where the first cycle landed:
 - **`trialing`**: the price has a trial; no charge yet.
 - **`past_due`**: the first charge failed; [dunning](/guides/dunning-and-recovery)
 now owns recovery. On a thin balance this usually means "not yet," not "no."
-- **`incomplete`**: the charge needs the customer to act (a card OTP step); an
-`invoice.action_required` event carries a fresh checkout link.
+- **`incomplete`**: the customer still has to act — either you used the
+hosted-checkout entry (redirect them to the response's `checkoutLink`), or a
+card charge hit an OTP step and an `invoice.action_required` event carries a
+fresh checkout link.
 
 > **Don't assume the first charge succeeds**
 >

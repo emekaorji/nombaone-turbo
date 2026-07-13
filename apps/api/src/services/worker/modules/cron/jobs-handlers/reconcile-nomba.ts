@@ -5,7 +5,6 @@ import {
   type LocalPaidInvoice,
   type NombaChargeTransaction,
 } from '@shared/services/reconciliation';
-
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
 import { availableNombaModes, getNombaClient } from '@shared/config/nomba';
@@ -86,7 +85,14 @@ export async function handleReconcileNomba(): Promise<ReconcileNombaResult> {
         checked += 1;
         if (inv.paidLocally) localPaid.push({ reference: inv.reference, amountKobo: inv.amountDueKobo });
         try {
-          const rq = await client.requeryTransaction(ctx, { reference: inv.reference });
+          // Requery by NOMBA's transaction id when the inbound path stamped one —
+          // the live requery 404s on our own reference, so without the stamp this
+          // backstop was inert against real Nomba. An invoice with no stamp (no
+          // webhook ever named it) still tries our reference: correct in sandbox;
+          // on live a 404 leaves an unpaid invoice consistent, and a paid-but-
+          // stampless one flagged for a human rather than silently trusted.
+          const requeryKey = inv.providerTransactionId ?? inv.reference;
+          const rq = await client.requeryTransaction(ctx, { reference: requeryKey });
           requeries.set(inv.reference, rq);
           if (rq.found && rq.succeeded && typeof rq.amount === 'number') {
             nombaTx.push({ reference: inv.reference, amountKobo: rq.amount });

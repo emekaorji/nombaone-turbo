@@ -2,8 +2,8 @@ import { eq } from 'drizzle-orm';
 
 import { invoicesTable, type InvoiceRow } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { emitEvent } from '@nombaone/sara/events';
+
 import { loadInvoiceRow } from './queries';
 import { deriveInvoiceStatus } from './status';
 

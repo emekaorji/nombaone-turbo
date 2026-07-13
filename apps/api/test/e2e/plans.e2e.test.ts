@@ -1,8 +1,14 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { domainEventsTable, plansTable, pricesTable } from '@nombaone/core-db/schema';
+import {
+  domainEventsTable,
+  plansTable,
+  pricesTable,
+  type PriceRow,
+} from '@nombaone/core-db/schema';
+import { mintReference } from '@nombaone/sara/reference';
 
 import { startHarness, type Harness } from '../helpers/harness';
 

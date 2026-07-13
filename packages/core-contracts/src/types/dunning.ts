@@ -6,7 +6,12 @@ export type DunningAttemptStatus =
   | 'card_update_required'
   | 'exhausted';
 
-export type DunningBranch = 'reschedule' | 'card_update_required' | 'short_path';
+export type DunningBranch =
+  | 'reschedule'
+  | 'card_update_required'
+  | 'short_path'
+  /** Push-rail dunning: nothing to charge — each attempt re-sends the payment link. */
+  | 'payment_reminder';
 
 /** One retry of a `past_due` invoice — the audit unit (D11). No PII. */
 export interface DunningAttemptResponseData {

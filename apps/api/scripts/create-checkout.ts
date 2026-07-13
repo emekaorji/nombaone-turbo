@@ -3,6 +3,7 @@
 // Prints the checkoutLink + full response (learn the response shape / money unit).
 //   npx tsx scripts/create-checkout.ts
 import { env } from '../src/shared/config/env';
+import { scriptSubAccountId } from './_subaccount';
 import { getNombaClient } from '../src/shared/config/nomba';
 import { NOMBA_ENDPOINTS } from '@nombaone/sara/nomba';
 
@@ -20,7 +21,7 @@ async function main(): Promise<void> {
     // the whole order (both card + transfer). A fresh email avoids the blocklist.
     customerEmail: `nombaone.test.${Date.now()}@gmail.com`,
   };
-  if (scopeToSub) order.accountId = env.NOMBA_LIVE_SUBACCOUNT_ID; // scope funds to OUR sub-account
+  if (scopeToSub) order.accountId = scriptSubAccountId; // scope funds to OUR sub-account
   const tokenize = !process.argv.includes('--no-tokenize'); // Nomba's tokenize flow has a bug; skip to test plain
   const res = await client.request({
     method: 'POST',
@@ -30,7 +31,7 @@ async function main(): Promise<void> {
   });
   console.log('SCOPED_TO_SUBACCOUNT=', scopeToSub, ' TOKENIZE=', tokenize);
   console.log('ORDER_REFERENCE=', orderReference);
-  console.log('SUBACCOUNT_SCOPED=', Boolean(env.NOMBA_LIVE_SUBACCOUNT_ID));
+  console.log('SUBACCOUNT_SCOPED=', Boolean(scriptSubAccountId));
   console.log('OK=', res.ok, 'STATUS=', res.status);
   console.log('RESPONSE=', JSON.stringify(res.data, null, 2));
   process.exit(0);

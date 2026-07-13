@@ -4,6 +4,7 @@ import { env } from './shared/config/env';
 import { createServer as createHttpServer } from 'node:http';
 
 import { createMainApp } from './apps/main/server';
+import { registerRailsIfConfigured } from './shared/config/nomba';
 import { logger } from './shared/observability/logger';
 
 /**
@@ -18,6 +19,19 @@ import { logger } from './shared/observability/logger';
  * Used by the first-party console bridge for on-demand, user-initiated writes.
  * For the full engine (background sweeps, webhook delivery), run `server.ts`.
  */
+
+// The rails must be registered here too. This process serves the SAME `/v1` money
+// routes (subscribe, charge, payout), so without this it would throw
+// `RAIL_NOT_REGISTERED` on every charge and hand back a null checkout link — see the
+// long note in server.ts. "No background jobs" does not mean "no money".
+if (registerRailsIfConfigured()) {
+  logger.info('[api:http-only] Nomba rails registered (card, mandate, transfer)');
+} else {
+  logger.error(
+    '[api:http-only] NO NOMBA CREDENTIALS — the mock rails are live. No charge, checkout link, or payout can work.'
+  );
+}
+
 const app = createMainApp();
 const server = createHttpServer(app);
 

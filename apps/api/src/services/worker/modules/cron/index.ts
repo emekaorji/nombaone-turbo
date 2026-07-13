@@ -9,7 +9,11 @@ import {
   DUNNING_SWEEP_JOB,
   LIFECYCLE_SWEEP_JOB,
   MANDATE_ACTIVATION_SWEEP_JOB,
+  OVERDUE_INVOICE_SWEEP_JOB,
+  LEDGER_RECONCILE_JOB,
+  SETTLEMENT_SWEEP_JOB,
   RECONCILE_NOMBA_JOB,
+  RENEWAL_REMINDER_JOB,
   REQUEST_LOG_RETENTION_JOB,
   WEBHOOK_MAINTENANCE_JOB,
 } from '@/services/cron/constants';
@@ -18,7 +22,11 @@ import { handleBillingSweep } from './jobs-handlers/billing-sweep';
 import { handleDunningSweep } from './jobs-handlers/dunning-sweep';
 import { handleLifecycleSweep } from './jobs-handlers/lifecycle-sweep';
 import { handleMandateActivationSweep } from './jobs-handlers/mandate-activation-sweep';
+import { handleOverdueInvoiceSweep } from './jobs-handlers/overdue-invoice-sweep';
+import { handleLedgerReconcile } from './jobs-handlers/ledger-reconcile';
+import { handleSettlementSweep } from './jobs-handlers/settlement-sweep';
 import { handleReconcileNomba } from './jobs-handlers/reconcile-nomba';
+import { handleRenewalReminder } from './jobs-handlers/renewal-reminder';
 import { handleRequestLogRetention } from './jobs-handlers/request-log-retention';
 import { handleWebhookMaintenance } from './jobs-handlers/webhook-maintenance';
 
@@ -64,6 +72,18 @@ export const createCronWorker = (): Worker<SchedulerJobData, SchedulerJobResult>
             break;
           case REQUEST_LOG_RETENTION_JOB:
             await handleRequestLogRetention();
+            break;
+          case RENEWAL_REMINDER_JOB:
+            await handleRenewalReminder();
+            break;
+          case OVERDUE_INVOICE_SWEEP_JOB:
+            await handleOverdueInvoiceSweep();
+            break;
+          case SETTLEMENT_SWEEP_JOB:
+            await handleSettlementSweep();
+            break;
+          case LEDGER_RECONCILE_JOB:
+            await handleLedgerReconcile();
             break;
           default:
             // A stale repeatable from a previous deploy should not poison the

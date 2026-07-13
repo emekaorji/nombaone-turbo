@@ -7,7 +7,6 @@ import {
   domainEventsTable,
   ledgerTransactionsTable,
   orgBillingSettingsTable,
-  orgNombaAccountsTable,
   paymentMethodsTable,
   settlementsTable,
   subscriptionsTable,
@@ -28,7 +27,7 @@ let cardOutcome: 'succeeded' | 'pending' | 'failed' = 'succeeded';
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
   async request<T = unknown>() {
-    return { status: 200, ok: true, data: {} as T };
+    return { status: 200, ok: true, pending: false, data: {} as T };
   },
   requeryTransaction: async () => ({ found: true, succeeded: true, amount: 0 }),
 };
@@ -36,6 +35,7 @@ const fakeNomba: NombaClient = {
 describe('multi-tenancy + settlement e2e (★ H)', () => {
   let harness: Harness;
   let bearerA: string;
+  let refA: string;
   let bearerB: string;
   let ctxA: { organizationId: string; mode: 'sandbox' };
   let ctxB: { organizationId: string; mode: 'sandbox' };
@@ -51,7 +51,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
     harness.setNombaClient(fakeNomba);
     registerRail({ key: 'card', direction: 'pull', collect: async () => ({ status: cardOutcome }) });
     registerRail({ key: 'mandate', direction: 'pull', collect: async () => ({ status: cardOutcome }) });
-    registerRail({ key: 'transfer', direction: 'push', collect: async () => ({ status: 'pending', payInstructions: {} }) });
+    registerRail({ key: 'transfer', direction: 'push', collect: async () => ({ status: 'pending', payInstructions: { bankName: 'Wema', accountNumber: '0000000000', amountKobo: 0 } }) });
 
     const orgA = await harness.seedOrg('Ten A');
     const orgB = await harness.seedOrg('Ten B');
@@ -60,11 +60,10 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
     ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
     ctxB = { organizationId: orgB.organizationId, mode: 'sandbox' };
 
-    // Onboard tenant A to a Nomba sub-account so its collections settle.
-    await harness.db.insert(orgNombaAccountsTable).values({
-      reference: mintReference('NMA'), organizationId: orgA.organizationId, mode: 'sandbox',
-      nombaAccountId: 'nomba_sub_A', accountRef: 'acct_A', kind: 'subaccount', subAccountId: 'nomba_sub_A', status: 'active',
-    });
+    // No onboarding step: a tenant's settlement identity is DERIVED from the org, so it
+    // exists from signup. (This used to insert a fake org_nomba_accounts row — the row a
+    // real merchant could never obtain, which is why settlement never ran in production.)
+    refA = `NBO-${orgA.reference}`;
   });
 
   afterAll(async () => {
@@ -112,7 +111,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
     expect(stl!.grossKobo).toBe(500000);
     expect(stl!.platformFeeKobo).toBeGreaterThan(0);
     expect(stl!.grossKobo).toBe(stl!.platformFeeKobo + stl!.netToTenantKobo); // L4 kobo-exact
-    expect(stl!.subAccountRef).toBe('acct_A');
+    expect(stl!.subAccountRef).toBe(refA);
     expect(stl!.merchantTxRef).toBe(invRef);
     expect(stl!.ledgerTransactionId).toBeTruthy();
 
@@ -143,7 +142,7 @@ describe('multi-tenancy + settlement e2e (★ H)', () => {
   it('H4 — GET/PUT /v1/organization unifies config; branding updates; the webhook secret is never returned', async () => {
     const get = await asA(request(harness.app).get('/v1/organization'));
     expect(get.status).toBe(200);
-    expect(get.body.data.nombaAccount.accountRef).toBe('acct_A');
+    expect(get.body.data.settlement.accountRef).toBe(refA);
     expect(get.body.data.billing.settlementMode).toBe('split_at_collection');
     expect(JSON.stringify(get.body.data)).not.toContain('signingSecret"'); // only prefix, never the secret
 
