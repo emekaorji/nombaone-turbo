@@ -52,6 +52,7 @@ describe('wall-clock cadence (minute) e2e', () => {
 
   const fakeNomba: NombaClient = {
     getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
     async request<T = unknown>() {
       return { status: 200, ok: true, pending: false, data: {} as T };
     },

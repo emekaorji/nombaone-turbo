@@ -540,6 +540,87 @@ export async function recordOutcome(
     .onConflictDoNothing({
       target: [dunningAttemptsTable.invoiceId, dunningAttemptsTable.attemptNumber],
     });
+
+  // …and GIVE THE CUSTOMER A WAY TO PAY.
+  //
+  // Retrying is the only thing this branch used to do. That is a reasonable bet when the decline is
+  // transient (no funds today, funds on payday) — and a guaranteed lost customer when it is not.
+  // Live proved the "not" case is real and common: Nomba flatly refuses to charge a tokenized card
+  // on this account (`PAYMENT_FAILED`, empty gateway message, every time), so the ladder would
+  // retry a charge that CANNOT succeed, four times, and then churn a member who was perfectly
+  // willing to pay and never once shown a button.
+  //
+  // A member whose payment failed has exactly one question — "how do I fix this?" — and until now
+  // the honest answer was "you can't". So the first failure hands them a hosted-checkout link,
+  // ONCE, while the retries continue behind it. Whichever lands first settles the invoice; both
+  // paths are idempotent on the invoice claim, so there is no double charge.
+  await offerSelfServePayment(txDb, ctx, attempt, invoice, charge.gatewayMessage ?? reason);
+}
+
+/**
+ * Hand the customer a hosted-checkout link for a failed invoice, at most once per invoice.
+ *
+ * Deliberately does NOT hold the ladder (unlike `toActionRequired`): the retries keep running. This
+ * is an OFFER, not a hand-off — if the bank starts approving the card again, the silent retry still
+ * wins and the customer never has to do anything.
+ */
+async function offerSelfServePayment(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  attempt: DunningAttemptRow,
+  invoice: InvoiceRow,
+  gatewayMessage: string
+): Promise<void> {
+  const policy = await resolveBillingSettings(txDb, ctx);
+  if (!policy.commsEnabled) return;
+
+  // Once per INVOICE, not once per attempt — otherwise every rung of the ladder mints a new order
+  // and re-mails the customer about a payment they have already been told about.
+  const [alreadyOffered] = await txDb
+    .select({ id: dunningAttemptsTable.id })
+    .from(dunningAttemptsTable)
+    .where(
+      and(
+        eq(dunningAttemptsTable.invoiceId, invoice.id),
+        eq(dunningAttemptsTable.commsEventType, 'invoice.action_required')
+      )
+    )
+    .limit(1);
+  if (alreadyOffered) return;
+
+  // A FRESH order reference — the invoice's own reference was burnt by the entry checkout, and each
+  // charge attempt burnt its own. `-pay` is stripped back to the invoice by `invoiceRefFromOrderRef`
+  // when the payment lands. Tokenize: they may pay with a different card, and that one might be
+  // chargeable even when the current token is not.
+  const checkoutLink = await mintInvoiceCheckoutLink(txDb, ctx, invoice, {
+    refSuffix: '-pay',
+    tokenizeCard: true,
+  });
+  if (!checkoutLink) return;
+
+  await txDb
+    .update(dunningAttemptsTable)
+    .set({ commsSentAt: new Date(), commsEventType: 'invoice.action_required' })
+    .where(eq(dunningAttemptsTable.id, attempt.id));
+
+  await emitEvent(txDb, {
+    ...ctx,
+    type: 'invoice.action_required',
+    payload: { reference: invoice.reference, reason: 'payment_failed', checkoutLink },
+  });
+
+  const comms = await loadCommsContext(txDb, ctx, invoice);
+  await enqueueCustomerEmail(txDb, ctx, {
+    template: 'invoice_payment_link',
+    to: comms.email,
+    dedupeKey: `${invoice.reference}:pay`,
+    data: {
+      amountKobo: invoice.amountDue - invoice.amountPaid,
+      merchantName: comms.merchantName,
+      reasonLine: gatewayMessage || undefined,
+      actionUrl: checkoutLink,
+    },
+  });
 }
 
 /** Stamp a terminal/interim status + outcome on an attempt row. */

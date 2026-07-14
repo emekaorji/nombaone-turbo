@@ -18,6 +18,7 @@ const NOMBA_SIG_KEY = 'test_nomba_signature_key'; // matches the harness env
 const ok = <T>(data: T) => ({ status: 200, ok: true, pending: false, data });
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>(req: NombaRequest) {
     const ep = req.endpoint;
     let data: unknown = {};

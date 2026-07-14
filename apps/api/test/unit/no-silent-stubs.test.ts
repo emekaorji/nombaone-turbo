@@ -31,9 +31,14 @@ describe('a missing credential fails loudly — it never degrades into a stub', 
 
     // It used to warn and hand back the log transport, so every renewal reminder and
     // dunning warning was silently swallowed while everything reported success.
+    // Every transport that needs a credential must THROW without one — smtp included.
     expect(
       /RESEND_API_KEY/.test(code) && /throw new Error/.test(code),
       'sara/mail must THROW when COMMS_TRANSPORT=resend and RESEND_API_KEY is unset, not fall back to log.'
+    ).toBe(true);
+    expect(
+      /SMTP_USER/.test(code) && /SMTP_PASSWORD/.test(code),
+      'sara/mail must THROW when COMMS_TRANSPORT=smtp and SMTP_USER/SMTP_PASSWORD are unset.'
     ).toBe(true);
 
     expect(

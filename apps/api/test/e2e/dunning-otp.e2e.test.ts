@@ -29,6 +29,7 @@ let requeryAmount = 0;
 // checkout/order returns a fresh link (for the OTP-completion mint); requery confirms settle.
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>(req: NombaRequest) {
     if (req.endpoint.includes('/checkout/order')) {
       return { status: 200, ok: true, pending: false, data: { data: { checkoutLink: 'https://pay.nomba.com/otp-link' } } as T };

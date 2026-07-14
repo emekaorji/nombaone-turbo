@@ -24,6 +24,7 @@ import type { NombaClient, NombaRequest } from '@nombaone/sara/nomba';
 let bankTransferCalls = 0;
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>(req: NombaRequest) {
     // ⚠ Order matters: name enquiry is ALSO a POST to /transfers/bank/lookup, so it must
     // be matched BEFORE the transfer counter or every lookup would read as a transfer.

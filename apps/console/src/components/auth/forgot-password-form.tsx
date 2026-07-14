@@ -4,7 +4,8 @@ import { CheckCircle2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useActionState } from 'react';
 
-import { requestPasswordResetAction, type RequestResetState } from '@/lib/auth/reset';
+import { requestPasswordResetAction } from '@/lib/auth/reset';
+import type { RequestResetState } from '@/lib/auth/reset-types';
 
 /**
  * "I forgot my password."

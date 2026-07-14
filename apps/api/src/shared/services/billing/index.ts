@@ -16,3 +16,5 @@ export * from './startSubscription';
 export * from './sweep';
 export * from './types';
 export * from './upcoming';
+export * from './requeryInvoice';
+export * from './latePayment';

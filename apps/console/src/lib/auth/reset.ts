@@ -9,6 +9,7 @@ import { db } from '@nombaone/core-db/serverless';
 import { hashPassword } from '@nombaone/sara/auth';
 
 import { sendPasswordResetEmail } from '@/lib/mail';
+import type { RequestResetState, ResetState } from '@/lib/auth/reset-types';
 
 import { headers } from 'next/headers';
 
@@ -37,8 +38,9 @@ import { headers } from 'next/headers';
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const MIN_PASSWORD_LENGTH = 10;
 
-export const hashResetToken = (raw: string): string =>
-  createHash('sha256').update(raw).digest('hex');
+// NOT exported: a `'use server'` module may only export async functions — anything else
+// becomes a callable server action. Keep the hash private to this file.
+const hashResetToken = (raw: string): string => createHash('sha256').update(raw).digest('hex');
 
 async function baseUrl(): Promise<string> {
   const h = await headers();
@@ -46,8 +48,6 @@ async function baseUrl(): Promise<string> {
   const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
   return `${proto}://${host}`;
 }
-
-export type RequestResetState = { status: 'idle' } | { status: 'sent' } | { status: 'error'; message: string };
 
 /**
  * Step 1 — "I forgot my password."
@@ -96,8 +96,6 @@ export async function requestPasswordResetAction(
 
   return { status: 'sent' };
 }
-
-export type ResetState = { status: 'idle' } | { status: 'done' } | { status: 'error'; message: string };
 
 /**
  * Step 2 — set the new password against a token from the email.

@@ -22,6 +22,16 @@ export function getMailTransport(): MailTransport {
   cached = createMailTransport({
     transport: env.COMMS_TRANSPORT,
     apiKey: env.RESEND_API_KEY,
+    smtp:
+      env.SMTP_USER && env.SMTP_PASSWORD
+        ? {
+            host: env.SMTP_HOST,
+            port: env.SMTP_PORT,
+            secure: env.SMTP_SECURE,
+            user: env.SMTP_USER,
+            password: env.SMTP_PASSWORD,
+          }
+        : undefined,
     from: env.COMMS_FROM,
     environment: env.INFRA_ENVIRONMENT,
   });

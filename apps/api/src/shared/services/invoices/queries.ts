@@ -157,10 +157,15 @@ export interface ReconcilableInvoice {
   amountDueKobo: number;
   paidLocally: boolean;
   /**
-   * Nomba's own transaction id, stamped into `invoices.metadata` by the inbound
-   * webhook path. This is the ONLY key the live requery resolves — requerying by
-   * our reference 404s (live-confirmed) — so without it the reconcile backstop
-   * cannot verify an invoice at all.
+   * How many charge attempts this invoice has already burnt. Nomba permanently consumes an order
+   * reference, so each attempt opened a DIFFERENT order (`-c0`, `-c1`, …) — and answering "was
+   * this invoice paid?" means asking about all of them. Without this the backstop can only see
+   * the hosted-checkout order and is blind to every card payment.
+   */
+  attemptCount: number;
+  /**
+   * Nomba's own transaction id, when an inbound webhook stamped one. Kept for tracing; it is no
+   * longer required to requery (that keys on `?orderReference=`, which we always know).
    */
   providerTransactionId: string | null;
 }
@@ -182,6 +187,7 @@ export async function getReconcilableInvoicesSince(
       reference: invoicesTable.reference,
       amountDueKobo: invoicesTable.amountDue,
       paidAt: invoicesTable.paidAt,
+      attemptCount: invoicesTable.attemptCount,
       metadata: invoicesTable.metadata,
     })
     .from(invoicesTable)
@@ -201,6 +207,7 @@ export async function getReconcilableInvoicesSince(
       reference: r.reference,
       amountDueKobo: r.amountDueKobo,
       paidLocally: r.paidAt != null,
+      attemptCount: r.attemptCount,
       providerTransactionId: typeof providerTxn === 'string' ? providerTxn : null,
     };
   });

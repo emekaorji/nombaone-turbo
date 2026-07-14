@@ -6,11 +6,11 @@ import { markInboundEvent, recordInboundEvent, type NombaClientFactory } from '@
 import { closeHeldAttemptsForInvoice } from '../dunning/attempt';
 import {
   captureCardFromInvoicePayment,
+  ensureSubscriptionChargeable,
   extractOurReference,
   extractProviderTransactionId,
-  flipToSendInvoiceIfUnchargeable,
 } from '../payment-methods';
-import { OTP_ORDER_REF_SUFFIX } from './actionLink';
+import { invoiceRefFromOrderRef } from './actionLink';
 import { failCollection } from './collectForInvoice';
 import { confirmInvoiceFromWebhook } from './confirmInvoiceFromWebhook';
 
@@ -92,12 +92,12 @@ export async function processInboundInvoiceEvent(
 ): Promise<InboundInvoiceResult> {
   const rawReference = extractOurReference(input.payload);
   if (!rawReference) return { matched: false, handled: false };
-  // An OTP/3DS-completion checkout carries `${invoice.reference}-otp` (a distinct
-  // order ref that dodged Nomba's dedup on the original charge). Strip the suffix so
-  // it settles the SAME invoice. Our refs have no hyphens, so the tail is unambiguous.
-  const reference = rawReference.endsWith(OTP_ORDER_REF_SUFFIX)
-    ? rawReference.slice(0, -OTP_ORDER_REF_SUFFIX.length)
-    : rawReference;
+  // Every order we mint for an invoice carries a suffix that keeps it distinct from the last one —
+  // `-otp` for a 3DS-completion link, `-c{n}` for the nth charge attempt — because Nomba permanently
+  // burns an order reference the first time it sees it. Map any of them back to the invoice they
+  // belong to, so the settlement lands where it should. Our refs contain no hyphens, so the tail is
+  // unambiguous.
+  const reference = invoiceRefFromOrderRef(rawReference);
 
   // The FULL row — the failure leg needs paidAt/voidedAt/attemptCount, not just the ids.
   const [inv] = await txDb
@@ -112,8 +112,12 @@ export async function processInboundInvoiceEvent(
   // live Nomba, a sandbox invoice sandbox Nomba (one endpoint receives both).
   const client = getClient(ctx.mode);
 
-  // E4 — re-verify against the provider; the webhook is only a hint. Requery keys on the
-  // NOMBA transaction id (live-confirmed: our reference 404s), so pull it from the payload.
+  // E4 — re-verify against the provider; the webhook is only a hint.
+  //
+  // Requery keys on `?orderReference=` — OUR merchant reference — so that is what we send. It used
+  // to send Nomba's transaction id because the requery "404s on our reference"; it did, but only
+  // because the client was passing the wrong query PARAM (`transactionRef`). Pinned on live
+  // 2026-07-14. Sending the Nomba id here would now be the thing that 404s.
   const providerTxnId = extractProviderTransactionId(input.payload);
   if (providerTxnId) {
     // Stamp it durably: this id is the ONLY key the nightly reconcile backstop can
@@ -126,7 +130,10 @@ export async function processInboundInvoiceEvent(
       })
       .where(eq(invoicesTable.id, inv.id));
   }
-  const requery = await client.requeryTransaction(ctx, { reference: providerTxnId ?? reference });
+  // Requery the ORDER Nomba actually named (`rawReference`) — it knows nothing about our invoice
+  // reference once the order carries a `-c{n}` / `-otp` suffix. Asking about the bare invoice ref
+  // would 404 for any card charge, and a 404 reads as "this payment never happened".
+  const requery = await client.requeryTransaction(ctx, { reference: rawReference });
   const verification: InboundVerification = {
     status: requery.succeeded ? 'settled' : requery.found ? 'pending' : 'failed',
     settledAmountKobo: requery.amount ?? 0,
@@ -150,7 +157,19 @@ export async function processInboundInvoiceEvent(
       payload: input.payload,
     });
     if (!capture.captured) {
-      await flipToSendInvoiceIfUnchargeable(txDb, ctx, result.invoice);
+      // The payload carried no token. That does NOT mean the customer has no card — on live it
+      // usually means the webhook simply did not bring it (and on an account that sends no webhooks
+      // at all, it never will). Demoting them to `send_invoice` on that assumption would condemn a
+      // perfectly good card payer to paying by hand forever.
+      //
+      // So ASK Nomba for the token before judging: `ensureSubscriptionChargeable` pulls the card and
+      // only falls back to the `send_invoice` flip when there is genuinely nothing to charge.
+      //
+      // Called HERE, not handed back to the caller to do. I tried that first, and it re-created the
+      // exact bug this whole session has been about: a correct step that every caller has to
+      // remember, and therefore one that some caller will not. This runs on the pool handle (the
+      // only caller passes `db`), so the network call inside it holds no transaction open.
+      await ensureSubscriptionChargeable(txDb, ctx, result.invoice);
     }
   } else {
     // ── 🔴 THE FAILURE LEG. Without this a declined renewal was FREE SERVICE, forever.

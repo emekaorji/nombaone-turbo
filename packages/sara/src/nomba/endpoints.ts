@@ -21,10 +21,10 @@
  *      body → the mandate rail is NOT enabled for this sandbox account/host. Paths
  *      are set to the docs surface; CONFIRM against an enabled account before the
  *      mandate rail is trusted live.
- *   ⚠ transactionRequery QUERY PARAM (`transactionRef` vs `sessionId`) and the
- *      reconciliation field still need pinning (the order create echoed a Nomba
- *      `orderReference`, not ours — docs say merchantReference/orderReference is
- *      merchant-controlled; confirm which field the requery joins on).
+ *   ✅ transactionRequery QUERY PARAM — PINNED on LIVE 2026-07-14: it is `orderReference`
+ *      (matching OUR merchant reference). `transactionRef` returns 404 "Transaction matching
+ *      query not found" for a transaction Nomba has definitely taken. It joins on the merchant-
+ *      controlled reference we send at order-create, so `reference` = our invoice reference.
  *   ⚠ bankTransfer (`/v1/transfers/bank`) unverified (payouts are 08; the public
  *      `/v2` guess was dropped — no `/v2` surface seen).
  *   ⚠ money unit: team-confirmed kobo (2026-06-30); the sandbox checkout is a JS

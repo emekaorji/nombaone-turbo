@@ -31,6 +31,7 @@ describe('hosted-checkout subscribe entry e2e', () => {
 
   const fakeNomba: NombaClient = {
     getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
     async request<T = unknown>(req: NombaRequest) {
       if (req.endpoint.includes('/checkout/order')) {
         checkoutOrders.push(req);

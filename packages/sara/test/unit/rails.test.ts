@@ -24,6 +24,7 @@ const fakeClient = (
   }
 ): NombaClient => ({
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>(req: NombaRequest) {
     const out = handler(req);
     return {

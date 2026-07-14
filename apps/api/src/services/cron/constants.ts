@@ -34,6 +34,13 @@ export const RENEWAL_REMINDER_JOB = 'renewal-reminder';
 export const OVERDUE_INVOICE_SWEEP_JOB = 'overdue-invoice-sweep';
 
 /**
+ * Awaiting-payment sweep: requery Nomba for invoices that are waiting on a payer and settle the ones
+ * that have been paid. This is what makes an out-of-band payment (hosted checkout, bank transfer,
+ * USSD) land WITHOUT depending on a provider webhook — which, on live, never arrives at all.
+ */
+export const AWAITING_PAYMENT_SWEEP_JOB = 'awaiting-payment-sweep';
+
+/**
  * Daily settlement sweep: pay every merchant their available balance, once a day, to the
  * bank account they registered. Deterministic `merchantTxRef` per (org, mode, Lagos day)
  * makes a replayed tick a no-op.

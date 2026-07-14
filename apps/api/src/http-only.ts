@@ -6,6 +6,7 @@ import { createServer as createHttpServer } from 'node:http';
 import { createMainApp } from './apps/main/server';
 import { registerRailsIfConfigured } from './shared/config/nomba';
 import { logger } from './shared/observability/logger';
+import { registerWebhookDispatch } from './shared/webhooks/dispatch';
 
 /**
  * ── HTTP-only boot (no workers, no scheduler) ──────────────────────────────
@@ -31,6 +32,12 @@ if (registerRailsIfConfigured()) {
     '[api:http-only] NO NOMBA CREDENTIALS — the mock rails are live. No charge, checkout link, or payout can work.'
   );
 }
+
+// This process runs no workers, but it DOES emit events — a console-bridge write produces
+// `invoice.paid` just as the engine does. Enqueue the drain anyway: the queue is shared, so
+// the full engine's outbound worker posts it. Without this, a webhook raised by a console
+// action would sit in the outbox until the cron woke up.
+registerWebhookDispatch();
 
 const app = createMainApp();
 const server = createHttpServer(app);

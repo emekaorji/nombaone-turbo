@@ -20,6 +20,11 @@
   "devDependencies": {
     "@nombaone/typescript-config": "workspace:*",
     "@types/node": "^22.13.9",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.9"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "type-check": "tsc --noEmit"
   }
 }

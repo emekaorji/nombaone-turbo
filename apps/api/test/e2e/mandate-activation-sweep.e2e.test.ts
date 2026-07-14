@@ -13,6 +13,7 @@ import type { NombaClient, NombaRequest } from '@nombaone/sara/nomba';
 // direct-debits/status → ACTIVE + ADVICE_SENT so a poll promotes the mandate.
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>(req: NombaRequest) {
     if (req.endpoint.includes('direct-debits/status')) {
       return { status: 200, ok: true, pending: false, data: { mandateStatus: 'Active', mandateAdviceStatus: 'Advice Sent' } as T };

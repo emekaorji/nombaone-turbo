@@ -18,6 +18,45 @@ import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
  */
 export const OTP_ORDER_REF_SUFFIX = '-otp';
 
+/**
+ * ── A NOMBA ORDER REFERENCE IS BURNT THE FIRST TIME YOU USE IT ───────────────
+ *
+ * Nomba rejects a second order under a reference it has already seen:
+ *
+ *     {"code":"400","description":"tokenized transaction failed",
+ *      "data":{"status":false,"message":"An order already exists with this order reference"}}
+ *
+ * The card rail used the bare `invoice.reference`, so the FIRST charge against an invoice consumed
+ * it — and every charge after that was rejected before it ever reached the bank. That is not an
+ * edge case, it is every retry:
+ *
+ *   • the hosted-checkout entry mints an order on `invoice.reference`, so a subscription that
+ *     later gets a card can NEVER be charged for that invoice (this is exactly what happened on
+ *     live: a real ₦100 renewal died here, with the rail reporting a meaningless `request_failed`);
+ *   • a genuinely declined charge burns the reference too, so the retry cannot even be attempted;
+ *   • the failure surfaces as `request_failed`, which looks like a network blip, not a bug.
+ *
+ * So each ATTEMPT gets its own order reference, derived from the invoice's attempt counter. This
+ * keeps the property E3 actually wanted: a retry of the SAME attempt (a redelivered job, a crash
+ * mid-flight) reuses the same reference and Nomba dedupes it — no double charge — while a NEW
+ * attempt is free to open a new order.
+ *
+ * `extractOurReference` maps any suffixed order reference back to the invoice, so the settlement
+ * webhook still lands on the right invoice. Our references are `nbo{digits}{domain}` and contain no
+ * hyphens, which is what makes the suffix unambiguous.
+ */
+export const chargeOrderRef = (invoiceReference: string, attemptCount: number): string =>
+  `${invoiceReference}-c${attemptCount}`;
+
+/**
+ * Recover the invoice reference from ANY order reference we have ever minted for it — the bare
+ * reference, an `-otp` completion link, or a `-c{n}` charge attempt.
+ */
+export const invoiceRefFromOrderRef = (orderReference: string): string => {
+  const hyphen = orderReference.indexOf('-');
+  return hyphen === -1 ? orderReference : orderReference.slice(0, hyphen);
+};
+
 export interface MintCheckoutLinkOptions {
   /**
    * Tokenize the paying card so renewals can be pulled silently. ON for the

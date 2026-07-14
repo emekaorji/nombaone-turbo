@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { createMailTransport, type MailTransport } from '@nombaone/sara/mail';
+import { createMailTransport, type MailTransport, type MailTransportKind } from '@nombaone/sara/mail';
 
 /**
  * The console's mail transport — the SAME shared transport the API uses
@@ -19,10 +19,23 @@ let cached: MailTransport | null = null;
 
 export function getMailTransport(): MailTransport {
   if (cached) return cached;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+
   cached = createMailTransport({
-    transport: (process.env.COMMS_TRANSPORT as 'resend' | 'log') ?? 'log',
+    transport: (process.env.COMMS_TRANSPORT as MailTransportKind) ?? 'log',
     apiKey: process.env.RESEND_API_KEY,
-    from: process.env.COMMS_FROM ?? 'Nomba One <billing@mail.nombaone.xyz>',
+    smtp:
+      smtpUser && smtpPassword
+        ? {
+            host: process.env.SMTP_HOST ?? 'smtp.gmail.com',
+            port: Number(process.env.SMTP_PORT ?? 465),
+            secure: (process.env.SMTP_SECURE ?? 'true') === 'true',
+            user: smtpUser,
+            password: smtpPassword,
+          }
+        : undefined,
+    from: process.env.COMMS_FROM ?? 'Nomba One <clingycloaks@gmail.com>',
     environment: process.env.INFRA_ENVIRONMENT ?? 'development',
   });
   return cached;

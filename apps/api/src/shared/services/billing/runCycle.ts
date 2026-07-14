@@ -186,7 +186,26 @@ export async function runCycle(
   // (consuming a cycle) + oldest-first customer credit, resolving the fixed order
   // (subtotal → discount → credit → amount_due) and the J8 zero path. A cycle with
   // no discount/credit reduces to the plain finalize (amount_due === subtotal).
-  const { invoice: finalized } = await finalizeInvoiceWithAdjustments(txDb, ctx, invoice.reference);
+  //
+  // 🔴 ONLY IF IT IS NOT ALREADY FINALIZED. `createInvoice` above is idempotent — it hands back the
+  // EXISTING invoice for this period — so on any re-run of a period we reach here with an invoice
+  // that was finalized by the previous run. That happens constantly and legitimately: the previous
+  // run finalized, then the collection did not complete (the payer is still on the checkout page,
+  // the rail errored, the worker crashed, the job was retried).
+  //
+  // Finalization is immutable by design (J2): a second call raises INVOICE_ALREADY_FINALIZED. So
+  // calling it unconditionally meant the retry THREW — and since the period cannot advance until the
+  // invoice is paid, every subsequent sweep re-enqueued the same period and threw again. The
+  // subscription was bricked: it could never be charged again by any code path, and the failure
+  // surfaced only as `[cron] job failed`. Re-finalizing is also not something we WANT: the discount
+  // cycle and the customer credits were already consumed by the first finalize, and applying them
+  // twice would corrupt the amount due.
+  //
+  // Finalize once; on a re-run, carry the already-finalized invoice straight through to collection.
+  const finalized = invoice.finalizedAt
+    ? invoice
+    : (await finalizeInvoiceWithAdjustments(txDb, ctx, invoice.reference)).invoice;
+
   if (finalized.paidAt) {
     // Zero-amount (fully covered by discount/credit) → paid in finalize (J8);
     // reflect the subscription effects.

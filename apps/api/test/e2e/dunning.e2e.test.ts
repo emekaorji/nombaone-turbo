@@ -31,6 +31,7 @@ let railCallCount = 0;
 
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>() {
     return { status: 200, ok: true, pending: false, data: {} as T };
   },
@@ -397,6 +398,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
 
   const clientRequerying = (r: { succeeded: boolean; amount?: number; status?: string; gatewayMessage?: string }): NombaClient => ({
     getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
     async request<T = unknown>() { return { status: 200, ok: true, pending: false, data: {} as T }; },
     requeryTransaction: async () => ({ found: true, ...r }),
   });

@@ -41,6 +41,7 @@ describe('money core: a customer pays, and the merchant can actually withdraw it
 
   const fakeNomba: NombaClient = {
     getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
     async request<T = unknown>(req: NombaRequest) {
       // ⚠ Name enquiry is ALSO a POST under /transfers/bank — match it FIRST or every
       // lookup would be counted as a transfer.

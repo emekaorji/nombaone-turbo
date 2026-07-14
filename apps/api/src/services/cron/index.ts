@@ -8,6 +8,7 @@ import {
   DUNNING_SWEEP_JOB,
   LIFECYCLE_SWEEP_JOB,
   MANDATE_ACTIVATION_SWEEP_JOB,
+  AWAITING_PAYMENT_SWEEP_JOB,
   OVERDUE_INVOICE_SWEEP_JOB,
   RECONCILE_NOMBA_JOB,
   RENEWAL_REMINDER_JOB,
@@ -58,6 +59,9 @@ export async function initializeScheduler(): Promise<void> {
   await upsertCron(RENEWAL_REMINDER_JOB, env.RENEWAL_REMINDER_CRON);
   // Overdue-invoice sweep — the send_invoice lane's past_due entry (push dunning).
   await upsertCron(OVERDUE_INVOICE_SWEEP_JOB, env.OVERDUE_INVOICE_SWEEP_CRON);
+  // Awaiting-payment sweep — every minute. THE settle path for money that arrives out of band, on a
+  // provider that does not call us back.
+  await upsertCron(AWAITING_PAYMENT_SWEEP_JOB, env.AWAITING_PAYMENT_SWEEP_CRON);
   await upsertCron(SETTLEMENT_SWEEP_JOB, env.SETTLEMENT_SWEEP_CRON);
   await upsertCron(LEDGER_RECONCILE_JOB, env.LEDGER_RECONCILE_CRON);
   logger.info('[scheduler] repeatables registered', {

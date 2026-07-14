@@ -1,134 +1,101 @@
-import { joinGym, lookupMember } from '@/lib/actions';
-import { catalog, formatNaira } from '@/lib/nombaone';
+import Link from 'next/link';
 
-import type { GymCatalog } from '@/lib/nombaone';
+import { PlanCard } from '@/components/plan-card';
+import { catalog } from '@/lib/nombaone';
 
-// Renders live catalog data from the engine on every request.
 export const dynamic = 'force-dynamic';
 
-export default async function LandingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { error } = await searchParams;
-
-  let memberships: GymCatalog | null = null;
-  let setupError: string | null = null;
-  try {
-    memberships = await catalog();
-  } catch (caught) {
-    setupError = caught instanceof Error ? caught.message : String(caught);
-  }
+export default async function HomePage() {
+  const cat = await catalog();
+  const memberships = cat.filter((c) => !c.def.isFlex);
 
   return (
-    <main className="mx-auto max-w-5xl px-6 pb-20">
-      <section className="py-16">
-        <p className="text-xs font-semibold tracking-[0.35em] text-ember uppercase">
-          Lagos · Est. 2026
-        </p>
-        <h1 className="mt-4 max-w-2xl text-5xl font-bold tracking-tight">
-          Strength has a home. Billing has an engine.
-        </h1>
-        <p className="mt-4 max-w-xl text-sm leading-relaxed text-fog">
-          Pick a membership, pay once on the hosted checkout, and the engine handles every renewal
-          after that — silently on card, or by bank transfer with exact-amount instructions. The Day
-          Pass renews every 10 minutes so you can watch it happen.
-        </p>
-      </section>
-
-      {error ? (
-        <div className="mb-8 rounded-md border border-blood/40 bg-blood/10 px-4 py-3 text-sm text-blood">
-          {error}
-        </div>
-      ) : null}
-
-      {setupError ? (
-        <section className="rounded-lg border border-amberish/40 bg-panel p-6">
-          <h2 className="text-sm font-semibold text-amberish">Engine not reachable yet</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fog">
-            The catalog could not be loaded from the NombaOne engine. Fill in{' '}
-            <span className="font-mono text-chalk">examples/gym/.env</span> (see{' '}
-            <span className="font-mono text-chalk">.env.example</span>) and make sure the engine at{' '}
-            <span className="font-mono text-chalk">
-              {process.env.NOMBAONE_BASE_URL || 'the key-derived host'}
-            </span>{' '}
-            is running.
+    <>
+      {/* Hero */}
+      <section className="border-b border-line">
+        <div className="mx-auto max-w-5xl px-6 py-20">
+          <h1 className="max-w-2xl text-5xl font-bold leading-[1.05] tracking-tight">
+            Lagos trains soft.
+            <br />
+            <span className="text-ember">You won&apos;t.</span>
+          </h1>
+          <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-fog">
+            Iron Republic is a strength gym in Lekki Phase 1. Barbells, platforms, and coaches who
+            actually know what they&apos;re doing. Open 5am to 11pm, seven days.
           </p>
-          <p className="mt-3 font-mono text-xs break-all text-dim">{setupError}</p>
-        </section>
-      ) : null}
 
-      {memberships ? (
-        <section className="grid gap-6 md:grid-cols-3">
-          {memberships.map(({ def, price }) => (
-            <article
-              key={def.key}
-              className="flex flex-col rounded-lg border border-line bg-panel p-6 transition-colors hover:border-ember/50"
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/memberships"
+              className="rounded bg-ember px-5 py-3 text-[13px] font-semibold text-coal transition-opacity hover:opacity-90"
             >
-              <h2 className="text-lg font-semibold">{def.displayName}</h2>
-              <p className="mt-1 text-xs text-dim">{def.blurb}</p>
-              <p className="mt-6 text-3xl font-bold tracking-tight">
-                {formatNaira(price.unitAmountInKobo)}
-                <span className="ml-2 text-xs font-normal text-fog">{def.cadenceLabel}</span>
-              </p>
-              {def.key === 'day-pass' ? (
-                <p className="mt-2 inline-flex w-fit rounded-full border border-ember/40 px-2 py-0.5 text-[10px] tracking-wide text-ember uppercase">
-                  demo cadence · minute × 10
-                </p>
-              ) : null}
+              See memberships
+            </Link>
+            <span className="text-[13px] text-dim">
+              From ₦20,000 a month. Cancel any time, from your phone.
+            </span>
+          </div>
 
-              <form action={joinGym} className="mt-6 flex flex-col gap-3">
-                <input type="hidden" name="priceId" value={price.id} />
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  placeholder="Full name"
-                  autoComplete="name"
-                  className="rounded-md border border-line bg-panel-2 px-3 py-2 text-sm placeholder:text-dim focus:border-ember focus:outline-none"
-                />
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  placeholder="Email"
-                  autoComplete="email"
-                  className="rounded-md border border-line bg-panel-2 px-3 py-2 text-sm placeholder:text-dim focus:border-ember focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="mt-1 rounded-md bg-ember px-3 py-2 text-sm font-semibold text-coal transition-opacity hover:opacity-90"
-                >
-                  Join — pay on hosted checkout
-                </button>
-              </form>
-            </article>
-          ))}
-        </section>
-      ) : null}
-
-      <section className="mt-16 rounded-lg border border-line bg-panel p-6">
-        <h2 className="text-sm font-semibold">Already a member?</h2>
-        <p className="mt-1 text-xs text-fog">
-          Look up your memberships and invoices with the email you joined with.
-        </p>
-        <form action={lookupMember} className="mt-4 flex max-w-md gap-3">
-          <input
-            type="email"
-            name="email"
-            required
-            placeholder="you@example.com"
-            className="flex-1 rounded-md border border-line bg-panel-2 px-3 py-2 text-sm placeholder:text-dim focus:border-ember focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="rounded-md border border-line px-4 py-2 text-sm font-semibold transition-colors hover:border-ember/60"
-          >
-            View
-          </button>
-        </form>
+          <div className="mt-12 flex flex-wrap gap-x-10 gap-y-3 text-[12px] text-dim">
+            <span>12 competition platforms</span>
+            <span>40+ classes a week</span>
+            <span>Open 5am – 11pm, 7 days</span>
+          </div>
+        </div>
       </section>
-    </main>
+
+      {/* What you get */}
+      <section className="border-b border-line">
+        <div className="mx-auto grid max-w-5xl gap-8 px-6 py-16 sm:grid-cols-3">
+          {[
+            {
+              t: 'Real iron.',
+              d: 'Eleiko bars, calibrated plates, 12 lifting platforms. No queue for a squat rack, ever.',
+            },
+            {
+              t: 'Coaching included.',
+              d: 'Technique clinics every Tuesday and Saturday, free with Full Access and above.',
+            },
+            {
+              t: 'No lock-in.',
+              d: 'No sign-up fee, no admin charge, no year-long contract you have to beg to leave.',
+            },
+          ].map((x) => (
+            <div key={x.t}>
+              <h3 className="text-[15px] font-semibold">{x.t}</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-fog">{x.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Plans */}
+      <section>
+        <div className="mx-auto max-w-5xl px-6 py-16">
+          <h2 className="text-2xl font-semibold tracking-tight">Pick how you want to train.</h2>
+          <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-fog">
+            Every membership is month-to-month. You pay the same amount on the same date each
+            month, and you can stop it yourself any time — no phone calls, no notice period.
+          </p>
+
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {memberships.map((entry) => (
+              <PlanCard key={entry.def.key} entry={entry} />
+            ))}
+          </div>
+
+          <p className="mt-6 text-center text-[12px] text-dim">
+            Cancel any time · No sign-up fee · Your next payment is always shown on your account
+            page, before we take it
+          </p>
+
+          <div className="mt-10 text-center">
+            <Link href="/memberships" className="text-[13px] text-ember hover:underline">
+              Just passing through? See the Flex Pass →
+            </Link>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

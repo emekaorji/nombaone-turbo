@@ -4,6 +4,11 @@ import { ensureAccount, postTransaction } from '@nombaone/sara/ledger';
 
 import { claimInvoicePaid, linkInvoiceLedgerTransaction, loadInvoiceRow } from '../invoices';
 import { settleInvoicePayment } from '../settlement';
+import {
+  creditPaymentOnVoidedInvoice,
+  reopenUncollectibleForPayment,
+  reviveChurnedSubscription,
+} from './latePayment';
 import { reconcilePaidSubEffects } from './effects';
 
 import type { InvoiceRow } from '@nombaone/core-db/schema';
@@ -36,21 +41,42 @@ export async function confirmInvoiceFromWebhook(
     await reconcilePaidSubEffects(txDb, ctx, invoice);
     return { settled: false, invoice };
   }
-  // Void/uncollectible: a genuine late transfer is an out-of-band credit, not a
-  // settlement of the terminal invoice.
-  if (invoice.voidedAt || invoice.uncollectibleAt) {
-    return { settled: false, invoice };
-  }
-
   // E4: never trust the webhook — only a provider-confirmed requery that matches
   // our amount due is allowed to move money.
   if (verification.status !== 'settled' || verification.settledAmountKobo !== invoice.amountDue) {
     return { settled: false, invoice };
   }
 
+  // ── 🔴 MONEY ARRIVED FOR AN INVOICE WE HAD ALREADY CLOSED ──────────────────
+  //
+  // This used to be a bare `if (voidedAt || uncollectibleAt) return { settled: false }`, above the
+  // verification, with a comment claiming such a payment becomes "an out-of-band credit". No code
+  // anywhere created that credit. So a confirmed, banked payment against a terminal invoice was
+  // discarded: the customer charged, the merchant never credited, the ledger never moved.
+  //
+  // It is not hypothetical. Dunning hands the customer a Nomba pay-link, that link stays valid after
+  // the ladder exhausts, and the ladder for a 10-minute plan exhausts in about half an hour. A
+  // customer who pays 40 minutes late pays into a written-off invoice — and we ate it.
+  //
+  // Note this now sits BELOW the verification: we only act on money Nomba has actually confirmed.
+  let working = invoice;
+
+  if (invoice.voidedAt) {
+    // The MERCHANT cancelled this bill. Settling it would overrule them — but keeping the money is
+    // theft. Bank it as customer credit, consumed oldest-first by their next invoice.
+    await creditPaymentOnVoidedInvoice(txDb, ctx, invoice, verification.settledAmountKobo);
+    return { settled: false, invoice };
+  }
+
+  if (invoice.uncollectibleAt) {
+    // WE gave up on this one; the customer did not. Paying an uncollectible invoice IS collecting
+    // it — the exact outcome dunning spent four attempts chasing. Reopen it and settle it properly.
+    working = await reopenUncollectibleForPayment(txDb, ctx, invoice);
+  }
+
   // CLAIM before posting: two concurrent deliveries of the same settled webhook
   // resolve to one winner; the loser settles nothing (J6).
-  const claim = await claimInvoicePaid(txDb, ctx, invoice);
+  const claim = await claimInvoicePaid(txDb, ctx, working);
   if (!claim.claimed) {
     return { settled: false, invoice: claim.invoice };
   }
@@ -72,6 +98,12 @@ export async function confirmInvoiceFromWebhook(
   });
 
   const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
+
+  // If dunning had already churned this subscription over THIS invoice, bring it back: they have now
+  // paid for the period, so they get the period. No-ops for a subscription the customer cancelled
+  // themselves — a late payment must never re-subscribe someone who asked to leave.
+  await reviveChurnedSubscription(txDb, ctx, linked);
+
   await reconcilePaidSubEffects(txDb, ctx, linked);
 
   // ⚠ THE MERCHANT'S MONEY. Without this the posting above leaves the whole gross

@@ -4,7 +4,8 @@ import { CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
 
-import { resetPasswordAction, type ResetState } from '@/lib/auth/reset';
+import { resetPasswordAction } from '@/lib/auth/reset';
+import type { ResetState } from '@/lib/auth/reset-types';
 
 /** Set a new password from an emailed link. The token is bound server-side. */
 export function ResetPasswordForm({ token }: { token: string }) {

@@ -17,7 +17,7 @@ import {
 import { settleInvoicePayment } from '../settlement';
 import { enterPastDue } from '../subscriptions';
 import { enqueueCustomerEmail, loadCommsContext } from '../comms';
-import { mintInvoiceCheckoutLink } from './actionLink';
+import { chargeOrderRef, mintInvoiceCheckoutLink } from './actionLink';
 import { loadSubscriptionRowById, railKeyForMethod, reconcilePaidSubEffects } from './effects';
 import { buildRailCollectMetadata } from './railMetadata';
 
@@ -68,7 +68,12 @@ export async function collectForInvoice(
     simulated ??
     (await getRail(railKeyForMethod(method.kind)).collect({
       ...ctx,
-      reference: invoice.reference,
+      // NOT the bare invoice reference — Nomba burns an order reference the first time it sees one,
+      // so reusing it means the second charge against this invoice is rejected outright ("An order
+      // already exists with this order reference") and never reaches the bank. Scoping it to the
+      // attempt keeps retries of the SAME attempt deduped by Nomba (no double charge) while letting
+      // a NEW attempt actually happen. See `chargeOrderRef`.
+      reference: chargeOrderRef(invoice.reference, invoice.attemptCount),
       amountKobo: invoice.amountDue,
       metadata: await buildRailCollectMetadata(txDb, ctx, { invoice, method }),
     }));

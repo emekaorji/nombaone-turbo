@@ -1,6 +1,7 @@
 export * from './attach';
 export * from './capture';
 export * from './captureFromInvoice';
+export * from './captureFromProvider';
 export * from './process';
 export * from './queries';
 export * from './remove';

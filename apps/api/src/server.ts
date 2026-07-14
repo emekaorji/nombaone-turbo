@@ -8,6 +8,8 @@ import { connection as queueConnection } from '@nombaone/queue';
 
 import { pool } from './shared/config/db';
 import { registerRailsIfConfigured } from './shared/config/nomba';
+import { registerWebhookDispatch } from './shared/webhooks/dispatch';
+import { getMailTransport } from './shared/services/comms';
 import { redis } from './shared/config/redis';
 import { logger } from './shared/observability/logger';
 import { initializeScheduler } from './services/cron';
@@ -92,6 +94,12 @@ const start = (): void => {
     );
   }
 
+  // The other half of the same omission: `emitEvent` wrote the delivery rows and nothing
+  // ever posted them, so outbound webhooks were only sent by the maintenance cron — up to
+  // a full cron interval after the event. This gives the outbox its postman.
+  registerWebhookDispatch();
+  logger.info('[api] outbound webhook dispatch registered');
+
   const server = createServer();
 
   server.listen(env.PORT, () => {
@@ -127,7 +135,10 @@ const start = (): void => {
       //    one of these workers, so this also stops the scheduler execution).
       await stopWorkers();
 
-      // 3. Close infra clients.
+      // 3. Close infra clients. The SMTP transport pools a TLS socket, which keeps the
+      //    event loop alive — without closing it the process never exits on SIGTERM and
+      //    the orchestrator SIGKILLs it, potentially mid-send.
+      await getMailTransport().close?.();
       await pool.end();
       queueConnection.disconnect();
       redis.disconnect();

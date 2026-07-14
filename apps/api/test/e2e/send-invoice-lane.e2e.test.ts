@@ -32,6 +32,7 @@ describe('send_invoice lane + push dunning e2e', () => {
 
   const fakeNomba: NombaClient = {
     getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
     async request<T = unknown>(req: NombaRequest) {
       if (req.endpoint.includes('/checkout/order')) {
         return {

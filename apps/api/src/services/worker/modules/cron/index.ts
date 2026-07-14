@@ -9,6 +9,7 @@ import {
   DUNNING_SWEEP_JOB,
   LIFECYCLE_SWEEP_JOB,
   MANDATE_ACTIVATION_SWEEP_JOB,
+  AWAITING_PAYMENT_SWEEP_JOB,
   OVERDUE_INVOICE_SWEEP_JOB,
   LEDGER_RECONCILE_JOB,
   SETTLEMENT_SWEEP_JOB,
@@ -22,6 +23,7 @@ import { handleBillingSweep } from './jobs-handlers/billing-sweep';
 import { handleDunningSweep } from './jobs-handlers/dunning-sweep';
 import { handleLifecycleSweep } from './jobs-handlers/lifecycle-sweep';
 import { handleMandateActivationSweep } from './jobs-handlers/mandate-activation-sweep';
+import { handleAwaitingPaymentSweep } from './jobs-handlers/awaiting-payment-sweep';
 import { handleOverdueInvoiceSweep } from './jobs-handlers/overdue-invoice-sweep';
 import { handleLedgerReconcile } from './jobs-handlers/ledger-reconcile';
 import { handleSettlementSweep } from './jobs-handlers/settlement-sweep';
@@ -75,6 +77,9 @@ export const createCronWorker = (): Worker<SchedulerJobData, SchedulerJobResult>
             break;
           case RENEWAL_REMINDER_JOB:
             await handleRenewalReminder();
+            break;
+          case AWAITING_PAYMENT_SWEEP_JOB:
+            await handleAwaitingPaymentSweep();
             break;
           case OVERDUE_INVOICE_SWEEP_JOB:
             await handleOverdueInvoiceSweep();

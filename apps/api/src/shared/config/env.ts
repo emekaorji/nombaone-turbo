@@ -112,7 +112,24 @@ const envSchema = z.object({
   BILLING_MAX_CATCH_UP_PERIODS: z.coerce.number().int().positive().default(36),
   LIFECYCLE_SWEEP_CRON: z.string().min(1).default('0 * * * *'),
   DUNNING_SWEEP_CRON: z.string().min(1).default('*/15 * * * *'),
-  WEBHOOK_MAINTENANCE_CRON: z.string().min(1).default('*/15 * * * *'),
+  /**
+   * The outbox BACKSTOP, not the primary path — `registerWebhookDispatch` enqueues a drain
+   * the moment an event fans out, so a healthy delivery goes out in about a second.
+   *
+   * This tick exists for what the enqueue cannot cover: retries (the delivery backoff starts
+   * at 10s, so a 15-minute tick would have made the first retry ~90× later than intended)
+   * and any row whose enqueue was lost to a Redis blip. Every minute, and the pass is a
+   * single indexed SELECT that no-ops when there is nothing due.
+   */
+  WEBHOOK_MAINTENANCE_CRON: z.string().min(1).default('* * * * *'),
+  /**
+   * How often we ASK Nomba whether an invoice that is waiting on a payer has been paid.
+   *
+   * Every minute, because this is the PRIMARY settlement path, not a backstop: the live account
+   * sends no webhooks whatsoever, so an out-of-band payment is invisible until we go and look. The
+   * scan is indexed and matches nothing on a quiet system.
+   */
+  AWAITING_PAYMENT_SWEEP_CRON: z.string().min(1).default('* * * * *'),
   // Nightly local↔Nomba reconcile (item 6) — 02:00 daily by default; the window
   // looks back a little over a day so consecutive runs overlap and nothing is missed.
   RECONCILE_NOMBA_CRON: z.string().min(1).default('0 2 * * *'),
@@ -147,7 +164,18 @@ const envSchema = z.object({
   // ── End-customer comms (email) ─────────────────────────────────────────────
   // `log` prints instead of sending — the safe default everywhere; `resend`
   // requires RESEND_API_KEY. Mail must never be a boot dependency.
-  COMMS_TRANSPORT: z.enum(['resend', 'log']).default('log'),
+  COMMS_TRANSPORT: z.enum(['smtp', 'resend', 'log']).default('log'),
+  // ── SMTP (nodemailer). Gmail: smtp.gmail.com:465 secure, auth with an APP PASSWORD
+  // (not the account password). ~500 recipients/day, and Gmail rewrites `From` to the
+  // authenticated mailbox unless COMMS_FROM is a verified alias.
+  SMTP_HOST: z.string().min(1).default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().int().positive().default(465),
+  SMTP_SECURE: z
+    .union([z.literal('true'), z.literal('false')])
+    .default('true')
+    .transform((v) => v === 'true'),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   // Our VERIFIED Resend domain. `onboarding@resend.dev` is Resend's shared sandbox
   // sender: it can ONLY deliver to the account owner's own address and 403s for every

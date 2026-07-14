@@ -70,6 +70,15 @@ export interface NombaResponse<T = unknown> {
  * Nomba signals both with `status:false`, so the ONLY discriminators are the body
  * `code` (201) and the PROCESSING wording.
  */
+/**
+ * Nomba's body `code` values that mean SUCCESS.
+ *
+ * `"00"` is Nomba's own success code and is the ONLY thing it is consistent about — its
+ * `status` boolean is false even on a successful sandbox checkout order. `"200"` is
+ * accepted defensively (some surfaces echo the HTTP status here).
+ */
+const SUCCESS_CODES = new Set(['00', '200']);
+
 function isPendingEnvelope(
   code: string | undefined,
   message: string | undefined,
@@ -90,10 +99,33 @@ export interface RequeryResult {
   providerReference?: string;
 }
 
+/** A card Nomba has tokenized and will let us charge again. */
+export interface TokenizedCard {
+  tokenKey: string;
+  cardType?: string;
+  /** Masked PAN, e.g. `454924**** ****3962`. */
+  cardPan?: string;
+  /** `MMYY`, e.g. `3008` = August 2030. */
+  tokenExpiryDate?: string;
+  customerEmail?: string;
+}
+
 export interface NombaClient {
   getToken(): Promise<string>;
   request<T = unknown>(req: NombaRequest): Promise<NombaResponse<T>>;
   requeryTransaction(ctx: DomainContext, input: { reference: string }): Promise<RequeryResult>;
+  /**
+   * The cards Nomba holds for a customer, PULLED rather than waited for.
+   *
+   * Tokenization normally reaches us on the `payment_success` webhook. When no webhook arrives —
+   * and on a live account that has happened for every single payment — the token is simply lost,
+   * so a `charge_automatically` subscription ends up with nothing to charge and every renewal
+   * degrades into "please pay by hand". Nomba will hand the token over if we ask, so we ask.
+   */
+  listTokenizedCards(
+    ctx: DomainContext,
+    input: { customerEmail: string }
+  ): Promise<TokenizedCard[]>;
 }
 
 export interface NombaClientDeps {
@@ -230,18 +262,36 @@ export function createNombaClient(deps: NombaClientDeps): NombaClient {
           ? envelope.description
           : undefined;
 
-    // ⚠ Nomba overloads `status:false` for TWO opposite meanings:
-    //   REJECTED  — `{code:"400", status:false, message:"Account name must not…"}`
-    //   ACCEPTED, IN FLIGHT — a payout answers
-    //     `{code:"201", description:"PROCESSING", status:false,
-    //       message:"Unable to process response, please rely on web hook"}`
-    //     …for a transfer that IS being sent and WILL settle.
-    // Collapsing both to "failed" is a double-spend: the payout path reverses the
-    // merchant's ledger while Nomba is actually moving the money, so they receive
-    // the naira AND keep the balance. `pending` is NOT `failed` — never conflate
-    // them. Callers must branch on `providerCode`/`pending`, not on `ok` alone.
+    // ⚠ `status` IS NOT A RELIABLE SUCCESS FLAG. `code` is.
+    //
+    // Nomba's `status` boolean is false on outcomes that are unambiguously fine.
+    // Live-probed on the SANDBOX checkout order — a request that succeeded and returned a
+    // working payment link:
+    //
+    //   {"code":"00","description":"checkout order created successful",
+    //    "status":false,                       ← on a SUCCESS
+    //    "data":{"checkoutLink":"https://pay.nomba.com/sandbox/QMojVV…"}}
+    //
+    // An earlier version of this trusted `status:false` to mean failure. That demoted
+    // every sandbox checkout order to `!ok`, so `mintInvoiceCheckoutLink` returned null
+    // and a subscriber was handed NO link to pay on — the whole storefront entry, dead.
+    //
+    // So branch on `code`, which Nomba is consistent about:
+    //   "00"  → success
+    //   "201" → ACCEPTED, IN FLIGHT (a payout being sent; the outcome arrives by webhook).
+    //           `pending` is NOT `failed`: reversing here while the money leaves would pay
+    //           the merchant twice.
+    //   else  → a real failure ("400" validation, "500", "403"…).
+    //
+    // `status` is consulted ONLY when there is no `code` at all, and even then a
+    // `status:false` alongside a success `code` never wins.
     const pending = isPendingEnvelope(providerCode, providerMessage, envelope.description);
-    const bodySaysFailed = envelope.status === false && !pending;
+
+    const bodySaysFailed = pending
+      ? false // accepted and in flight — not a failure
+      : providerCode !== undefined
+        ? !SUCCESS_CODES.has(providerCode) // trust `code`, ignore the unreliable `status`
+        : envelope.status === false; // no code at all ⇒ fall back to `status`
 
     return {
       status: res.status,
@@ -257,10 +307,25 @@ export function createNombaClient(deps: NombaClientDeps): NombaClient {
     _ctx: DomainContext,
     input: { reference: string }
   ): Promise<RequeryResult> => {
+    // 🔴 THE QUERY PARAM IS `orderReference`, NOT `transactionRef`.
+    //
+    // Pinned against LIVE on 2026-07-14 with a real ₦100 card payment. Nomba's answer to the same
+    // transaction, by param:
+    //   ?transactionRef=<our invoice ref>   → 404 {"description":"Transaction matching query not found"}
+    //   ?orderReference=<our invoice ref>   → 200 {"code":"00","data":{"status":"SUCCESS","amount":"100.0",…}}
+    //
+    // We were sending `transactionRef`, so requery answered "no such transaction" for EVERY payment
+    // Nomba had actually taken. That matters far more than it looks: requery is the safety net for a
+    // webhook that never arrives (and on this account, none do). With the wrong param the net had a
+    // hole the exact size of itself — a customer could be charged and the engine would insist,
+    // forever and with total confidence, that no payment existed.
+    //
+    // `reference` here is OUR merchant reference (the invoice reference we hand Nomba as the order's
+    // merchant ref at checkout), which is what `orderReference` matches on.
     const res = await request<Record<string, unknown>>({
       method: 'GET',
       endpoint: NOMBA_ENDPOINTS.transactionRequery,
-      query: { transactionRef: input.reference },
+      query: { orderReference: input.reference },
       idempotencyRef: input.reference,
     });
     const data = ((res.data as Record<string, unknown>)?.data ?? res.data ?? {}) as Record<
@@ -294,5 +359,37 @@ export function createNombaClient(deps: NombaClientDeps): NombaClient {
     };
   };
 
-  return { getToken, request, requeryTransaction };
+  const listTokenizedCards = async (
+    _ctx: DomainContext,
+    input: { customerEmail: string }
+  ): Promise<TokenizedCard[]> => {
+    // `?customerEmail=` filters server-side — verified on LIVE 2026-07-14: unfiltered the list is
+    // every card on the account (paginated), filtered it returns exactly the one customer's cards.
+    // Never fetch unfiltered and match locally: page 1 is not the whole list, so a customer whose
+    // card sits on page 2 would silently look card-less.
+    const res = await request<Record<string, unknown>>({
+      method: 'GET',
+      endpoint: NOMBA_ENDPOINTS.tokenizedCardList,
+      query: { customerEmail: input.customerEmail },
+      idempotencyRef: `tokens-${input.customerEmail}`,
+    });
+    if (!res.ok) return [];
+
+    const data = ((res.data as Record<string, unknown>)?.data ?? {}) as Record<string, unknown>;
+    const list = data.tokenizedCardDataList;
+    if (!Array.isArray(list)) return [];
+
+    return list
+      .filter((row): row is Record<string, unknown> => typeof row === 'object' && row !== null)
+      .map((row) => ({
+        tokenKey: String(row.tokenKey ?? ''),
+        ...(typeof row.cardType === 'string' && { cardType: row.cardType }),
+        ...(typeof row.cardPan === 'string' && { cardPan: row.cardPan }),
+        ...(typeof row.tokenExpiryDate === 'string' && { tokenExpiryDate: row.tokenExpiryDate }),
+        ...(typeof row.customerEmail === 'string' && { customerEmail: row.customerEmail }),
+      }))
+      .filter((card) => card.tokenKey.length > 0);
+  };
+
+  return { getToken, request, requeryTransaction, listTokenizedCards };
 }

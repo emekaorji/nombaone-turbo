@@ -169,4 +169,35 @@ describe('nomba/client — an HTTP 200 carrying a failure envelope is NOT ok', (
     expect(res.pending).toBe(false);
     expect(res.ok).toBe(false); // never sent → reversal is correct here
   });
+
+  /**
+   * 🔴 `status` IS NOT A SUCCESS FLAG. `code` is.
+   *
+   * This is the VERBATIM body Nomba's sandbox returns for a checkout order that SUCCEEDED
+   * and came back with a working payment link. Note `status: false` sitting right next to
+   * `code: "00"` and a real `checkoutLink`.
+   *
+   * Trusting `status` demoted every sandbox checkout order to `!ok`, so
+   * `mintInvoiceCheckoutLink` returned null and a subscriber was handed nothing to pay on
+   * — the entire storefront entry, silently dead. Caught only by running the gym app for
+   * real against the engine.
+   */
+  it('treats code "00" as SUCCESS even when Nomba says status:false', async () => {
+    const client = clientWith({
+      code: '00',
+      description: 'checkout order created successful',
+      status: false, // ← Nomba really does send this on a success
+      data: { checkoutLink: 'https://pay.nomba.com/sandbox/QMojVVIswaIri' },
+    });
+
+    const res = await client.request<{ data: { checkoutLink: string } }>({
+      method: 'POST',
+      endpoint: '/v1/checkout/order',
+      body: {},
+    });
+
+    expect(res.ok).toBe(true); // it worked, whatever `status` claims
+    expect(res.pending).toBe(false);
+    expect(res.data.data.checkoutLink).toContain('pay.nomba.com');
+  });
 });
