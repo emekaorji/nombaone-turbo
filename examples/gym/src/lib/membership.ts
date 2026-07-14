@@ -2,7 +2,7 @@ import 'server-only';
 
 import { catalog, nombaone } from '@/lib/nombaone';
 import { cadence, formatNaira, formatShortDate, isImminent } from '@/lib/format';
-import { db } from '@/lib/db';
+import { get } from '@/lib/db';
 
 import type { Member } from '@/lib/auth';
 import type { GymPlanDef } from '@/lib/nombaone';
@@ -200,16 +200,16 @@ export async function loadMembership(member: Member): Promise<MembershipView> {
   }));
 
   // ── A waiting pay-link, and an abandoned checkout ──────────────────────────
-  const payLink = db()
-    .prepare(
-      `SELECT token FROM pay_links WHERE member_id = ? AND used_at IS NULL
-       ORDER BY created_at DESC LIMIT 1`
-    )
-    .get(member.id) as { token: string } | undefined;
+  const payLink = await get<{ token: string }>(
+    `SELECT token FROM pay_links WHERE member_id = ? AND used_at IS NULL
+     ORDER BY created_at DESC LIMIT 1`,
+    member.id
+  );
 
-  const pending = db()
-    .prepare('SELECT checkout_link FROM pending_checkouts WHERE subscription_id = ?')
-    .get(live.id) as { checkout_link: string } | undefined;
+  const pending = await get<{ checkout_link: string }>(
+    'SELECT checkout_link FROM pending_checkouts WHERE subscription_id = ?',
+    live.id
+  );
 
   const nextPaymentAt = live.currentPeriodEnd ?? null;
 
