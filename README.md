@@ -86,9 +86,9 @@ a failed payment is not an error page. it is a workflow.
 
 ### 5. look at the money (2 min)
 
-- **payments** — every charge, and which rail took it
-- **settlements and payouts** — gross, our fee, net to the merchant, and the withdraw button
-- **reconciliation** — us against nomba, line by line
+- **payments**: every charge, and which rail took it
+- **settlements and payouts**: gross, our fee, net to the merchant, and the withdraw button
+- **reconciliation**: us against nomba, line by line
 
 merchant balances live in a double entry ledger. a payout is refused unless the balance is proven by the sum of the ledger entries, not by a cached number.
 
