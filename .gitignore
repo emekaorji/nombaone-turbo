@@ -24,8 +24,13 @@ next-env.d.ts
 # testing
 coverage
 
-# generated docs search index (rebuilt by `search:index` on every build)
-apps/docs/public/search-index.json
+# NOTE: apps/docs/public/search-index.json is deliberately NOT ignored.
+# It is generated, like ask-index.json and llms.txt beside it — and like them it is COMMITTED.
+# The /api/mcp route reads it with a statically-resolvable path, so Next's file tracer bundles it as
+# an asset for that lambda and Vercel lstat's it while packaging. Absent from the checkout, the
+# deploy dies with `ENOENT: lstat .../public/search-index.json` before a line of it ever runs.
+# `search:index` regenerates it on every build, so a stale copy shows up as a git diff, never as
+# silently wrong search results.
 
 # debug logs
 *-debug.log*
