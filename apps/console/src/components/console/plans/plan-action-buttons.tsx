@@ -39,6 +39,13 @@ const discounted = (parKobo: number, pct: number): number => Math.max(1, Math.ro
  * The second half matters — a plan can carry an exotic cadence (`month × 3`) created through the
  * API or the ladder's own "Add price". It must be visible and editable here, not invisibly
  * omitted, or the merchant would have no idea it exists.
+ *
+ * `prices` arrives NEWEST FIRST, and a legacy plan can carry two live rows on one cadence. The
+ * newest is the canonical one — it is the row the reconcile compares the submitted amount against
+ * (`actives[0]`). So the FIRST row we see for a cadence wins and later duplicates are ignored.
+ * Taking the last would pre-fill the box with the OLDER amount, and then a merchant who opened
+ * Edit and saved without touching anything would read as "amount changed" — minting a new price
+ * at the stale figure and retiring the real one. A no-op save must write nothing.
  */
 function buildRows(prices: EditablePrice[]): Row[] {
   const byKey = new Map<string, Row>();
@@ -48,6 +55,7 @@ function buildRows(prices: EditablePrice[]): Row[] {
   }
   for (const p of prices) {
     const c = makeCadence(p.interval, p.intervalCount);
+    if (byKey.get(c.key)?.existing) continue;
     byKey.set(c.key, {
       cadence: c,
       existing: true,
