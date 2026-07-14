@@ -119,6 +119,12 @@ button on a pricing form safe to press twice.
 price on that cadence is **deactivated**. You get a `price.created` and a
 `price.deactivated`.
 
+The canonical price for a cadence is the **newest active** one. If a plan somehow
+carries two active prices on the same cadence — an older plan built one price at a
+time can — then editing that cadence settles it: the newest stays, the rest are
+deactivated, and you get a `price.deactivated` for each. Otherwise row order would
+be deciding what a new subscriber pays.
+
 A cadence you **don't** send is left completely alone. In the call above the yearly
 price was resent unchanged, so it keeps its `id`; the monthly one moved from ₦5,000
 to ₦6,000, so it comes back with a new one:
@@ -209,10 +215,13 @@ subscription if you have a use for one.
 > **It needs a per-minute billing sweep**
 >
 > Renewals land when the billing sweep runs, so a minute cadence only bills on time
-> if the sweep ticks every minute — `BILLING_SWEEP_CRON=* * * * *`, which is now
-> the default. On a slower sweep a ten-minute subscription still bills every period
-> it owes, in a burst, when the sweep next runs: a backlog **drains**, it never
-> parks. It just stops being a live demo.
+> if the sweep ticks every minute — `BILLING_SWEEP_CRON=* * * * *`, which is now the
+> default. A subscription is never **parked**: what it owes stays due, and every tick
+> bills the periods it is behind, oldest first. But a single tick works off at most
+> `BILLING_MAX_CATCH_UP_PERIODS` (36) of them, so a sweep slower than the cadence
+> loses ground — a daily sweep against a ten-minute price sees 144 periods fall due
+> each day and clears 36, and the subscription drifts further behind every day it
+> runs. Keep the sweep ticking faster than the shortest cadence you sell.
 
 ## Add a trial
 

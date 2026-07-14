@@ -16,7 +16,7 @@ code.
 ## What you can do without code
 
 - **[Create a plan](/merchants/create-a-plan)**: 
-Set up what you charge and how often: monthly, yearly, with a trial.
+Set up what you charge and how often: every 10 minutes to once a year, with a trial.
 - **[Share a payment link](/merchants/share-a-payment-link)**: 
 Collect a subscription with a link. Send it, and the customer subscribes.
 - **[Set up dunning messages](/merchants/set-up-dunning-messages)**: 

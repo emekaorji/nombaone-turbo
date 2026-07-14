@@ -43,10 +43,12 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/upcoming-invoice \
 Invoice mai zuwa yana nuna layukan proration, don haka babu abin mamaki a kan
 biyan kuɗi na gaba.
 
-## Canza interval
+## Canza zagayen biya
 
-Matsawa daga wata-wata → shekara-shekara canji ne zuwa price mai `interval` daban a
-kan plan guda. Saita `intervalSwitch: true` don injin ya daidaita billing anchor:
+Matsawa daga wata-wata → shekara-shekara canji ne zuwa price mai zagaye daban a kan
+plan guda. Zagaye **maʼauni ne ninki adadi**, don haka wata-wata → kowane wata uku
+(`month` × 3) da wata-wata → kowane minti goma (`minute` × 10) su ma canjin zagaye ne —
+canjin adadin yana da nauyi kamar canjin maʼaunin:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
@@ -54,6 +56,12 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
   -H "Content-Type: application/json" \
   -d '{ "priceId": "{yearlyPriceId}", "intervalSwitch": true }'
 ```
+
+Injin yana gane canjin zagaye da kansa, daga price ɗin biyu — ba sai ka sanar da shi ba.
+Maimakon ya yi prorate na shekara a kan wata, yana mayar da saura na zagayen da ya wuce
+a matsayin credit, ya caji cikakken sabon zagaye, sannan ya sake saita anchor ɗin cycle.
+`intervalSwitch: true` yana neman wannan magani iri ɗaya lokacin da zagayen **bai**
+canza ba.
 
 ## Sarrafa halin proration
 

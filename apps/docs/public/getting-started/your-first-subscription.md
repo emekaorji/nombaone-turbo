@@ -59,8 +59,9 @@ needs it.
 
 ### Add a price
 
-A **price** sets the amount and the interval. Amounts are **integer kobo**:
-`250000` is ₦2,500.00. Post it to the plan you just made.
+A **price** sets the amount and the cadence — a unit (`minute`, `day`, `week`,
+`month`, `year`) times an `intervalCount` that defaults to 1. Amounts are
+**integer kobo**: `250000` is ₦2,500.00. Post it to the plan you just made.
 
 **cURL**
 

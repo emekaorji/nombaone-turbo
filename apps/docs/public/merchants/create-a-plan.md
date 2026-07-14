@@ -23,13 +23,14 @@ Give it a name your customers will recognise on their receipt: "Pro",
 "Monthly membership", "Premium". The name is the product; the money comes
 next.
 
-### Add a price
+### Say what it costs
 
-Set the **amount** (for example ₦2,500) and the **interval**: how often it
-bills. Pick a unit — minute, day, week, month or year — and how many of them,
-so "every 3 months" is a month interval with a count of 3. You can add more
-than one price to the same plan, so the same product can be billed monthly
-*and* yearly.
+Set the **amount** (for example ₦2,500) and how often it bills. The form offers
+five cadences — **every 10 minutes**, **daily**, **weekly**, **monthly** and
+**annual** — and under **Also offer** you can price the same plan on as many of
+them as you sell it on, each with its own amount and a *save %* against the base.
+Every ten minutes is a real, billable cadence, not a demo: it exists so you can
+watch a subscription renew for real while you are still setting things up.
 
 ### Add a free trial (optional)
 
@@ -43,9 +44,10 @@ Save the plan. It's now ready to subscribe customers to, by a
 
 > **You can change prices later, safely**
 >
-> Adding or retiring a price never disturbs customers already subscribed: they
-> keep the price they signed up on until you move them. So it's safe to experiment
-> with new prices.
+> **Edit plan** re-opens the same fields, so changing what a plan costs is one edit,
+> not a hunt through old prices. Raising a price never raises it for customers already
+> subscribed: the old amount is retired and the new one applies to new subscribers only.
+> So it's safe to experiment.
 
 > **Amounts are always in naira, shown correctly**
 >
