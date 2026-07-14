@@ -46,7 +46,7 @@
 | one **reference** per resource | `tx_ref` / `flw_ref` / `trxref` tangle | One concept, one name across API, webhook, dashboard, error. |
 | **subscription / plan / price / invoice / mandate / settlement** | synonyms | The glossary is the source of truth; link the noun on first use. |
 | dunning **cadence**, **attempt**, **recovery** | "retry loop" (in reference) | Consistent with the engine's vocabulary. |
-| snake_case enum values (`monthly`, `past_due`) | UPPERCASE, camelCase values | Enum values are snake_case; keys are camelCase. |
+| snake_case enum values (`past_due`, `per_unit`) | UPPERCASE, camelCase values | Enum values are snake_case; keys are camelCase. |
 
 ## Diátaxis discipline (never mix modes on one page)
 

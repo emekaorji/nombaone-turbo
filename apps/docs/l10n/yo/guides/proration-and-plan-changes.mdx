@@ -42,11 +42,12 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/upcoming-invoice \
 Invoice tí ó ń bọ̀ yóò fi àwọn ìlà proration hàn, kí ohunkóhun má bàa yà ẹnikẹ́ni
 lẹ́nu nígbà tí owó tí ó kàn bá dé.
 
-## Yí àwọn interval padà
+## Yí ìlù ìsanwó padà
 
-Yíyí padà láti oṣooṣù → ọdọọdún jẹ́ ìyípadà sí price tí `interval` rẹ̀ yàtọ̀ lórí
-plan kan náà. Ṣètò `intervalSwitch: true` kí ẹ̀rọ náà lè ṣàtúntò billing anchor bí
-ó ti yẹ:
+Yíyí padà láti oṣooṣù → ọdọọdún jẹ́ ìyípadà sí price tí ìlù rẹ̀ yàtọ̀ lórí plan kan
+náà. Ìlù jẹ́ **ẹyọ ìwọ̀n ní ìlọ́po iye kan**, nítorí náà oṣooṣù → oṣù mẹ́ta mẹ́ta
+(`month` × 3) àti oṣooṣù → gbogbo ìṣẹ́jú mẹ́wàá (`minute` × 10) jẹ́ ìyípadà ìlù pẹ̀lú —
+ìyípadà iye náà jẹ́ ìyípadà gidi bí ìyípadà ẹyọ ìwọ̀n náà:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
@@ -54,6 +55,11 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
   -H "Content-Type: application/json" \
   -d '{ "priceId": "{yearlyPriceId}", "intervalSwitch": true }'
 ```
+
+Ẹ̀rọ náà máa ń mọ ìyípadà ìlù fúnra rẹ̀, láti inú price méjèèjì — o kò ní láti sọ fún un.
+Dípò kí ó prorate ọdún kan lórí oṣù kan, ó ń dá owó tí ó kù lórí ìlù àtijọ́ padà gẹ́gẹ́
+bí credit, ó ń gba owó sáà tuntun ní kíkún, ó sì ń tún ìdákọ̀ró cycle náà ṣe.
+`intervalSwitch: true` ń béèrè fún ìtọ́jú kan náà nígbà tí ìlù náà **kò** yí padà.
 
 ## Ṣàkóso ìwà proration
 

@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 
 import { WebhookVerificationError, webhooks } from '@nombaone/node';
 
-import { db } from '@/lib/db';
+import { run } from '@/lib/db';
 import { findMemberByCustomerId, type Member } from '@/lib/auth';
 import { formatDate, formatNaira } from '@/lib/format';
 import { nombaone } from '@/lib/nombaone';
@@ -35,19 +35,30 @@ import type { WebhookEvent } from '@nombaone/node';
 
 export const runtime = 'nodejs';
 
-const notice = (memberId: string, kind: string, title: string, body: string): void => {
-  db()
-    .prepare(
-      `INSERT INTO notices (id, member_id, kind, title, body, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    )
-    .run(randomUUID(), memberId, kind, title, body, new Date().toISOString());
+const notice = async (
+  memberId: string,
+  kind: string,
+  title: string,
+  body: string,
+): Promise<void> => {
+  await run(
+    `INSERT INTO notices (id, member_id, kind, title, body, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    randomUUID(),
+    memberId,
+    kind,
+    title,
+    body,
+    new Date().toISOString(),
+  );
 };
 
-const closeOpenPayLinks = (memberId: string): void => {
-  db()
-    .prepare('UPDATE pay_links SET used_at = ? WHERE member_id = ? AND used_at IS NULL')
-    .run(new Date().toISOString(), memberId);
+const closeOpenPayLinks = async (memberId: string): Promise<void> => {
+  await run(
+    'UPDATE pay_links SET used_at = ? WHERE member_id = ? AND used_at IS NULL',
+    new Date().toISOString(),
+    memberId,
+  );
 };
 
 const asMember = (row: MemberRow | undefined): Member | null =>
@@ -86,10 +97,12 @@ export async function POST(req: Request) {
 
   // Delivery is at-least-once. Claim the event id; a replay loses the claim and does
   // nothing, so a member is never told "Payment received" twice for one payment.
-  const claimed = db()
-    .prepare('INSERT OR IGNORE INTO webhook_events (event_id, received_at) VALUES (?, ?)')
-    .run(event.event.id, new Date().toISOString());
-  if (claimed.changes === 0) {
+  const claimed = await run(
+    'INSERT OR IGNORE INTO webhook_events (event_id, received_at) VALUES (?, ?)',
+    event.event.id,
+    new Date().toISOString(),
+  );
+  if (claimed === 0) {
     return Response.json({ received: true, duplicate: true });
   }
 
@@ -103,7 +116,7 @@ export async function POST(req: Request) {
     /* ---------------- invoice events: money moved (or didn't) ---------------- */
     if (type.startsWith('invoice.')) {
       const invoice = await client.invoices.retrieve(reference);
-      const member = asMember(findMemberByCustomerId(invoice.customerId));
+      const member = asMember(await findMemberByCustomerId(invoice.customerId));
       if (!member) return Response.json({ received: true }); // not one of ours
 
       const money = formatNaira(invoice.totalInKobo ?? invoice.amountDueInKobo ?? 0);
@@ -121,7 +134,7 @@ export async function POST(req: Request) {
 
       switch (type) {
         case 'invoice.paid':
-          notice(
+          await notice(
             member.id,
             'paid',
             `Payment received — ${money}`,
@@ -129,11 +142,11 @@ export async function POST(req: Request) {
               ? `Thanks. Your next payment comes out on ${formatDate(nextAt)}.`
               : 'Thanks — your receipt is on your account page.',
           );
-          closeOpenPayLinks(member.id); // whatever they owed is settled
+          await closeOpenPayLinks(member.id); // whatever they owed is settled
           break;
 
         case 'invoice.payment_failed':
-          notice(
+          await notice(
             member.id,
             'failed',
             `We couldn't take your ${money} payment`,
@@ -150,21 +163,18 @@ export async function POST(req: Request) {
           if (link) {
             // Opaque token — a member's URL never contains a platform reference.
             const token = randomBytes(16).toString('base64url');
-            db()
-              .prepare(
-                `INSERT INTO pay_links (token, member_id, invoice_ref, checkout_link, amount_kobo, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-              )
-              .run(
-                token,
-                member.id,
-                reference,
-                link,
-                invoice.amountDueInKobo ?? 0,
-                new Date().toISOString(),
-              );
+            await run(
+              `INSERT INTO pay_links (token, member_id, invoice_ref, checkout_link, amount_kobo, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              token,
+              member.id,
+              reference,
+              link,
+              invoice.amountDueInKobo ?? 0,
+              new Date().toISOString(),
+            );
 
-            notice(
+            await notice(
               member.id,
               'action',
               `Your ${money} payment needs you`,
@@ -175,13 +185,13 @@ export async function POST(req: Request) {
         }
 
         case 'invoice.payment_recovered':
-          notice(
+          await notice(
             member.id,
             'recovered',
             "Sorted — you're back in",
             `${money} received. Your membership is running normally again.`,
           );
-          closeOpenPayLinks(member.id);
+          await closeOpenPayLinks(member.id);
           break;
 
         default:
@@ -194,14 +204,14 @@ export async function POST(req: Request) {
     /* ---------------- subscription events: the membership itself ------------- */
     if (type.startsWith('subscription.')) {
       const sub = await client.subscriptions.retrieve(reference);
-      const member = asMember(findMemberByCustomerId(sub.customerId));
+      const member = asMember(await findMemberByCustomerId(sub.customerId));
       if (!member) return Response.json({ received: true });
 
       const nextAt = sub.currentPeriodEnd;
 
       switch (type) {
         case 'subscription.activated':
-          notice(
+          await notice(
             member.id,
             'joined',
             "You're in — your membership is live",
@@ -212,7 +222,7 @@ export async function POST(req: Request) {
           break;
 
         case 'subscription.churned':
-          notice(
+          await notice(
             member.id,
             'ended',
             'Your membership has stopped',
@@ -221,7 +231,7 @@ export async function POST(req: Request) {
           break;
 
         case 'subscription.canceled':
-          notice(
+          await notice(
             member.id,
             'ended',
             'Your membership has ended',
@@ -230,7 +240,7 @@ export async function POST(req: Request) {
           break;
 
         case 'subscription.paused':
-          notice(
+          await notice(
             member.id,
             'paused',
             'Your membership is paused',
@@ -239,7 +249,7 @@ export async function POST(req: Request) {
           break;
 
         case 'subscription.resumed':
-          notice(member.id, 'joined', "You're back", 'Your membership is running again.');
+          await notice(member.id, 'joined', "You're back", 'Your membership is running again.');
           break;
 
         default:
@@ -252,11 +262,11 @@ export async function POST(req: Request) {
     /* ---------------- card events ------------------------------------------- */
     if (type.startsWith('payment_method.')) {
       const method = await client.paymentMethods.retrieve(reference);
-      const member = asMember(findMemberByCustomerId(method.customerId));
+      const member = asMember(await findMemberByCustomerId(method.customerId));
       if (!member) return Response.json({ received: true });
 
       if (type === 'payment_method.attached' && method.status === 'active') {
-        notice(
+        await notice(
           member.id,
           'card',
           'Your new card is saved',
@@ -265,7 +275,7 @@ export async function POST(req: Request) {
       }
 
       if (type === 'payment_method.expiring') {
-        notice(
+        await notice(
           member.id,
           'card',
           'Your card expires soon',

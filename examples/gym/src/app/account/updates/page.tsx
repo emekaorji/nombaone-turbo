@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { currentMember } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { all } from '@/lib/db';
 import { formatShortDate } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -25,9 +25,10 @@ export default async function UpdatesPage() {
   const member = await currentMember();
   if (!member) redirect('/signin');
 
-  const notices = db()
-    .prepare('SELECT * FROM notices WHERE member_id = ? ORDER BY created_at DESC LIMIT 50')
-    .all(member.id) as Notice[];
+  const notices = await all<Notice>(
+    'SELECT * FROM notices WHERE member_id = ? ORDER BY created_at DESC LIMIT 50',
+    member.id
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">

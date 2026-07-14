@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 
 import { cookies } from 'next/headers';
 
-import { db, type MemberRow } from '@/lib/db';
+import { get, run, type MemberRow } from '@/lib/db';
 
 /**
  * Member sign-up / sign-in for Iron Republic.
@@ -51,12 +51,14 @@ async function startSession(memberId: string): Promise<void> {
   const raw = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
-  db()
-    .prepare(
-      `INSERT INTO sessions (token_hash, member_id, expires_at, created_at)
-       VALUES (?, ?, ?, ?)`
-    )
-    .run(hashToken(raw), memberId, expiresAt.toISOString(), new Date().toISOString());
+  await run(
+    `INSERT INTO sessions (token_hash, member_id, expires_at, created_at)
+     VALUES (?, ?, ?, ?)`,
+    hashToken(raw),
+    memberId,
+    expiresAt.toISOString(),
+    new Date().toISOString()
+  );
 
   const jar = await cookies();
   jar.set(SESSION_COOKIE, raw, {
@@ -71,7 +73,7 @@ async function startSession(memberId: string): Promise<void> {
 export async function signOut(): Promise<void> {
   const jar = await cookies();
   const raw = jar.get(SESSION_COOKIE)?.value;
-  if (raw) db().prepare('DELETE FROM sessions WHERE token_hash = ?').run(hashToken(raw));
+  if (raw) await run('DELETE FROM sessions WHERE token_hash = ?', hashToken(raw));
   jar.delete(SESSION_COOKIE);
 }
 
@@ -106,13 +108,13 @@ export async function currentMember(): Promise<Member | null> {
   const raw = jar.get(SESSION_COOKIE)?.value;
   if (!raw) return null;
 
-  const row = db()
-    .prepare(
-      `SELECT m.* FROM sessions s
-       JOIN members m ON m.id = s.member_id
-       WHERE s.token_hash = ? AND s.expires_at > ?`
-    )
-    .get(hashToken(raw), new Date().toISOString()) as MemberRow | undefined;
+  const row = await get<MemberRow>(
+    `SELECT m.* FROM sessions s
+     JOIN members m ON m.id = s.member_id
+     WHERE s.token_hash = ? AND s.expires_at > ?`,
+    hashToken(raw),
+    new Date().toISOString()
+  );
 
   return row ? toMember(row) : null;
 }
@@ -126,16 +128,12 @@ export async function requireMember(): Promise<Member | null> {
 /* Sign up / sign in                                                   */
 /* ------------------------------------------------------------------ */
 
-export function findMemberByEmail(email: string): MemberRow | undefined {
-  return db()
-    .prepare('SELECT * FROM members WHERE email = ?')
-    .get(email.trim().toLowerCase()) as MemberRow | undefined;
+export async function findMemberByEmail(email: string): Promise<MemberRow | undefined> {
+  return get<MemberRow>('SELECT * FROM members WHERE email = ?', email.trim().toLowerCase());
 }
 
-export function findMemberByCustomerId(customerId: string): MemberRow | undefined {
-  return db()
-    .prepare('SELECT * FROM members WHERE customer_id = ?')
-    .get(customerId) as MemberRow | undefined;
+export async function findMemberByCustomerId(customerId: string): Promise<MemberRow | undefined> {
+  return get<MemberRow>('SELECT * FROM members WHERE customer_id = ?', customerId);
 }
 
 /**
@@ -164,12 +162,18 @@ export async function createMember(input: {
     created_at: new Date().toISOString(),
   };
 
-  db()
-    .prepare(
-      `INSERT INTO members (id, email, name, phone, password_hash, customer_id, member_no, created_at)
-       VALUES (@id, @email, @name, @phone, @password_hash, @customer_id, @member_no, @created_at)`
-    )
-    .run(row);
+  await run(
+    `INSERT INTO members (id, email, name, phone, password_hash, customer_id, member_no, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    row.id,
+    row.email,
+    row.name,
+    row.phone,
+    row.password_hash,
+    row.customer_id,
+    row.member_no,
+    row.created_at
+  );
 
   await startSession(id);
   return toMember(row);
@@ -178,7 +182,7 @@ export async function createMember(input: {
 /** Verify a password and start a session. Wrong email and wrong password are the same
  *  answer to the caller — never confirm which addresses have accounts. */
 export async function authenticate(email: string, password: string): Promise<Member | null> {
-  const row = findMemberByEmail(email);
+  const row = await findMemberByEmail(email);
   if (!row) return null;
   if (!(await verifyPassword(password, row.password_hash))) return null;
   await startSession(row.id);

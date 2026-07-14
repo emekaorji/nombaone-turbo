@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 
 import { currentMember } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { get } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +29,12 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
   const member = await currentMember();
   if (!member) redirect('/signin');
 
-  const link = db()
-    .prepare(
-      `SELECT checkout_link, used_at FROM pay_links
-       WHERE token = ? AND member_id = ?`,
-    )
-    .get(token, member.id) as { checkout_link: string; used_at: string | null } | undefined;
+  const link = await get<{ checkout_link: string; used_at: string | null }>(
+    `SELECT checkout_link, used_at FROM pay_links
+     WHERE token = ? AND member_id = ?`,
+    token,
+    member.id
+  );
 
   // Not theirs, or never existed. 404 — never confirm that someone else's link is real.
   if (!link) notFound();

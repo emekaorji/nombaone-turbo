@@ -15,8 +15,7 @@ WhatsApp, or reconcile transfers against a spreadsheet.
 This recipe wires the whole membership lifecycle:
 
 1. connect the gym's **Nomba account**, so collections settle,
-2. one **plan** with three prices (monthly, yearly, and a ten-minute rehearsal
-cadence for the sandbox),
+2. one **plan** with three prices (monthly, yearly, and every ten minutes),
 3. a member joining through **hosted checkout** — no card details touch your code,
 4. **silent card renewals**, with the honest OTP fallback when a bank steps in,
 5. the **invoice lane** for members who pay by transfer,
@@ -63,11 +62,12 @@ meantime.
 
 ## 1 · One plan, three prices
 
-Iron Republic sells one membership at two real cadences, plus a **rehearsal
-price** that renews every ten minutes — `interval: "minute"` is a first-class
-wall-clock cadence, and it is how you will watch a whole renewal cycle happen
-during this recipe instead of waiting a month. Amounts are
-**integer kobo**: ₦25,000.00 is `2500000`.
+Iron Republic sells one membership at three cadences: monthly, yearly, and every
+ten minutes. A cadence is a **unit times a count**, so the third one is
+`interval: "minute"` with `intervalCount: 10` — a first-class cadence that bills
+through exactly the same engine as `month`, in live as well as sandbox. It is how
+you will watch a whole renewal cycle happen during this recipe instead of waiting
+a month. Amounts are **integer kobo**: ₦25,000.00 is `2500000`.
 
 **cURL**
 
@@ -103,8 +103,8 @@ const yearly = await nombaone.plans.prices.create(plan.id, {
   unitAmountInKobo: 25_000_000, // ₦250,000.00
   interval: 'year',
 });
-// Sandbox rehearsal cadence: a real renewal every ten minutes.
-const rehearsal = await nombaone.plans.prices.create(plan.id, {
+// Every ten minutes: a real renewal, on the same engine as the two above.
+const tenMinute = await nombaone.plans.prices.create(plan.id, {
   unitAmountInKobo: 50_000, // ₦500.00
   interval: 'minute',
   intervalCount: 10,
@@ -347,7 +347,7 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
 
 ## 8 · Rehearse the whole loop before launch day
 
-You already created the rehearsal price. Put a member on it and a full
+You already created the ten-minute price. Put a member on it and a full
 renewal happens, for real, every ten minutes — invoice, collection, webhook,
 email. Too slow? Skip the wait entirely:
 

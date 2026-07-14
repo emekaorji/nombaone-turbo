@@ -769,7 +769,7 @@ record the truth in the ledger**, then do it again next period.
 
 Each cycle runs the same way:
 
-1. **A cycle opens.** On the billing date, the engine computes the period and the amount
+1. **A cycle opens.** On the period boundary, the engine computes the period and the amount
 due for the subscription's current price (applying any scheduled change, proration, or
 trial that lands on this boundary).
 2. **An invoice is finalized.** Line items, discounts, credits, and the total are locked.
@@ -787,6 +787,17 @@ invoice, its postings, and its webhooks all share one public reference.
 > The whole loop is idempotent on `(subscription, period)`. Re-run it, crash halfway,
 > retry it. It resolves to exactly one invoice and at most one charge. This is the floor:
 > a billing engine that occasionally double-charges is worthless.
+
+> **Where the boundary lands**
+>
+> The loop is the same for every cadence; only the arithmetic that finds the next
+> boundary differs. `day`, `week`, `month` and `year` are **calendar** cadences — the
+> boundary is a calendar date at 02:00 (Africa/Lagos), and month and year snap the end of
+> the month against the anchor's day (a Jan-31 anchor bills Feb-28, then Mar-31).
+> `minute` is a **wall-clock** cadence — the boundary is an exact elapsed offset from the
+> instant the subscription activated, so a ten-minute subscription started at 14:37 renews
+> at 14:47. Both bill through this loop, in live as well as sandbox. See
+> [create plans and prices](/guides/create-plans-and-prices).
 
 ## The subscription state machine
 
@@ -1131,8 +1142,7 @@ WhatsApp, or reconcile transfers against a spreadsheet.
 This recipe wires the whole membership lifecycle:
 
 1. connect the gym's **Nomba account**, so collections settle,
-2. one **plan** with three prices (monthly, yearly, and a ten-minute rehearsal
-cadence for the sandbox),
+2. one **plan** with three prices (monthly, yearly, and every ten minutes),
 3. a member joining through **hosted checkout** — no card details touch your code,
 4. **silent card renewals**, with the honest OTP fallback when a bank steps in,
 5. the **invoice lane** for members who pay by transfer,
@@ -1179,11 +1189,12 @@ meantime.
 
 ## 1 · One plan, three prices
 
-Iron Republic sells one membership at two real cadences, plus a **rehearsal
-price** that renews every ten minutes — `interval: "minute"` is a first-class
-wall-clock cadence, and it is how you will watch a whole renewal cycle happen
-during this recipe instead of waiting a month. Amounts are
-**integer kobo**: ₦25,000.00 is `2500000`.
+Iron Republic sells one membership at three cadences: monthly, yearly, and every
+ten minutes. A cadence is a **unit times a count**, so the third one is
+`interval: "minute"` with `intervalCount: 10` — a first-class cadence that bills
+through exactly the same engine as `month`, in live as well as sandbox. It is how
+you will watch a whole renewal cycle happen during this recipe instead of waiting
+a month. Amounts are **integer kobo**: ₦25,000.00 is `2500000`.
 
 **cURL**
 
@@ -1219,8 +1230,8 @@ const yearly = await nombaone.plans.prices.create(plan.id, {
   unitAmountInKobo: 25_000_000, // ₦250,000.00
   interval: 'year',
 });
-// Sandbox rehearsal cadence: a real renewal every ten minutes.
-const rehearsal = await nombaone.plans.prices.create(plan.id, {
+// Every ten minutes: a real renewal, on the same engine as the two above.
+const tenMinute = await nombaone.plans.prices.create(plan.id, {
   unitAmountInKobo: 50_000, // ₦500.00
   interval: 'minute',
   intervalCount: 10,
@@ -1463,7 +1474,7 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/dunning \
 
 ## 8 · Rehearse the whole loop before launch day
 
-You already created the rehearsal price. Put a member on it and a full
+You already created the ten-minute price. Put a member on it and a full
 renewal happens, for real, every ten minutes — invoice, collection, webhook,
 email. Too slow? Skip the wait entirely:
 
@@ -2202,8 +2213,9 @@ needs it.
 
 ### Add a price
 
-A **price** sets the amount and the interval. Amounts are **integer kobo**:
-`250000` is ₦2,500.00. Post it to the plan you just made.
+A **price** sets the amount and the cadence — a unit (`minute`, `day`, `week`,
+`month`, `year`) times an `intervalCount` that defaults to 1. Amounts are
+**integer kobo**: `250000` is ₦2,500.00. Post it to the plan you just made.
 
 **cURL**
 
@@ -2601,6 +2613,12 @@ button on a pricing form safe to press twice.
 price on that cadence is **deactivated**. You get a `price.created` and a
 `price.deactivated`.
 
+The canonical price for a cadence is the **newest active** one. If a plan somehow
+carries two active prices on the same cadence — an older plan built one price at a
+time can — then editing that cadence settles it: the newest stays, the rest are
+deactivated, and you get a `price.deactivated` for each. Otherwise row order would
+be deciding what a new subscriber pays.
+
 A cadence you **don't** send is left completely alone. In the call above the yearly
 price was resent unchanged, so it keeps its `id`; the monthly one moved from ₦5,000
 to ₦6,000, so it comes back with a new one:
@@ -2691,10 +2709,13 @@ subscription if you have a use for one.
 > **It needs a per-minute billing sweep**
 >
 > Renewals land when the billing sweep runs, so a minute cadence only bills on time
-> if the sweep ticks every minute — `BILLING_SWEEP_CRON=* * * * *`, which is now
-> the default. On a slower sweep a ten-minute subscription still bills every period
-> it owes, in a burst, when the sweep next runs: a backlog **drains**, it never
-> parks. It just stops being a live demo.
+> if the sweep ticks every minute — `BILLING_SWEEP_CRON=* * * * *`, which is now the
+> default. A subscription is never **parked**: what it owes stays due, and every tick
+> bills the periods it is behind, oldest first. But a single tick works off at most
+> `BILLING_MAX_CATCH_UP_PERIODS` (36) of them, so a sweep slower than the cadence
+> loses ground — a daily sweep against a ten-minute price sees 144 periods fall due
+> each day and clears 36, and the subscription drifts further behind every day it
+> runs. Keep the sweep ticking faster than the shortest cadence you sell.
 
 ## Add a trial
 
@@ -3112,10 +3133,12 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/upcoming-invoice \
 The upcoming invoice reflects proration lines so there are no surprises on the
 next bill.
 
-## Switch intervals
+## Switch cadences
 
-Moving monthly → yearly is a change to a price with a different `interval` on the
-same plan. Set `intervalSwitch: true` so the engine aligns the billing anchor:
+Moving monthly → yearly is a change to a price with a different cadence on the same
+plan. A cadence is a **unit times a count**, so monthly → quarterly (`month` × 3) and
+monthly → every ten minutes (`minute` × 10) are cadence switches too — the count
+changing is as real a switch as the unit changing:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
@@ -3123,6 +3146,12 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
   -H "Content-Type: application/json" \
   -d '{ "priceId": "{yearlyPriceId}", "intervalSwitch": true }'
 ```
+
+The engine recognises a cadence switch on its own, from the two prices — you don't have
+to declare it. Rather than prorate a year against a month, it credits the unused
+remainder of the old cadence, charges a full fresh period on the new one, and re-anchors
+the cycle. `intervalSwitch: true` asks for that same treatment when the cadence has
+*not* changed.
 
 ## Control the proration behavior
 
@@ -3395,13 +3424,14 @@ Give it a name your customers will recognise on their receipt: "Pro",
 "Monthly membership", "Premium". The name is the product; the money comes
 next.
 
-### Add a price
+### Say what it costs
 
-Set the **amount** (for example ₦2,500) and the **interval**: how often it
-bills. Pick a unit — minute, day, week, month or year — and how many of them,
-so "every 3 months" is a month interval with a count of 3. You can add more
-than one price to the same plan, so the same product can be billed monthly
-*and* yearly.
+Set the **amount** (for example ₦2,500) and how often it bills. The form offers
+five cadences — **every 10 minutes**, **daily**, **weekly**, **monthly** and
+**annual** — and under **Also offer** you can price the same plan on as many of
+them as you sell it on, each with its own amount and a *save %* against the base.
+Every ten minutes is a real, billable cadence, not a demo: it exists so you can
+watch a subscription renew for real while you are still setting things up.
 
 ### Add a free trial (optional)
 
@@ -3415,9 +3445,10 @@ Save the plan. It's now ready to subscribe customers to, by a
 
 > **You can change prices later, safely**
 >
-> Adding or retiring a price never disturbs customers already subscribed: they
-> keep the price they signed up on until you move them. So it's safe to experiment
-> with new prices.
+> **Edit plan** re-opens the same fields, so changing what a plan costs is one edit,
+> not a hunt through old prices. Raising a price never raises it for customers already
+> subscribed: the old amount is retired and the new one applies to new subscribers only.
+> So it's safe to experiment.
 
 > **Amounts are always in naira, shown correctly**
 >
@@ -3450,7 +3481,7 @@ code.
 ## What you can do without code
 
 - **[Create a plan](/merchants/create-a-plan)**: 
-Set up what you charge and how often: monthly, yearly, with a trial.
+Set up what you charge and how often: every 10 minutes to once a year, with a trial.
 - **[Share a payment link](/merchants/share-a-payment-link)**: 
 Collect a subscription with a link. Send it, and the customer subscribes.
 - **[Set up dunning messages](/merchants/set-up-dunning-messages)**: 
@@ -4015,8 +4046,9 @@ canonical: https://docs.nombaone.xyz/sandbox-toolkit/clock
 
 # The sandbox clock
 
-A subscription bills on a repeating cycle: monthly, yearly. You can't wait a
-month to test the second charge. The **sandbox clock** advances a subscription's next
+A subscription bills on a repeating cycle, and most of them are long: monthly,
+yearly. You can't wait a month to test the second charge. The **sandbox clock**
+advances a subscription's next
 cycle immediately, running the same billing loop the scheduler would run on the
 real billing date: open the cycle, finalize the invoice, collect it, post to the
 ledger.

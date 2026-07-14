@@ -7,8 +7,9 @@ canonical: https://docs.nombaone.xyz/sandbox-toolkit/clock
 
 # The sandbox clock
 
-A subscription bills on a repeating cycle: monthly, yearly. You can't wait a
-month to test the second charge. The **sandbox clock** advances a subscription's next
+A subscription bills on a repeating cycle, and most of them are long: monthly,
+yearly. You can't wait a month to test the second charge. The **sandbox clock**
+advances a subscription's next
 cycle immediately, running the same billing loop the scheduler would run on the
 real billing date: open the cycle, finalize the invoice, collect it, post to the
 ledger.

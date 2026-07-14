@@ -15,7 +15,7 @@ record the truth in the ledger**, then do it again next period.
 
 Each cycle runs the same way:
 
-1. **A cycle opens.** On the billing date, the engine computes the period and the amount
+1. **A cycle opens.** On the period boundary, the engine computes the period and the amount
 due for the subscription's current price (applying any scheduled change, proration, or
 trial that lands on this boundary).
 2. **An invoice is finalized.** Line items, discounts, credits, and the total are locked.
@@ -33,6 +33,17 @@ invoice, its postings, and its webhooks all share one public reference.
 > The whole loop is idempotent on `(subscription, period)`. Re-run it, crash halfway,
 > retry it. It resolves to exactly one invoice and at most one charge. This is the floor:
 > a billing engine that occasionally double-charges is worthless.
+
+> **Where the boundary lands**
+>
+> The loop is the same for every cadence; only the arithmetic that finds the next
+> boundary differs. `day`, `week`, `month` and `year` are **calendar** cadences — the
+> boundary is a calendar date at 02:00 (Africa/Lagos), and month and year snap the end of
+> the month against the anchor's day (a Jan-31 anchor bills Feb-28, then Mar-31).
+> `minute` is a **wall-clock** cadence — the boundary is an exact elapsed offset from the
+> instant the subscription activated, so a ten-minute subscription started at 14:37 renews
+> at 14:47. Both bill through this loop, in live as well as sandbox. See
+> [create plans and prices](/guides/create-plans-and-prices).
 
 ## The subscription state machine
 

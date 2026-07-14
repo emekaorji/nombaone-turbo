@@ -41,10 +41,12 @@ curl https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/upcoming-invoice \
 The upcoming invoice reflects proration lines so there are no surprises on the
 next bill.
 
-## Switch intervals
+## Switch cadences
 
-Moving monthly → yearly is a change to a price with a different `interval` on the
-same plan. Set `intervalSwitch: true` so the engine aligns the billing anchor:
+Moving monthly → yearly is a change to a price with a different cadence on the same
+plan. A cadence is a **unit times a count**, so monthly → quarterly (`month` × 3) and
+monthly → every ten minutes (`minute` × 10) are cadence switches too — the count
+changing is as real a switch as the unit changing:
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
@@ -52,6 +54,12 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions/{id}/change \
   -H "Content-Type: application/json" \
   -d '{ "priceId": "{yearlyPriceId}", "intervalSwitch": true }'
 ```
+
+The engine recognises a cadence switch on its own, from the two prices — you don't have
+to declare it. Rather than prorate a year against a month, it credits the unused
+remainder of the old cadence, charges a full fresh period on the new one, and re-anchors
+the cycle. `intervalSwitch: true` asks for that same treatment when the cadence has
+*not* changed.
 
 ## Control the proration behavior
 

@@ -431,4 +431,443 @@ describe('catalog (plans & prices) e2e', () => {
       expect(created.body.data.prices).toEqual([]);
     });
   });
+
+  // ── a plan IS what it costs: PATCH /v1/plans/{id} with `prices: [...]` ────────
+  describe('plan update reconciles its prices', () => {
+    /** Every price row the plan has EVER had, newest first — retired ones included. A
+     *  reconcile is judged on rows, not on what the response chose to show. */
+    const priceRows = async (planRef: string): Promise<PriceRow[]> => {
+      const [plan] = await harness.db
+        .select({ id: plansTable.id })
+        .from(plansTable)
+        .where(eq(plansTable.reference, planRef));
+      if (!plan) throw new Error(`plan ${planRef} is not in the database`);
+
+      return harness.db
+        .select()
+        .from(pricesTable)
+        .where(eq(pricesTable.planId, plan.id))
+        .orderBy(desc(pricesTable.createdAt));
+    };
+
+    /** The one row behind a public price id. Read directly, because the whole point of
+     *  grandfathering is what the ROW still says after the API stopped offering it. */
+    const priceRow = async (priceRef: string): Promise<PriceRow> => {
+      const [row] = await harness.db
+        .select()
+        .from(pricesTable)
+        .where(eq(pricesTable.reference, priceRef));
+      if (!row) throw new Error(`price ${priceRef} is not in the database`);
+      return row;
+    };
+
+    /** The `price.*` events this plan emitted, in order. `planRef` is on every payload. */
+    const priceEvents = async (planRef: string): Promise<{ type: string; ref: unknown }[]> => {
+      const rows = await harness.db
+        .select({ type: domainEventsTable.type, payload: domainEventsTable.payload })
+        .from(domainEventsTable)
+        .where(eq(domainEventsTable.organizationId, orgAId))
+        .orderBy(domainEventsTable.createdAt);
+
+      return rows
+        .filter((row) => row.type.startsWith('price.') && row.payload.planRef === planRef)
+        .map((row) => ({ type: row.type, ref: row.payload.reference }));
+    };
+
+    /** A plan with the given cadences already priced — the state a merchant edits FROM. */
+    const seedPlan = async (
+      label: string,
+      prices: Record<string, unknown>[]
+    ): Promise<{ ref: string; prices: { id: string }[] }> => {
+      const created = await idem(
+        asA(request(harness.app).post('/v1/plans')),
+        `upd-seed-${label}-${Date.now()}`
+      ).send({ name: `${label} ${Date.now()}`, prices });
+      expect(created.status).toBe(201);
+      return { ref: created.body.data.id as string, prices: created.body.data.prices };
+    };
+
+    const patch = (planRef: string, label: string, body: Record<string, unknown>) =>
+      idem(
+        asA(request(harness.app).patch(`/v1/plans/${planRef}`)),
+        `upd-${label}-${Date.now()}`
+      ).send(body);
+
+    it('writes NOTHING when the amount is unchanged', async () => {
+      const plan = await seedPlan('Unchanged', [
+        { unitAmountInKobo: 500000, interval: 'month' },
+        { unitAmountInKobo: 5000000, interval: 'year' },
+      ]);
+      const before = await priceRows(plan.ref);
+      expect(before).toHaveLength(2);
+
+      // Re-submitting what the plan already costs is the console's most common save
+      // (open the modal, change the name, hit save). It must not recreate the catalog
+      // and hand every price a new id that clients have already stored.
+      const updated = await patch(plan.ref, 'noop', {
+        name: `Renamed ${Date.now()}`,
+        prices: [
+          { unitAmountInKobo: 500000, interval: 'month' },
+          { unitAmountInKobo: 5000000, interval: 'year' },
+        ],
+      });
+      expect(updated.status).toBe(200);
+
+      const after = await priceRows(plan.ref);
+      expect(after).toHaveLength(2);
+      expect(after.map((row) => row.reference)).toEqual(before.map((row) => row.reference));
+      expect(after.every((row) => row.active)).toBe(true);
+      // Same ids come back — the client's stored `priceId` still resolves.
+      expect(new Set(updated.body.data.prices.map((p: { id: string }) => p.id))).toEqual(
+        new Set(plan.prices.map((p) => p.id))
+      );
+    });
+
+    it('grandfathers: a changed amount mints a NEW row and leaves the old one untouched', async () => {
+      const plan = await seedPlan('Grandfather', [{ unitAmountInKobo: 500000, interval: 'month' }]);
+      const oldRef = plan.prices[0]!.id;
+
+      const updated = await patch(plan.ref, 'raise', {
+        prices: [{ unitAmountInKobo: 700000, interval: 'month' }],
+      });
+      expect(updated.status).toBe(200);
+
+      const rows = await priceRows(plan.ref);
+      expect(rows).toHaveLength(2);
+
+      // Exactly ONE active row, and it is the new money.
+      const active = rows.filter((row) => row.active);
+      expect(active).toHaveLength(1);
+      expect(active[0]!.unitAmount).toBe(700000);
+      expect(active[0]!.reference).not.toBe(oldRef);
+
+      // THE INVARIANT. The old row is retired, but its money is byte-for-byte what the
+      // subscribers pinned to it agreed to pay. Rewriting it in place would re-price
+      // every one of them, retroactively.
+      const old = await priceRow(oldRef);
+      expect(old.active).toBe(false);
+      expect(old.unitAmount).toBe(500000);
+      expect(old.interval).toBe('month');
+      expect(old.intervalCount).toBe(1);
+    });
+
+    it('leaves a cadence it was not sent completely alone', async () => {
+      const plan = await seedPlan('Untouched', [
+        { unitAmountInKobo: 500000, interval: 'month' },
+        { unitAmountInKobo: 5000000, interval: 'year' },
+      ]);
+      const yearBefore = await priceRow(
+        (await priceRows(plan.ref)).find((row) => row.interval === 'year')!.reference
+      );
+
+      // Only `month` is submitted. Omission must never retire a price.
+      const updated = await patch(plan.ref, 'partial', {
+        prices: [{ unitAmountInKobo: 900000, interval: 'month' }],
+      });
+      expect(updated.status).toBe(200);
+
+      const yearAfter = await priceRow(yearBefore.reference);
+      expect(yearAfter.active).toBe(true);
+      expect(yearAfter.unitAmount).toBe(5000000);
+      expect(yearAfter.createdAt).toEqual(yearBefore.createdAt);
+      expect((await priceRows(plan.ref)).filter((row) => row.interval === 'year')).toHaveLength(1);
+    });
+
+    it('creates a cadence the plan did not price before', async () => {
+      const plan = await seedPlan('NewCadence', [{ unitAmountInKobo: 500000, interval: 'month' }]);
+      const monthRef = plan.prices[0]!.id;
+
+      const updated = await patch(plan.ref, 'add', {
+        prices: [
+          { unitAmountInKobo: 500000, interval: 'month' },
+          { unitAmountInKobo: 150000, interval: 'week' },
+        ],
+      });
+      expect(updated.status).toBe(200);
+
+      const rows = await priceRows(plan.ref);
+      expect(rows).toHaveLength(2); // the month row was NOT recreated
+      const week = rows.find((row) => row.interval === 'week');
+      expect(week).toBeDefined();
+      expect(week!.active).toBe(true);
+      expect(week!.unitAmount).toBe(150000);
+      expect(week!.intervalCount).toBe(1);
+      expect((await priceRow(monthRef)).active).toBe(true);
+    });
+
+    it('heals a legacy plan carrying TWO active monthly prices down to one', async () => {
+      const plan = await seedPlan('Legacy', [{ unitAmountInKobo: 500000, interval: 'month' }]);
+      const original = await priceRow(plan.prices[0]!.id);
+
+      // Seeded by direct insert on purpose: `rejectDuplicateCadence` blocks this over the
+      // wire, but nothing in the DB forbids it and legacy plans really carry it. Newest =
+      // canonical, so pin this row's `createdAt` after the original's — otherwise ROW ORDER
+      // would decide what a new subscriber pays, which is a coin toss over money.
+      const duplicateRef = mintReference('PRC');
+      await harness.db.insert(pricesTable).values({
+        reference: duplicateRef,
+        organizationId: orgAId,
+        mode: 'sandbox',
+        planId: original.planId,
+        unitAmount: 600000,
+        interval: 'month',
+        intervalCount: 1,
+        createdAt: new Date(new Date(original.createdAt).getTime() + 1_000),
+      });
+      expect((await priceRows(plan.ref)).filter((row) => row.active)).toHaveLength(2);
+
+      // The canonical (newest) row's amount, unchanged — so this edit writes no new price.
+      // The heal is a side effect of touching the cadence at all.
+      const updated = await patch(plan.ref, 'heal', {
+        prices: [{ unitAmountInKobo: 600000, interval: 'month' }],
+      });
+      expect(updated.status).toBe(200);
+
+      const rows = await priceRows(plan.ref);
+      expect(rows).toHaveLength(2); // healed, not recreated
+      const active = rows.filter((row) => row.active);
+      expect(active).toHaveLength(1);
+      expect(active[0]!.reference).toBe(duplicateRef);
+
+      const stale = await priceRow(original.reference);
+      expect(stale.active).toBe(false);
+      expect(stale.unitAmount).toBe(500000);
+
+      expect(updated.body.data.prices).toHaveLength(1);
+      expect(updated.body.data.prices[0].id).toBe(duplicateRef);
+    });
+
+    it('retires EVERY other active row on the cadence, not just the newest, when the amount changes', async () => {
+      const plan = await seedPlan('Sweep', [{ unitAmountInKobo: 500000, interval: 'month' }]);
+      const original = await priceRow(plan.prices[0]!.id);
+
+      // Same legacy shape as the heal above, but the merchant RAISES the price instead of
+      // re-submitting it. Retiring only the canonical row would leave the 600000 one live
+      // alongside the new money, and which of the two a new subscriber lands on would be
+      // decided by row order — a coin toss over money. The changed path sweeps the whole
+      // cadence, excluding the new row by id, so the plan is never left with nothing to bill.
+      const duplicateRef = mintReference('PRC');
+      await harness.db.insert(pricesTable).values({
+        reference: duplicateRef,
+        organizationId: orgAId,
+        mode: 'sandbox',
+        planId: original.planId,
+        unitAmount: 600000,
+        interval: 'month',
+        intervalCount: 1,
+        createdAt: new Date(new Date(original.createdAt).getTime() + 1_000),
+      });
+      expect((await priceRows(plan.ref)).filter((row) => row.active)).toHaveLength(2);
+
+      const updated = await patch(plan.ref, 'sweep', {
+        prices: [{ unitAmountInKobo: 700000, interval: 'month' }],
+      });
+      expect(updated.status).toBe(200);
+
+      const active = (await priceRows(plan.ref)).filter((row) => row.active);
+      expect(active).toHaveLength(1);
+      expect(active[0]!.unitAmount).toBe(700000);
+      expect(updated.body.data.prices).toHaveLength(1);
+      expect(updated.body.data.prices[0].id).toBe(active[0]!.reference);
+
+      // Both retired rows keep their money exactly as their subscribers pinned it.
+      const sweptCanonical = await priceRow(duplicateRef);
+      expect(sweptCanonical.active).toBe(false);
+      expect(sweptCanonical.unitAmount).toBe(600000);
+      const sweptStale = await priceRow(original.reference);
+      expect(sweptStale.active).toBe(false);
+      expect(sweptStale.unitAmount).toBe(500000);
+
+      // Every row that actually moved announced it — the swept duplicate included.
+      const deactivated = (await priceEvents(plan.ref))
+        .filter((event) => event.type === 'price.deactivated')
+        .map((event) => event.ref);
+      expect(new Set(deactivated)).toEqual(new Set([duplicateRef, original.reference]));
+    });
+
+    it('403s a plans:write-only key that sends prices, but still lets it rename the plan', async () => {
+      const org = await harness.seedOrg('Cat F');
+      const full = await harness.mintApiKey(org.organizationId, 'sandbox', scopes);
+      const planned = await request(harness.app)
+        .post('/v1/plans')
+        .set('Authorization', `Bearer ${full.secret}`)
+        .set('Idempotency-Key', `upd-scope-seed-${Date.now()}`)
+        .send({
+          name: `Scoped ${Date.now()}`,
+          prices: [{ unitAmountInKobo: 500000, interval: 'month' }],
+        });
+      expect(planned.status).toBe(201);
+      const planRef = planned.body.data.id as string;
+
+      const limited = await harness.mintApiKey(org.organizationId, 'sandbox', [
+        'plans:read',
+        'plans:write',
+      ]);
+      const asLimited = (r: request.Test): request.Test =>
+        r.set('Authorization', `Bearer ${limited.secret}`);
+
+      // Sending prices MINTS and RETIRES price rows — a capability `plans:write` never granted.
+      const escalated = await idem(
+        asLimited(request(harness.app).patch(`/v1/plans/${planRef}`)),
+        `upd-scope-${Date.now()}`
+      ).send({ prices: [{ unitAmountInKobo: 700000, interval: 'month' }] });
+      expect(escalated.status).toBe(403);
+      expect(escalated.body.error.code).toBe('API_KEY_SCOPE_FORBIDDEN');
+
+      // Rejected BEFORE any DB work: the price is exactly as it was.
+      const untouched = await priceRows(planRef);
+      expect(untouched).toHaveLength(1);
+      expect(untouched[0]!.unitAmount).toBe(500000);
+      expect(untouched[0]!.active).toBe(true);
+
+      // The ROUTE is unchanged: the same key still updates the plan's own fields.
+      const allowed = await idem(
+        asLimited(request(harness.app).patch(`/v1/plans/${planRef}`)),
+        `upd-scope2-${Date.now()}`
+      ).send({ description: 'Renamed by a plans-only key' });
+      expect(allowed.status).toBe(200);
+      expect(allowed.body.data.description).toBe('Renamed by a plans-only key');
+      // `data.prices` is present whether or not the caller sent any.
+      expect(allowed.body.data.prices).toHaveLength(1);
+    });
+
+    it('409s prices against an archived plan', async () => {
+      const plan = await seedPlan('Archived', [{ unitAmountInKobo: 500000, interval: 'month' }]);
+      const archived = await idem(
+        asA(request(harness.app).post(`/v1/plans/${plan.ref}/archive`)),
+        `upd-arc-${Date.now()}`
+      );
+      expect(archived.status).toBe(200);
+
+      const blocked = await patch(plan.ref, 'arc', {
+        prices: [{ unitAmountInKobo: 700000, interval: 'month' }],
+      });
+      expect(blocked.status).toBe(409);
+      expect(blocked.body.error.code).toBe('PLAN_ALREADY_ARCHIVED');
+
+      // Nothing new was minted for a plan nothing may subscribe to.
+      expect(await priceRows(plan.ref)).toHaveLength(1);
+    });
+
+    it('answers with the plan ACTIVE prices after the update', async () => {
+      const plan = await seedPlan('Answer', [
+        { unitAmountInKobo: 500000, interval: 'month' },
+        { unitAmountInKobo: 5000000, interval: 'year' },
+      ]);
+
+      const updated = await patch(plan.ref, 'answer', {
+        prices: [{ unitAmountInKobo: 800000, interval: 'month' }],
+      });
+      expect(updated.status).toBe(200);
+
+      const active = (await priceRows(plan.ref)).filter((row) => row.active);
+      expect(active).toHaveLength(2);
+      expect(new Set(updated.body.data.prices.map((p: { id: string }) => p.id))).toEqual(
+        new Set(active.map((row) => row.reference))
+      );
+      // The retired row is NOT on offer, though it still exists and still bills its subscribers.
+      expect(
+        updated.body.data.prices.some((p: { id: string }) => p.id === plan.prices[0]!.id)
+      ).toBe(false);
+      expect(
+        updated.body.data.prices.find(
+          (p: { interval: string }) => p.interval === 'month'
+        ).unitAmountInKobo
+      ).toBe(800000);
+    });
+
+    it('reconciles a 10-minute cadence exactly like a monthly one', async () => {
+      const plan = await seedPlan('Realtime', [
+        { unitAmountInKobo: 50000, interval: 'minute', intervalCount: 10 },
+      ]);
+      const oldRef = plan.prices[0]!.id;
+      expect(plan.prices[0]).toMatchObject({ interval: 'minute', intervalCount: 10 });
+
+      // Unchanged → nothing.
+      const noop = await patch(plan.ref, 'min-noop', {
+        prices: [{ unitAmountInKobo: 50000, interval: 'minute', intervalCount: 10 }],
+      });
+      expect(noop.status).toBe(200);
+      expect(await priceRows(plan.ref)).toHaveLength(1);
+
+      // Changed → new row, old retired with its money intact. No special-casing: a cadence
+      // is a UNIT × a COUNT, and `minute × 10` is one like any other.
+      const raised = await patch(plan.ref, 'min-raise', {
+        prices: [{ unitAmountInKobo: 75000, interval: 'minute', intervalCount: 10 }],
+      });
+      expect(raised.status).toBe(200);
+
+      const rows = await priceRows(plan.ref);
+      expect(rows).toHaveLength(2);
+      const active = rows.filter((row) => row.active);
+      expect(active).toHaveLength(1);
+      expect(active[0]).toMatchObject({
+        unitAmount: 75000,
+        interval: 'minute',
+        intervalCount: 10,
+      });
+
+      const old = await priceRow(oldRef);
+      expect(old.active).toBe(false);
+      expect(old.unitAmount).toBe(50000);
+
+      // A `minute × 10` price is NOT a `minute × 1` price — the count is half the cadence.
+      const perMinute = await patch(plan.ref, 'min-one', {
+        prices: [{ unitAmountInKobo: 9000, interval: 'minute', intervalCount: 1 }],
+      });
+      expect(perMinute.status).toBe(200);
+      const byCadence = (await priceRows(plan.ref)).filter((row) => row.active);
+      expect(byCadence).toHaveLength(2);
+      expect(byCadence.find((row) => row.intervalCount === 10)!.unitAmount).toBe(75000);
+      expect(byCadence.find((row) => row.intervalCount === 1)!.unitAmount).toBe(9000);
+    });
+
+    it('emits price events only when a price actually moved', async () => {
+      const plan = await seedPlan('Events', [{ unitAmountInKobo: 500000, interval: 'month' }]);
+      const oldRef = plan.prices[0]!.id;
+      // The create's own `price.created` is the baseline; the edits are judged against it.
+      expect(await priceEvents(plan.ref)).toEqual([{ type: 'price.created', ref: oldRef }]);
+
+      const noop = await patch(plan.ref, 'ev-noop', {
+        description: 'Same money',
+        prices: [{ unitAmountInKobo: 500000, interval: 'month' }],
+      });
+      expect(noop.status).toBe(200);
+      // A no-op reconcile is silent. A `price.created` here would tell every subscribed
+      // webhook that the catalog changed when not one kobo moved.
+      expect(await priceEvents(plan.ref)).toHaveLength(1);
+
+      const raised = await patch(plan.ref, 'ev-raise', {
+        prices: [{ unitAmountInKobo: 700000, interval: 'month' }],
+      });
+      expect(raised.status).toBe(200);
+
+      const events = await priceEvents(plan.ref);
+      const newRef = raised.body.data.prices[0].id as string;
+      expect(events).toEqual([
+        { type: 'price.created', ref: oldRef },
+        { type: 'price.created', ref: newRef },
+        { type: 'price.deactivated', ref: oldRef },
+      ]);
+    });
+
+    it('two concurrent updates cannot both mint the same unpriced cadence', async () => {
+      const plan = await seedPlan('Race', [{ unitAmountInKobo: 500000, interval: 'month' }]);
+
+      // The plan row is locked FOR UPDATE before the price rows precisely for this: you
+      // cannot lock a row that does not exist yet, so nothing else can stop both callers
+      // finding `year` unpriced and both minting it.
+      const [first, second] = await Promise.all([
+        patch(plan.ref, 'race1', { prices: [{ unitAmountInKobo: 5000000, interval: 'year' }] }),
+        patch(plan.ref, 'race2', { prices: [{ unitAmountInKobo: 5000000, interval: 'year' }] }),
+      ]);
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+
+      const year = (await priceRows(plan.ref)).filter((row) => row.interval === 'year');
+      expect(year).toHaveLength(1);
+      expect(year[0]!.active).toBe(true);
+      expect(year[0]!.unitAmount).toBe(5000000);
+    });
+  });
 });

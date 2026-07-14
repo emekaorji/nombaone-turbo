@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 
 import { authenticate, createMember, currentMember, findMemberByEmail, signOut } from '@/lib/auth';
 import { catalog, findCustomerByEmail, gymBaseUrl, nombaone, SANDBOX } from '@/lib/nombaone';
-import { db } from '@/lib/db';
+import { run } from '@/lib/db';
 import { loadMembership } from '@/lib/membership';
 
 /**
@@ -45,7 +45,7 @@ export async function joinAction(_prev: FormState, formData: FormData): Promise<
   if (password.length < 8) return { error: 'Use a password of at least 8 characters.' };
   if (!priceId) return { error: 'Pick a membership first.' };
 
-  if (findMemberByEmail(email)) {
+  if (await findMemberByEmail(email)) {
     return { error: 'You already have an account with that email. Sign in instead.' };
   }
 
@@ -110,12 +110,14 @@ export async function joinAction(_prev: FormState, formData: FormData): Promise<
       // Keep the link. The engine returns it on this one response and NEVER again (it is
       // null on every subsequent read) — so if the member closes the payment page without
       // paying, this row is the only way back to it. That is the "Finish joining" button.
-      db()
-        .prepare(
-          `INSERT OR REPLACE INTO pending_checkouts (subscription_id, member_id, checkout_link, created_at)
-           VALUES (?, ?, ?, ?)`,
-        )
-        .run(subscription.id, member.id, subscription.checkoutLink, new Date().toISOString());
+      await run(
+        `INSERT OR REPLACE INTO pending_checkouts (subscription_id, member_id, checkout_link, created_at)
+         VALUES (?, ?, ?, ?)`,
+        subscription.id,
+        member.id,
+        subscription.checkoutLink,
+        new Date().toISOString()
+      );
 
       redirectTo = subscription.checkoutLink;
     }
