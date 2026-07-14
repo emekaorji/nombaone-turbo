@@ -1,12 +1,14 @@
 import { and, desc, eq } from 'drizzle-orm';
 
-import { orgNombaAccountsTable, webhookEndpointsTable } from '@nombaone/core-db/schema';
-
+import { webhookEndpointsTable } from '@nombaone/core-db/schema';
 import { getOrgBillingSettings, upsertOrgBillingSettings } from '@nombaone/sara/org';
+
+import { resolveTenantAccountRef } from '../settlement';
 
 import type { DomainContext, InfraDb, InfraTxDb } from '@nombaone/sara/context';
 import type { TenantSettingsResponseData } from '@nombaone/core-contracts/types';
 import type { UpdateTenantSettingsBody } from '@nombaone/core-contracts/validations';
+
 
 /**
  * The unified tenant-config read (H4): billing settings (05/06/08) + the tenant's
@@ -31,17 +33,7 @@ export async function getTenantSettings(
     .orderBy(desc(webhookEndpointsTable.createdAt))
     .limit(1);
 
-  const [nomba] = await db
-    .select()
-    .from(orgNombaAccountsTable)
-    .where(
-      and(
-        eq(orgNombaAccountsTable.organizationId, ctx.organizationId),
-        eq(orgNombaAccountsTable.mode, ctx.mode),
-        eq(orgNombaAccountsTable.kind, 'subaccount')
-      )
-    )
-    .limit(1);
+  const accountRef = await resolveTenantAccountRef(db, ctx);
 
   return {
     domain: 'organization',
@@ -58,7 +50,7 @@ export async function getTenantSettings(
       signingSecretPrefix: endpoint?.signingSecretPrefix ?? null,
       configured: endpoint != null && !endpoint.disabledAt,
     },
-    nombaAccount: { accountRef: nomba?.accountRef ?? null, status: nomba?.status ?? null },
+    settlement: { accountRef },
   };
 }
 

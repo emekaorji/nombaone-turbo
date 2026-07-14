@@ -1,12 +1,12 @@
 import { and, eq } from 'drizzle-orm';
 
 import { settlementsTable, type SettlementRow } from '@nombaone/core-db/schema';
-
 import { ensureSystemAccounts } from '@nombaone/sara/config';
 import { emitEvent } from '@nombaone/sara/events';
 import { ensureAccount, postTransaction } from '@nombaone/sara/ledger';
 import { mintReference } from '@nombaone/sara/reference';
-import { resolveTenantSubAccount } from './accounts';
+
+import { resolveTenantAccountRef, tenantSettlementAccountKey } from './accounts';
 import { resolvePlatformFee } from './fees';
 import { assertSplitBalances } from './split';
 
@@ -39,7 +39,7 @@ export async function recordSettlement(
   ctx: DomainContext,
   input: RecordSettlementInput
 ): Promise<RecordSettlementResult> {
-  const sub = await resolveTenantSubAccount(txDb, ctx);
+  const accountRef = await resolveTenantAccountRef(txDb, ctx);
   const platformFeeKobo = await resolvePlatformFee(txDb, ctx, input.grossKobo);
   const netToTenantKobo = input.grossKobo - platformFeeKobo;
   assertSplitBalances({ grossKobo: input.grossKobo, platformFeeKobo, netToTenantKobo });
@@ -52,7 +52,7 @@ export async function recordSettlement(
       mode: ctx.mode,
       invoiceId: input.invoiceId,
       customerId: input.customerId,
-      subAccountRef: sub.accountRef,
+      subAccountRef: accountRef,
       splitReference: input.splitReference ?? null,
       merchantTxRef: input.merchantTxRef,
       grossKobo: input.grossKobo,
@@ -81,7 +81,7 @@ export async function recordSettlement(
   const platformRevenue = await ensureAccount(txDb, ctx, { key: 'platform_revenue', kind: 'revenue' });
   const platformFees = await ensureAccount(txDb, ctx, { key: 'platform_fees', kind: 'revenue' });
   const tenantSettlement = await ensureAccount(txDb, ctx, {
-    key: `tenant_settlement:${sub.accountRef}`,
+    key: tenantSettlementAccountKey(accountRef),
     kind: 'liability',
   });
 

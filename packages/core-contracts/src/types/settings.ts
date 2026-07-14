@@ -10,5 +10,12 @@ export interface TenantSettingsResponseData {
     branding: { displayName?: string; supportEmail?: string; logoUrl?: string; primaryColorHex?: string };
   };
   webhook: { url: string | null; signingSecretPrefix: string | null; configured: boolean };
-  nombaAccount: { accountRef: string | null; status: string | null };
+  /**
+   * The merchant's SETTLEMENT IDENTITY — the key naming the ledger account that holds
+   * what we owe them (`tenant_settlement:{accountRef}`). Derived from the organization,
+   * so it exists from signup: there is nothing to "connect" and no way to be
+   * half-onboarded. (It replaced `nombaAccount`, which reported the state of a Nomba
+   * sub-account no merchant could ever obtain.)
+   */
+  settlement: { accountRef: string };
 }

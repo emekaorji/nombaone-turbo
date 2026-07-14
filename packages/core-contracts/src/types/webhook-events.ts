@@ -76,6 +76,10 @@ export const WEBHOOK_EVENT_CATALOG = {
     when: 'a card charge needs customer authentication (OTP/3DS); a fresh hosted-checkout link is attached',
     payload: ['reference', 'reason', 'checkoutLink'],
   },
+  'invoice.payment_instructions': {
+    when: 'a push-rail (bank transfer) invoice is awaiting the payer — the dedicated virtual NUBAN for THIS invoice is attached',
+    payload: ['reference', 'payInstructions'],
+  },
   'invoice.voided': { when: 'an invoice is voided', payload: ['reference'] },
 
   'payment_method.attached': {

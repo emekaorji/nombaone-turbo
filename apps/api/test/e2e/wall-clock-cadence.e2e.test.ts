@@ -2,10 +2,11 @@ import { and, eq } from 'drizzle-orm';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { invoicesTable } from '@nombaone/core-db/schema';
+import { invoicesTable, subscriptionsTable } from '@nombaone/core-db/schema';
 import { registerRail } from '@nombaone/sara/rails';
 
 import { runCycle } from '@shared/services/billing';
+import { env } from '@shared/config/env';
 import { createCustomer } from '@shared/services/customers';
 import { computeMrr } from '@shared/services/metrics';
 import { createPlan } from '@shared/services/plans';
@@ -51,8 +52,9 @@ describe('wall-clock cadence (minute) e2e', () => {
 
   const fakeNomba: NombaClient = {
     getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
     async request<T = unknown>() {
-      return { status: 200, ok: true, data: {} as T };
+      return { status: 200, ok: true, pending: false, data: {} as T };
     },
     requeryTransaction: async () => ({ found: true, succeeded: true, amount: 0 }),
   };
@@ -216,6 +218,66 @@ describe('wall-clock cadence (minute) e2e', () => {
     // to the `month` branch and would have reported ₦100 — understated 4,380×.
     const mrr = await computeMrr(harness.db, isolated);
     expect(mrr).toBe(Math.round((10_000 * 525_600) / 12 / 10)); // 43,800,000 kobo = ₦438,000
+  });
+
+  /**
+   * The bug this file was supposed to catch and didn't.
+   *
+   * `runCycle` used to take a `maxCatchUpPeriods` option, count the elapsed-but-unbilled
+   * periods, and THROW `BILLING_CATCH_UP_LIMIT_EXCEEDED` *before billing anything* once
+   * the count passed the cap. The worker caught that, logged "manual review required",
+   * and returned WITHOUT advancing the period — so `next_billing_at` never moved and the
+   * next sweep threw again, forever. The subscription was dead.
+   *
+   * The cap is cadence-blind: the default 36 is three YEARS of `month` but six HOURS of
+   * `minute × 10`. Any downtime past that — a deploy, a Redis blip, a laptop shut for the
+   * night — permanently killed the plan whose entire purpose is to renew while you watch.
+   * Every other test in this file calls `runCycle` without the option, which disabled the
+   * exact guard that broke. This one drives a subscription far past the cap on purpose.
+   */
+  it('a subscription far past the catch-up cap DRAINS and advances — it is never parked', async () => {
+    const { subRef } = await startTenMinuteSub();
+    const seeded = await loadSubscriptionRow(harness.db, ctx, subRef);
+
+    // Backdate the anchor by 50 periods. Every boundary is `anchor + n·10min`, so the row
+    // is now ~49 whole periods overdue — well past BILLING_MAX_CATCH_UP_PERIODS (36).
+    const BEHIND = 50;
+    const anchor = new Date((seeded.billingCycleAnchor as Date).getTime() - BEHIND * TEN_MINUTES_MS);
+    await harness.db
+      .update(subscriptionsTable)
+      .set({ billingCycleAnchor: anchor })
+      .where(eq(subscriptionsTable.id, seeded.id));
+
+    const invoicesBefore = await invoiceCount(subRef);
+
+    // The FIRST cycle is the whole point: it must report the backlog *and still bill*. The
+    // old code raised here and the row never moved again.
+    const first = await runCycle(harness.db, ctx, subRef);
+    expect(first.outcome).toBe('paid');
+    expect(first.periodsBehind).toBeGreaterThan(env.BILLING_MAX_CATCH_UP_PERIODS);
+    const afterFirst = await loadSubscriptionRow(harness.db, ctx, subRef);
+    expect(afterFirst.currentPeriodIndex).toBe(seeded.currentPeriodIndex + 1);
+
+    // Now drain exactly as the billing worker does: keep cycling until nothing is behind.
+    // Billing is in ADVANCE, so the loop must run down to `periodsBehind === 0` — stopping
+    // at 1 leaves the in-flight period unbilled and the row due in the past.
+    let behind = first.periodsBehind;
+    let billed = 1;
+    while (behind > 0 && billed < BEHIND + 5) {
+      const result = await runCycle(harness.db, ctx, subRef);
+      expect(result.outcome).toBe('paid');
+      billed += 1;
+      behind = result.periodsBehind;
+    }
+
+    // Caught up: the backlog is gone, every elapsed period was billed exactly once, and
+    // the renewal cursor is in the FUTURE again (the definition of "not parked").
+    expect(behind).toBe(0);
+    const drained = await loadSubscriptionRow(harness.db, ctx, subRef);
+    expect(drained.currentPeriodIndex).toBe(seeded.currentPeriodIndex + billed);
+    expect(await invoiceCount(subRef)).toBe(invoicesBefore + billed);
+    expect((drained.nextBillingAt as Date).getTime()).toBeGreaterThan(Date.now());
+    expect(drained.status).toBe('active');
   });
 
   // ── the two lifecycle bugs fixed alongside ─────────────────────────────────

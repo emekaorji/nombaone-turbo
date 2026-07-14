@@ -43,6 +43,36 @@ zuwa can; idan ya kammala OTP a wurin, invoice ɗin zai sasanta kuma subscriptio
 farfaɗo. Wannan ita ce amsar da samfurinmu ya bayar ga rail da ba za a iya janyo kuɗi
 a kansa a shiru ba. Duba [token na card suna ƙarewa](/concepts/hard-parts/card-tokens-expire).
 
+## Dunning na hanyar turawa: `payment_reminder`
+
+Ba kowane subscription ba ne za a iya sake gwada shi. A kan hanyar
+`send_invoice` — customer na bank transfer, da duk wanda hosted checkout ya
+juya zuwa can — ana *turo* kuɗin ne, don haka babu kayan biya da za a sake yin
+caji a kansu. Idan irin wannan invoice ya wuce ranar da ya kamata, subscription
+ɗin har yanzu yana koma `past_due`, amma dunning yana gudanar da reshen
+**`payment_reminder`**: a kan tsanin sake gwadawa iri ɗaya yana **sake aika
+hanyar biya da bayanan transfer maimakon yin caji** — customer yana biya idan
+kuɗi ya sauka. Farfaɗowa da ƙarewa iri ɗaya suke da na card.
+
+## Abin da customer ɗinka ke gani
+
+Dunning ba ya yin shiru ga mai bin bashin. A kowane mataki engine ɗin yana aika
+wa customer email kai tsaye — sanarwar sabuntawa kafin caji (saitin billing na
+`renewalReminderLeadHours`), hanyar checkout ta OTP idan card na buƙatar
+tabbatarwa, hanyar biya a kan kowace tunatarwa, tabbaci a kan farfaɗowa, da
+sanarwar ƙarshe a kan churn. Duk wannan saitin billing na `commsEnabled` ne ke
+sarrafa shi (`GET /v1/organization/billing`), don haka idan kana aika
+saƙonninka da kanka, za ka iya kashe na engine ɗin — amma ka tabbata ɗaya
+daga cikinku ne kaɗai ke magana.
+
+## Farfaɗowa ba ta biyan baya
+
+Idan subscription na `past_due` ya farfaɗo, engine ɗin yana **sake kafa
+zagayen a kan farfaɗowar**: lokaci na gaba yana farawa ne daga lokacin da
+customer ya biya, kuma ba a biyan gibin da ba a yi hidima ba tsakanin faɗuwa
+da farfaɗowa. Customer da ya dawo bayan mako guda yana bin lokaci ɗaya ne, ba
+lokaci ɗaya da bashin baya ba.
+
 ## Duba yanayin dunning
 
 Karanta inda farfaɗowa ta kai ga wani subscription:
@@ -77,8 +107,12 @@ don fitar da event `invoice.action_required` zuwa endpoint ɗinka.
 
 - **`invoice.payment_failed`**: an shiga dunning. Ka yi rikodinsa; kada ka kori customer tukuna.
 - **`invoice.action_required`**: ka aika wa customer hanyar checkout da ke cikin payload.
+- **`invoice.payment_instructions`**: invoice na hanyar turawa yana jiran mai
+  biya; payload ɗin yana ɗauke da bayanan transfer da aka keɓe wa wannan invoice.
 - **`invoice.payment_recovered`**: ka mayar da damar shiga kamar yadda take.
-- **`subscription.canceled`**: dunning ya ƙare (idan manufarka ta soke). Yanzu ka yanke damar shiga.
+- **`subscription.churned`**: dunning ya ƙare; churn ba da son rai ba. Yanzu ka
+  yanke damar shiga. (Sokewa da gangan tana fitar da `subscription.canceled`
+  maimakon.)
 
 <CardGroup cols={2}>
   <Card title="Dalilin da ya sa balance mai ƙaranci ke canza dunning" href="/concepts/hard-parts/dunning-for-thin-balances">

@@ -38,6 +38,9 @@ export const serializeSubscription = (
   defaultPaymentMethodId: refs.defaultPaymentMethodRef,
   items,
   latestInvoiceId,
+  // Only the hosted-checkout CREATE response carries a link; the composer
+  // (startSubscription) overlays it there. Reads are always null.
+  checkoutLink: null,
   currency: 'NGN',
   mode: row.mode,
   createdAt: new Date(row.createdAt).toISOString(),

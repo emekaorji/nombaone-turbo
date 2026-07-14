@@ -11,8 +11,12 @@ import { createPriceAction } from '@/lib/plans-actions';
 import type { PriceInterval } from '@nombaone/core-contracts/types';
 
 /**
- * The ladder's escape hatch: the cadences the plan form does not offer — a count other than 1
- * (`month × 3` is quarterly) and the wall-clock `minute` unit a sandbox subscription bills on.
+ * The escape hatch, and the REPAIR path.
+ *
+ * Editing a plan is how a merchant sets what it costs — this covers the two cases that form does
+ * not: an arbitrary cadence it does not list (`month × 3` is quarterly, `minute × 1` is every
+ * minute), and a legacy plan left with NO active price at all, which cannot be billed until one
+ * exists. It is no longer offered as a general "add a price" step beside Edit.
  *
  * Built FROM the enum, never re-typed: the hand-written list this replaces had already drifted
  * (it predated `minute`), and a cadence list that lies is a mispriced subscription.

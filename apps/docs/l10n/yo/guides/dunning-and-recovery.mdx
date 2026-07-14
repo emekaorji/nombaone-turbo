@@ -41,6 +41,35 @@ invoice náà yóò dá, subscription yóò sì padà bọ̀ sípò. Èyí ni ì
 tí a kò lè fà ní ìdákẹ́jẹ́ẹ́. Wo
 [àwọn card token máa ń pé](/concepts/hard-parts/card-tokens-expire).
 
+## Dunning ọ̀nà tí a ń tì: `payment_reminder`
+
+Kì í ṣe gbogbo subscription ni a lè tún gbìyànjú rárá. Lórí ọ̀nà `send_invoice`
+— àwọn customer bank transfer, àti ẹnikẹ́ni tí hosted checkout yí síbẹ̀ — a ń
+*tì* owó náà wá, nítorí náà kò sí ohun èlò kankan tí a lè tún gba owó lé lórí.
+Nígbà tí invoice bẹ́ẹ̀ bá kọjá ọjọ́ tí ó yẹ, subscription náà ṣì ń lọ sí
+`past_due`, ṣùgbọ́n dunning yóò ṣiṣẹ́ ẹ̀ka **`payment_reminder`**: lórí àkàbà
+ìgbìyànjú kan náà, yóò **tún fi ọ̀nà ìsanwó àti àlàyé transfer ránṣẹ́ dípò kí ó
+gbìyànjú charge** — customer yóò san nígbà tí balance bá dé. Ìgbàpadà àti
+ìparí rẹ̀ jẹ́ bákan náà pẹ̀lú ti card.
+
+## Ohun tí customer rẹ yóò rí
+
+Dunning kì í dákẹ́ sí ẹni tí ó jẹ owó náà. Ní ìgbésẹ̀ kọ̀ọ̀kan, engine náà ń fi
+email ránṣẹ́ sí customer ní tààràtà — ìrántí ìtúnrasanwó ṣáájú charge (ètò
+billing `renewalReminderLeadHours`), ọ̀nà checkout OTP nígbà tí card bá nílò
+ìjẹ́rìísí, ọ̀nà ìsanwó lórí ìrántí kọ̀ọ̀kan, ìjẹ́rìísí nígbà ìgbàpadà, àti ìkìlọ̀
+ìkẹyìn nígbà churn. Ètò billing `commsEnabled` ni ó ń ṣàkóso gbogbo rẹ̀
+(`GET /v1/organization/billing`), nítorí náà bí o bá ń fi ìránṣẹ́ tirẹ ṣiṣẹ́, o
+lè pa ti engine náà — ṣùgbọ́n rí i dájú pé ọ̀kan ṣoṣo nínú yín ni ó ń sọ̀rọ̀.
+
+## Ìgbàpadà kì í gba owó àtẹ̀yìnwá
+
+Nígbà tí subscription `past_due` bá padà bọ̀ sípò, engine náà yóò **tún gbé
+ìdákọ̀ró cycle náà ka orí ìgbàpadà náà**: àkókò tí ó kàn yóò bẹ̀rẹ̀ nígbà tí
+customer san gan-an, a kò sì ní gba owó fún àlàfo tí a kò sìn láàrin ìkùnà àti
+ìgbàpadà. Customer tí ó padà lẹ́yìn ọ̀sẹ̀ kan jẹ àkókò kan ṣoṣo, kì í ṣe àkókò
+kan pẹ̀lú gbèsè àtẹ̀yìnwá.
+
 ## Yẹ ipò dunning wò
 
 Ka ibi tí ìgbàpadà dé fún subscription kan:
@@ -74,8 +103,11 @@ Lo `requires_otp` láti ṣe àdánwò ẹ̀ka checkout-link, kí o sì
 
 - **`invoice.payment_failed`**: ó ti wọ dunning. Kọ ọ́ sílẹ̀; má lé customer lọ síbẹ̀.
 - **`invoice.action_required`**: fi ọ̀nà ìsanwó checkout tí ó wà nínú payload ránṣẹ́ sí customer.
+- **`invoice.payment_instructions`**: invoice ọ̀nà títì kan ń dúró de ẹni tí yóò
+  san; payload náà gbé àlàyé transfer tí a yà sọ́tọ̀ fún invoice yìí.
 - **`invoice.payment_recovered`**: dá ìwọlé déédéé padà.
-- **`subscription.canceled`**: dunning ti parí (bí ìlànà rẹ bá fagilé). Nísinsìnyí, gé ìwọlé kúrò.
+- **`subscription.churned`**: dunning ti tán; churn àìfẹ́ ni. Nísinsìnyí, gé
+  ìwọlé kúrò. (Ìfagilé àtinúwá ń tú `subscription.canceled` jáde dípò.)
 
 <CardGroup cols={2}>
   <Card title="Ìdí tí balance tín-ínrín fi yí dunning padà" href="/concepts/hard-parts/dunning-for-thin-balances">

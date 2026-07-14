@@ -27,6 +27,12 @@ export interface UpdatePlanInput {
   metadata?: Record<string, unknown>;
 }
 
+/** Input to `updatePlanWithPrices`: the plan's fields plus what it costs, RECONCILED against
+ *  what it already costs. `prices` is non-empty — the boundary rejects `[]`. */
+export interface UpdatePlanWithPricesInput extends UpdatePlanInput {
+  prices: EmbeddedPriceInput[];
+}
+
 /** Filter / paging options for `listPlans`. */
 export interface ListPlansOptions {
   status?: PlanStatus;

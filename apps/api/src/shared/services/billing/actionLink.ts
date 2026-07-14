@@ -1,11 +1,10 @@
 import { and, eq } from 'drizzle-orm';
 
-import { customersTable, type InvoiceRow } from '@nombaone/core-db/schema';
-
+import { customersTable, invoicesTable, type InvoiceRow } from '@nombaone/core-db/schema';
 import { NOMBA_ENDPOINTS } from '@nombaone/sara/nomba/endpoints';
 import { getBillingNombaClient } from '@nombaone/sara/nomba/injected';
 import { koboToNombaAmount } from '@nombaone/sara/nomba/money';
-import { findTenantSubAccount } from '../settlement';
+
 
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
 
@@ -20,18 +19,77 @@ import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
 export const OTP_ORDER_REF_SUFFIX = '-otp';
 
 /**
- * Mint a fresh hosted-checkout link for the customer to COMPLETE an invoice whose
- * card charge came back OTP/3DS-required (bank step-up). Sub-account-scoped so the
- * `payment_success` webhook fires; a pay-now checkout (no `tokenizeCard`). Because
- * the `orderReference` is the STABLE `${invoice.reference}-otp`, Nomba dedups a
- * repeat call and returns the same link (idempotent across retries). Returns `null`
- * when no client is injected (Nomba unconfigured) or the customer is missing — the
- * caller still emits `invoice.action_required`, just without a link.
+ * ── A NOMBA ORDER REFERENCE IS BURNT THE FIRST TIME YOU USE IT ───────────────
+ *
+ * Nomba rejects a second order under a reference it has already seen:
+ *
+ *     {"code":"400","description":"tokenized transaction failed",
+ *      "data":{"status":false,"message":"An order already exists with this order reference"}}
+ *
+ * The card rail used the bare `invoice.reference`, so the FIRST charge against an invoice consumed
+ * it — and every charge after that was rejected before it ever reached the bank. That is not an
+ * edge case, it is every retry:
+ *
+ *   • the hosted-checkout entry mints an order on `invoice.reference`, so a subscription that
+ *     later gets a card can NEVER be charged for that invoice (this is exactly what happened on
+ *     live: a real ₦100 renewal died here, with the rail reporting a meaningless `request_failed`);
+ *   • a genuinely declined charge burns the reference too, so the retry cannot even be attempted;
+ *   • the failure surfaces as `request_failed`, which looks like a network blip, not a bug.
+ *
+ * So each ATTEMPT gets its own order reference, derived from the invoice's attempt counter. This
+ * keeps the property E3 actually wanted: a retry of the SAME attempt (a redelivered job, a crash
+ * mid-flight) reuses the same reference and Nomba dedupes it — no double charge — while a NEW
+ * attempt is free to open a new order.
+ *
+ * `extractOurReference` maps any suffixed order reference back to the invoice, so the settlement
+ * webhook still lands on the right invoice. Our references are `nbo{digits}{domain}` and contain no
+ * hyphens, which is what makes the suffix unambiguous.
+ */
+export const chargeOrderRef = (invoiceReference: string, attemptCount: number): string =>
+  `${invoiceReference}-c${attemptCount}`;
+
+/**
+ * Recover the invoice reference from ANY order reference we have ever minted for it — the bare
+ * reference, an `-otp` completion link, or a `-c{n}` charge attempt.
+ */
+export const invoiceRefFromOrderRef = (orderReference: string): string => {
+  const hyphen = orderReference.indexOf('-');
+  return hyphen === -1 ? orderReference : orderReference.slice(0, hyphen);
+};
+
+export interface MintCheckoutLinkOptions {
+  /**
+   * Tokenize the paying card so renewals can be pulled silently. ON for the
+   * hosted-checkout FIRST payment (the whole point of the entry flow); OFF for
+   * the OTP/3DS completion link (the token already exists — that is a pay-now).
+   */
+  tokenizeCard?: boolean;
+  /** Where the hosted page returns the payer afterwards. */
+  callbackUrl?: string;
+  /**
+   * The order-reference suffix. Defaults to `-otp` (the recovery link, whose
+   * DISTINCT ref dodges Nomba's dedup on the original tokenized charge). The
+   * hosted-checkout FIRST payment passes `''` — no prior charge used the bare
+   * invoice ref, so the inbound path resolves it directly.
+   */
+  refSuffix?: string;
+  /** Restrict the hosted page's payment methods. */
+  allowedPaymentMethods?: string[];
+}
+
+/**
+ * Mint a hosted-checkout link that PAYS an invoice. Sub-account-scoped so the
+ * `payment_success` webhook fires. The `orderReference` is STABLE
+ * (`invoice.reference + refSuffix`), so Nomba dedups a repeat call and returns
+ * the same link (idempotent across retries). Returns `null` when no client is
+ * injected (Nomba unconfigured) or the customer is missing — callers degrade
+ * (emit their event without a link) rather than fail the money path.
  */
 export async function mintInvoiceCheckoutLink(
   txDb: InfraTxDb,
   ctx: DomainContext,
-  invoice: InvoiceRow
+  invoice: InvoiceRow,
+  options: MintCheckoutLinkOptions = {}
 ): Promise<string | null> {
   const client = getBillingNombaClient(ctx.mode);
   if (!client) return null;
@@ -49,8 +107,7 @@ export async function mintInvoiceCheckoutLink(
     .limit(1);
   if (!customer) return null;
 
-  const sub = await findTenantSubAccount(txDb, ctx);
-  const orderReference = `${invoice.reference}${OTP_ORDER_REF_SUFFIX}`;
+  const orderReference = `${invoice.reference}${options.refSuffix ?? OTP_ORDER_REF_SUFFIX}`;
   const outstanding = invoice.amountDue - invoice.amountPaid;
 
   const res = await client.request<{ data?: { checkoutLink?: string; checkoutUrl?: string } }>({
@@ -58,13 +115,18 @@ export async function mintInvoiceCheckoutLink(
     endpoint: NOMBA_ENDPOINTS.checkoutOrder,
     idempotencyRef: orderReference,
     body: {
+      // `tokenizeCard` is a TOP-LEVEL sibling of `order` on Nomba's wire.
+      ...(options.tokenizeCard ? { tokenizeCard: true } : {}),
       order: {
         orderReference,
         amount: koboToNombaAmount(outstanding > 0 ? outstanding : invoice.amountDue),
         currency: 'NGN',
         customerId: customer.reference,
         customerEmail: customer.email,
-        ...(sub?.subAccountId ? { accountId: sub.subAccountId } : {}),
+        ...(options.callbackUrl ? { callbackUrl: options.callbackUrl } : {}),
+        ...(options.allowedPaymentMethods
+          ? { allowedPaymentMethods: options.allowedPaymentMethods }
+          : {}),
       },
     },
   });
@@ -72,4 +134,41 @@ export async function mintInvoiceCheckoutLink(
   const data = res.data?.data ?? {};
   const link = String(data.checkoutLink ?? data.checkoutUrl ?? '');
   return link || null;
+}
+
+/**
+ * The hosted-checkout FIRST-payment link for an invoice, stamped into
+ * `invoices.metadata.checkoutLink` so re-runs are free (no Nomba round-trip) and
+ * later surfaces (emails, the /i/<token> page) reuse the same link. Tokenizing:
+ * the paying card comes back as a reusable `tokenKey` on the settle webhook.
+ */
+export async function ensureInvoiceCheckoutLink(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  invoice: InvoiceRow,
+  options: Omit<MintCheckoutLinkOptions, 'refSuffix'> = {}
+): Promise<{ invoice: InvoiceRow; checkoutLink: string | null }> {
+  const stamped = (invoice.metadata as Record<string, unknown> | null)?.checkoutLink;
+  if (typeof stamped === 'string' && stamped.length > 0) {
+    return { invoice, checkoutLink: stamped };
+  }
+
+  const checkoutLink = await mintInvoiceCheckoutLink(txDb, ctx, invoice, {
+    tokenizeCard: true,
+    refSuffix: '',
+    ...options,
+  });
+  if (!checkoutLink) return { invoice, checkoutLink: null };
+
+  const [updated] = await txDb
+    .update(invoicesTable)
+    .set({
+      metadata: {
+        ...((invoice.metadata as Record<string, unknown> | null) ?? {}),
+        checkoutLink,
+      },
+    })
+    .where(eq(invoicesTable.id, invoice.id))
+    .returning();
+  return { invoice: updated ?? invoice, checkoutLink };
 }

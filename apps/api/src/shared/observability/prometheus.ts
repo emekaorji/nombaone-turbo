@@ -71,12 +71,21 @@ export const recordReconcileHealed = (): void => {
 
 // ── Scheduler lag ────────────────────────────────────────────────────────────
 
-/** The sweeps whose freshness we track. Keep in sync with the cron handlers. */
+/**
+ * The sweeps whose freshness we track.
+ *
+ * ⚠ A name here only produces a gauge if the handler actually calls `markSweepCompleted`. Seven of
+ * the eleven cron handlers — including `settlement-sweep` and `ledger-reconcile` — still call it
+ * from nowhere, so a silent death in any of them is invisible. Worth closing; tracked separately.
+ */
 export const TRACKED_SWEEPS = [
   'billing-sweep',
   'dunning-sweep',
   'lifecycle-sweep',
   'webhook-maintenance',
+  // The primary settle path on a provider that never calls us back. If this stops ticking, paying
+  // customers simply stop being let in — silently, and with no error anywhere.
+  'awaiting-payment-sweep',
 ] as const;
 export type TrackedSweep = (typeof TRACKED_SWEEPS)[number];
 

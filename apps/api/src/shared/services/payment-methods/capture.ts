@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm';
 
 import { paymentMethodsTable } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { emitEvent } from '@nombaone/sara/events';
 import { NOMBA_ENDPOINTS } from '@nombaone/sara/nomba/endpoints';
+
 import { nombaData } from './internal';
 import { loadByReference } from './queries';
 import { serializePaymentMethod } from './serialize';
@@ -94,8 +94,14 @@ export async function pollMandateActive(
     idempotencyRef: input.reference,
   });
   const data = nombaData(res);
-  const status = String(data.status ?? '').toUpperCase();
-  const advice = String(data.adviceStatus ?? data.advice ?? '').toUpperCase();
+  // Nomba's live payload names these `mandateStatus: "Active"` and
+  // `mandateAdviceStatus: "Advice Sent"` (docs-confirmed) — the bare
+  // `status`/`adviceStatus` keys this used to read exclusively appear in older
+  // examples. Accept both, and normalize "Advice Sent" (space) to ADVICE_SENT.
+  const status = String(data.mandateStatus ?? data.status ?? '').toUpperCase();
+  const advice = String(data.mandateAdviceStatus ?? data.adviceStatus ?? data.advice ?? '')
+    .toUpperCase()
+    .replace(/\s+/g, '_');
 
   if (status === 'ACTIVE' && advice.includes('ADVICE_SENT')) {
     const [row] = await txDb

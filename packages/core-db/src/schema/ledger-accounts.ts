@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { bigint, index, pgEnum, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { bigint, check, index, pgEnum, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import { createdAt, modeEnum, idPk, referenceCol } from './shared';
 import { organizationsTable } from './organizations';
@@ -40,6 +40,22 @@ export const ledgerAccountsTable = pgTable(
       .on(table.organizationId, table.mode, table.key)
       .where(sql`${table.key} is not null`),
     orgEnvIdx: index('ledger_accounts_org_env_idx').on(table.organizationId, table.mode),
+    /**
+     * 🔒 A MERCHANT CAN NEVER BE OVERDRAWN. `tenant_settlement:{ref}` is what we owe
+     * a merchant; paying out more than that balance would be paying away money that
+     * isn't theirs (i.e. another merchant's).
+     *
+     * The payout path already guards this with a `FOR UPDATE` row lock and an
+     * availability check — but that is application logic, and application logic is
+     * exactly what has been wrong repeatedly on this money path. This CHECK is the
+     * structural backstop: a transaction that would drive a tenant balance below zero
+     * ABORTS in the database, whatever the code believed. Correctness here does not
+     * depend on us being careful.
+     */
+    tenantNeverNegative: check(
+      'ledger_accounts_tenant_balance_non_negative',
+      sql`${table.key} IS NULL OR ${table.key} NOT LIKE 'tenant_settlement:%' OR ${table.balance} >= 0`
+    ),
   })
 );
 

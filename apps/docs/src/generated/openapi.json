@@ -131,7 +131,7 @@
                   "DUNNING_CARD_UPDATE_REQUIRED",
                   "DUNNING_ALREADY_TERMINAL",
                   "SETTLEMENT_NOT_FOUND",
-                  "SETTLEMENT_SUBACCOUNT_NOT_FOUND",
+                  "PAYOUT_ACCOUNT_MISSING",
                   "REFUND_ALREADY_REFUNDED",
                   "REFUND_AMOUNT_EXCEEDS_NET",
                   "ESCROW_LOCKED",
@@ -550,6 +550,10 @@
             "type": "string",
             "nullable": true
           },
+          "checkoutLink": {
+            "type": "string",
+            "nullable": true
+          },
           "currency": {
             "type": "string",
             "enum": [
@@ -587,6 +591,7 @@
           "defaultPaymentMethodId",
           "items",
           "latestInvoiceId",
+          "checkoutLink",
           "currency",
           "mode",
           "createdAt"
@@ -707,6 +712,38 @@
             "format": "date-time",
             "nullable": true
           },
+          "payInstructions": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "bankName": {
+                "type": "string",
+                "nullable": true
+              },
+              "accountNumber": {
+                "type": "string",
+                "nullable": true
+              },
+              "accountName": {
+                "type": "string",
+                "nullable": true
+              },
+              "amountInKobo": {
+                "type": "integer"
+              },
+              "reference": {
+                "type": "string",
+                "nullable": true
+              }
+            },
+            "required": [
+              "bankName",
+              "accountNumber",
+              "accountName",
+              "amountInKobo",
+              "reference"
+            ]
+          },
           "lineItems": {
             "type": "array",
             "items": {
@@ -758,6 +795,7 @@
           "periodStart",
           "periodEnd",
           "dueDate",
+          "payInstructions",
           "lineItems",
           "finalizedAt",
           "paidAt",
@@ -1501,7 +1539,7 @@
           "dunningIntervalsHours": {
             "type": "array",
             "items": {
-              "type": "integer"
+              "type": "number"
             }
           },
           "dunningMaxWindowHours": {
@@ -1531,6 +1569,9 @@
           },
           "commsEnabled": {
             "type": "boolean"
+          },
+          "renewalReminderLeadHours": {
+            "type": "number"
           }
         },
         "required": [
@@ -1545,7 +1586,8 @@
           "paydayPullForwardDays",
           "paydayBiasEnabled",
           "defaultCollectionMethod",
-          "commsEnabled"
+          "commsEnabled",
+          "renewalReminderLeadHours"
         ]
       },
       "TenantSettings": {
@@ -1661,21 +1703,15 @@
               "configured"
             ]
           },
-          "nombaAccount": {
+          "settlement": {
             "type": "object",
             "properties": {
               "accountRef": {
-                "type": "string",
-                "nullable": true
-              },
-              "status": {
-                "type": "string",
-                "nullable": true
+                "type": "string"
               }
             },
             "required": [
-              "accountRef",
-              "status"
+              "accountRef"
             ]
           }
         },
@@ -1683,7 +1719,7 @@
           "domain",
           "billing",
           "webhook",
-          "nombaAccount"
+          "settlement"
         ]
       },
       "DunningFunnel": {
@@ -3232,7 +3268,7 @@
                       "type": "integer"
                     },
                     "data": {
-                      "$ref": "#/components/schemas/Plan"
+                      "$ref": "#/components/schemas/PlanWithPrices"
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ResponseMeta"
@@ -3273,6 +3309,67 @@
                   "metadata": {
                     "type": "object",
                     "additionalProperties": {}
+                  },
+                  "prices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "unitAmountInKobo": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0
+                        },
+                        "interval": {
+                          "type": "string",
+                          "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year",
+                            "minute"
+                          ]
+                        },
+                        "intervalCount": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "minimum": 0,
+                          "default": 1
+                        },
+                        "usageType": {
+                          "type": "string",
+                          "enum": [
+                            "licensed",
+                            "metered"
+                          ],
+                          "default": "licensed"
+                        },
+                        "billingScheme": {
+                          "type": "string",
+                          "enum": [
+                            "per_unit",
+                            "tiered"
+                          ],
+                          "default": "per_unit"
+                        },
+                        "trialPeriodDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "default": 0
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "unitAmountInKobo",
+                        "interval"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 10
                   }
                 },
                 "additionalProperties": false
@@ -4589,6 +4686,10 @@
                     "type": "integer",
                     "minimum": 1,
                     "default": 1
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "format": "uri"
                   },
                   "metadata": {
                     "type": "object",
@@ -6045,12 +6146,13 @@
                 "type": "object",
                 "properties": {
                   "paymentMethodReference": {
-                    "type": "string"
-                  },
-                  "checkoutToken": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
+                "required": [
+                  "paymentMethodReference"
+                ],
                 "additionalProperties": false
               }
             }
@@ -6850,6 +6952,11 @@
                   },
                   "commsEnabled": {
                     "type": "boolean"
+                  },
+                  "renewalReminderLeadHours": {
+                    "type": "number",
+                    "exclusiveMinimum": true,
+                    "minimum": 0
                   }
                 },
                 "additionalProperties": false
@@ -7908,19 +8015,302 @@
                     "type": "integer",
                     "exclusiveMinimum": true,
                     "minimum": 0
-                  },
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/banks": {
+      "get": {
+        "summary": "GET /v1/banks",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "object",
+                      "description": "Resource payload"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ResponseMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (ApiError envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payout-accounts": {
+      "get": {
+        "summary": "GET /v1/payout-accounts",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "object",
+                      "description": "Resource payload"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ResponseMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (ApiError envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /v1/payout-accounts",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "object",
+                      "description": "Resource payload"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ResponseMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (ApiError envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
                   "bankCode": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "bankName": {
                     "type": "string",
                     "minLength": 1
                   },
                   "accountNumber": {
                     "type": "string",
-                    "minLength": 1
+                    "pattern": "^\\d{10}$"
                   }
                 },
                 "required": [
-                  "amountInKobo",
                   "bankCode",
+                  "bankName",
+                  "accountNumber"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payout-accounts/resolve": {
+      "post": {
+        "summary": "POST /v1/payout-accounts/resolve",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "data"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "object",
+                      "description": "Resource payload"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ResponseMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (ApiError envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bankCode": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "bankName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "accountNumber": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  }
+                },
+                "required": [
+                  "bankCode",
+                  "bankName",
                   "accountNumber"
                 ],
                 "additionalProperties": false

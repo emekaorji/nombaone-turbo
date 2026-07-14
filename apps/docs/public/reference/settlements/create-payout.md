@@ -1,11 +1,11 @@
 ---
-title: "Create a payout · Settlements"
+title: "Withdraw your balance · Settlements"
 type: reference
-summary: "POST /v1/settlements/payout — Create a payout."
+summary: "POST /v1/settlements/payout — Withdraw your balance."
 canonical: https://docs.nombaone.xyz/reference/settlements/create-payout
 ---
 
-# Create a payout · Settlements
+# Withdraw your balance · Settlements
 
 `POST /v1/settlements/payout`
 
@@ -15,9 +15,7 @@ Requires a secret API key.
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `amountInKobo` | integer | yes |  |
-| `bankCode` | string | yes |  |
-| `accountNumber` | string | yes |  |
+| `amountInKobo` | integer | no |  |
 
 ## Responses
 

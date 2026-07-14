@@ -14,6 +14,38 @@ transfer ni a ń *tì* wá. Wo
 [multi-rail: push àti pull](/concepts/multi-rail-push-and-pull) fún ìdí tí ìyàtọ̀
 yìí fi ṣe pàtàkì.
 
+## Kò tíì sí payment method? Hosted checkout
+
+Bọ́tìnì "subscribe" orí storefront kì í sábà ní ohun èlò tí a ti fọwọ́ sí. Fún
+ọ̀ràn yẹn, **fo `paymentMethodId` sílẹ̀ pátápátá** lórí ìṣẹ̀dá `charge_automatically`
+tí kò ní àkókò ìdánwò:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "customerId": "{customerId}",
+    "priceId": "{priceId}",
+    "callbackUrl": "https://yourapp.com/billing/return"
+  }'
+```
+
+Subscription náà bẹ̀rẹ̀ ní `incomplete`, response náà sì gbé **`checkoutLink`**
+wá — ojú-ìwé ìsanwó tí Nomba ń gbàlejò (card tàbí bank transfer). Rán customer
+náà lọ síbẹ̀; `callbackUrl` àṣàyàn ni ibi tí wọn yóò padà sí lẹ́yìn ìsanwó.
+Sísanwó mú subscription náà ṣiṣẹ́; ìsanwó **card** tún gba token tí a lè tún lò,
+kí àwọn renewal lè gba owó ní ìdákẹ́jẹ́, nígbà tí ìsanwó **transfer** (tí kò fi
+token kankan sílẹ̀ láti fà) yí subscription náà padà sí `send_invoice`: cycle
+kọ̀ọ̀kan tí ó ń bọ̀ yóò gbé invoice jáde pẹ̀lú ọ̀nà ìsanwó dípò fífà. Tí ẹnikẹ́ni
+kò bá san, subscription náà yóò kọjá sí `incomplete_expired`, kò sì sí gbèsè
+kankan. [Recipe gym membership](/cookbook/bill-a-gym-membership) ń lo ẹnu-ọ̀nà
+yìí láti ìbẹ̀rẹ̀ dé òpin.
+
+Ṣé o ti ní method tí a ti fọwọ́ sí tẹ́lẹ̀? Ṣàgbékalẹ̀ ọ̀kan kí o sì fi í ránṣẹ́ ní
+tààràtà:
+
 ## Ṣàgbékalẹ̀ payment method
 
 Àwọn pull rail nílò ohun èlò tí a ti fọwọ́ sí, tí ó sì wà nínú àkọsílẹ̀. Bẹ̀rẹ̀ setup
@@ -75,8 +107,10 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
 - **`trialing`**: price náà ní àkókò ìdánwò; kò tíì sí charge kankan.
 - **`past_due`**: charge àkọ́kọ́ kùnà; [dunning](/guides/dunning-and-recovery)
   ló ni iṣẹ́ ìgbàpadà báyìí. Lórí balance tí kò lágbára, èyí sábà máa ń túmọ̀ sí "kò tíì ṣeé ṣe", kì í ṣe "kò ṣeé ṣe rárá".
-- **`incomplete`**: charge náà nílò kí customer ṣe nǹkan kan (ìgbésẹ̀ OTP card);
-  event `invoice.action_required` yóò gbé ọ̀nà ìjápọ̀ checkout tuntun wá.
+- **`incomplete`**: customer ṣì ní láti ṣe nǹkan kan — yálà o lo ẹnu-ọ̀nà hosted
+  checkout (rán wọn lọ sí `checkoutLink` inú response), tàbí charge card kan bá
+  ìgbésẹ̀ OTP pàdé, event `invoice.action_required` yóò sì gbé ọ̀nà ìjápọ̀
+  checkout tuntun wá.
 
 <Callout type="warning" title="Má ṣe rò pé charge àkọ́kọ́ yóò yege">
   Ní Nàìjíríà, pull àkọ́kọ́ lè nílò OTP, tàbí kí ó bá balance tí kò lágbára pàdé. Ṣe

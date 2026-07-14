@@ -1,25 +1,28 @@
 import { eq } from 'drizzle-orm';
 
 import { invoicesTable, type InvoiceRow, type PaymentMethodRow } from '@nombaone/core-db/schema';
-
 import { ensureSystemAccounts } from '@nombaone/sara/config';
 import { emitEvent } from '@nombaone/sara/events';
+import { ensureAccount, postTransaction } from '@nombaone/sara/ledger';
+import { coerceFailureReason } from '@nombaone/sara/nomba/failure-taxonomy';
+import { getOrgBillingSettings } from '@nombaone/sara/org';
+import { getRail, maybeSimulateTestCollect } from '@nombaone/sara/rails';
+
+import { resolvePartialCollection } from '../proration';
 import {
   claimInvoicePaid,
   claimInvoicePartiallyPaid,
   linkInvoiceLedgerTransaction,
 } from '../invoices';
-import { ensureAccount, postTransaction } from '@nombaone/sara/ledger';
-import { coerceFailureReason } from '@nombaone/sara/nomba/failure-taxonomy';
-import { getOrgBillingSettings } from '@nombaone/sara/org';
-import { resolvePartialCollection } from '../proration';
-import { getRail, maybeSimulateTestCollect } from '@nombaone/sara/rails';
-import { findTenantSubAccount, recordSettlement } from '../settlement';
+import { settleInvoicePayment } from '../settlement';
 import { enterPastDue } from '../subscriptions';
-import { mintInvoiceCheckoutLink } from './actionLink';
+import { enqueueCustomerEmail, loadCommsContext } from '../comms';
+import { chargeOrderRef, mintInvoiceCheckoutLink } from './actionLink';
 import { loadSubscriptionRowById, railKeyForMethod, reconcilePaidSubEffects } from './effects';
+import { buildRailCollectMetadata } from './railMetadata';
 
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
+import type { RailPayInstructions } from '@nombaone/sara/rails';
 import type { CollectResult } from './types';
 
 /**
@@ -56,14 +59,23 @@ export async function collectForInvoice(
   const platformRevenue = await ensureAccount(txDb, ctx, { key: 'platform_revenue', kind: 'revenue' });
 
   // TEST-MODE ONLY: a seeded test method short-circuits to a deterministic outcome
-  // (null on live ⇒ the real rail runs, unchanged).
+  // (null on live ⇒ the real rail runs, unchanged). The metadata is built LAZILY —
+  // only when the real rail will actually run — so the sandbox path stays
+  // query-free; and it is built by the ONE shared builder, never hand-rolled
+  // (the hand-rolled bag here is how every live charge shipped broken).
+  const simulated = maybeSimulateTestCollect(ctx.mode, method, invoice.amountDue);
   const result =
-    maybeSimulateTestCollect(ctx.mode, method, invoice.amountDue) ??
+    simulated ??
     (await getRail(railKeyForMethod(method.kind)).collect({
       ...ctx,
-      reference: invoice.reference,
+      // NOT the bare invoice reference — Nomba burns an order reference the first time it sees one,
+      // so reusing it means the second charge against this invoice is rejected outright ("An order
+      // already exists with this order reference") and never reaches the bank. Scoping it to the
+      // attempt keeps retries of the SAME attempt deduped by Nomba (no double charge) while letting
+      // a NEW attempt actually happen. See `chargeOrderRef`.
+      reference: chargeOrderRef(invoice.reference, invoice.attemptCount),
       amountKobo: invoice.amountDue,
-      metadata: { invoice: invoice.reference, paymentMethod: method.reference },
+      metadata: await buildRailCollectMetadata(txDb, ctx, { invoice, method }),
     }));
 
   if (result.status === 'succeeded') {
@@ -88,10 +100,12 @@ export async function collectForInvoice(
       });
       const linked = await linkInvoiceLedgerTransaction(txDb, ctx, claim.invoice, posted.transactionId);
       await reconcilePaidSubEffects(txDb, ctx, linked);
-      // H5: settle the verified collection through the tenant's sub-account split
-      // (best-effort — only tenants onboarded to a sub-account settle; others are
-      // unaffected). Idempotent on the invoice reference (merchant_tx_ref).
-      await settleCollectionIfConfigured(txDb, ctx, linked);
+      // Credit the merchant's ledger balance for this collection: reclassify the
+      // gross into our platform fee + `tenant_settlement:{ref}` (what we now owe
+      // them). Idempotent on the invoice reference (`settlements.merchant_tx_ref`).
+      // This is the ONLY thing that makes a merchant's money real — it runs for
+      // every tenant now, unconditionally.
+      await settleInvoicePayment(txDb, ctx, linked);
       return { outcome: 'paid', invoice: linked };
     }
 
@@ -152,7 +166,55 @@ export async function collectForInvoice(
     return { outcome: 'past_due', invoice: failed };
   }
 
+  // PUSH rail (or async pull) — the invoice stays open awaiting the inbound
+  // confirm. If the rail told us WHERE the money should be pushed, persist it on
+  // the invoice and tell the merchant: the rail used to return the NUBAN and the
+  // engine dropped it on the floor, so no payer could ever learn where to pay.
+  if (result.payInstructions) {
+    const stamped = await persistPayInstructions(txDb, ctx, invoice, result.payInstructions);
+    return { outcome: 'pending', invoice: stamped };
+  }
+
   return { outcome: 'pending', invoice };
+}
+
+/**
+ * Stamp a push rail's `payInstructions` (the per-invoice virtual NUBAN) into
+ * `invoices.metadata.payInstructions` and emit `invoice.payment_instructions`
+ * ONCE. Idempotent on the account number: the rail call itself is idempotent on
+ * the invoice reference, so a re-collect returns the same NUBAN and we skip the
+ * duplicate event rather than re-notifying.
+ */
+async function persistPayInstructions(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  invoice: InvoiceRow,
+  payInstructions: RailPayInstructions
+): Promise<InvoiceRow> {
+  const existing = (invoice.metadata as Record<string, unknown> | null)?.payInstructions as
+    | { accountNumber?: string }
+    | undefined;
+  if (existing?.accountNumber && existing.accountNumber === payInstructions.accountNumber) {
+    return invoice;
+  }
+
+  const [stamped] = await txDb
+    .update(invoicesTable)
+    .set({
+      metadata: {
+        ...((invoice.metadata as Record<string, unknown> | null) ?? {}),
+        payInstructions: { ...payInstructions },
+      },
+    })
+    .where(eq(invoicesTable.id, invoice.id))
+    .returning();
+
+  await emitEvent(txDb, {
+    ...ctx,
+    type: 'invoice.payment_instructions',
+    payload: { reference: invoice.reference, payInstructions: { ...payInstructions } },
+  });
+  return stamped ?? invoice;
 }
 
 /**
@@ -181,28 +243,24 @@ async function handleActionRequired(
     type: 'invoice.action_required',
     payload: { reference: invoice.reference, reason: 'otp_required', checkoutLink },
   });
-}
 
-/**
- * H5: settle a verified full collection through the tenant's sub-account split.
- * Best-effort and gated — only a tenant onboarded to a sub-account settles; the fee
- * engine + `recordSettlement` handle the rest (idempotent on the invoice reference).
- */
-async function settleCollectionIfConfigured(
-  txDb: InfraTxDb,
-  ctx: DomainContext,
-  invoice: InvoiceRow
-): Promise<void> {
-  if (!invoice.subscriptionId || invoice.amountDue <= 0) return;
-  const sub = await findTenantSubAccount(txDb, ctx);
-  if (!sub) return;
-  await recordSettlement(txDb, ctx, {
-    invoiceId: invoice.id,
-    customerId: invoice.customerId,
-    merchantTxRef: invoice.reference,
-    grossKobo: invoice.amountDue,
+  // The bank wants the CUSTOMER, not the merchant — mail them the link directly.
+  // Live-proven reality: most tokenized recharges step up to OTP, so this email
+  // IS the primary card-renewal path, not an edge case.
+  const comms = await loadCommsContext(txDb, ctx, invoice);
+  await enqueueCustomerEmail(txDb, ctx, {
+    template: 'payment_action_required',
+    to: comms.email,
+    dedupeKey: `${invoice.reference}:otp`,
+    data: {
+      amountKobo: invoice.amountDue - invoice.amountPaid,
+      planName: comms.planName,
+      merchantName: comms.merchantName,
+      checkoutLink,
+    },
   });
 }
+
 
 /** Move an `active`/`trialing` subscription to `past_due` (06 dunning takes over).
  *  An `incomplete` first charge stays incomplete (its window is 04's sweep). */
@@ -218,7 +276,17 @@ async function moveActiveSubPastDue(
   }
 }
 
-async function failCollection(
+/**
+ * Mark a collection FAILED: bump the attempt, record the reason, and move the sub to
+ * `past_due` so the dunning sweep picks it up and schedules attempt #1.
+ *
+ * Exported because the INBOUND path needs the identical behaviour: on live the card rail
+ * answers `pending` and the decline arrives later as a `payment_failed` webhook, so the
+ * async failure must land in exactly the same state as a synchronous one. Two separate
+ * failure paths would drift — which is precisely how the async decline came to do nothing
+ * at all.
+ */
+export async function failCollection(
   txDb: InfraTxDb,
   ctx: DomainContext,
   invoice: InvoiceRow,

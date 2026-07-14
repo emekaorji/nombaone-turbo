@@ -2,7 +2,7 @@
 // RECEIVER-ONLY server for the live webhook byte-confirm. Mounts ONLY the inbound
 // webhook edge (createWebhookApp) — NO billing workers, NO scheduler — so the live
 // billing engine cannot auto-charge anything. The edge logs the raw body + all
-// signature candidates (NOMBA_WEBHOOK_DEBUG=true) before touching Redis/DB.
+// the raw headers/body before touching Redis/DB. Signatures are ALWAYS enforced.
 //   npx tsx scripts/webhook-receiver.ts
 import { env } from '../src/shared/config/env'; // loads .env first
 import express from 'express';
@@ -24,6 +24,6 @@ app.use((req, _res, next) => {
 app.use('/webhooks', createWebhookApp());
 createServer(app).listen(env.PORT, () => {
   console.log(
-    `[receiver] webhook-only on ${env.PORT} — NO workers/scheduler; debug=${env.NOMBA_WEBHOOK_DEBUG}; base=${env.NOMBA_LIVE_BASE_URL}`
+    `[receiver] webhook-only on ${env.PORT} — NO workers/scheduler; base=${env.NOMBA_LIVE_BASE_URL}`
   );
 });

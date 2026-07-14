@@ -38,6 +38,7 @@ export type ReferenceDomain =
   | 'STL' // settlement
   | 'REF' // refund
   | 'PAY' // payout
+  | 'PAC' // payout account (the merchant's bank destination)
   | 'EXA'; // example (deletable)
 
 export function mintReference(domain: ReferenceDomain): string {

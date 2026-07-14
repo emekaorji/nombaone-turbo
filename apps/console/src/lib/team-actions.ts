@@ -14,13 +14,22 @@ import { revalidatePath } from 'next/cache';
 
 import { getSession } from '@/lib/auth';
 import { createSession, setSessionCookie } from '@/lib/auth/session';
+import { sendTeamInviteEmail } from '@/lib/mail';
 import { getInvitationByToken, hashInviteToken } from '@/lib/team';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const INVITABLE_ROLES: OrgUserRole[] = ['admin', 'developer', 'viewer'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export type InviteState = { error?: string; link?: string; email?: string };
+export type InviteState = {
+  error?: string;
+  /** The accept link. Still returned so an owner can re-share it — but it is no longer the
+   *  ONLY way the invitee finds out: we email them. */
+  link?: string;
+  email?: string;
+  /** True when the invitation actually reached the invitee's inbox. */
+  sent?: boolean;
+};
 
 async function inviteBaseUrl(): Promise<string> {
   const h = await headers();
@@ -70,8 +79,38 @@ export async function inviteTeammateAction(_prev: InviteState, formData: FormDat
 
   revalidatePath('/settings');
   revalidatePath('/settings/team');
+
   const base = await inviteBaseUrl();
-  return { link: `${base}/invite/${rawToken}`, email };
+  const acceptUrl = `${base}/invite/${rawToken}`;
+
+  // ── Actually invite them.
+  //
+  // This used to end here: the row was written, the token minted, and the raw link handed
+  // back to the INVITER to copy and send by hand. The person being invited never heard
+  // from us at all — an invite system in which nothing is ever sent.
+  //
+  // A send failure is surfaced, not swallowed: the invite row still exists and the link is
+  // still returned, so the owner can share it manually, but they are told plainly that the
+  // email did not go out rather than assuming their teammate was notified.
+  try {
+    await sendTeamInviteEmail({
+      to: email,
+      organizationName: session.org.name,
+      inviterName: session.user.name,
+      role,
+      acceptUrl,
+    });
+    return { link: acceptUrl, email, sent: true };
+  } catch (error) {
+    return {
+      link: acceptUrl,
+      email,
+      sent: false,
+      error: `Invite created, but we could not email ${email}: ${
+        error instanceof Error ? error.message : 'send failed'
+      }. Share the link below directly.`,
+    };
+  }
 }
 
 export async function revokeInvitationAction(reference: string): Promise<{ error?: string }> {

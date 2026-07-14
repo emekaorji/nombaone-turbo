@@ -339,11 +339,29 @@ const mandate = await nomba.post("/mandates/create", {
 
 ## 6. Sandbox test instruments
 
-| Instrument | Value |
-|---|---|
-| Test card — success | `5060 6666 6666 6666 666` (any future expiry, any CVV) |
-| Test card — insufficient funds | `5060 6666 6666 6666 674` (use this to exercise dunning) |
-| Test bank account | Wema Bank, `0000000000` — accepts any inbound transfer |
+> ⚠️ **CORRECTED 2026-07-13.** This table previously listed `5060 6666 6666 6666 666` /
+> `…674` as the test cards. Those numbers appear **nowhere** in Nomba's documentation and
+> do not work. The real instruments, from
+> <https://developer.nomba.com/docs/api-basics/testing.md>:
+
+| Instrument | Value | Outcome |
+|---|---|---|
+| Test card — **success** | `5434 6210 7425 2808` (Mastercard) | OTP required → **approved** |
+| Test card — 3DS | `4000 0000 0000 2503` (Visa) | 3DS authentication step-up |
+| Test card — **decline** | `5484 4972 1831 7651` (Mastercard) | "do not honor" (use this to exercise dunning) |
+| CVV / expiry | any 3 digits / any **future** expiry | |
+| Card **PIN** | `9999` | |
+| **OTP — approve** | `9999` | payment succeeds |
+| OTP — timeout | `1234` | payment fails: timed out |
+| OTP — invalid | `5464` | payment fails: invalid OTP |
+| Insufficient funds | charge an amount **> ₦500,000** | transaction declined |
+| Expired card | expiry `12/20` | transaction declined |
+| Test bank account | Wema Bank, `0000000000` — accepts any inbound transfer | |
+
+**⚠ Every successful sandbox card payment goes through an OTP step** (there is no
+headless-success card). That is not a sandbox quirk — it matches the live finding that
+Nigerian card-not-present payments force a 3DS/OTP step-up, which is why silent card
+renewal cannot be assumed and the dunning-to-checkout-link fallback exists.
 
 ---
 

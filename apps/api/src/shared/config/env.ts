@@ -58,14 +58,15 @@ const envSchema = z.object({
    * only USABLE on `INFRA_ENVIRONMENT=production` (guarded in `getNombaClient`),
    * so a dev laptop cannot touch live money even if a live key leaks into its env.
    */
+  // NOTE: there is deliberately NO *_SUBACCOUNT_ID key. A sub-account belongs to
+  // a MERCHANT, not a deployment — it is provisioned per organization into
+  // `org_nomba_accounts` and resolved per request (`findTenantSubAccount`).
   NOMBA_SANDBOX_BASE_URL: z.string().url().optional(),
   NOMBA_SANDBOX_PARENT_ACCOUNT_ID: z.string().min(1).optional(),
-  NOMBA_SANDBOX_SUBACCOUNT_ID: z.string().min(1).optional(),
   NOMBA_SANDBOX_CLIENT_ID: z.string().min(1).optional(),
   NOMBA_SANDBOX_CLIENT_SECRET: z.string().min(1).optional(),
   NOMBA_LIVE_BASE_URL: z.string().url().optional(),
   NOMBA_LIVE_PARENT_ACCOUNT_ID: z.string().min(1).optional(),
-  NOMBA_LIVE_SUBACCOUNT_ID: z.string().min(1).optional(),
   NOMBA_LIVE_CLIENT_ID: z.string().min(1).optional(),
   NOMBA_LIVE_CLIENT_SECRET: z.string().min(1).optional(),
   // Inbound-webhook HMAC keys, per mode. One inbound endpoint serves both modes
@@ -74,17 +75,10 @@ const envSchema = z.object({
   NOMBA_SANDBOX_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
   NOMBA_LIVE_WEBHOOK_SIGNATURE_KEY: z.string().min(1).optional(),
   NOMBA_TOKEN_REFRESH_MARGIN_SEC: z.coerce.number().int().positive().default(300),
-  // T0 byte-confirm: when true, the inbound nomba route LOGS the real headers + raw
-  // body + candidate signatures and processes the event WITHOUT rejecting on a
-  // signature mismatch — so the first real webhook through a tunnel pins the exact
-  // scheme. NEVER true in the live ring (it bypasses signature rejection).
-  NOMBA_WEBHOOK_DEBUG: z
-    .union([z.literal('true'), z.literal('false')])
-    .optional()
-    .transform((v) => v === 'true'),
-  // Tenant PAYOUT provider transfer (F2). Default OFF: `payoutToTenant` posts the
-  // ledger debit + records the payout as `ledger_posted` but does NOT call the
-  // ⚠UNCONFIRMED Nomba `bankTransfer`. Flip on ONLY after a live bankTransfer confirm.
+  // Tenant PAYOUT — does the merchant's withdrawal actually reach their bank?
+  // OFF ⇒ `payoutToTenant` posts the ledger debit and records `ledger_posted` but sends
+  // NO money: the merchant's balance drops and nothing arrives. That is a lie in the
+  // product, so it must be a deliberate, visible choice — never a silent default.
   NOMBA_PAYOUT_ENABLED: z
     .union([z.literal('true'), z.literal('false')])
     .optional()
@@ -92,18 +86,50 @@ const envSchema = z.object({
 
   /**
    * Billing scheduler (04). A single fixed billing zone + deterministic hour make
-   * "due today" one unambiguous instant (B5). The billing sweep runs shortly before
-   * the boundary hour; the lifecycle sweep runs hourly (kept separate so a slow
-   * renewal run cannot delay notices).
+   * "due today" one unambiguous instant (B5) for CALENDAR cadences. The lifecycle sweep
+   * runs hourly (kept separate so a slow renewal run cannot delay notices).
+   *
+   * The billing sweep runs EVERY MINUTE. It has to: a WALL-CLOCK cadence (`minute`, e.g.
+   * `minute × 10`) is due on the wall clock, and a sweep that only looked once a day would
+   * leave a 10-minute plan unbilled for ~144 periods — the cadence exists so a developer can
+   * watch a subscription renew in real time, so "we'll look tomorrow" is not an option.
+   * This is cheap, not a firehose: the sweep is an indexed `next_billing_at <= now` scan, so
+   * on the overwhelming majority of ticks it matches ZERO rows and enqueues nothing. A
+   * calendar plan is simply billed AT its boundary now, instead of at the next daily pass.
    */
   BILLING_TIMEZONE: z.string().min(1).default('Africa/Lagos'),
   BILLING_HOUR: z.coerce.number().int().min(0).max(23).default(2),
-  BILLING_SWEEP_CRON: z.string().min(1).default('5 1 * * *'),
+  BILLING_SWEEP_CRON: z.string().min(1).default('* * * * *'),
   BILLING_BATCH_SIZE: z.coerce.number().int().positive().default(500),
+  /**
+   * How many periods ONE billing job may drain for a subscription that fell behind (an
+   * outage, a deploy, a laptop shut overnight on a `minute` cadence). A RATE LIMIT, not a
+   * wall: whatever is left is still due, so the next sweep tick continues. It must never
+   * park a subscription — that bug (throw before billing, return without advancing, so
+   * `next_billing_at` never moved) killed any plan whose cadence was short enough to run
+   * past a period count: 36 periods is 3 years of `month` but six HOURS of `minute × 10`.
+   */
   BILLING_MAX_CATCH_UP_PERIODS: z.coerce.number().int().positive().default(36),
   LIFECYCLE_SWEEP_CRON: z.string().min(1).default('0 * * * *'),
   DUNNING_SWEEP_CRON: z.string().min(1).default('*/15 * * * *'),
-  WEBHOOK_MAINTENANCE_CRON: z.string().min(1).default('*/15 * * * *'),
+  /**
+   * The outbox BACKSTOP, not the primary path — `registerWebhookDispatch` enqueues a drain
+   * the moment an event fans out, so a healthy delivery goes out in about a second.
+   *
+   * This tick exists for what the enqueue cannot cover: retries (the delivery backoff starts
+   * at 10s, so a 15-minute tick would have made the first retry ~90× later than intended)
+   * and any row whose enqueue was lost to a Redis blip. Every minute, and the pass is a
+   * single indexed SELECT that no-ops when there is nothing due.
+   */
+  WEBHOOK_MAINTENANCE_CRON: z.string().min(1).default('* * * * *'),
+  /**
+   * How often we ASK Nomba whether an invoice that is waiting on a payer has been paid.
+   *
+   * Every minute, because this is the PRIMARY settlement path, not a backstop: the live account
+   * sends no webhooks whatsoever, so an out-of-band payment is invisible until we go and look. The
+   * scan is indexed and matches nothing on a quiet system.
+   */
+  AWAITING_PAYMENT_SWEEP_CRON: z.string().min(1).default('* * * * *'),
   // Nightly local↔Nomba reconcile (item 6) — 02:00 daily by default; the window
   // looks back a little over a day so consecutive runs overlap and nothing is missed.
   RECONCILE_NOMBA_CRON: z.string().min(1).default('0 2 * * *'),
@@ -116,6 +142,50 @@ const envSchema = z.object({
   INCOMPLETE_EXPIRY_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
   TRIAL_NOTICE_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
   PM_EXPIRY_NOTICE_WINDOW_DAYS: z.coerce.number().int().positive().default(14),
+
+  /**
+   * Renewal reminders + the send_invoice overdue sweep run every minute: both
+   * scan an indexed timestamp window and match zero rows on most ticks, and a
+   * `minute × 10` cadence needs minute-level lead times (a lead is capped at
+   * one period length, so short cadences self-shrink it).
+   */
+  RENEWAL_REMINDER_CRON: z.string().min(1).default('* * * * *'),
+  OVERDUE_INVOICE_SWEEP_CRON: z.string().min(1).default('* * * * *'),
+  /**
+   * Daily settlement sweep — 06:00 UTC = 07:00 Africa/Lagos, so a merchant's money is in
+   * their bank before the business day opens. NOT per-payment: Nomba's flat NIP fee makes
+   * per-payment sweeping cost a small merchant 1-5% of revenue, and its 5-transfers/minute
+   * per-recipient cap would reject most of them anyway.
+   */
+  SETTLEMENT_SWEEP_CRON: z.string().min(1).default('0 6 * * *'),
+  /** Nightly ledger audit — 02:30 UTC, after the day's billing has settled. */
+  LEDGER_RECONCILE_CRON: z.string().min(1).default('30 2 * * *'),
+
+  // ── End-customer comms (email) ─────────────────────────────────────────────
+  // `log` prints instead of sending — the safe default everywhere; `resend`
+  // requires RESEND_API_KEY. Mail must never be a boot dependency.
+  COMMS_TRANSPORT: z.enum(['smtp', 'resend', 'log']).default('log'),
+  // ── SMTP (nodemailer). Gmail: smtp.gmail.com:465 secure, auth with an APP PASSWORD
+  // (not the account password). ~500 recipients/day, and Gmail rewrites `From` to the
+  // authenticated mailbox unless COMMS_FROM is a verified alias.
+  SMTP_HOST: z.string().min(1).default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().int().positive().default(465),
+  SMTP_SECURE: z
+    .union([z.literal('true'), z.literal('false')])
+    .default('true')
+    .transform((v) => v === 'true'),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  // Our VERIFIED Resend domain. `onboarding@resend.dev` is Resend's shared sandbox
+  // sender: it can ONLY deliver to the account owner's own address and 403s for every
+  // real customer — so it must never be the default, or production would silently fail
+  // to reach a single subscriber.
+  COMMS_FROM: z.string().min(1).default('Nomba One <billing@mail.nombaone.xyz>'),
+  // Signed end-customer action links (/i, /pm in apps/checkout). Unset ⇒ emails
+  // go out without action URLs (degraded, never broken).
+  INFRA_ACTION_TOKEN_SECRET: z.string().min(16).optional(),
+  CHECKOUT_BASE_URL: z.string().url().default('http://localhost:8040'),
 });
 
 export const env = envSchema.parse(process.env);

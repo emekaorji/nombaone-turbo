@@ -84,8 +84,9 @@ Confirm your webhook handler branches on `invoice.payment_failed`,
 webhook is missed, re-fetch the resource rather than reconstructing state.
 - **Watch dunning.** Real balances are thin: expect `past_due` and let
 [dunning](/guides/dunning-and-recovery) recover before cutting access.
-- **Payouts.** Settled net lands in the organization's sub-account behind an
-escrow lock; withdraw with [payouts](/guides/refunds-payouts-settlement).
+- **Payouts.** Settled net accrues to the organization's balance behind an escrow
+hold, and sweeps to their bank account daily. Add that bank account before your
+first withdrawal — see [payouts](/guides/refunds-payouts-settlement).
 
 - **[Handle webhooks](/guides/handle-webhooks)**: 
 The receive → verify → dedupe → act pattern, live.

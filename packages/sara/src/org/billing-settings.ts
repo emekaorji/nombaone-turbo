@@ -33,6 +33,8 @@ export interface EffectiveBillingSettings {
   paydayBiasEnabled: boolean;
   defaultCollectionMethod: DefaultCollectionMethod;
   commsEnabled: boolean;
+  /** Renewal-reminder lead, FRACTIONAL hours; capped at one period length at use-time. */
+  renewalReminderLeadHours: number;
   // 08 limits / settlement / branding
   rateLimitPerMinute: number | null;
   monthlyRequestQuota: number | null;
@@ -42,6 +44,12 @@ export interface EffectiveBillingSettings {
   platformFeeMaxKobo: number | null;
   /** Minimum a tenant must leave / can't withdraw below on payout. null ⇒ 0. Operator-only. */
   minWithdrawableKobo: number | null;
+  /**
+   * The rolling ESCROW HOLD in hours: funds collected within this window cannot be
+   * withdrawn yet, so a refund can still be clawed back before the merchant drains the
+   * balance. Fractional — dial it to minutes, or to 0.
+   */
+  payoutHoldHours: number;
   branding: TenantBranding;
 }
 
@@ -61,6 +69,7 @@ export const DEFAULT_BILLING_SETTINGS: EffectiveBillingSettings = {
   paydayBiasEnabled: true,
   defaultCollectionMethod: 'charge_automatically',
   commsEnabled: true,
+  renewalReminderLeadHours: 24,
   rateLimitPerMinute: null,
   monthlyRequestQuota: null,
   settlementMode: 'split_at_collection',
@@ -68,6 +77,7 @@ export const DEFAULT_BILLING_SETTINGS: EffectiveBillingSettings = {
   platformFeeMinKobo: null,
   platformFeeMaxKobo: null,
   minWithdrawableKobo: null,
+  payoutHoldHours: 3,
   branding: {},
 };
 
@@ -83,6 +93,8 @@ const fromRow = (row: OrgBillingSettingsRow): EffectiveBillingSettings => ({
   paydayBiasEnabled: row.paydayBiasEnabled,
   defaultCollectionMethod: row.defaultCollectionMethod,
   commsEnabled: row.commsEnabled,
+  // numeric column arrives as a string from drizzle; normalize once here.
+  renewalReminderLeadHours: Number(row.renewalReminderLeadHours ?? 24),
   rateLimitPerMinute: row.rateLimitPerMinute,
   monthlyRequestQuota: row.monthlyRequestQuota,
   settlementMode: row.settlementMode,
@@ -90,6 +102,8 @@ const fromRow = (row: OrgBillingSettingsRow): EffectiveBillingSettings => ({
   platformFeeMinKobo: row.platformFeeMinKobo,
   platformFeeMaxKobo: row.platformFeeMaxKobo,
   minWithdrawableKobo: row.minWithdrawableKobo,
+  // numeric column arrives as a string from drizzle; normalize once here.
+  payoutHoldHours: Number(row.payoutHoldHours ?? 3),
   branding: row.branding,
 });
 
@@ -128,16 +142,25 @@ export async function upsertOrgBillingSettings(
   const patch = Object.fromEntries(
     Object.entries(input).filter(([, v]) => v !== undefined)
   ) as Partial<EffectiveBillingSettings>;
+  // numeric columns take strings on the wire; the effective type stays number.
+  const { renewalReminderLeadHours, payoutHoldHours, ...rest } = patch;
+  const writable = {
+    ...rest,
+    ...(renewalReminderLeadHours !== undefined
+      ? { renewalReminderLeadHours: String(renewalReminderLeadHours) }
+      : {}),
+    ...(payoutHoldHours !== undefined ? { payoutHoldHours: String(payoutHoldHours) } : {}),
+  };
   const [row] = await txDb
     .insert(orgBillingSettingsTable)
     .values({
       organizationId: ctx.organizationId,
       mode: ctx.mode,
-      ...patch,
+      ...writable,
     })
     .onConflictDoUpdate({
       target: [orgBillingSettingsTable.organizationId, orgBillingSettingsTable.mode],
-      set: { ...patch, updatedAt: new Date() },
+      set: { ...writable, updatedAt: new Date() },
     })
     .returning();
   return row ? fromRow(row) : { ...DEFAULT_BILLING_SETTINGS, ...patch };

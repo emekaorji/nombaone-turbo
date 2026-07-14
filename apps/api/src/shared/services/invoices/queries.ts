@@ -8,8 +8,8 @@ import {
   type InvoiceRow,
 } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { buildPage, clampLimit, decodeCursor } from '@nombaone/sara/pagination';
+
 import { serializeInvoice, serializeInvoiceLine } from './serialize';
 
 import type { DomainContext, InfraDb, InfraReadScope } from '@nombaone/sara/context';
@@ -156,6 +156,18 @@ export interface ReconcilableInvoice {
   reference: string;
   amountDueKobo: number;
   paidLocally: boolean;
+  /**
+   * How many charge attempts this invoice has already burnt. Nomba permanently consumes an order
+   * reference, so each attempt opened a DIFFERENT order (`-c0`, `-c1`, …) — and answering "was
+   * this invoice paid?" means asking about all of them. Without this the backstop can only see
+   * the hosted-checkout order and is blind to every card payment.
+   */
+  attemptCount: number;
+  /**
+   * Nomba's own transaction id, when an inbound webhook stamped one. Kept for tracing; it is no
+   * longer required to requery (that keys on `?orderReference=`, which we always know).
+   */
+  providerTransactionId: string | null;
 }
 
 /**
@@ -175,6 +187,8 @@ export async function getReconcilableInvoicesSince(
       reference: invoicesTable.reference,
       amountDueKobo: invoicesTable.amountDue,
       paidAt: invoicesTable.paidAt,
+      attemptCount: invoicesTable.attemptCount,
+      metadata: invoicesTable.metadata,
     })
     .from(invoicesTable)
     .where(
@@ -186,12 +200,17 @@ export async function getReconcilableInvoicesSince(
         gte(invoicesTable.updatedAt, since)
       )
     );
-  return rows.map((r) => ({
-    organizationId: r.organizationId,
-    reference: r.reference,
-    amountDueKobo: r.amountDueKobo,
-    paidLocally: r.paidAt != null,
-  }));
+  return rows.map((r) => {
+    const providerTxn = (r.metadata as Record<string, unknown> | null)?.providerTransactionId;
+    return {
+      organizationId: r.organizationId,
+      reference: r.reference,
+      amountDueKobo: r.amountDueKobo,
+      paidLocally: r.paidAt != null,
+      attemptCount: r.attemptCount,
+      providerTransactionId: typeof providerTxn === 'string' ? providerTxn : null,
+    };
+  });
 }
 
 export async function listInvoices(

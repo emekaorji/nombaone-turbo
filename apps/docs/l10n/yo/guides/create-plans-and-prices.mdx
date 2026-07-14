@@ -10,9 +10,12 @@ sílẹ̀ sí, **price** sì ni iye owó àti ìgbà mélòó. Yíyà wọn sọ
 kan ṣoṣo (bí àpẹẹrẹ, "Pro") lè gbé price oṣooṣù àti price ọdọọdún papọ̀, kí
 customer sì yí padà láàrin wọn láìsí pé o tún ṣe àwòṣe ọjà náà.
 
-## Ṣẹ̀dá plan
+## Ṣẹ̀dá plan àti àwọn price rẹ̀ nínú ìpè kan
 
-Orúkọ nìkan ni plan nílò. Àpèjúwe àti metadata jẹ́ àṣàyàn.
+Fi plan náà ránṣẹ́ pẹ̀lú array `prices` kan, o ó sì gba gbogbo àkọsílẹ̀ catalog
+náà nínú ìbéèrè kan ṣoṣo — ọjà náà àti gbogbo ìlù tí ó ń tà lé lórí. Ìpè náà
+jẹ́ **atomic**: yálà plan náà àti gbogbo price wọlé, tàbí kò sí ọ̀kankan tí yóò
+wọlé.
 
 ```bash
 curl -X POST https://sandbox.api.nombaone.xyz/v1/plans \
@@ -72,6 +75,115 @@ ti ní.
   àkókò tí o ní, dípò [tí o ó fi ọwọ́ ti aago síwájú](/sandbox-toolkit/clock) —
   ṣùgbọ́n ìlù gidi ni, ó sì tọ̀nà ní sandbox àti live méjèèjì.
 </Callout>
+
+## Yí ohun tí plan ń ná padà
+
+Gbígbé iye owó oṣooṣù ga jẹ́ àtúnṣe sí **plan** náà — kì í ṣe wíwá kiri láàrin
+àwọn òròpò price rẹ̀. `PATCH /v1/plans/{id}` ń gba array `prices` kan náà tí
+ìpè ìṣẹ̀dá ń gbà, yóò sì ṣe ìwọ̀ntúnwọ̀nsì rẹ̀ pẹ̀lú ohun tí plan náà ti ń ná
+tẹ́lẹ̀. Fi ohun tí o fẹ́ kí plan náà máa ná ránṣẹ́:
+
+```bash
+curl -X PATCH https://sandbox.api.nombaone.xyz/v1/plans/{planId} \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "prices": [
+      { "unitAmountInKobo": 600000, "interval": "month" },
+      { "unitAmountInKobo": 5000000, "interval": "year" }
+    ]
+  }'
+```
+
+Fún ìlù kọ̀ọ̀kan (`interval` + `intervalCount`), engine náà yóò mọ ohun tí ó yí
+padà:
+
+- **Kò tíì sí price lórí ìlù yẹn** → a ó **ṣẹ̀dá** price náà, `price.created`
+  yóò sì jáde.
+- **Iye kan náà ni** → **kò sí ohun tí yóò ṣẹlẹ̀**. A kò kọ òròpò kankan, kò sí
+  event tí yóò jáde. Títún catalog rẹ ránṣẹ́ jẹ́ aláìṣe-nǹkan, èyí sì ni ó mú kí
+  bọ́tìnì "save" lórí fọ́ọ̀mù ìdíyelé wà ní ààbò láti tẹ̀ lẹ́ẹ̀mejì.
+- **Iye náà yàtọ̀** → a ó ṣẹ̀dá **price tuntun**, gbogbo price mìíràn tí ó ń
+  ṣiṣẹ́ lórí ìlù yẹn yóò sì di **aláìṣiṣẹ́**. O ó gba `price.created` àti
+  `price.deactivated`.
+
+Ìlù tí o **kò** fi ránṣẹ́ ni a ó fi sílẹ̀ pátápátá. Nínú ìpè tí ó wà lókè, a tún
+price ọdọọdún ránṣẹ́ láìyí padà, nítorí náà ó pa `id` rẹ̀ mọ́; ti oṣooṣù gbéra
+láti ₦5,000 sí ₦6,000, nítorí náà ó padà wá pẹ̀lú tuntun:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "domain": "plan",
+    "id": "nbo481920374615pln",
+    "name": "Pro",
+    "status": "active",
+    "prices": [
+      {
+        "domain": "price",
+        "id": "nbo903117254480prc",
+        "planId": "nbo481920374615pln",
+        "unitAmountInKobo": 600000,
+        "currency": "NGN",
+        "interval": "month",
+        "intervalCount": 1,
+        "active": true
+      },
+      {
+        "domain": "price",
+        "id": "nbo225864019773prc",
+        "planId": "nbo481920374615pln",
+        "unitAmountInKobo": 5000000,
+        "currency": "NGN",
+        "interval": "year",
+        "intervalCount": 1,
+        "active": true
+      }
+    ]
+  },
+  "meta": { "requestId": "req_4f9c2a7e1b0d8c3a5e6f10a2" }
+}
+```
+
+`data.prices` ni àwọn price **aláàyè** plan náà lẹ́yìn àtúnṣe náà, ó sì máa ń wà
+níbẹ̀ nígbà gbogbo. Fífo `prices` sílẹ̀ pátápátá ṣì ń ṣàtúnṣe `name`,
+`description` àti `metadata` nìkan, gẹ́gẹ́ bí ti tẹ́lẹ̀.
+
+### Ìdí tí ìyípadà fi jẹ́ price tuntun, kì í ṣe àtúnṣe
+
+Price jẹ́ **aláìlèyípadà**: a kì í tún `unitAmountInKobo` rẹ̀ kọ ní ipò rẹ̀ láé.
+Subscription ń di `priceId` kan mú, òròpò tí ó di mú yẹn sì ni ìdí kan ṣoṣo tí
+owó ẹni tí ó ti forúkọ sílẹ̀ kò fi lè yí lábẹ́ wọn. Nítorí náà ìyípadà ń ṣẹ̀dá
+òròpò **tuntun**, yóò sì fi ti àtijọ́ sí ìfẹ̀yìntì — ó ṣì dúró gẹ́gẹ́ bí ohun tí
+àwọn tí ó ti forúkọ sílẹ̀ gbà láti san. Grandfathering jẹ́ ànímọ́ àwòṣe data, kì
+í ṣe ẹ̀yà tí ẹnìkan rántí láti kọ́. Àwọn tuntun yóò dé price tuntun; àwọn tí ó
+ti ń sanwó yóò pa tiwọn mọ́ títí tí o ó fi mọ̀ọ́mọ̀ gbé wọn, èyí tí ó jẹ́
+[ìyípadà plan](/guides/proration-and-plan-changes).
+
+## Wo bí subscription ṣe ń sanwó
+
+Subscription oṣooṣù ń gba oṣù kan láti fi hàn pé ó ń túnra sanwó.
+`interval: "minute"` pẹ̀lú `intervalCount: 10` ń fi í hàn láàrin oúnjẹ ọ̀sán:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/plans/{planId}/prices \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -d '{ "unitAmountInKobo": 50000, "interval": "minute", "intervalCount": 10 }'
+```
+
+Fi customer sí price yẹn, lẹ́yìn ìṣẹ́jú mẹ́wàá ìtúnrasanwó yóò ṣẹlẹ̀ fúnra rẹ̀,
+láìsí ohun àfarawé kankan: `invoice.created`, `invoice.finalized`, charge náà,
+lẹ́yìn náà `invoice.paid`, àwọn àkọsílẹ̀ ledger, àkókò subscription náà yóò sì
+yí síwájú. Engine **kan náà** tí `month` ń gbà ni ó ń gbà — ìlù nìkan ni ó
+yàtọ̀, kò sì sí ohun kankan nínú ọ̀nà ìdíyelé tí ó ṣe é lọ́tọ̀. Ìlù gidi ni pẹ̀lú:
+ó tọ̀nà ní live, kì í ṣe sandbox nìkan. Àkíyèsí kan: ìtúnrasanwó ń dé nígbà tí
+billing sweep bá ṣiṣẹ́, nítorí náà ìlù ìṣẹ́jú yóò sanwó lásìkò kìkì tí sweep bá
+ń lù ní gbogbo ìṣẹ́jú (`BILLING_SWEEP_CRON=* * * * *`, èyí tí ó jẹ́ àtòjọ
+àìyípadà báyìí).
 
 ## Fi trial kún un
 

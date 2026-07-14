@@ -37,6 +37,31 @@ import type { EmitEventInput, EmittedEvent } from './types';
  * Scope is pinned: the row is stamped with `ctx.organizationId` /
  * `ctx.mode`, and ONLY endpoints in that same (org, env) are considered.
  */
+/**
+ * THE OUTBOX NEEDS A POSTMAN.
+ *
+ * `emitEvent` writes delivery INTENT; something has to turn that intent into HTTP
+ * promptly. If nothing does, the only thing that ever drains the outbox is the
+ * maintenance cron — and a merchant then learns about a payment minutes after it
+ * happened, which for a billing engine is indistinguishable from broken.
+ *
+ * The app registers a notifier at boot (`registerWebhookDispatch`), which enqueues a
+ * drain. Sara itself stays free of a Redis dependency, so unit tests and any consumer
+ * without a worker simply fall back to the cron — which remains the backstop for
+ * retries and for anything a notifier drops.
+ */
+export interface DeliveryNotice {
+  organizationId: string;
+  eventType: string;
+  deliveryReferences: string[];
+}
+
+let deliveryNotifier: ((notice: DeliveryNotice) => void) | null = null;
+
+export const setDeliveryNotifier = (fn: ((notice: DeliveryNotice) => void) | null): void => {
+  deliveryNotifier = fn;
+};
+
 export const emitEvent = async (
   db: InfraDb | InfraTxDb,
   input: EmitEventInput
@@ -80,18 +105,33 @@ export const emitEvent = async (
 
   if (endpoints.length > 0) {
     const now = new Date();
-    await db.insert(webhookDeliveriesTable).values(
-      endpoints.map((endpoint) => ({
-        reference: mintReference('WHD'),
-        organizationId: input.organizationId,
-        endpointId: endpoint.id,
-        eventId: event.id,
-        eventType: input.type,
-        status: 'pending' as const,
-        attempts: 0,
-        nextAttemptAt: now,
-      }))
-    );
+    const rows = endpoints.map((endpoint) => ({
+      reference: mintReference('WHD'),
+      organizationId: input.organizationId,
+      endpointId: endpoint.id,
+      eventId: event.id,
+      eventType: input.type,
+      status: 'pending' as const,
+      attempts: 0,
+      nextAttemptAt: now,
+    }));
+
+    await db.insert(webhookDeliveriesTable).values(rows);
+
+    // Wake the postman. This is best-effort by design: the rows are already durable, so a
+    // Redis hiccup must never fail the business write that produced the event — it only
+    // costs promptness, and the cron picks the rows up regardless.
+    if (deliveryNotifier) {
+      try {
+        deliveryNotifier({
+          organizationId: input.organizationId,
+          eventType: input.type,
+          deliveryReferences: rows.map((row) => row.reference),
+        });
+      } catch {
+        /* notifying is never worth losing the write over */
+      }
+    }
   }
 
   return { reference: event.reference, type: event.type };

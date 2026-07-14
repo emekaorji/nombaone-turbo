@@ -226,7 +226,11 @@ const OVERRIDES: Record<string, { slug: string; title: string }> = {
   "POST /v1/invoices/{id}/void": { slug: "void", title: "Void an invoice" },
   // settlements
   "GET /v1/settlements/escrow": { slug: "escrow", title: "Retrieve the escrow balance" },
-  "POST /v1/settlements/payout": { slug: "create-payout", title: "Create a payout" },
+  "POST /v1/settlements/payout": { slug: "create-payout", title: "Withdraw your balance" },
+  "GET /v1/banks": { slug: "list-banks", title: "List banks" },
+  "GET /v1/payout-accounts": { slug: "retrieve-payout-account", title: "Retrieve your payout account" },
+  "POST /v1/payout-accounts": { slug: "add-payout-account", title: "Add your payout account" },
+  "POST /v1/payout-accounts/resolve": { slug: "resolve-payout-account", title: "Look up a bank account name" },
   "POST /v1/settlements/{id}/refund": { slug: "refund", title: "Refund a settlement" },
   // webhooks
   "POST /v1/webhooks/{id}/rotate-secret": { slug: "rotate-secret", title: "Rotate the signing secret" },

@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/integrations",
     "/use-cases",
     "/use-cases/school-fees",
+    "/use-cases/gyms",
     "/pricing",
     "/trust",
     "/guides",

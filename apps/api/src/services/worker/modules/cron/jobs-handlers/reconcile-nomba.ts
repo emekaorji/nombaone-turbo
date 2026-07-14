@@ -1,11 +1,11 @@
-import { confirmInvoiceFromWebhook } from '@shared/services/billing';
+import { confirmInvoiceFromWebhook, requeryInvoiceAtNomba } from '@shared/services/billing';
 import { getReconcilableInvoicesSince, type ReconcilableInvoice } from '@shared/services/invoices';
+import { ensureSubscriptionChargeable } from '@shared/services/payment-methods';
 import {
   diffAgainstNomba,
   type LocalPaidInvoice,
   type NombaChargeTransaction,
 } from '@shared/services/reconciliation';
-
 import { db } from '@shared/config/db';
 import { env } from '@shared/config/env';
 import { availableNombaModes, getNombaClient } from '@shared/config/nomba';
@@ -86,7 +86,17 @@ export async function handleReconcileNomba(): Promise<ReconcileNombaResult> {
         checked += 1;
         if (inv.paidLocally) localPaid.push({ reference: inv.reference, amountKobo: inv.amountDueKobo });
         try {
-          const rq = await client.requeryTransaction(ctx, { reference: inv.reference });
+          // Requery by OUR reference. This backstop used to key on Nomba's transaction id,
+          // stamped by an inbound webhook — because "the live requery 404s on our own reference".
+          // It did, but only because the client sent the wrong query param; the real key is
+          // `?orderReference=`, which joins on the merchant reference we set at order-create
+          // (pinned on live 2026-07-14).
+          //
+          // That detail decided whether this backstop worked AT ALL. It could only requery an
+          // invoice some webhook had already named — so on an account that sends no webhooks, the
+          // one mechanism designed to catch a missing webhook was itself disabled by the missing
+          // webhook. It now stands on its own.
+          const rq = await requeryInvoiceAtNomba(client, ctx, inv);
           requeries.set(inv.reference, rq);
           if (rq.found && rq.succeeded && typeof rq.amount === 'number') {
             nombaTx.push({ reference: inv.reference, amountKobo: rq.amount });
@@ -119,6 +129,10 @@ export async function handleReconcileNomba(): Promise<ReconcileNombaResult> {
           // the provider-confirmed amount equals amount_due (E4); a mismatch stays flagged.
           const res = await confirmInvoiceFromWebhook(db, ctx, d.reference, verification);
           if (res.settled) {
+            // A payment we only learned about by asking. The card token was never delivered
+            // either, so pull it now — otherwise we heal the invoice and still leave the
+            // subscription with nothing to charge on its next cycle.
+            await ensureSubscriptionChargeable(db, ctx, res.invoice);
             healed += 1;
             recordReconcileHealed();
             logger.info('[cron] reconcile-nomba self-healed invoice', {

@@ -73,8 +73,10 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
 
   Plan: allRequired(PLAN_PROPERTIES),
 
-  // `POST /v1/plans` only. `prices` is ALWAYS on the wire (`[]` when none were
-  // embedded); the plan READS return `Plan`, which does not carry it.
+  // The plan WRITES — `POST /v1/plans` and `PATCH /v1/plans/{id}`. `prices` is ALWAYS on the
+  // wire (`[]` when the plan has none): on create, the embedded rows in submission order; on
+  // update, the plan's ACTIVE prices after the reconcile. The plan READS return `Plan`, which
+  // does not carry it.
   PlanWithPrices: allRequired({ ...PLAN_PROPERTIES, prices: arr(ref('Price')) }),
 
   Price: allRequired({
@@ -114,6 +116,9 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     defaultPaymentMethodId: nstr(),
     items: arr(ref('SubscriptionItem')),
     latestInvoiceId: nstr(),
+    // Hosted-checkout CREATE only — the Nomba page the end user pays on. Null on
+    // reads and every non-hosted create.
+    checkoutLink: nstr(),
     currency: ngn(),
     mode: modeEnm(),
     createdAt: dt(),
@@ -144,6 +149,20 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     periodStart: ndt(),
     periodEnd: ndt(),
     dueDate: ndt(),
+    // Push-rail (bank transfer) invoices only: the dedicated per-invoice NUBAN
+    // the payer must push to. `null` on pull-rail invoices.
+    payInstructions: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        bankName: nstr(),
+        accountNumber: nstr(),
+        accountName: nstr(),
+        amountInKobo: int(),
+        reference: nstr(),
+      },
+      required: ['bankName', 'accountNumber', 'accountName', 'amountInKobo', 'reference'],
+    },
     lineItems: arr(ref('InvoiceLineItem')),
     finalizedAt: ndt(),
     paidAt: ndt(),
@@ -300,7 +319,9 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     partialCollectionEnabled: bool(),
     prorationCreditPolicy: enm('credit_next_cycle', 'none'),
     dunningMaxAttempts: int(),
-    dunningIntervalsHours: arr(int()),
+    // Fractional hours are legal (0.25 = 15 minutes — required for sub-day
+    // cadences); declaring `integer` here lied to every generated SDK.
+    dunningIntervalsHours: arr(num()),
     dunningMaxWindowHours: int(),
     gracePeriodHours: int(),
     paydayDays: arr(int()),
@@ -308,6 +329,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
     paydayBiasEnabled: bool(),
     defaultCollectionMethod: enm('charge_automatically', 'send_invoice'),
     commsEnabled: bool(),
+    renewalReminderLeadHours: num(),
   }),
 
   TenantSettings: allRequired({
@@ -327,7 +349,7 @@ export const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
       ['rateLimitPerMinute', 'monthlyRequestQuota', 'settlementMode', 'platformFee', 'grace', 'branding']
     ),
     webhook: obj({ url: nstr(), signingSecretPrefix: nstr(), configured: bool() }, ['url', 'signingSecretPrefix', 'configured']),
-    nombaAccount: obj({ accountRef: nstr(), status: nstr() }, ['accountRef', 'status']),
+    settlement: obj({ accountRef: str() }, ['accountRef']),
   }),
 
   DunningFunnel: allRequired({
@@ -425,7 +447,7 @@ export const RESPONSE_DATA_BY_ROUTE: Record<string, RouteDataMapping> = {
   'get /v1/plans': { ref: 'Plan', list: true },
   'get /v1/plans/{id}': { ref: 'Plan' },
   'post /v1/plans': { ref: 'PlanWithPrices' },
-  'patch /v1/plans/{id}': { ref: 'Plan' },
+  'patch /v1/plans/{id}': { ref: 'PlanWithPrices' },
   'post /v1/plans/{id}/archive': { ref: 'Plan' },
   'get /v1/plans/{id}/prices': { ref: 'Price', list: true },
   'post /v1/plans/{id}/prices': { ref: 'Price' },

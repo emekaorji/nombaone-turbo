@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm';
 
 import { paymentMethodsTable } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { emitEvent } from '@nombaone/sara/events';
 import { NOMBA_ENDPOINTS } from '@nombaone/sara/nomba/endpoints';
+
 import { loadByReference } from './queries';
 import { serializePaymentMethod } from './serialize';
 

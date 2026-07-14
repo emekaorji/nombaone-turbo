@@ -78,6 +78,24 @@ export function periodsPerYear(interval: PriceInterval): number {
   }
 }
 
+const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+/**
+ * Approximate length of one cadence (UNIT × COUNT) in milliseconds — a SORT KEY, and
+ * nothing else.
+ *
+ * `PRICE_INTERVALS` is ordered by the Postgres enum's physical order, which is append-only:
+ * `minute` sits at the END because it was added last, so ranking a price ladder by that
+ * order puts "every 10 minutes" AFTER "annual". Rank by real duration instead, and the
+ * ladder reads shortest → longest whatever order the enum happens to carry.
+ *
+ * Never compute a period boundary with this. A calendar unit has no constant length (a
+ * month is 28–31 days); `periodBounds` is the only thing allowed to answer that.
+ */
+export function cadenceApproxMs(interval: PriceInterval, intervalCount = 1): number {
+  return (YEAR_MS / periodsPerYear(interval)) * Math.max(1, intervalCount);
+}
+
 /**
  * Normalize a recurring amount to a MONTHLY figure in integer kobo.
  *

@@ -1,37 +1,21 @@
 'use client';
 
-import {
-  convertIntervalKobo,
-  intervalLabel,
-  intervalShort,
-  isWallClockInterval,
-  PRICE_INTERVALS,
-  savingsPct,
-  toMonthlyKobo,
-} from '@nombaone/core-contracts/billing';
+import { convertIntervalKobo, savingsPct, toMonthlyKobo } from '@nombaone/core-contracts/billing';
 import { Loader2, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 
+import { cadenceSuffix, DEFAULT_CADENCE_KEY, PLAN_CADENCES, type Cadence } from '@/lib/cadences';
 import { naira, toKobo } from '@/lib/money';
 import { createPlanWithPricesAction } from '@/lib/plans-actions';
 
-import type { PriceInterval } from '@nombaone/core-contracts/types';
-
-/**
- * The cadences a merchant can put a customer on. `minute` is WALL-CLOCK — an engine/test cadence
- * (it exists so the sandbox can advance a subscription in seconds), never a plan a customer buys —
- * so it is filtered out at the source rather than re-listed by hand, which is how the old list here
- * drifted out of sync with the enum.
- */
-const PLAN_CADENCES: PriceInterval[] = PRICE_INTERVALS.filter((iv) => !isWallClockInterval(iv));
-
 /** A non-base cadence the merchant has switched on. `amount` and `discount` are two views of one number. */
 type Variant = { enabled: boolean; amount: string; discount: string };
-type Variants = Partial<Record<PriceInterval, Variant>>;
+/** Keyed by cadence key (`minute_10`, `year_1`) — a cadence is a unit × a count, never a unit alone. */
+type Variants = Record<string, Variant>;
 
 const BLANK: Variant = { enabled: false, amount: '', discount: '' };
-const readVariant = (vs: Variants, iv: PriceInterval): Variant => vs[iv] ?? BLANK;
+const readVariant = (vs: Variants, key: string): Variant => vs[key] ?? BLANK;
 
 /** Kobo → what belongs in a naira input: `500000` → `5,000`. Round-trips through the shared parser. */
 const inputNaira = (kobo: number): string => naira(kobo).replace('₦', '');
@@ -47,10 +31,12 @@ function toPct(raw: string): number | null {
 /** Apply a discount to the derived (par) amount. Clamped to 1 kobo — the DB's CHECK is unit_amount > 0. */
 const discounted = (parKobo: number, pct: number): number => Math.max(1, Math.round((parKobo * (100 - pct)) / 100));
 
+const byKey = (key: string): Cadence => PLAN_CADENCES.find((c) => c.key === key) ?? PLAN_CADENCES[0]!;
+
 export function NewPlanButton() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
-  const [baseInterval, setBaseInterval] = useState<PriceInterval>('month');
+  const [baseKey, setBaseKey] = useState(DEFAULT_CADENCE_KEY);
   const [baseAmount, setBaseAmount] = useState('');
   const [variants, setVariants] = useState<Variants>({});
   const [error, setError] = useState<string | null>(null);
@@ -58,81 +44,87 @@ export function NewPlanButton() {
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
+  const base = byKey(baseKey);
   const baseKobo = toKobo(baseAmount);
   // Everything a cadence is judged against: what the base costs PER MONTH.
-  const baselineMonthly = baseKobo === null ? null : toMonthlyKobo(baseKobo, baseInterval, 1);
+  const baselineMonthly = baseKobo === null ? null : toMonthlyKobo(baseKobo, base.interval, base.intervalCount);
   /** The equivalent amount on another cadence — a SUGGESTION (annual is almost never exactly 12×). */
-  const parKobo = (iv: PriceInterval): number | null =>
-    baseKobo === null ? null : convertIntervalKobo(baseKobo, baseInterval, 1, iv, 1);
+  const parKobo = (c: Cadence): number | null =>
+    baseKobo === null
+      ? null
+      : convertIntervalKobo(baseKobo, base.interval, base.intervalCount, c.interval, c.intervalCount);
   /** The truth about what the merchant typed, whatever the discount box says. */
-  const savingsFor = (iv: PriceInterval, kobo: number | null): number | null =>
-    kobo === null || baselineMonthly === null ? null : savingsPct(baselineMonthly, toMonthlyKobo(kobo, iv, 1));
+  const savingsFor = (c: Cadence, kobo: number | null): number | null =>
+    kobo === null || baselineMonthly === null
+      ? null
+      : savingsPct(baselineMonthly, toMonthlyKobo(kobo, c.interval, c.intervalCount));
 
   function close() {
     setOpen(false);
     setError(null);
     setName('');
-    setBaseInterval('month');
+    setBaseKey(DEFAULT_CADENCE_KEY);
     setBaseAmount('');
     setVariants({});
     formRef.current?.reset();
   }
 
-  const patch = (iv: PriceInterval, p: Partial<Variant>) =>
-    setVariants((prev) => ({ ...prev, [iv]: { ...readVariant(prev, iv), ...p } }));
+  const patch = (key: string, p: Partial<Variant>) =>
+    setVariants((prev) => ({ ...prev, [key]: { ...readVariant(prev, key), ...p } }));
 
-  function toggle(iv: PriceInterval) {
-    const current = readVariant(variants, iv);
+  function toggle(c: Cadence) {
+    const current = readVariant(variants, c.key);
     if (current.enabled) {
-      patch(iv, { enabled: false });
+      patch(c.key, { enabled: false });
       return;
     }
-    const par = parKobo(iv);
+    const par = parKobo(c);
     // Switched on at the derived figure with no discount — the merchant edits from there.
-    patch(iv, { enabled: true, amount: par === null ? '' : inputNaira(par), discount: par === null ? '' : '0' });
+    patch(c.key, { enabled: true, amount: par === null ? '' : inputNaira(par), discount: par === null ? '' : '0' });
   }
 
   /** Amount → discount. The amount is what gets stored, so it wins; the % follows it. */
-  function editAmount(iv: PriceInterval, raw: string) {
-    const pct = savingsFor(iv, toKobo(raw));
-    patch(iv, { amount: raw, discount: pct === null ? '' : String(pct) });
+  function editAmount(c: Cadence, raw: string) {
+    const pct = savingsFor(c, toKobo(raw));
+    patch(c.key, { amount: raw, discount: pct === null ? '' : String(pct) });
   }
 
   /** Discount → amount. Derives off the PAR figure, so 0% is always exactly the equivalent price. */
-  function editDiscount(iv: PriceInterval, raw: string) {
+  function editDiscount(c: Cadence, raw: string) {
     const pct = toPct(raw);
-    const par = parKobo(iv);
+    const par = parKobo(c);
     if (pct === null || par === null) {
-      patch(iv, { discount: raw });
+      patch(c.key, { discount: raw });
       return;
     }
-    patch(iv, { discount: raw, amount: inputNaira(discounted(par, pct)) });
+    patch(c.key, { discount: raw, amount: inputNaira(discounted(par, pct)) });
   }
 
   /**
    * The base moved, so every derived amount moves with it — but the merchant's DISCOUNT is a pricing
    * decision, not arithmetic, so that is what we preserve while the amount is recomputed.
    */
-  function editBase(nextAmount: string, nextInterval: PriceInterval) {
+  function editBase(nextAmount: string, nextKey: string) {
     setBaseAmount(nextAmount);
-    setBaseInterval(nextInterval);
+    setBaseKey(nextKey);
+    const next = byKey(nextKey);
     const nextKobo = toKobo(nextAmount);
     setVariants((prev) => {
-      const next: Variants = { ...prev };
-      for (const iv of PLAN_CADENCES) {
-        const v = readVariant(prev, iv);
+      const out: Variants = { ...prev };
+      for (const c of PLAN_CADENCES) {
+        const v = readVariant(prev, c.key);
         if (!v.enabled) continue;
         // The base cadence cannot also be a variant of itself.
-        if (iv === nextInterval) {
-          next[iv] = { ...v, enabled: false };
+        if (c.key === nextKey) {
+          out[c.key] = { ...v, enabled: false };
           continue;
         }
         if (nextKobo === null) continue;
         const pct = toPct(v.discount) ?? 0;
-        const par = convertIntervalKobo(nextKobo, nextInterval, 1, iv, 1);
-        next[iv] = { ...v, amount: inputNaira(discounted(par, pct)) };
+        const par = convertIntervalKobo(nextKobo, next.interval, next.intervalCount, c.interval, c.intervalCount);
+        out[c.key] = { ...v, amount: inputNaira(discounted(par, pct)) };
       }
-      return next;
+      return out;
     });
   }
 
@@ -177,7 +169,7 @@ export function NewPlanButton() {
             </div>
 
             <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-3.5">
-              <input type="hidden" name="baseInterval" value={baseInterval} />
+              <input type="hidden" name="baseCadence" value={baseKey} />
 
               <label className="flex flex-col gap-[7px]">
                 <span className="text-[12.5px] font-medium text-foreground">Name</span>
@@ -203,24 +195,23 @@ export function NewPlanButton() {
                 <span className="text-[12.5px] font-medium text-foreground">What it costs</span>
                 <div className="flex items-center gap-2">
                   <input
-                    name={`amount_${baseInterval}`}
+                    name={`amount_${baseKey}`}
                     inputMode="decimal"
                     aria-label="Base amount in naira"
                     value={baseAmount}
-                    onChange={(e) => editBase(e.target.value, baseInterval)}
+                    onChange={(e) => editBase(e.target.value, baseKey)}
                     placeholder="5,000.00"
                     className={`flex-1 ${inputCls}`}
                   />
-                  <span className="text-[13.5px] text-subtle-foreground">per</span>
                   <select
-                    aria-label="Base billing interval"
-                    value={baseInterval}
-                    onChange={(e) => editBase(baseAmount, e.target.value as PriceInterval)}
-                    className={`w-[104px] capitalize ${inputCls}`}
+                    aria-label="Base billing cadence"
+                    value={baseKey}
+                    onChange={(e) => editBase(baseAmount, e.target.value)}
+                    className={`w-[152px] ${inputCls}`}
                   >
-                    {PLAN_CADENCES.map((iv) => (
-                      <option key={iv} value={iv}>
-                        {iv}
+                    {PLAN_CADENCES.map((c) => (
+                      <option key={c.key} value={c.key}>
+                        {c.label}
                       </option>
                     ))}
                   </select>
@@ -240,22 +231,22 @@ export function NewPlanButton() {
               {/* Other cadences, priced off the base. Each is a real price row of its own. */}
               <div className="flex flex-col gap-2 rounded border border-border bg-surface-2/40 p-3">
                 <span className="text-[12.5px] font-medium text-foreground">Also offer</span>
-                {PLAN_CADENCES.filter((iv) => iv !== baseInterval).map((iv) => {
-                  const v = readVariant(variants, iv);
+                {PLAN_CADENCES.filter((c) => c.key !== baseKey).map((c) => {
+                  const v = readVariant(variants, c.key);
                   const kobo = v.enabled ? toKobo(v.amount) : null;
-                  const save = savingsFor(iv, kobo);
+                  const save = savingsFor(c, kobo);
                   return (
-                    <div key={iv} className="flex flex-col gap-2">
+                    <div key={c.key} className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
                         <label className="flex items-center gap-2.5">
                           <input
                             type="checkbox"
                             checked={v.enabled}
                             disabled={baseKobo === null}
-                            onChange={() => toggle(iv)}
+                            onChange={() => toggle(c)}
                             className="size-3.5 accent-[var(--accent)] disabled:opacity-40"
                           />
-                          <span className="text-[13px] capitalize text-foreground">{intervalLabel(iv)}</span>
+                          <span className="text-[13px] first-letter:capitalize text-foreground">{c.label}</span>
                         </label>
                         {v.enabled && save !== null && save > 0 ? (
                           <span className="rounded-full bg-success-bg px-2 py-[2px] text-[11px] font-medium text-success">
@@ -268,20 +259,20 @@ export function NewPlanButton() {
                         <div className="flex flex-col gap-1.5 pl-6">
                           <div className="flex items-center gap-2">
                             <input
-                              name={`amount_${iv}`}
+                              name={`amount_${c.key}`}
                               inputMode="decimal"
-                              aria-label={`${iv} amount in naira`}
+                              aria-label={`${c.label} amount in naira`}
                               value={v.amount}
-                              onChange={(e) => editAmount(iv, e.target.value)}
+                              onChange={(e) => editAmount(c, e.target.value)}
                               className={`flex-1 ${inputCls}`}
                             />
-                            <span className="text-[12.5px] text-subtle-foreground">/{intervalShort(iv)}</span>
+                            <span className="whitespace-nowrap text-[12.5px] text-subtle-foreground">{cadenceSuffix(c)}</span>
                             <div className="flex items-center gap-1.5">
                               <input
                                 inputMode="numeric"
-                                aria-label={`${iv} discount percent`}
+                                aria-label={`${c.label} discount percent`}
                                 value={v.discount}
-                                onChange={(e) => editDiscount(iv, e.target.value)}
+                                onChange={(e) => editDiscount(c, e.target.value)}
                                 className={`w-[62px] text-right ${inputCls}`}
                               />
                               <span className="text-[12.5px] text-subtle-foreground">% off</span>
@@ -291,7 +282,7 @@ export function NewPlanButton() {
                             {kobo !== null ? (
                               <>
                                 Stored as <span className="font-mono text-foreground">{kobo.toLocaleString('en-US')} kobo</span>.
-                                {save !== null && save < 0 ? ` A ${Math.abs(save)}% premium over ${intervalLabel(baseInterval)}.` : ''}
+                                {save !== null && save < 0 ? ` A ${Math.abs(save)}% premium over ${base.label}.` : ''}
                               </>
                             ) : (
                               'Enter the price in naira; it is stored as integer kobo.'

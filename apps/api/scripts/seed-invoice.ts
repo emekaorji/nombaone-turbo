@@ -6,6 +6,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { env } from '../src/shared/config/env';
+import { scriptSubAccountId } from './_subaccount';
 import { db } from '../src/shared/config/db';
 import { getNombaClient } from '../src/shared/config/nomba';
 import { customersTable, invoicesTable, organizationsTable } from '@nombaone/core-db/schema';
@@ -48,7 +49,7 @@ async function main(): Promise<void> {
       tokenizeCard: process.argv.includes('--tokenize'),
       order: {
         orderReference: invRef, // ← the invoice reference; the webhook will settle THIS invoice
-        accountId: env.NOMBA_LIVE_SUBACCOUNT_ID, // sub-account → webhook fires
+        accountId: scriptSubAccountId, // sub-account → webhook fires
         amount: koboToNombaAmount(AMOUNT_KOBO), // "100.00"
         currency: 'NGN',
         callbackUrl: 'https://tunnel.nombaone.xyz/callback',

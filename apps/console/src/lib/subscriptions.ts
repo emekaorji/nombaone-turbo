@@ -1,6 +1,7 @@
 import { toMonthlyKobo } from '@nombaone/core-contracts/billing';
 import {
   customersTable,
+  dunningAttemptsTable,
   invoicesTable,
   paymentMethodsTable,
   plansTable,
@@ -171,6 +172,7 @@ export async function getSubscriptionsView(sort: SubSortKey = 'at_risk'): Promis
       subscriptionId: invoicesTable.subscriptionId,
       periodIndex: invoicesTable.periodIndex,
       amountDue: invoicesTable.amountDue,
+      amountPaid: invoicesTable.amountPaid,
       amountRemaining: invoicesTable.amountRemaining,
       finalizedAt: invoicesTable.finalizedAt,
       voidedAt: invoicesTable.voidedAt,
@@ -197,10 +199,36 @@ export async function getSubscriptionsView(sort: SubSortKey = 'at_risk'): Promis
     const list = historyBySub.get(inv.subscriptionId) ?? [];
     list.push({ periodIndex: inv.periodIndex, cycle: outcomeOf(inv) });
     historyBySub.set(inv.subscriptionId, list);
-    if (inv.finalizedAt && !inv.paidAt && !inv.voidedAt && inv.amountRemaining > 0) {
-      dueBySub.set(inv.subscriptionId, (dueBySub.get(inv.subscriptionId) ?? 0) + inv.amountRemaining);
+    // What this customer actually owes = billed − paid.
+    //
+    // ⚠ NOT `amount_remaining`. That column is only written on a PARTIAL collection; an ordinary
+    // unpaid invoice carries `amount_remaining = 0`. So this test was false for exactly the invoices
+    // it exists to find, `due` came out 0, and the caller's `due || mrr` fallback printed the
+    // subscription's normalized MONTHLY revenue as the amount owed: a member who owed ₦100 was shown
+    // as "Payment due · ₦438,000". A number a merchant might act on must never be a proxy.
+    if (inv.finalizedAt && !inv.paidAt && !inv.voidedAt) {
+      const outstanding = inv.amountDue - inv.amountPaid;
+      if (outstanding > 0) {
+        dueBySub.set(inv.subscriptionId, (dueBySub.get(inv.subscriptionId) ?? 0) + outstanding);
+      }
     }
   }
+
+  // Which failing subscriptions the engine is still actively retrying. This is what separates a
+  // customer we are quietly winning back from one we are about to lose — and without it, "In
+  // recovery" and "Past due" were just two names for the same row.
+  const stillRetrying = new Set<string>();
+  const scheduled = await db
+    .select({ subscriptionId: dunningAttemptsTable.subscriptionId })
+    .from(dunningAttemptsTable)
+    .where(
+      and(
+        eq(dunningAttemptsTable.organizationId, session.organizationId),
+        eq(dunningAttemptsTable.mode, session.mode),
+        eq(dunningAttemptsTable.status, 'scheduled'),
+      ),
+    );
+  for (const a of scheduled) stillRetrying.add(a.subscriptionId);
 
   function healthOf(subId: string, status: string, trialEnd: Date | null): Cycle[] {
     const hist = (historyBySub.get(subId) ?? []).slice(-6).map((h) => h.cycle);
@@ -235,9 +263,20 @@ export async function getSubscriptionsView(sort: SubSortKey = 'at_risk'): Promis
       seg.clean += 1;
       tabCount.trialing += 1;
     } else if (status === 'past_due') {
-      atRiskKobo += due || mk;
-      seg.past_due += 1;
-      seg.recovery += 1;
+      // Revenue AT RISK is the recurring revenue we lose if this subscription churns — its MRR, not
+      // the one invoice it happens to owe today. (The amount owed is a different number, and it is
+      // shown as such on the row.)
+      atRiskKobo += mk;
+
+      // The bar PARTITIONS the book: one subscription, one segment. It used to increment BOTH
+      // `recovery` and `past_due` for every past-due sub, so a book of one row rendered as "In
+      // recovery 1 · Past due 1" over "1 subscription" — a merchant counting their own customers
+      // twice. A failing subscription the engine is still retrying is IN RECOVERY; one whose retries
+      // are spent is PAST DUE, and needs a human.
+      if (stillRetrying.has(s.id)) seg.recovery += 1;
+      else seg.past_due += 1;
+
+      // Tabs are filters, not a partition — a past-due sub legitimately appears under both.
       tabCount.recovery += 1;
       tabCount.churn += 1;
     } else if (status === 'paused') {
@@ -250,8 +289,14 @@ export async function getSubscriptionsView(sort: SubSortKey = 'at_risk'): Promis
     const recovery: Recovery | undefined =
       status === 'past_due'
         ? {
-            text: `Payment due · ${naira(due || mk)}`,
-            sub: 'Recovery runs in the billing engine',
+            // The amount owed. NOT `due || mk` — falling back to normalized monthly revenue meant a
+            // member who owed ₦100 on a ₦100-per-10-minutes plan was reported to the merchant as
+            // "Payment due · ₦438,000". A merchant chases that number, or writes it off, or panics
+            // about it. If we cannot say what is owed, we do not get to invent it.
+            text: due > 0 ? `Payment due · ${naira(due)}` : 'Payment failed',
+            sub: stillRetrying.has(s.id)
+              ? 'Recovery runs in the billing engine'
+              : 'Retries are exhausted — this one needs you',
             action: 'Recover',
             tone: 'warning',
           }
@@ -276,7 +321,8 @@ export async function getSubscriptionsView(sort: SubSortKey = 'at_risk'): Promis
       recovery,
       renews,
     };
-    return { row, mrrKobo: mk, atRiskKobo: status === 'past_due' ? due || mk : 0, periodEnd: s.currentPeriodEnd, idx };
+    // Same definition as the headline: at risk = the MRR we lose if this one churns.
+    return { row, mrrKobo: mk, atRiskKobo: status === 'past_due' ? mk : 0, periodEnd: s.currentPeriodEnd, idx };
   });
 
   // Sort per the chosen key. `subs` arrives createdAt-desc, so `idx` preserves "newest".

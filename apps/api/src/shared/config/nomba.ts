@@ -1,5 +1,4 @@
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import type { Mode } from '@nombaone/sara/context';
 import {
   createNombaClient,
   setBillingNombaClientFactory,
@@ -10,6 +9,8 @@ import { registerNombaRails } from '@nombaone/sara/rails';
 
 import { env } from './env';
 import { redis } from './redis';
+
+import type { Mode } from '@nombaone/sara/context';
 
 /**
  * Nomba clients, selected by ACCOUNT MODE (`sandbox` | `live`) — never by
@@ -26,24 +27,25 @@ import { redis } from './redis';
 type NombaCreds = {
   baseUrl?: string;
   parentAccountId?: string;
-  subAccountId?: string;
   clientId?: string;
   clientSecret?: string;
 };
 
+// No subAccountId here on purpose: a sub-account belongs to a MERCHANT, not a
+// deployment. It lives in `org_nomba_accounts` and is resolved per request
+// (`findTenantSubAccount`) — an env-coded one would silently route every
+// tenant's money through one merchant.
 const credsFor = (mode: Mode): NombaCreds =>
   mode === 'live'
     ? {
         baseUrl: env.NOMBA_LIVE_BASE_URL,
         parentAccountId: env.NOMBA_LIVE_PARENT_ACCOUNT_ID,
-        subAccountId: env.NOMBA_LIVE_SUBACCOUNT_ID,
         clientId: env.NOMBA_LIVE_CLIENT_ID,
         clientSecret: env.NOMBA_LIVE_CLIENT_SECRET,
       }
     : {
         baseUrl: env.NOMBA_SANDBOX_BASE_URL,
         parentAccountId: env.NOMBA_SANDBOX_PARENT_ACCOUNT_ID,
-        subAccountId: env.NOMBA_SANDBOX_SUBACCOUNT_ID,
         clientId: env.NOMBA_SANDBOX_CLIENT_ID,
         clientSecret: env.NOMBA_SANDBOX_CLIENT_SECRET,
       };
@@ -96,7 +98,6 @@ export const getNombaClient = (mode: Mode): NombaClient => {
   const config: NombaConfig = {
     baseUrl: c.baseUrl as string,
     parentAccountId: c.parentAccountId as string,
-    subAccountId: c.subAccountId ?? '',
     clientId: c.clientId as string,
     clientSecret: c.clientSecret as string,
     mode,

@@ -7,8 +7,8 @@ import {
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { emitEvent } from '@nombaone/sara/events';
+
 import { getSubscriptionByReference, loadSubscriptionRow } from '../subscriptions';
 import { applyIntervalSwitch, applyProration } from './applyProration';
 import { loadPriceById, loadPrimarySubscriptionItem } from './effects';

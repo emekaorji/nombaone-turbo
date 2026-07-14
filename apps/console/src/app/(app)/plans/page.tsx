@@ -99,12 +99,25 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
                   <span className="text-[20px] font-semibold text-foreground">{detail.name}</span>
                   <StatusPill status={detail.status} />
                 </div>
+                {/* Edit IS the price editor now — a plan is what it costs, so there is no separate
+                    "add a price" step to hunt for. The one exception is the repair CTA below, for a
+                    legacy plan that has no active price at all. */}
                 <div className="flex items-center gap-2.5">
                   {detail.status === 'active' ? (
-                    <EditPlanButton planRef={detail.reference} name={detail.name} description={detail.description} />
+                    <EditPlanButton
+                      planRef={detail.reference}
+                      name={detail.name}
+                      description={detail.description}
+                      prices={detail.prices
+                        .filter((p) => p.active)
+                        .map((p) => ({
+                          interval: p.interval,
+                          intervalCount: p.intervalCount,
+                          unitAmount: p.unitAmount,
+                        }))}
+                    />
                   ) : null}
                   {detail.status === 'active' ? <ArchivePlanButton planRef={detail.reference} /> : null}
-                  <NewPriceButton planRef={detail.reference} />
                 </div>
               </div>
               <div className="flex items-center">

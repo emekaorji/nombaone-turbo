@@ -3,11 +3,12 @@
 // (→ money unit + join field without a webhook), and (b) a webhook-config endpoint
 // to read the registered URL.  npx tsx scripts/probe.ts
 import { env } from '../src/shared/config/env';
+import { scriptSubAccountId } from './_subaccount';
 import { getNombaClient } from '../src/shared/config/nomba';
 
 async function main(): Promise<void> {
   const client = getNombaClient('live');
-  const sub = env.NOMBA_LIVE_SUBACCOUNT_ID ?? '';
+  const sub = scriptSubAccountId ?? '';
   const parent = env.NOMBA_LIVE_PARENT_ACCOUNT_ID ?? '';
   const candidates: [string, Record<string, string>?][] = [
     ['/v1/transactions'],

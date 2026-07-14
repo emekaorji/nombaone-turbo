@@ -12,4 +12,6 @@ export interface BillingSettingsResponseData {
   paydayBiasEnabled: boolean;
   defaultCollectionMethod: 'charge_automatically' | 'send_invoice';
   commsEnabled: boolean;
+  /** Renewal-reminder lead, fractional hours; capped at one period length at use-time. */
+  renewalReminderLeadHours: number;
 }

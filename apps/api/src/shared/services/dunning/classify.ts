@@ -26,6 +26,9 @@ export function classifyDunningBranch(reason: PaymentFailureReason): DunningBran
   // the customer once with a fresh checkout link. Reusing the branch avoids a dunning
   // enum migration; the distinction rides on the `invoice.action_required` event.
   if (reason === 'otp_required') return 'card_update_required';
+  // A PUSH-rail (send_invoice) invoice past its due date: nothing was charged
+  // and there is nothing to charge — each attempt re-sends the payment link.
+  if (reason === 'invoice_overdue') return 'payment_reminder';
   if (CARD_UPDATE_REASONS.has(reason)) return 'card_update_required';
   if (SHORT_PATH_REASONS.has(reason)) return 'short_path';
   return 'reschedule';

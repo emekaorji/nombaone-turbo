@@ -4,6 +4,7 @@
 // the E4 requery hits live Nomba, gets PAYMENT_FAILED, and the invoice must stay OPEN.
 //   npx tsx scripts/forge-failed.ts <invoiceRef>
 import { env } from '../src/shared/config/env';
+import { scriptSubAccountId } from './_subaccount';
 import { computeNombaSignature } from '@nombaone/sara/nomba';
 
 const invRef = process.argv[2];
@@ -15,7 +16,7 @@ async function main(): Promise<void> {
     event_type: 'payment_failed',
     requestId: `forged-fail-${Date.now()}`,
     data: {
-      merchant: { userId: env.NOMBA_LIVE_SUBACCOUNT_ID ?? '', walletId: 'wallet-x' },
+      merchant: { userId: scriptSubAccountId ?? '', walletId: 'wallet-x' },
       transaction: {
         transactionId: FAILED_TXN_ID,
         type: 'online_checkout',
@@ -27,7 +28,7 @@ async function main(): Promise<void> {
       order: {
         orderReference: invRef,
         orderId: 'forged-order',
-        accountId: env.NOMBA_LIVE_SUBACCOUNT_ID ?? '',
+        accountId: scriptSubAccountId ?? '',
         amount: 1000.0,
         currency: 'NGN',
         paymentMethod: 'card',

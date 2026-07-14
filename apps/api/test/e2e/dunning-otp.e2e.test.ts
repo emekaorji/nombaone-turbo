@@ -29,11 +29,12 @@ let requeryAmount = 0;
 // checkout/order returns a fresh link (for the OTP-completion mint); requery confirms settle.
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>(req: NombaRequest) {
     if (req.endpoint.includes('/checkout/order')) {
-      return { status: 200, ok: true, data: { data: { checkoutLink: 'https://pay.nomba.com/otp-link' } } as T };
+      return { status: 200, ok: true, pending: false, data: { data: { checkoutLink: 'https://pay.nomba.com/otp-link' } } as T };
     }
-    return { status: 200, ok: true, data: {} as T };
+    return { status: 200, ok: true, pending: false, data: {} as T };
   },
   requeryTransaction: async () => ({ found: true, succeeded: true, amount: requeryAmount }),
 };
@@ -58,7 +59,7 @@ describe('card OTP/3DS → dunning → fresh-checkout-link e2e (Area 1)', () => 
           : { status: 'succeeded' },
     });
     registerRail({ key: 'mandate', direction: 'pull', collect: async () => ({ status: 'succeeded' }) });
-    registerRail({ key: 'transfer', direction: 'push', collect: async () => ({ status: 'pending', payInstructions: {} }) });
+    registerRail({ key: 'transfer', direction: 'push', collect: async () => ({ status: 'pending', payInstructions: { bankName: 'Wema', accountNumber: '0000000000', amountKobo: 0 } }) });
 
     const orgA = await harness.seedOrg('OTP A');
     bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;

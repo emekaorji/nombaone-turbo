@@ -368,9 +368,10 @@ and create a new one; plans archive rather than delete.
 - **The invoice list filter omits `partially_paid`.** `InvoiceListStatus` has no
 `partially_paid` variant, even though an `Invoice` object can carry that status —
 filter on `Open` and inspect the amounts.
-- **Sandbox settlements.** An organization without a settlement sub-account gets a
-typed `SETTLEMENT_SUBACCOUNT_NOT_FOUND` on escrow and payout — a real business
-state whose `hint` explains itself.
+- **Withdrawing needs a bank account.** An organization that has not yet added the
+bank account it wants to be paid into gets a typed `PAYOUT_ACCOUNT_MISSING` on
+escrow and payout — a real business state whose `hint` explains itself. The
+settlement balance itself exists from day one.
 
 ## Next
 

@@ -9,15 +9,17 @@ import { cn } from "@/lib/cn";
 /**
  * `<WebhookVerifier>`: an interactive, client-side recreation of Nombaone's webhook
  * signature recipe. Paste a raw body, the unix timestamp, and the endpoint's
- * signing secret; it computes `HMAC_SHA256(`${timestamp}.${body}`, secret)` (hex)
- * via the Web Crypto API and shows the expected `v1=…`. Paste an `X-Nombaone-Signature`
- * header and it renders a constant-time-equivalent pass/fail, teaching verification
- * the same way the receiver does it: no server, no network, nothing leaves the page.
+ * plaintext signing secret; it derives `key = SHA256(secret)` (hex) and computes
+ * `HMAC_SHA256(`${timestamp}.${body}`, key)` (hex) via the Web Crypto API and shows
+ * the expected `v1=…`. Paste an `X-Nombaone-Signature` header and it renders a
+ * constant-time-equivalent pass/fail, teaching verification the same way the
+ * receiver does it: no server, no network, nothing leaves the page.
  *
- * This mirrors `signWebhookPayload` / `verifyWebhookSignature` from
- * `@nombaone/sara/webhooks` byte-for-byte (the SSOT): the signed
- * input is `${timestamp}.${rawBody}`, the algorithm is SHA-256, the encoding is hex,
- * and the header is the Stripe-style `t=<unix>,v1=<hex>`.
+ * This mirrors `signWebhookPayloadV1` / `buildSignatureHeader` from
+ * `@nombaone/sara/webhooks` byte-for-byte (the SSOT): the HMAC key is the sha256
+ * hex of the plaintext secret, the signed input is `${timestamp}.${rawBody}`, the
+ * algorithm is SHA-256, the encoding is hex, and the header is the Stripe-style
+ * `t=<unix>,v1=<hex>`.
  *
  * a11y: every input is labelled, the verdict is an `aria-live` region, and the
  * colour-coded result is also stated in text (never colour alone). Dark/light via
@@ -35,12 +37,17 @@ function toHex(buffer: ArrayBuffer): string {
     .join("");
 }
 
-/** Compute the hex HMAC-SHA256 of `${timestamp}.${body}` under `secret`. */
+/**
+ * Compute the hex HMAC-SHA256 of `${timestamp}.${body}` under
+ * `key = sha256(secret)` hex — the plaintext secret is hashed first, exactly as
+ * the server and the SDKs do.
+ */
 async function computeSignature(body: string, secret: string, timestamp: string): Promise<string> {
   const encoder = new TextEncoder();
+  const keyHex = toHex(await crypto.subtle.digest("SHA-256", encoder.encode(secret)));
   const key = await crypto.subtle.importKey(
     "raw",
-    encoder.encode(secret),
+    encoder.encode(keyHex),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],

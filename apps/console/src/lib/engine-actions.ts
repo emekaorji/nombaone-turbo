@@ -351,32 +351,104 @@ export async function refundSettlementAction(settlementReference: string, _prev:
   return { ok: true, note: 'Refund issued.' };
 }
 
-/** Withdraw settled funds to a bank account (POST /v1/settlements/payout). */
+/**
+ * Withdraw the merchant's settled balance (POST /v1/settlements/payout).
+ *
+ * 🔒 No destination is sent. It used to post a hand-typed `bankCode` + `accountNumber`
+ * straight through, which meant the money went wherever the form said — including
+ * wherever a typo said. The API now reads the destination from the merchant's registered,
+ * bank-verified payout account, so this action cannot misdirect a naira.
+ *
+ * No amount ⇒ withdraw everything available.
+ */
 export async function createPayoutAction(_prev: EngineActionState, formData: FormData): Promise<EngineActionState> {
   const session = await getSession();
   if (!session) return { error: 'Your session has expired.' };
   if (!can(session.user.role as OrgUserRole, 'money:write')) return { error: 'Only owners can withdraw funds.' };
 
-  const naira = Number(formData.get('amount'));
-  if (!Number.isFinite(naira) || naira <= 0) return { error: 'Enter an amount greater than zero.' };
-  const amountInKobo = Math.round(naira * 100);
-  const bankCode = String(formData.get('bankCode') ?? '').trim();
-  const accountNumber = String(formData.get('accountNumber') ?? '').trim();
-  if (!bankCode) return { error: 'Enter a bank code.' };
-  if (!accountNumber) return { error: 'Enter an account number.' };
+  const raw = String(formData.get('amount') ?? '').trim();
+  const body: Record<string, unknown> = {};
+  if (raw) {
+    const amount = Number(raw);
+    if (!Number.isFinite(amount) || amount <= 0) return { error: 'Enter an amount greater than zero.' };
+    body.amountInKobo = Math.round(amount * 100);
+  }
 
   try {
-    await callApi(session, '/settlements/payout', {
-      method: 'POST',
-      body: { amountInKobo, bankCode, accountNumber },
-    });
+    await callApi(session, '/settlements/payout', { method: 'POST', body });
   } catch (e) {
     if (e instanceof ApiError) return { error: e.message };
     return { error: 'Could not start the payout.' };
   }
 
   revalidatePath('/settlements');
-  return { ok: true, note: 'Payout started.' };
+  return { ok: true, note: 'Payout started. The money is on its way to your bank.' };
+}
+
+/**
+ * Ask the BANK who owns an account number, without saving anything
+ * (POST /v1/payout-accounts/resolve).
+ *
+ * This is what turns "type your bank details and hope" into "we found ADEBAYO STORES LTD
+ * — is this you?". The merchant confirms the bank's answer instead of trusting their own
+ * typing, so a wrong digit is caught before any money moves rather than after.
+ */
+export async function resolvePayoutAccountAction(
+  _prev: EngineActionState,
+  formData: FormData
+): Promise<EngineActionState & { accountName?: string }> {
+  const session = await getSession();
+  if (!session) return { error: 'Your session has expired.' };
+
+  const bankCode = String(formData.get('bankCode') ?? '').trim();
+  const bankName = String(formData.get('bankName') ?? '').trim();
+  const accountNumber = String(formData.get('accountNumber') ?? '').trim();
+  if (!bankCode || !bankName) return { error: 'Pick your bank.' };
+  if (!/^\d{10}$/.test(accountNumber)) return { error: 'A Nigerian account number is exactly 10 digits.' };
+
+  try {
+    const res = await callApi<{ accountName: string }>(session, '/payout-accounts/resolve', {
+      method: 'POST',
+      body: { bankCode, bankName, accountNumber },
+    });
+    return { ok: true, accountName: res.accountName };
+  } catch (e) {
+    if (e instanceof ApiError) return { error: e.message };
+    return { error: 'We could not check that account with the bank.' };
+  }
+}
+
+/**
+ * Save the bank account this merchant is paid into (POST /v1/payout-accounts).
+ *
+ * Asked for at FIRST WITHDRAWAL, never at signup — a bank account is meaningless until
+ * there is money to send to it, and demanding one at the door is friction for nothing.
+ * The holder's name is not sent: the API takes it from the bank.
+ */
+export async function addPayoutAccountAction(_prev: EngineActionState, formData: FormData): Promise<EngineActionState> {
+  const session = await getSession();
+  if (!session) return { error: 'Your session has expired.' };
+  if (!can(session.user.role as OrgUserRole, 'money:write')) return { error: 'Only owners can set the payout account.' };
+
+  const bankCode = String(formData.get('bankCode') ?? '').trim();
+  const bankName = String(formData.get('bankName') ?? '').trim();
+  const accountNumber = String(formData.get('accountNumber') ?? '').trim();
+  if (!bankCode || !bankName) return { error: 'Pick your bank.' };
+  if (!/^\d{10}$/.test(accountNumber)) return { error: 'A Nigerian account number is exactly 10 digits.' };
+
+  try {
+    await callApi(session, '/payout-accounts', {
+      method: 'POST',
+      body: { bankCode, bankName, accountNumber },
+    });
+  } catch (e) {
+    if (e instanceof ApiError) return { error: e.message };
+    return { error: 'Could not save that bank account.' };
+  }
+
+  revalidatePath('/settlements');
+  revalidatePath('/');
+  return { ok: true, note: 'Bank account saved. Your revenue pays out here daily.' };
 }
 
 /** Mint a sandbox test method from the test page (customer chosen in the form). */

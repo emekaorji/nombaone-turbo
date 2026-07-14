@@ -7,6 +7,7 @@ import {
   domainEventsTable,
   dunningAttemptsTable,
   invoicesTable,
+  ledgerAccountsTable,
   paymentMethodsTable,
   subscriptionsTable,
 } from '@nombaone/core-db/schema';
@@ -30,8 +31,9 @@ let railCallCount = 0;
 
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>() {
-    return { status: 200, ok: true, data: {} as T };
+    return { status: 200, ok: true, pending: false, data: {} as T };
   },
   requeryTransaction: async () => ({ found: true, succeeded: true, amount: 0 }),
 };
@@ -40,6 +42,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
   let harness: Harness;
   let bearerA: string;
   let ctxA: { organizationId: string; mode: 'sandbox' };
+  let refA: string;
 
   const scopes = [
     'customers:read',
@@ -67,13 +70,46 @@ describe('dunning & recovery e2e (★ D/E)', () => {
     registerRail({
       key: 'transfer',
       direction: 'push',
-      collect: async () => ({ status: 'pending', payInstructions: {} }),
+      collect: async () => ({ status: 'pending', payInstructions: { bankName: 'Wema', accountNumber: '0000000000', amountKobo: 0 } }),
     });
 
     const orgA = await harness.seedOrg('Dun A');
     bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
     ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
+    refA = `NBO-${orgA.reference}`;
   });
+
+  /** The merchant's withdrawable balance — the ledger account a payout debits. */
+  const merchantBalance = async (): Promise<number> => {
+    const [row] = await harness.db
+      .select({ balance: ledgerAccountsTable.balance })
+      .from(ledgerAccountsTable)
+      .where(
+        and(
+          eq(ledgerAccountsTable.organizationId, ctxA.organizationId),
+          eq(ledgerAccountsTable.mode, 'sandbox'),
+          eq(ledgerAccountsTable.key, `tenant_settlement:${refA}`)
+        )
+      )
+      .limit(1);
+    return row?.balance ?? 0;
+  };
+
+  /** Money collected but attributed to nobody. Must always drain back to 0. */
+  const suspense = async (): Promise<number> => {
+    const [row] = await harness.db
+      .select({ balance: ledgerAccountsTable.balance })
+      .from(ledgerAccountsTable)
+      .where(
+        and(
+          eq(ledgerAccountsTable.organizationId, ctxA.organizationId),
+          eq(ledgerAccountsTable.mode, 'sandbox'),
+          eq(ledgerAccountsTable.key, 'platform_revenue')
+        )
+      )
+      .limit(1);
+    return row?.balance ?? 0;
+  };
 
   afterAll(async () => {
     await harness?.stop();
@@ -160,6 +196,7 @@ describe('dunning & recovery e2e (★ D/E)', () => {
     expect(a1!.status).toBe('scheduled');
 
     // The retry succeeds → recovery.
+    const balanceBefore = await merchantBalance();
     railStatus = 'succeeded';
     await makeAttemptsDue(subId);
     await sweep(); // EXECUTE attempt #1
@@ -169,6 +206,16 @@ describe('dunning & recovery e2e (★ D/E)', () => {
     const [inv] = await harness.db.select({ reference: invoicesTable.reference, paidAt: invoicesTable.paidAt }).from(invoicesTable).where(and(eq(invoicesTable.subscriptionId, subId), eq(invoicesTable.periodIndex, 1)));
     expect(inv!.paidAt).toBeTruthy();
     expect(await eventTypesFor(inv!.reference)).toContain('invoice.payment_recovered');
+
+    // 💰 A RECOVERED PAYMENT IS STILL THE MERCHANT'S MONEY.
+    // This assertion is the whole reason the test exists. Recovery marked the invoice
+    // paid and posted the charge — but never called `recordSettlement`, so the entire
+    // gross of every successful recovery sat in `platform_revenue` and the merchant was
+    // credited NOTHING. Recovering a failed payment is the point of dunning; it has to
+    // pay the merchant like any other payment.
+    expect(await merchantBalance()).toBeGreaterThan(balanceBefore);
+    // …and nothing is left stranded, unattributed, in suspense.
+    expect(await suspense()).toBe(0);
   });
 
   // ── D4 ★ / D5 expired card → card-update, NEVER a blind retry ───────────────
@@ -192,15 +239,36 @@ describe('dunning & recovery e2e (★ D/E)', () => {
 
   // ── E6 ★ / D10 card update mid-dunning → atomic swap + immediate re-attempt ──
   it('E6 ★ / D10 — a card update swaps the token atomically and triggers an immediate recovery', async () => {
-    const { subRef, subId } = await seedActiveCardSub();
+    const { subRef, subId, customerRef } = await seedActiveCardSub();
     await failRenewal(subRef, 'expired_card');
     await sweep(); // card_update_required
 
-    // Update the card (new token) — atomic swap; the sub's default now has a valid token.
+    // A replacement card captured through the hosted checkout (the webhook
+    // attach path) — the endpoint only PROMOTES captured rows; the raw
+    // checkoutToken body was removed (an arbitrary string must never become a
+    // chargeable credential).
+    const [cust] = await harness.db
+      .select({ id: customersTable.id })
+      .from(customersTable)
+      .where(and(eq(customersTable.organizationId, ctxA.organizationId), eq(customersTable.reference, customerRef)))
+      .limit(1);
+    const newPmRef = mintReference('PMT');
+    await harness.db.insert(paymentMethodsTable).values({
+      reference: newPmRef, organizationId: ctxA.organizationId, mode: 'sandbox', customerId: cust!.id,
+      kind: 'card', status: 'active', tokenKey: 'tok_new_valid', brand: 'visa', last4: '1111',
+    });
+
+    // The removed raw-token path must be rejected outright (422), not written.
+    const rejected = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/payment-method`))
+      .set('Idempotency-Key', `cu-rej-${uniq()}`)
+      .send({ checkoutToken: 'tok_attacker_string' });
+    expect(rejected.status).toBe(422);
+
+    // Update the card (promote the captured row) — atomic swap; the sub's default now has a valid token.
     railStatus = 'succeeded';
     const updated = await asA(request(harness.app).post(`/v1/subscriptions/${subRef}/payment-method`))
       .set('Idempotency-Key', `cu-${uniq()}`)
-      .send({ checkoutToken: 'tok_new_valid' });
+      .send({ paymentMethodReference: newPmRef });
     expect(updated.status).toBe(200);
 
     // E6: default_payment_method_id points at an ACTIVE row that HAS a token.
@@ -330,7 +398,8 @@ describe('dunning & recovery e2e (★ D/E)', () => {
 
   const clientRequerying = (r: { succeeded: boolean; amount?: number; status?: string; gatewayMessage?: string }): NombaClient => ({
     getToken: async () => 'tok',
-    async request<T = unknown>() { return { status: 200, ok: true, data: {} as T }; },
+  listTokenizedCards: async () => [],
+    async request<T = unknown>() { return { status: 200, ok: true, pending: false, data: {} as T }; },
     requeryTransaction: async () => ({ found: true, ...r }),
   });
 

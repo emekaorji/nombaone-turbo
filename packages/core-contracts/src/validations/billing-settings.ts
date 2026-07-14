@@ -33,6 +33,9 @@ export const updateBillingSettingsBody = z
     paydayBiasEnabled: z.boolean().optional(),
     defaultCollectionMethod: z.enum(['charge_automatically', 'send_invoice']).optional(),
     commsEnabled: z.boolean().optional(),
+    // Fractional like the dunning ladder (0.02 ≈ one minute); capped to one
+    // period length when applied, so short cadences self-shrink it.
+    renewalReminderLeadHours: z.coerce.number().positive().optional(),
   })
   .refine(
     (d) =>

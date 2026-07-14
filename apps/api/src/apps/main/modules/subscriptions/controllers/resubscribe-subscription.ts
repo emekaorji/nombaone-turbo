@@ -1,6 +1,6 @@
 import { AppError } from '@nombaone/errors';
-import { resubscribe } from '@shared/services/subscriptions';
 
+import { resubscribe } from '@shared/services/subscriptions';
 import { db } from '@shared/config/db';
 import { jsonHandler } from '@shared/http';
 

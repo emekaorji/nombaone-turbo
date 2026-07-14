@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 
 import { plansTable, type PlanInsert } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
@@ -16,11 +16,15 @@ import type { CreatePlanInput, PlanResponseData } from './types';
  * it opens a transaction — a guard that fires mid-transaction is a rollback we
  * never needed. The `plans_org_env_name_unique` index remains the structural
  * backstop for the race this read cannot see.
+ *
+ * `exceptPlanId` excludes the plan being RENAMED from its own collision check —
+ * a rename to the name it already has is not a conflict.
  */
 export async function assertPlanNameFree(
   db: InfraDb,
   ctx: DomainContext,
-  name: string
+  name: string,
+  exceptPlanId?: string
 ): Promise<void> {
   const [existing] = await db
     .select({ id: plansTable.id })
@@ -29,7 +33,8 @@ export async function assertPlanNameFree(
       and(
         eq(plansTable.organizationId, ctx.organizationId),
         eq(plansTable.mode, ctx.mode),
-        eq(plansTable.name, name)
+        eq(plansTable.name, name),
+        ...(exceptPlanId === undefined ? [] : [ne(plansTable.id, exceptPlanId)])
       )
     )
     .limit(1);

@@ -40,6 +40,14 @@ export interface SubscriptionResponseData {
   defaultPaymentMethodId: string | null;
   items: SubscriptionItemData[];
   latestInvoiceId: string | null;
+  /**
+   * The Nomba hosted-checkout link for the FIRST payment — present only on the
+   * CREATE response of a hosted-checkout entry (`charge_automatically`, no
+   * payment method, no trial). Redirect the end user here; paying activates the
+   * subscription. `null` everywhere else (PM-attached creates, trials,
+   * `send_invoice`, and all reads).
+   */
+  checkoutLink: string | null;
   currency: 'NGN';
   mode: Mode;
   createdAt: string;

@@ -40,6 +40,36 @@ Send the customer to it; when they complete OTP there, the invoice settles and
 the subscription recovers. This is the product answer to a rail that can't be
 pulled silently. See [card tokens expire](/concepts/hard-parts/card-tokens-expire).
 
+## Push-rail dunning: `payment_reminder`
+
+Not every subscription can be retried at all. On the `send_invoice` lane —
+bank-transfer customers, and anyone hosted checkout flipped there — the money
+is *pushed*, so there is no instrument to charge again. When such an invoice
+passes its due date, the subscription still moves to `past_due`, but dunning
+runs the **`payment_reminder`** branch: on the same retry ladder it **re-sends
+the payment link and transfer details instead of charging**. The customer pays
+when the balance lands; the recovery and exhaustion mechanics are otherwise
+identical.
+
+## What your customer sees
+
+Dunning is not silent toward the person who owes the money. At each step the
+engine emails the customer directly — a renewal heads-up before the charge
+(the `renewalReminderLeadHours` billing setting), the OTP checkout link when a
+card needs authentication, the payment link on a reminder, a confirmation on
+recovery, and a final notice on churn. All of it is gated by the
+`commsEnabled` billing setting (`GET /v1/organization/billing`), so if you run
+your own messaging you can turn the engine's off — but a customer who never
+learns their membership is stuck is a customer you lose, so make sure exactly
+one of you is talking.
+
+## Recovery is forgiving
+
+When a `past_due` subscription recovers, the engine **re-anchors the cycle at
+the recovery**: the next period starts when the customer actually paid, and the
+unserved gap between failure and recovery is not back-billed. A customer who
+comes back after a week owes one period, not one period plus arrears.
+
 ## Inspect the dunning state
 
 Read where recovery stands for a subscription:
@@ -73,8 +103,11 @@ Use `requires_otp` to rehearse the checkout-link branch, and
 
 - **`invoice.payment_failed`**: entered dunning. Log it; don't churn yet.
 - **`invoice.action_required`**: send the customer the checkout link in the payload.
+- **`invoice.payment_instructions`**: a push-rail invoice is waiting on the payer;
+  the payload carries this invoice's dedicated transfer details.
 - **`invoice.payment_recovered`**: restore normal access.
-- **`subscription.canceled`**: dunning exhausted (if your policy cancels). Now cut access.
+- **`subscription.churned`**: dunning exhausted; involuntary churn. Now cut access.
+  (A deliberate cancellation fires `subscription.canceled` instead.)
 
 <CardGroup cols={2}>
   <Card title="Why thin balances change dunning" href="/concepts/hard-parts/dunning-for-thin-balances">

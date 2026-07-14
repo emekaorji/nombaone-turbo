@@ -26,6 +26,7 @@ Requires a secret API key.
 | `paydayBiasEnabled` | boolean | no |  |
 | `defaultCollectionMethod` | "charge_automatically" | "send_invoice" | no |  |
 | `commsEnabled` | boolean | no |  |
+| `renewalReminderLeadHours` | number | no |  |
 
 ## Responses
 

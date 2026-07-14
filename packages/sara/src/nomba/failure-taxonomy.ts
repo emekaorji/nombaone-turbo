@@ -14,6 +14,9 @@ export type PaymentFailureReason =
   | 'mandate_suspended'
   | 'processor_unavailable'
   | 'otp_required'
+  // Push-rail (send_invoice) dunning entry: the invoice sailed past its due date
+  // with no payer action. Not a charge failure — nothing was charged.
+  | 'invoice_overdue'
   | 'unknown';
 
 /**

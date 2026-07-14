@@ -1,10 +1,11 @@
 import { paymentMethodsTable } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { emitEvent } from '@nombaone/sara/events';
+import { toNombaAccountName } from '@nombaone/sara/nomba/accountName';
 import { NOMBA_ENDPOINTS } from '@nombaone/sara/nomba/endpoints';
 import { koboToNombaAmount } from '@nombaone/sara/nomba/money';
 import { mintReference } from '@nombaone/sara/reference';
+
 import { nombaData, resolveCustomer } from './internal';
 
 import type {
@@ -181,7 +182,10 @@ export async function issueVirtualAccount(
     idempotencyRef: accountRef,
     body: {
       accountRef,
-      accountName: customer.name,
+      // Nomba accepts letters+spaces only here and rejects anything else with an
+      // HTTP *200* failure envelope — a hyphenated surname would otherwise yield
+      // no account at all. See toNombaAccountName.
+      accountName: toNombaAccountName(customer.name),
       // kobo → naira decimal string (D.1); omit when no expected amount (open VA).
       expectedAmount: input.expectedAmount != null ? koboToNombaAmount(input.expectedAmount) : undefined,
       expiryDate: input.expiryDate,

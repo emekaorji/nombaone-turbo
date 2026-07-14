@@ -162,6 +162,20 @@
       "when": 1783804949201,
       "tag": "0022_fantastic_tana_nile",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1783894450216,
+      "tag": "0023_freezing_blockbuster",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1783931527802,
+      "tag": "0024_yellow_mimic",
+      "breakpoints": true
     }
   ]
 }

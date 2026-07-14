@@ -1,9 +1,10 @@
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import { plansTable, type PlanRow } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
 
 import { emitEvent } from '@nombaone/sara/events';
+import { assertPlanNameFree } from './create';
 import { serializePlan } from './serialize';
 
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
@@ -37,25 +38,7 @@ export async function updatePlan(
   }
 
   if (input.name !== undefined && input.name !== existing.name) {
-    const [dupe] = await txDb
-      .select({ id: plansTable.id })
-      .from(plansTable)
-      .where(
-        and(
-          eq(plansTable.organizationId, ctx.organizationId),
-          eq(plansTable.mode, ctx.mode),
-          eq(plansTable.name, input.name),
-          ne(plansTable.id, existing.id)
-        )
-      )
-      .limit(1);
-    if (dupe) {
-      throw AppError.Conflict(
-        'a plan with this name already exists',
-        { name: input.name },
-        NOMBAONE_ERROR_CODES.PLAN_NAME_TAKEN
-      );
-    }
+    await assertPlanNameFree(txDb, ctx, input.name, existing.id);
   }
 
   const patch: Partial<Pick<PlanRow, 'name' | 'description' | 'metadata'>> = {};

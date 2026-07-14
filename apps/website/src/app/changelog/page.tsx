@@ -10,6 +10,12 @@ export const metadata = {
 const ENTRIES: { date: string; version: string; title: string; body: string }[] = [
   {
     date: "Jul 12, 2026",
+    version: "v0.16",
+    title: "Change what a plan costs, and watch it renew",
+    body: "Send a plan the prices you want it to have and the engine reconciles the rest: a new cadence is created, an unchanged one is left exactly as it is, a changed amount mints a new price and retires the old — so the customers already paying keep the price they signed up on. And a price can now bill every ten minutes, which means a renewal is something you watch happen while you build, not a month you wait out.",
+  },
+  {
+    date: "Jul 12, 2026",
     version: "v0.15",
     title: "A plan and its prices, in one step",
     body: "Name a plan, set what it costs, and every cadence comes with it — the annual price derives from the monthly one, discount and all. One atomic API call, or one form in the console. A plan can no longer end up with no price and no way to bill it.",

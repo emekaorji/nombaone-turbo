@@ -7,11 +7,11 @@ import {
   type InvoiceRow,
 } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
+import { emitEvent } from '@nombaone/sara/events';
+import { mintReference } from '@nombaone/sara/reference';
 
 import { applyCreditsOldestFirst } from '../credits';
 import { resolveAndConsumeDiscount } from '../discounts';
-import { emitEvent } from '@nombaone/sara/events';
-import { mintReference } from '@nombaone/sara/reference';
 import { claimInvoicePaid } from './markPaid';
 import { getInvoiceLineRows, loadInvoiceRow } from './queries';
 

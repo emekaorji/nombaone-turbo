@@ -13,6 +13,39 @@ kuɗi ta hanyoyi daban-daban: card da mandate ana *jansu* ne, bank transfer kuwa
 ana *turo* shi. Duba [multi-rail: push da pull](/concepts/multi-rail-push-and-pull)
 don ka ga dalilin da ya sa wannan bambanci yake da muhimmanci.
 
+## Babu payment method tukuna? Hosted checkout
+
+Maɓallin "subscribe" na shafin sayarwa ba kasafai yake riƙe da kayan biya da aka
+riga aka ba da izininsa ba. A irin wannan yanayi, **ka bar `paymentMethodId`
+gaba ɗaya** a kan ƙirƙirar `charge_automatically` marar lokacin gwaji:
+
+```bash
+curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
+  -H "Authorization: Bearer nbo_sandbox_…" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "customerId": "{customerId}",
+    "priceId": "{priceId}",
+    "callbackUrl": "https://yourapp.com/billing/return"
+  }'
+```
+
+Subscription ɗin yana farawa a `incomplete`, kuma response ɗin yana ɗauke da
+**`checkoutLink`** — shafin biyan kuɗi da Nomba ke bayarwa (card ko bank
+transfer). Ka tura customer ɗin can; `callbackUrl` na zaɓi shi ne inda zai dawo
+bayan ya biya. Biya yana kunna subscription ɗin; biyan **card** yana kuma kama
+token da za a sake amfani da shi, don renewals su yi caji a shiru, yayin da
+biyan **transfer** (wanda ba ya barin token da za a ja) yake juya subscription
+ɗin zuwa `send_invoice`: kowace cycle mai zuwa za ta fitar da invoice mai
+mahaɗin biya maimakon ja. Idan ba wanda ya biya, subscription ɗin zai ƙare
+zuwa `incomplete_expired`, kuma babu wani bashi.
+[Recipe na gym membership](/cookbook/bill-a-gym-membership) yana bin wannan
+hanyar daga farko har ƙarshe.
+
+Ka riga ka riƙe method da aka ba da izininsa? Ka saita ɗaya ka kuma miƙa shi
+kai tsaye:
+
 ## Saita payment method
 
 Pull rails suna buƙatar kayan biya da aka riga aka ba da izininsa, wanda aka ajiye.
@@ -75,8 +108,10 @@ curl -X POST https://sandbox.api.nombaone.xyz/v1/subscriptions \
 - **`trialing`**: price ɗin yana da lokacin gwaji; babu caji tukuna.
 - **`past_due`**: caji na farko ya faɗi; [dunning](/guides/dunning-and-recovery)
   shi ne ke kula da dawo da kuɗin yanzu. A kan balance mai sirara, wannan yakan nufi "ba yanzu ba", ba aʼa ba.
-- **`incomplete`**: caji ɗin yana buƙatar customer ya ɗauki mataki (matakin OTP na
-  card); event ɗin `invoice.action_required` yana ɗauke da sabon mahaɗin checkout.
+- **`incomplete`**: customer ɗin na buƙatar ɗaukar mataki tukuna — ko dai ka yi
+  amfani da hanyar hosted checkout (ka tura shi zuwa `checkoutLink` na cikin
+  response), ko kuma cajin card ya gamu da matakin OTP, kuma event ɗin
+  `invoice.action_required` yana ɗauke da sabon mahaɗin checkout.
 
 <Callout type="warning" title="Kada ka ɗauka cewa caji na farko zai yi nasara">
   A Najeriya, pull na farko yana iya buƙatar OTP, ko kuma ya sauka a kan balance

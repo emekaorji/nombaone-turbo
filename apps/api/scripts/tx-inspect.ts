@@ -2,10 +2,11 @@
 // Dump the sub-account's recent transactions with all identifier fields so we can find
 // the real transactionId of a pending OTP charge.  npx tsx scripts/tx-inspect.ts
 import { env } from '../src/shared/config/env';
+import { scriptSubAccountId } from './_subaccount';
 import { getNombaClient } from '../src/shared/config/nomba';
 
 async function main(): Promise<void> {
-  const sub = env.NOMBA_LIVE_SUBACCOUNT_ID ?? '';
+  const sub = scriptSubAccountId ?? '';
   const c = getNombaClient('live');
   const res = await c.request<{ data?: { results?: Record<string, unknown>[] } }>({
     method: 'GET',

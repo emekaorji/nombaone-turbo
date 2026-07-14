@@ -1,11 +1,11 @@
 ---
-title: Settlement & sub-accounts
-description: How a verified collection splits into the platform fee and the merchant's net, settles to their Nomba sub-account, and stays claw-back-safe with an escrow lock.
+title: Settlement & payouts
+description: How a verified collection splits into the platform fee and the merchant's net, accrues to a balance they own, and reaches their bank account.
 ---
 
 When a subscription charge is collected and verified, the money doesn't just sit in one
-pool. It **splits at collection** and settles to the right place. Nomba One is multi-tenant
-by design: each organization's money is its own.
+pool. It **splits at collection**, and each organization's share becomes a balance that
+belongs to them.
 
 ## Split at collection
 
@@ -14,31 +14,58 @@ A verified collection is split into two legs, recorded in the [ledger](/concepts
 - **The platform fee**: the fee your platform charges, computed by the fee engine.
 - **The organization's net**: what's left, which belongs to the merchant.
 
-The net settles to that organization's **Nomba sub-account**. The split is posted as
-balanced ledger legs, so gross always equals fee plus net, to the exact kobo.
+The split is posted as balanced ledger legs, so gross always equals fee plus net, to the
+exact kobo. A single kobo cannot be invented or lost between them.
 
-## Sub-accounts
+## Where a merchant's money lives
 
-A **sub-account** is the organization's account on Nomba where its settled net lands.
-Multi-tenancy means one integration can run many merchants, each with their own sub-account,
-their own customers, and their own isolated money. See
+An organization's money is a **balance in the ledger** — a liability we owe them, credited
+the moment a payment settles. It exists from the day they sign up. There is nothing to
+connect, provision, or verify before billing works, and no way for an organization to be
+half-onboarded into a state where it collects money it cannot see.
+
+Multi-tenancy is a property of that ledger: one integration can run many merchants, each
+with their own customers and their own isolated money. See
 [isolation is a data-model property](/concepts/hard-parts/isolation-is-a-data-model-property).
 
-## Escrow, refunds, and payouts
+<Callout type="note" title="One number, one place">
+  The balance a merchant is shown is the same ledger account a payout debits. It is never
+  re-derived somewhere else, because two sources of truth for "how much money do I have"
+  is how a merchant ends up seeing a figure they cannot actually withdraw.
+</Callout>
 
-Settled funds are not instantly withdrawable. A recent-settlement **escrow lock** holds
+## Getting paid
+
+A merchant tells you one thing, and only when they want money out: **the bank account to
+pay it into**.
+
+You never ask for it at signup — a bank account is worth nothing until there is money to
+send to it. When they first withdraw, they pick their bank from `GET /v1/banks` and enter
+their account number; `POST /v1/payout-accounts/resolve` asks the bank who owns it, and
+they confirm the bank's answer. The holder's name comes from the bank, never from a form
+field, so a mistyped digit is caught before any money moves rather than after.
+
+From then on, the balance sweeps to that account **once a day, automatically**. A merchant
+who wants it sooner calls `POST /v1/settlements/payout` — which takes **no destination**,
+because the money can only ever go to the account their bank already confirmed.
+
+## Escrow and refunds
+
+Settled funds are not instantly withdrawable. A recent-settlement **escrow hold** keeps
 them for a window so a refund can be clawed back before the money leaves:
 
 - **Refund**: reverses **only the organization's leg** back toward the payer; the platform
-  fee is non-refundable and is never touched. A refund posts a new reversing transaction, so
-  the ledger stays complete.
-- **Payout**: withdraws the organization's available balance (settled net, minus the
-  escrow lock and any minimum buffer) to a bank account.
+  fee is non-refundable and is never touched. A refund posts a new reversing transaction,
+  so the ledger stays complete.
+- **Payout**: withdraws the organization's available balance (settled net, minus the escrow
+  hold and any minimum buffer).
 
 <Callout type="note" title="Never faked, never stranded">
-  The provider legs of refunds and payouts are guarded: the ledger truth is always posted,
-  and the real Nomba transfer flips on only after live confirmation, with a compensating
-  reversal if a transfer fails, so funds are never faked as sent and never stranded.
+  A payout's ledger debit is committed **before** the bank transfer is attempted, so a crash
+  mid-transfer can never roll back the record of money that is already moving. A transfer the
+  bank *rejects* returns the funds to the merchant's balance; a transfer that is merely still
+  *in flight* does not — pending is not failure, and treating it as one would pay the merchant
+  twice.
 </Callout>
 
 For the operational reality of matching money to merchants without a spreadsheet, see

@@ -39,6 +39,43 @@ before (`data.prices` is then `[]`), and the nested
 you add a cadence, or a new amount, to a plan that already exists. See
 [create plans and prices](/guides/create-plans-and-prices).
 
+- **Change what a plan costs in one call**: [`PATCH /v1/plans/{id}`](/reference/plans)
+now takes the same `prices` array, reconciled against what the plan already costs.
+Per cadence (`interval` + `intervalCount`): an unpriced cadence is **created**, an
+unchanged amount is a **no-op** (no row, no event), and a changed amount **creates
+a new price** and deactivates every other active price on that cadence. A cadence
+you don't send is left alone, so a partial update never retires a price by
+omission.
+
+A price is never rewritten in place, which is the point: a subscription pins a
+`priceId`, so existing subscribers keep the price they signed up on and only new
+ones reach the new amount. Sending `prices` requires the `prices:write` scope, as
+it does on `POST /v1/plans`. The response now carries `data.prices` — the plan's
+active prices after the update — which is additive; a `PATCH` with no `prices`
+behaves exactly as before.
+
+- **The `minute` interval**: a first-class cadence, in live as well as sandbox.
+`interval: "minute"` with `intervalCount: 10` bills every ten minutes, through the
+same engine `month` bills through — so you can watch a renewal (invoice, charge,
+webhook, ledger) happen while you are still building, instead of waiting a month
+to find out it works. It bills on time only if the billing sweep runs every minute,
+which is now the default (`BILLING_SWEEP_CRON=* * * * *`).
+
+### Fixed
+
+- **A badly overdue subscription no longer parks forever.** When a subscription fell
+more than `BILLING_MAX_CATCH_UP_PERIODS` (36) periods behind, the catch-up guard
+**threw before billing anything**, and the worker gave up without advancing the
+period. `nextBillingAt` therefore never moved, so every later sweep hit the same
+wall and threw again: the subscription was stuck, silently, forever, and its
+invoices were never issued. That is real revenue lost — 36 periods is three years
+of `month`, but six hours of `minute` × 10.
+
+A backlog now **drains**. The billing loop bills the periods it owes, oldest first,
+reporting how many remain rather than refusing to start; 36 is a per-job rate limit,
+not a wall, and the next sweep continues the remainder until the subscription is
+caught up. `BILLING_CATCH_UP_LIMIT_EXCEEDED` is no longer raised.
+
 ## 2026-07-01: v1
 
 The initial public release. The full subscription-billing surface over Nigerian

@@ -5,7 +5,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   customersTable,
   ledgerAccountsTable,
-  orgNombaAccountsTable,
   paymentMethodsTable,
   refundsTable,
   settlementsTable,
@@ -25,12 +24,15 @@ import type { NombaClient, NombaRequest } from '@nombaone/sara/nomba';
 let bankTransferCalls = 0;
 const fakeNomba: NombaClient = {
   getToken: async () => 'tok',
+  listTokenizedCards: async () => [],
   async request<T = unknown>(req: NombaRequest) {
-    if (req.endpoint.includes('/transfers/bank') && req.method === 'POST') bankTransferCalls += 1;
+    // ⚠ Order matters: name enquiry is ALSO a POST to /transfers/bank/lookup, so it must
+    // be matched BEFORE the transfer counter or every lookup would read as a transfer.
     if (req.endpoint.includes('/transfers/bank/lookup')) {
-      return { status: 200, ok: true, data: { data: { accountName: 'Ada Payer' } } as T };
+      return { status: 200, ok: true, pending: false, data: { data: { accountName: 'Ada Payer' } } as T };
     }
-    return { status: 200, ok: true, data: {} as T };
+    if (req.endpoint === '/v1/transfers/bank' && req.method === 'POST') bankTransferCalls += 1;
+    return { status: 200, ok: true, pending: false, data: {} as T };
   },
   requeryTransaction: async () => ({ found: true, succeeded: true, amount: 0 }),
 };
@@ -38,6 +40,7 @@ const fakeNomba: NombaClient = {
 describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
   let harness: Harness;
   let bearerA: string;
+  let refA: string;
   let bearerB: string;
   let ctxA: { organizationId: string; mode: 'sandbox' };
   const scopes = [
@@ -52,17 +55,25 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     harness.setNombaClient(fakeNomba);
     registerRail({ key: 'card', direction: 'pull', collect: async () => ({ status: 'succeeded' }) });
     registerRail({ key: 'mandate', direction: 'pull', collect: async () => ({ status: 'succeeded' }) });
-    registerRail({ key: 'transfer', direction: 'push', collect: async () => ({ status: 'pending', payInstructions: {} }) });
+    registerRail({ key: 'transfer', direction: 'push', collect: async () => ({ status: 'pending', payInstructions: { bankName: 'Wema', accountNumber: '0000000000', amountKobo: 0 } }) });
 
     const orgA = await harness.seedOrg('Refund A');
     const orgB = await harness.seedOrg('Refund B');
     bearerA = (await harness.mintApiKey(orgA.organizationId, 'sandbox', scopes)).secret;
     bearerB = (await harness.mintApiKey(orgB.organizationId, 'sandbox', scopes)).secret;
     ctxA = { organizationId: orgA.organizationId, mode: 'sandbox' };
-    await harness.db.insert(orgNombaAccountsTable).values({
-      reference: mintReference('NMA'), organizationId: orgA.organizationId, mode: 'sandbox',
-      nombaAccountId: 'nomba_sub_A', accountRef: 'acct_A', kind: 'subaccount', subAccountId: 'nomba_sub_A', status: 'active',
-    });
+    refA = `NBO-${orgA.reference}`;
+
+    // The merchant registers the bank account they want to be paid into. Through the real
+    // endpoint on purpose: it proves name enquiry runs and that `accountName` comes from
+    // the BANK ('Ada Payer'), never from the request body.
+    const acct = await request(harness.app)
+      .post('/v1/payout-accounts')
+      .set('Authorization', `Bearer ${bearerA}`)
+      .set('Idempotency-Key', `pa-${uniq()}`)
+      .send({ bankCode: '044', bankName: 'Access Bank', accountNumber: '0123456789' });
+    expect(acct.status).toBe(201);
+    expect(acct.body.data.accountName).toBe('Ada Payer');
   });
 
   afterAll(async () => {
@@ -105,7 +116,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     const stl = await seedSettlement(500000);
     const net = stl.netToTenantKobo;
     const feeBefore = await accountBalance('platform_fees');
-    const tenantBefore = await accountBalance('tenant_settlement:acct_A');
+    const tenantBefore = await accountBalance(`tenant_settlement:${refA}`);
     expect(tenantBefore).toBe(net); // liability credited at settlement (positive)
 
     const key = `rf-${uniq()}`;
@@ -115,7 +126,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     expect(r.body.data.status).toBe('ledger_only');
 
     // tenant leg reversed, platform fee NOT touched
-    expect(await accountBalance('tenant_settlement:acct_A')).toBe(tenantBefore - net);
+    expect(await accountBalance(`tenant_settlement:${refA}`)).toBe(tenantBefore - net);
     expect(await accountBalance('platform_fees')).toBe(feeBefore);
     // settlement flagged refunded; exactly one refund row
     const [after] = await harness.db.select().from(settlementsTable).where(eq(settlementsTable.id, stl.id));
@@ -126,7 +137,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     // idempotent replay (same key) → same refund, no second reversal
     const replay = await asA(request(harness.app).post(`/v1/settlements/${stl.reference}/refund`)).set('Idempotency-Key', key).send({});
     expect(replay.status).toBe(200);
-    expect(await accountBalance('tenant_settlement:acct_A')).toBe(tenantBefore - net); // unchanged
+    expect(await accountBalance(`tenant_settlement:${refA}`)).toBe(tenantBefore - net); // unchanged
 
     // a second, different-key full refund is rejected (nothing left)
     const again = await asA(request(harness.app).post(`/v1/settlements/${stl.reference}/refund`)).set('Idempotency-Key', `rf-${uniq()}`).send({});
@@ -159,7 +170,7 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     expect(esc.body.data.availableInKobo).toBe(0);
 
     const locked = await asA(request(harness.app).post('/v1/settlements/payout'))
-      .set('Idempotency-Key', `po-${uniq()}`).send({ amountInKobo: net, bankCode: '044', accountNumber: '0123456789' });
+      .set('Idempotency-Key', `po-${uniq()}`).send({ amountInKobo: net });
     expect(locked.status).toBe(422);
     expect(locked.body.error.code).toBe('ESCROW_LOCKED');
     expect(bankTransferCalls).toBe(0);
@@ -171,25 +182,25 @@ describe('settlement refund + payout + escrow e2e (F1/F2/F3)', () => {
     // Age this settlement past the 3h lock window.
     await harness.db.update(settlementsTable).set({ createdAt: new Date(Date.now() - 4 * 3_600_000) }).where(eq(settlementsTable.id, stl.id));
 
-    const balanceBefore = await accountBalance('tenant_settlement:acct_A');
+    const balanceBefore = await accountBalance(`tenant_settlement:${refA}`);
     const key = `po-${uniq()}`;
     const r = await asA(request(harness.app).post('/v1/settlements/payout'))
-      .set('Idempotency-Key', key).send({ amountInKobo: net, bankCode: '044', accountNumber: '0123456789' });
+      .set('Idempotency-Key', key).send({ amountInKobo: net });
     expect([200, 201]).toContain(r.status);
     expect(r.body.data.status).toBe('ledger_posted'); // provider transfer flag off
     expect(r.body.data.resolvedAccountName).toBe('Ada Payer'); // bankLookup ran
     expect(bankTransferCalls).toBe(0); // bankTransfer NOT called with the flag off
-    expect(await accountBalance('tenant_settlement:acct_A')).toBe(balanceBefore - net);
+    expect(await accountBalance(`tenant_settlement:${refA}`)).toBe(balanceBefore - net);
 
     // idempotent replay
     const replay = await asA(request(harness.app).post('/v1/settlements/payout'))
-      .set('Idempotency-Key', key).send({ amountInKobo: net, bankCode: '044', accountNumber: '0123456789' });
+      .set('Idempotency-Key', key).send({ amountInKobo: net });
     expect(replay.status).toBe(200);
-    expect(await accountBalance('tenant_settlement:acct_A')).toBe(balanceBefore - net); // no double debit
+    expect(await accountBalance(`tenant_settlement:${refA}`)).toBe(balanceBefore - net); // no double debit
 
     // exceeding the now-drained available balance is rejected
     const over = await asA(request(harness.app).post('/v1/settlements/payout'))
-      .set('Idempotency-Key', `po-${uniq()}`).send({ amountInKobo: net, bankCode: '044', accountNumber: '0123456789' });
+      .set('Idempotency-Key', `po-${uniq()}`).send({ amountInKobo: net });
     expect(over.status).toBe(422);
     expect(['PAYOUT_EXCEEDS_AVAILABLE', 'ESCROW_LOCKED']).toContain(over.body.error.code);
   });

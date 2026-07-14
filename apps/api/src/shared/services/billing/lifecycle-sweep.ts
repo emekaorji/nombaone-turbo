@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
 
 import { paymentMethodsTable, subscriptionsTable } from '@nombaone/core-db/schema';
-
 import { emitEvent } from '@nombaone/sara/events';
+
 import { expireIncomplete } from '../subscriptions';
 import {
   selectExpiredIncomplete,

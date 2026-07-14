@@ -1,0 +1,6 @@
+
+# The gym's local member database — password hashes and sessions. Never commit.
+.data/
+screenshots/
+test-results/
+playwright-report/

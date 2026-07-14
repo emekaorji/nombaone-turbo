@@ -94,9 +94,21 @@ describe('outbound webhooks e2e (G)', () => {
       }
     });
 
-  const tenantSignature = (plaintextSecret: string, rawBody: string): string => {
+  // The documented tenant recipe (mirrors the Node SDK): parse `t=<unix>,v1=<hex>`,
+  // bound `t` to the 300s tolerance, derive key = sha256(plaintextSecret) hex, and
+  // require v1 === HMAC-SHA256(key, `${t}.${rawBody}`).
+  const tenantVerifies = (
+    plaintextSecret: string,
+    rawBody: string,
+    header: string | string[] | undefined
+  ): boolean => {
+    const value = Array.isArray(header) ? header[0] : header;
+    const match = /^t=(\d+),v1=([0-9a-f]{64})$/.exec(value ?? '');
+    if (!match) return false;
+    const [, t, v1] = match;
+    if (Math.abs(Date.now() / 1000 - Number(t)) > 300) return false;
     const key = createHash('sha256').update(plaintextSecret).digest('hex');
-    return createHmac('sha256', key).update(rawBody, 'utf8').digest('hex');
+    return v1 === createHmac('sha256', key).update(`${t}.${rawBody}`, 'utf8').digest('hex');
   };
 
   // Force a due drain regardless of backoff by resetting nextAttemptAt to the past.
@@ -126,7 +138,7 @@ describe('outbound webhooks e2e (G)', () => {
     expect(body.event.id).toBe(evtRef); // the EVT dedupe key, inside the signed body (G4)
     expect(body.data.reference).toBe(payloadRef);
     // The fake receiver verifies with the documented recipe (G2).
-    expect(got!.headers['x-nombaone-signature']).toBe(tenantSignature(secret, got!.rawBody));
+    expect(tenantVerifies(secret, got!.rawBody, got!.headers['x-nombaone-signature'])).toBe(true);
     // The stated guarantee rides on every POST (G5).
     expect(got!.headers['x-nombaone-delivery-guarantee']).toBe('at-least-once');
   });
@@ -178,7 +190,7 @@ describe('outbound webhooks e2e (G)', () => {
     const got = findByEventRef(evtRef);
     expect(got).toBeTruthy();
     expect(JSON.parse(got!.rawBody).event.id).toBe(evtRef); // event.id stable across replay (consumer dedupe holds)
-    expect(got!.headers['x-nombaone-signature']).toBe(tenantSignature(secret, got!.rawBody));
+    expect(tenantVerifies(secret, got!.rawBody, got!.headers['x-nombaone-signature'])).toBe(true);
 
     const after = await asA(request(harness.app).get(`/v1/webhooks/${whRef}/deliveries/${deadRow.id}`));
     expect(after.body.data.status).toBe('succeeded');
@@ -197,8 +209,8 @@ describe('outbound webhooks e2e (G)', () => {
     const evtRef = await emit(`nbo${uniq().replace(/\D/g, '')}inv`);
     await deliverPending(harness.db, { limit: 50 });
     const got = findByEventRef(evtRef);
-    expect(got!.headers['x-nombaone-signature']).toBe(tenantSignature(newSecret, got!.rawBody));
-    expect(got!.headers['x-nombaone-signature']).not.toBe(tenantSignature(oldSecret, got!.rawBody));
+    expect(tenantVerifies(newSecret, got!.rawBody, got!.headers['x-nombaone-signature'])).toBe(true);
+    expect(tenantVerifies(oldSecret, got!.rawBody, got!.headers['x-nombaone-signature'])).toBe(false);
   });
 
   // ── G1 events list ──────────────────────────────────────────────────────────

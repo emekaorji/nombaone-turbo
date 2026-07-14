@@ -90,6 +90,8 @@ const OVERRIDES: Record<string, { ns?: string[]; method: string }> = {
   // organization
   "GET /v1/organization/billing": { ns: ["billing"], method: "retrieve" },
   "PUT /v1/organization/billing": { ns: ["billing"], method: "update" },
+  "GET /v1/organization/nomba": { ns: ["nomba"], method: "retrieve" },
+  "POST /v1/organization/nomba/connect": { ns: ["nomba"], method: "connect" },
   // metrics
   "GET /v1/metrics/billing": { method: "retrieveBilling" },
 };

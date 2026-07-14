@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-import { nombaSignatureCandidates, verifyNombaSignature } from '@nombaone/sara/nomba';
+import { verifyNombaSignature } from '@nombaone/sara/nomba';
 import { enqueueInboundWebhook } from '@nombaone/queue';
 
 import { env } from '@shared/config/env';
@@ -20,7 +20,7 @@ import type { RequestHandler } from 'express';
  * Nomba uses its OWN scheme (`verifyNombaSignature`, the `nomba-signature`
  * header, dedup on the payload `requestId`) — distinct from the generic
  * raw-body-hex path used for other providers and from the OUTBOUND
- * `verifyWebhookSignature` (our deliveries TO tenants).
+ * `t=<unix>,v1=<hex>` scheme (`buildSignatureHeader`, our deliveries TO tenants).
  */
 
 /** Read a single header value (Express may hand back an array). */
@@ -66,24 +66,16 @@ export const nombaWebhookController: RequestHandler = jsonHandler<{ received: tr
   const timestamp = headerValue(req.headers['nomba-timestamp']) ?? undefined;
   const body = rawBody.toString('utf8');
 
-  if (env.NOMBA_WEBHOOK_DEBUG) {
-    // T0 byte-confirm: log the REAL headers + raw body + every candidate signature
-    // (per key) so the exact scheme can be pinned, and DO NOT reject on mismatch
-    // while the scheme is still being confirmed. (env guard forbids this in prod.)
-    logger.warn(`[webhook][T0] nomba headers=${JSON.stringify(req.headers)}`);
-    logger.warn(`[webhook][T0] nomba rawBody(b64)=${rawBody.toString('base64')}`);
-    logger.warn(`[webhook][T0] nomba-signature(header)=${signature ?? '(none)'}`);
-    for (const key of keys) {
-      logger.warn(
-        `[webhook][T0] candidates=${JSON.stringify(
-          nombaSignatureCandidates(key, body, parsed, timestamp)
-        )}`
-      );
-    }
-  } else if (
-    !signature ||
-    !keys.some((key) => verifyNombaSignature(key, signature, body, parsed, timestamp))
-  ) {
+  // The signature is the ONLY thing standing between this endpoint and a forged
+  // `payment_success`. Anyone who can reach the tunnel could otherwise activate
+  // subscriptions, settle invoices and credit merchant balances for free.
+  //
+  // There used to be a `NOMBA_WEBHOOK_DEBUG` escape hatch here that logged the candidate
+  // signatures and **accepted the request regardless of whether any of them matched** —
+  // it existed to byte-confirm the scheme, and it was left switched on in `.env`. The
+  // scheme is now confirmed and authoritative, so the hatch is deleted rather than
+  // merely turned off: a bypass that can be re-enabled by an env var is a bypass.
+  if (!signature || !keys.some((key) => verifyNombaSignature(key, signature, body, parsed, timestamp))) {
     rejectSignature(provider);
   }
 

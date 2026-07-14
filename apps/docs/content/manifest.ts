@@ -179,6 +179,12 @@ export const MANIFEST: ManifestSection[] = [
     mode: "how-to",
     items: [
       { slug: "/cookbook", title: "Overview", summary: "Task-focused recipes for common Nomba One billing jobs." },
+      {
+        slug: "/cookbook/bill-a-gym-membership",
+        title: "Bill a gym membership",
+        badge: "new",
+        summary: "Hosted-checkout joins, silent card renewals with the OTP fallback, transfer members on the invoice lane, and dunning to churn — end to end.",
+      },
     ],
   },
   {
@@ -190,7 +196,7 @@ export const MANIFEST: ManifestSection[] = [
       { slug: "/concepts/money-is-integer-kobo", title: "Money is integer kobo", summary: "Why every amount is integer kobo, and the 100× naira trap." },
       { slug: "/concepts/the-ledger", title: "The double-entry ledger", summary: "The source of truth: every leg of every movement, debits and credits." },
       { slug: "/concepts/multi-rail-push-and-pull", title: "Multi-rail: push and pull", summary: "Card and mandate pull; transfer pushes. Why the asymmetry matters." },
-      { slug: "/concepts/settlement-and-sub-accounts", title: "Settlement & sub-accounts", summary: "How a collection splits and settles to a merchant's Nomba sub-account." },
+      { slug: "/concepts/settlement-and-sub-accounts", title: "Settlement & payouts", summary: "How a collection splits, accrues to a balance the merchant owns, and reaches their bank." },
     ],
   },
   {

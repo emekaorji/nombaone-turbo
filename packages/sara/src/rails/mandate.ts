@@ -18,9 +18,9 @@ export function createMandateRail(getClient: NombaClientFactory): RailAdapter {
     key: 'mandate',
     direction: 'pull',
     async collect(input: RailCollectInput): Promise<RailCollectResult> {
-      const meta = input.metadata ?? {};
-      const mandateId = meta.mandateId as string | undefined;
-      const maxAmount = typeof meta.maxAmount === 'number' ? meta.maxAmount : undefined;
+      const meta = input.metadata;
+      const mandateId = meta?.mandateId;
+      const maxAmount = meta?.maxAmountKobo;
       if (!mandateId) {
         return { status: 'failed', failureReason: 'no_mandate_on_method' };
       }

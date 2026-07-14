@@ -13,7 +13,7 @@ import {
   WEBHOOK_DELIVERY_GUARANTEE_HEADER,
 } from '@nombaone/core-contracts/types';
 
-import { signWebhookPayload } from './sign';
+import { buildSignatureHeader } from './sign';
 
 import type { InfraDb } from '../context';
 
@@ -28,8 +28,9 @@ import type { InfraDb } from '../context';
  *   1. Selects deliveries that are DUE — status `pending` or `failed` with
  *      `nextAttemptAt <= now` — to a non-disabled endpoint, capped by `limit`.
  *   2. POSTs the canonical JSON body, signed with the endpoint's signing key
- *      (the stored sha256, see `./endpoints`), carrying the signature + event
- *      metadata as headers.
+ *      (the stored sha256, see `./endpoints`) in the timestamped
+ *      `t=<unix>,v1=<hex>` scheme (see `./sign`), carrying the signature header
+ *      + event metadata as headers.
  *   3. On a 2xx: marks `succeeded`. On anything else (non-2xx, network error,
  *      timeout): increments `attempts`, and either schedules the next retry with
  *      EXPONENTIAL BACKOFF (`failed` + future `nextAttemptAt`) or, once
@@ -110,9 +111,10 @@ export const deliverPending = async (
 
     const event = await loadEvent(db, delivery.eventId);
     const rawBody = buildBody(delivery, event);
-    const signature = signWebhookPayload(endpoint.signingSecretHash, rawBody);
+    // `t=<unix>,v1=<hex>` — v1 = HMAC-SHA256(signingSecretHash, `${t}.${rawBody}`).
+    const signatureHeader = buildSignatureHeader(endpoint.signingSecretHash, rawBody);
 
-    const responseStatus = await attemptPost(endpoint.url, rawBody, signature, delivery);
+    const responseStatus = await attemptPost(endpoint.url, rawBody, signatureHeader, delivery);
     const attempts = delivery.attempts + 1;
     const attemptedAt = new Date();
 
@@ -192,7 +194,7 @@ const buildBody = (delivery: WebhookDeliveryRow, event: DomainEventRow | undefin
 const attemptPost = async (
   url: string,
   rawBody: string,
-  signature: string,
+  signatureHeader: string,
   delivery: WebhookDeliveryRow
 ): Promise<number | null> => {
   const controller = new AbortController();
@@ -203,7 +205,7 @@ const attemptPost = async (
       headers: {
         'content-type': 'application/json',
         'user-agent': 'nombaone-webhooks/1',
-        'x-nombaone-signature': signature,
+        'x-nombaone-signature': signatureHeader,
         'x-nombaone-event-type': delivery.eventType,
         'x-nombaone-delivery': delivery.reference,
         // G5: the stated delivery guarantee — consumers dedupe on the body's event.id.

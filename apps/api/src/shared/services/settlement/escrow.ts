@@ -1,9 +1,9 @@
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
 
 import { settlementsTable } from '@nombaone/core-db/schema';
-
 import { getOrgBillingSettings } from '@nombaone/sara/org';
-import { getTenantSettlementBalance, resolveTenantSubAccount } from './accounts';
+
+import { getTenantSettlementBalance, resolveTenantAccountRef } from './accounts';
 
 import type { DomainContext, InfraReadScope } from '@nombaone/sara/context';
 
@@ -28,9 +28,14 @@ export async function computeTenantEscrow(
   opts: { now?: Date; lockWindowHours?: number } = {}
 ): Promise<TenantEscrow> {
   const now = opts.now ?? new Date();
-  const lockWindowHours = opts.lockWindowHours ?? 3;
+  // The hold is a TENANT SETTING (`payout_hold_hours`, default 3), not a constant. It
+  // used to be a hardcoded `?? 3` with no caller and no knob — which quietly meant a
+  // merchant could not touch their first three hours of revenue and had no way to say
+  // otherwise. Fractional, so it can be dialled down to minutes (or 0).
+  const settings = await getOrgBillingSettings(db, ctx);
+  const lockWindowHours = opts.lockWindowHours ?? settings.payoutHoldHours;
   const since = new Date(now.getTime() - lockWindowHours * 3_600_000);
-  const sub = await resolveTenantSubAccount(db, ctx);
+  const accountRef = await resolveTenantAccountRef(db, ctx);
 
   const [row] = await db
     .select({ locked: sql<number>`coalesce(sum(${settlementsTable.netToTenantKobo}), 0)` })
@@ -39,7 +44,7 @@ export async function computeTenantEscrow(
       and(
         eq(settlementsTable.organizationId, ctx.organizationId),
         eq(settlementsTable.mode, ctx.mode),
-        eq(settlementsTable.subAccountRef, sub.accountRef),
+        eq(settlementsTable.subAccountRef, accountRef),
         gte(settlementsTable.createdAt, since),
         inArray(settlementsTable.status, ['settled', 'reconciled'])
       )

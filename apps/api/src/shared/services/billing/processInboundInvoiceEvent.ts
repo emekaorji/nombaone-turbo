@@ -1,15 +1,71 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { invoicesTable } from '@nombaone/core-db/schema';
+import { markInboundEvent, recordInboundEvent, type NombaClientFactory } from '@nombaone/sara/nomba';
 
 import { closeHeldAttemptsForInvoice } from '../dunning/attempt';
-import { markInboundEvent, recordInboundEvent, type NombaClientFactory } from '@nombaone/sara/nomba';
-import { extractOurReference, extractProviderTransactionId } from '../payment-methods';
-import { OTP_ORDER_REF_SUFFIX } from './actionLink';
+import {
+  captureCardFromInvoicePayment,
+  ensureSubscriptionChargeable,
+  extractOurReference,
+  extractProviderTransactionId,
+} from '../payment-methods';
+import { invoiceRefFromOrderRef } from './actionLink';
+import { failCollection } from './collectForInvoice';
 import { confirmInvoiceFromWebhook } from './confirmInvoiceFromWebhook';
 
+import type { InvoiceRow } from '@nombaone/core-db/schema';
 import type { DomainContext, InfraTxDb } from '@nombaone/sara/context';
 import type { InboundVerification } from './types';
+
+/** Nomba event names that mean "this payment did not happen". */
+const FAILURE_EVENTS = new Set(['payment_failed', 'payment_reversed']);
+
+/** Nomba's human failure text, wherever it hides in the payload. */
+function extractGatewayMessage(payload: Record<string, unknown>): string | undefined {
+  const data = (payload.data ?? {}) as Record<string, unknown>;
+  const txn = (data.transaction ?? {}) as Record<string, unknown>;
+  for (const v of [txn.gatewayMessage, txn.responseMessage, txn.message, data.message]) {
+    if (typeof v === 'string' && v.trim()) return v;
+  }
+  return undefined;
+}
+
+/**
+ * An inbound event said the payment FAILED. Put the invoice into exactly the state a
+ * synchronous failure would have, so dunning starts.
+ *
+ * ⚠ E4 — we never take the webhook's word for it. Two conditions must BOTH hold:
+ *   1. Nomba explicitly signalled a failure event, and
+ *   2. our own requery did NOT say the transaction succeeded.
+ * `requery.succeeded` always wins, so a slow-settling payment can never be dunned, and a
+ * spoofed/replayed "failed" cannot cancel a customer who actually paid.
+ *
+ * Doing nothing (the old behaviour) meant a declined renewal left the subscription
+ * `active` and unpaid forever — free service, no dunning, no churn.
+ */
+async function handleInboundFailure(
+  txDb: InfraTxDb,
+  ctx: DomainContext,
+  input: {
+    invoice: InvoiceRow;
+    eventType: string;
+    requerySucceeded: boolean;
+    payload: Record<string, unknown>;
+  }
+): Promise<void> {
+  if (!FAILURE_EVENTS.has(input.eventType)) return; // merely pending/unknown — leave it open
+  if (input.requerySucceeded) return; // the provider says it DID settle — never dun a payer
+
+  const { invoice } = input;
+  // Terminal or already-paid invoices are none of this path's business.
+  if (invoice.paidAt || invoice.voidedAt || invoice.uncollectibleAt) return;
+
+  // Same helper the synchronous path uses: bumps the attempt, records the reason, moves
+  // the subscription to `past_due`, emits `invoice.payment_failed`. The dunning sweep then
+  // schedules attempt #1 and the ladder takes over.
+  await failCollection(txDb, ctx, invoice, extractGatewayMessage(input.payload));
+}
 
 export interface InboundInvoiceResult {
   /** false ⇒ this inbound event is not for an invoice — the caller should fall
@@ -36,19 +92,16 @@ export async function processInboundInvoiceEvent(
 ): Promise<InboundInvoiceResult> {
   const rawReference = extractOurReference(input.payload);
   if (!rawReference) return { matched: false, handled: false };
-  // An OTP/3DS-completion checkout carries `${invoice.reference}-otp` (a distinct
-  // order ref that dodged Nomba's dedup on the original charge). Strip the suffix so
-  // it settles the SAME invoice. Our refs have no hyphens, so the tail is unambiguous.
-  const reference = rawReference.endsWith(OTP_ORDER_REF_SUFFIX)
-    ? rawReference.slice(0, -OTP_ORDER_REF_SUFFIX.length)
-    : rawReference;
+  // Every order we mint for an invoice carries a suffix that keeps it distinct from the last one —
+  // `-otp` for a 3DS-completion link, `-c{n}` for the nth charge attempt — because Nomba permanently
+  // burns an order reference the first time it sees it. Map any of them back to the invoice they
+  // belong to, so the settlement lands where it should. Our refs contain no hyphens, so the tail is
+  // unambiguous.
+  const reference = invoiceRefFromOrderRef(rawReference);
 
+  // The FULL row — the failure leg needs paidAt/voidedAt/attemptCount, not just the ids.
   const [inv] = await txDb
-    .select({
-      id: invoicesTable.id,
-      organizationId: invoicesTable.organizationId,
-      mode: invoicesTable.mode,
-    })
+    .select()
     .from(invoicesTable)
     .where(eq(invoicesTable.reference, reference))
     .limit(1);
@@ -59,10 +112,28 @@ export async function processInboundInvoiceEvent(
   // live Nomba, a sandbox invoice sandbox Nomba (one endpoint receives both).
   const client = getClient(ctx.mode);
 
-  // E4 — re-verify against the provider; the webhook is only a hint. Requery keys on the
-  // NOMBA transaction id (live-confirmed: our reference 404s), so pull it from the payload.
+  // E4 — re-verify against the provider; the webhook is only a hint.
+  //
+  // Requery keys on `?orderReference=` — OUR merchant reference — so that is what we send. It used
+  // to send Nomba's transaction id because the requery "404s on our reference"; it did, but only
+  // because the client was passing the wrong query PARAM (`transactionRef`). Pinned on live
+  // 2026-07-14. Sending the Nomba id here would now be the thing that 404s.
   const providerTxnId = extractProviderTransactionId(input.payload);
-  const requery = await client.requeryTransaction(ctx, { reference: providerTxnId ?? reference });
+  if (providerTxnId) {
+    // Stamp it durably: this id is the ONLY key the nightly reconcile backstop can
+    // requery by. Any webhook naming the invoice donates it — even a payment_failed
+    // (the id still resolves and lets reconcile see the terminal state).
+    await txDb
+      .update(invoicesTable)
+      .set({
+        metadata: sql`COALESCE(${invoicesTable.metadata}, '{}'::jsonb) || ${JSON.stringify({ providerTransactionId: providerTxnId })}::jsonb`,
+      })
+      .where(eq(invoicesTable.id, inv.id));
+  }
+  // Requery the ORDER Nomba actually named (`rawReference`) — it knows nothing about our invoice
+  // reference once the order carries a `-c{n}` / `-otp` suffix. Asking about the bare invoice ref
+  // would 404 for any card charge, and a 404 reads as "this payment never happened".
+  const requery = await client.requeryTransaction(ctx, { reference: rawReference });
   const verification: InboundVerification = {
     status: requery.succeeded ? 'settled' : requery.found ? 'pending' : 'failed',
     settledAmountKobo: requery.amount ?? 0,
@@ -74,6 +145,54 @@ export async function processInboundInvoiceEvent(
   // re-auth completed via the fresh link), close it out + emit recovery.
   if (result.settled) {
     await closeHeldAttemptsForInvoice(txDb, ctx, inv.id, reference);
+
+    // Hosted-checkout aftermath, on the SAME webhook that settled the invoice:
+    //   card payment → capture the tokenized card and pin it as the sub's
+    //   method (the worker's invoice-matched branch returns before the generic
+    //   payment-method settle, so without this the token was silently lost);
+    //   token-less payment (transfer/USSD) → flip the sub to `send_invoice` so
+    //   renewals route to the invoice-link lane instead of doomed silent pulls.
+    const capture = await captureCardFromInvoicePayment(txDb, ctx, {
+      invoice: result.invoice,
+      payload: input.payload,
+    });
+    if (!capture.captured) {
+      // The payload carried no token. That does NOT mean the customer has no card — on live it
+      // usually means the webhook simply did not bring it (and on an account that sends no webhooks
+      // at all, it never will). Demoting them to `send_invoice` on that assumption would condemn a
+      // perfectly good card payer to paying by hand forever.
+      //
+      // So ASK Nomba for the token before judging: `ensureSubscriptionChargeable` pulls the card and
+      // only falls back to the `send_invoice` flip when there is genuinely nothing to charge.
+      //
+      // Called HERE, not handed back to the caller to do. I tried that first, and it re-created the
+      // exact bug this whole session has been about: a correct step that every caller has to
+      // remember, and therefore one that some caller will not. This runs on the pool handle (the
+      // only caller passes `db`), so the network call inside it holds no transaction open.
+      await ensureSubscriptionChargeable(txDb, ctx, result.invoice);
+    }
+  } else {
+    // ── 🔴 THE FAILURE LEG. Without this a declined renewal was FREE SERVICE, forever.
+    //
+    // On live a tokenized card charge returns `pending` — the real outcome arrives as a
+    // `payment_failed` webhook. That webhook names the INVOICE, so it is matched here and
+    // the worker returns early, never reaching the dunning bridge (which only handles
+    // retries, keyed on a DUN attempt ref). And `confirmInvoiceFromWebhook` only acts on
+    // `settled`. So the decline landed, was acknowledged, and nothing happened: the
+    // invoice stayed `open`, the subscription stayed `active`, dunning never started, and
+    // the customer kept their membership without paying. Every renewal decline on live
+    // ended here.
+    //
+    // The rule is deliberately conservative — we NEVER mark a payment failed on the
+    // webhook's say-so alone (E4). It must BOTH be an explicit failure event AND our own
+    // requery must not contradict it. `requery.succeeded` always wins: a late-settling
+    // transaction can never be dunned.
+    await handleInboundFailure(txDb, ctx, {
+      invoice: inv,
+      eventType: input.eventType,
+      requerySucceeded: requery.succeeded,
+      payload: input.payload,
+    });
   }
 
   const { firstSeen } = await recordInboundEvent(txDb, {

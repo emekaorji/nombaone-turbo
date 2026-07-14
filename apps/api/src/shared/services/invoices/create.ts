@@ -2,7 +2,6 @@ import { and, eq } from 'drizzle-orm';
 
 import { invoiceLineItemsTable, invoicesTable, type InvoiceRow } from '@nombaone/core-db/schema';
 import { AppError, NOMBAONE_ERROR_CODES } from '@nombaone/errors';
-
 import { emitEvent } from '@nombaone/sara/events';
 import { mintReference } from '@nombaone/sara/reference';
 

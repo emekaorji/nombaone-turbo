@@ -59,6 +59,7 @@ This is the agent index. Every link points at a clean Markdown mirror (append `.
 ## Cookbook
 
 - [Overview](https://docs.nombaone.xyz/cookbook.md): Task-focused recipes for common Nomba One billing jobs.
+- [Bill a gym membership](https://docs.nombaone.xyz/cookbook/bill-a-gym-membership.md): Hosted-checkout joins, silent card renewals with the OTP fallback, transfer members on the invoice lane, and dunning to churn — end to end.
 
 ## Concepts
 
@@ -66,7 +67,7 @@ This is the agent index. Every link points at a clean Markdown mirror (append `.
 - [Money is integer kobo](https://docs.nombaone.xyz/concepts/money-is-integer-kobo.md): Why every amount is integer kobo, and the 100× naira trap.
 - [The double-entry ledger](https://docs.nombaone.xyz/concepts/the-ledger.md): The source of truth: every leg of every movement, debits and credits.
 - [Multi-rail: push and pull](https://docs.nombaone.xyz/concepts/multi-rail-push-and-pull.md): Card and mandate pull; transfer pushes. Why the asymmetry matters.
-- [Settlement & sub-accounts](https://docs.nombaone.xyz/concepts/settlement-and-sub-accounts.md): How a collection splits and settles to a merchant's Nomba sub-account.
+- [Settlement & payouts](https://docs.nombaone.xyz/concepts/settlement-and-sub-accounts.md): How a collection splits, accrues to a balance the merchant owns, and reaches their bank.
 
 ## Best practices
 
