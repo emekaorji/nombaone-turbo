@@ -6,6 +6,10 @@ merchants sell plans. we bill the cards, chase the failures, keep the ledger, an
 
 ---
 
+tl;dr (skip to section #7)
+
+---
+
 ## for judges: verify the whole thing in ~10 minutes
 
 everything below is live. no setup, no install.
@@ -115,9 +119,11 @@ https://recipe-1.nombaone.xyz
 
 iron republic is a gym. it is not a mock. it is a separate next.js app, its own database, talking to us only through our published npm sdk, on **live keys**.
 
-the flex pass is ₦100 per 10 minutes of floor time. joining charges a real card.
+the flex pass is ₦100 per 10 minutes of floor time. joining charges a real card or settles via bank transfer.
 
 it exists because a reference app that cannot be deployed proves nothing. every bug that mattered in this project was found by running this, not by running tests.
+
+> you might need to check your spam folder for dunning emails.
 
 ---
 
